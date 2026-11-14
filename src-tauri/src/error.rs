@@ -3,6 +3,7 @@
 use serde::Serialize;
 use specta::Type;
 use tabloxide_core::{QueryError, ValidationIssue};
+use tabloxide_git::GitError;
 use tabloxide_workspace::{SecretError, WorkspaceError};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Type)]
@@ -20,6 +21,8 @@ pub enum CommandErrorKind {
     NoSession,
     /// A request to the database failed.
     Query,
+    /// A Git operation failed.
+    Git,
     /// An error in the application itself.
     Internal,
 }
@@ -69,6 +72,12 @@ impl CommandError {
 impl From<QueryError> for CommandError {
     fn from(error: QueryError) -> Self {
         Self::new(CommandErrorKind::Query, error.message)
+    }
+}
+
+impl From<GitError> for CommandError {
+    fn from(error: GitError) -> Self {
+        Self::new(CommandErrorKind::Git, error.to_string())
     }
 }
 

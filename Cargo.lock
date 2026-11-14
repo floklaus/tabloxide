@@ -4768,6 +4768,7 @@ dependencies = [
  "specta-typescript",
  "tabloxide-adapter-postgres",
  "tabloxide-core",
+ "tabloxide-git",
  "tabloxide-workspace",
  "tauri",
  "tauri-build",

@@ -73,6 +73,43 @@ export const commands = {
 	 *  A path that is not in the workspace folder is an error.
 	 */
 	fileRelativePath: (absolute: string, options?: InvokeOptions) => typedError<string, CommandError>(__TAURI_INVOKE("file_relative_path", { absolute }, options)),
+	/**
+	 *  Returns the Git state of the workspace: the branch, the upstream counts,
+	 *  the changed files, and the branches.
+	 */
+	gitOverview: (options?: InvokeOptions) => typedError<GitOverview_Serialize, CommandError>(__TAURI_INVOKE("git_overview", undefined, options)),
+	/**  Enables or disables Git for the workspace on this machine. */
+	gitSetEnabled: (isEnabled: boolean, options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("git_set_enabled", { isEnabled }, options)),
+	/**  Makes a repository in the workspace folder, with a starter `.gitignore`. */
+	gitInit: (options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("git_init", undefined, options)),
+	/**
+	 *  Clones `url` into a new folder `name` in the folder `parent`. Returns the path of the clone.
+	 *  This command does not need an open workspace.
+	 */
+	gitClone: (url: string, parent: string, name: string, options?: InvokeOptions) => typedError<string, CommandError>(__TAURI_INVOKE("git_clone", { url, parent, name }, options)),
+	/**  Adds the changes of the files to the index. */
+	gitStage: (paths: string[], options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("git_stage", { paths }, options)),
+	/**  Removes the changes of the files from the index. */
+	gitUnstage: (paths: string[], options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("git_unstage", { paths }, options)),
+	/**
+	 *  Discards the changes of one file in the working tree. This deletes an untracked file.
+	 *  The user cannot undo this. The UI asks for confirmation first.
+	 */
+	gitDiscard: (path: string, isUntracked: boolean, options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("git_discard", { path, isUntracked }, options)),
+	/**  Returns the two sides of the diff of one file. */
+	gitDiff: (path: string, staged: boolean, options?: InvokeOptions) => typedError<FileDiff, CommandError>(__TAURI_INVOKE("git_diff", { path, staged }, options)),
+	/**  Commits the index with `message`. */
+	gitCommit: (message: string, options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("git_commit", { message }, options)),
+	/**  Makes a branch at the current commit and switches to it. */
+	gitBranchCreate: (name: string, options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("git_branch_create", { name }, options)),
+	/**  Switches to a branch. Git refuses the switch if it would lose a change in the working tree. */
+	gitBranchSwitch: (name: string, options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("git_branch_switch", { name }, options)),
+	/**  Gets the new commits of the remote. Returns the text that Git wrote. */
+	gitFetch: (options?: InvokeOptions) => typedError<string, CommandError>(__TAURI_INVOKE("git_fetch", undefined, options)),
+	/**  Gets and merges the new commits of the upstream branch. Returns the text that Git wrote. */
+	gitPull: (options?: InvokeOptions) => typedError<string, CommandError>(__TAURI_INVOKE("git_pull", undefined, options)),
+	/**  Sends the commits of the current branch to the remote. Returns the text that Git wrote. */
+	gitPush: (options?: InvokeOptions) => typedError<string, CommandError>(__TAURI_INVOKE("git_push", undefined, options)),
 	/**  Returns the history entries of the workspace that contain `query`. The newest is first. */
 	historySearch: (query: string, options?: InvokeOptions) => typedError<HistoryEntry_Serialize[], CommandError>(__TAURI_INVOKE("history_search", { query }, options)),
 	/**  Deletes the query history of the workspace. */
@@ -96,6 +133,13 @@ export type AppInfo = {
 	name: string,
 	version: string,
 };
+
+export type BranchInfo = {
+	name: string,
+	is_current: boolean,
+};
+
+export type ChangeKind = "added" | "modified" | "deleted" | "renamed" | "copied" | "type-changed";
 
 /**  One column of a result. */
 export type Column = Column_Serialize | Column_Deserialize;
@@ -161,6 +205,8 @@ export type CommandErrorKind =
 "no-session" | 
 /**  A request to the database failed. */
 "query" | 
+/**  A Git operation failed. */
+"git" | 
 /**  An error in the application itself. */
 "internal";
 
@@ -291,6 +337,12 @@ export type FetchedPage_Serialize = {
 	error: QueryError_Serialize | null,
 };
 
+/**  The two sides of the diff of one file. */
+export type FileDiff = {
+	original: string,
+	modified: string,
+};
+
 /**  One entry of a directory in the workspace. */
 export type FileEntry = {
 	name: string,
@@ -298,6 +350,62 @@ export type FileEntry = {
 	path: string,
 	is_directory: boolean,
 };
+
+/**  The status of one file. The path is relative to the repository root. */
+export type FileStatus = FileStatus_Serialize | FileStatus_Deserialize;
+
+/**  The status of one file. The path is relative to the repository root. */
+export type FileStatus_Deserialize = {
+	path: string,
+	/**  The path before a rename. */
+	original_path?: string | null,
+	/**  The change that is in the index (staged). */
+	staged?: ChangeKind | null,
+	/**  The change that is only in the working tree. */
+	unstaged?: ChangeKind | null,
+	is_untracked: boolean,
+	/**  `true` if a merge left a conflict in the file. */
+	is_conflicted: boolean,
+};
+
+/**  The status of one file. The path is relative to the repository root. */
+export type FileStatus_Serialize = {
+	path: string,
+	/**  The path before a rename. */
+	original_path: string | null,
+	/**  The change that is in the index (staged). */
+	staged: ChangeKind | null,
+	/**  The change that is only in the working tree. */
+	unstaged: ChangeKind | null,
+	is_untracked: boolean,
+	/**  `true` if a merge left a conflict in the file. */
+	is_conflicted: boolean,
+};
+
+/**  The Git state of the workspace. */
+export type GitOverview = GitOverview_Serialize | GitOverview_Deserialize;
+
+/**  The Git state of the workspace. */
+export type GitOverview_Deserialize = 
+/**  The user disabled Git for this workspace. */
+{ state: "disabled" } | 
+/**  The `git` executable is not available. `message` gives the install instructions. */
+{ state: "not-installed"; message: string } | 
+/**  The workspace folder is not in a repository. */
+{ state: "no-repository"; version: string } | { state: "repository"; version: string; 
+/**  Root of the repository. The file paths of the status are relative to it. */
+root: string; status: StatusReport_Deserialize; branches: BranchInfo[] };
+
+/**  The Git state of the workspace. */
+export type GitOverview_Serialize = 
+/**  The user disabled Git for this workspace. */
+{ state: "disabled" } | 
+/**  The `git` executable is not available. `message` gives the install instructions. */
+{ state: "not-installed"; message: string } | 
+/**  The workspace folder is not in a repository. */
+{ state: "no-repository"; version: string } | { state: "repository"; version: string; 
+/**  Root of the repository. The file paths of the status are relative to it. */
+root: string; status: StatusReport_Serialize; branches: BranchInfo[] };
 
 /**  A statement in the history. */
 export type HistoryEntry = HistoryEntry_Serialize | HistoryEntry_Deserialize;
@@ -542,6 +650,34 @@ export type StatementReport_Serialize = {
 	range: TextRange,
 	elapsed_ms: number,
 	outcome: Outcome_Serialize,
+};
+
+export type StatusReport = StatusReport_Serialize | StatusReport_Deserialize;
+
+export type StatusReport_Deserialize = {
+	/**  The current branch. `None` if HEAD is detached. */
+	branch?: string | null,
+	/**  `true` if the repository has a minimum of one commit. */
+	has_commits: boolean,
+	upstream?: string | null,
+	/**  Commits that are not in the upstream branch. */
+	ahead: number,
+	/**  Commits of the upstream branch that are not in the current branch. */
+	behind: number,
+	files: FileStatus_Deserialize[],
+};
+
+export type StatusReport_Serialize = {
+	/**  The current branch. `None` if HEAD is detached. */
+	branch: string | null,
+	/**  `true` if the repository has a minimum of one commit. */
+	has_commits: boolean,
+	upstream: string | null,
+	/**  Commits that are not in the upstream branch. */
+	ahead: number,
+	/**  Commits of the upstream branch that are not in the current branch. */
+	behind: number,
+	files: FileStatus_Serialize[],
 };
 
 /**  One open editor tab. */

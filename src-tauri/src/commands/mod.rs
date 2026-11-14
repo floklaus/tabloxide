@@ -3,6 +3,7 @@
 pub mod app;
 pub mod connections;
 pub mod files;
+pub mod git;
 pub mod local;
 pub mod queries;
 pub mod schema;

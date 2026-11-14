@@ -4,7 +4,7 @@ mod commands;
 mod error;
 mod state;
 
-use commands::{app, connections, files, local, queries, schema, sessions, workspace};
+use commands::{app, connections, files, git, local, queries, schema, sessions, workspace};
 use tauri_specta::{Builder, ErrorHandlingMode, collect_commands};
 
 /// Builds the typed command set. The TypeScript bindings come from this builder.
@@ -37,6 +37,20 @@ fn specta_builder() -> Builder<tauri::Wry> {
             files::file_read,
             files::file_write,
             files::file_relative_path,
+            git::git_overview,
+            git::git_set_enabled,
+            git::git_init,
+            git::git_clone,
+            git::git_stage,
+            git::git_unstage,
+            git::git_discard,
+            git::git_diff,
+            git::git_commit,
+            git::git_branch_create,
+            git::git_branch_switch,
+            git::git_fetch,
+            git::git_pull,
+            git::git_push,
             local::history_search,
             local::history_clear,
             local::preferences_load,

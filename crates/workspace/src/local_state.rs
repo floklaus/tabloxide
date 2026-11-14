@@ -14,6 +14,7 @@ use tabloxide_core::ConnectionId;
 
 const DATABASE_FILE_NAME: &str = "state.sqlite3";
 const PREFERENCES_KEY: &str = "preferences";
+const GIT_DISABLED_PREFIX: &str = "git-disabled:";
 const SECONDS_PER_DAY: i64 = 24 * 60 * 60;
 
 /// Largest number of entries that one history search returns.
@@ -288,6 +289,36 @@ impl LocalState {
         )
     }
 
+    /// Returns `false` if the user disabled Git for `workspace`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the database read fails.
+    pub fn is_git_enabled(&self, workspace: &str) -> Result<bool, WorkspaceError> {
+        let key = format!("{GIT_DISABLED_PREFIX}{workspace}");
+        let stored = self.read_json("SELECT json FROM settings WHERE key = ?1", &key)?;
+        Ok(stored.is_none())
+    }
+
+    /// Enables or disables Git for `workspace`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the database write fails.
+    pub fn set_git_enabled(&self, workspace: &str, is_enabled: bool) -> Result<(), WorkspaceError> {
+        let key = format!("{GIT_DISABLED_PREFIX}{workspace}");
+        if is_enabled {
+            self.write_json("DELETE FROM settings WHERE key = ?1 AND ?2 = ?2", &key, "")
+        } else {
+            self.write_json(
+                "INSERT INTO settings (key, json) VALUES (?1, ?2)
+                 ON CONFLICT (key) DO UPDATE SET json = excluded.json",
+                &key,
+                "true",
+            )
+        }
+    }
+
     /// Returns the preferences. Data that is missing or not valid gives the defaults.
     ///
     /// # Errors
@@ -460,6 +491,19 @@ mod tests {
 
         assert_eq!(stored.editor.font_size, 32);
         assert_eq!(state.load_preferences().unwrap(), stored);
+    }
+
+    #[test]
+    fn git_is_enabled_until_the_user_disables_it_for_a_workspace() {
+        let state = LocalState::in_memory().unwrap();
+        assert!(state.is_git_enabled("/w").unwrap());
+
+        state.set_git_enabled("/w", false).unwrap();
+        assert!(!state.is_git_enabled("/w").unwrap());
+        assert!(state.is_git_enabled("/other").unwrap());
+
+        state.set_git_enabled("/w", true).unwrap();
+        assert!(state.is_git_enabled("/w").unwrap());
     }
 
     #[test]
