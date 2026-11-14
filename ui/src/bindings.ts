@@ -31,6 +31,29 @@ export const commands = {
 	 *  If `password` is `null`, the password comes from the source that the profile specifies.
 	 */
 	connectionTest: (profile: ConnectionProfile_Deserialize, password: string | null, options?: InvokeOptions) => typedError<ConnectionTestResult, CommandError>(__TAURI_INVOKE("connection_test", { profile, password }, options)),
+	/**  Opens a database session for a saved connection. Each query tab has its own session. */
+	sessionOpen: (connectionId: ConnectionId, options?: InvokeOptions) => typedError<SessionOpenResult, CommandError>(__TAURI_INVOKE("session_open", { connectionId }, options)),
+	/**  Closes a database session. This cancels its open result. */
+	sessionClose: (sessionId: number, options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("session_close", { sessionId }, options)),
+	/**
+	 *  Runs the statements that `target` selects from `sql`, in sequence.
+	 *  The run stops at the first failure. The report has one entry for each statement that ran.
+	 */
+	queryRun: (sessionId: number, sql: string, target: RunTarget, options?: InvokeOptions) => typedError<RunReport_Serialize, CommandError>(__TAURI_INVOKE("query_run", { sessionId, sql, target }, options)),
+	/**
+	 *  Cancels the active statement of a session. The run or the fetch then returns
+	 *  a failure of the kind `cancelled`.
+	 */
+	queryCancel: (sessionId: number, options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("query_cancel", { sessionId }, options)),
+	/**  Reads the next page of an open result. Returns `null` if the result is not open. */
+	resultFetch: (sessionId: number, resultId: number, options?: InvokeOptions) => typedError<FetchedPage_Serialize | null, CommandError>(__TAURI_INVOKE("result_fetch", { sessionId, resultId }, options)),
+	/**  Closes an open result. This cancels its statement on the server. */
+	resultClose: (sessionId: number, resultId: number, options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("result_close", { sessionId, resultId }, options)),
+	/**
+	 *  Runs `statement` again and writes its complete result to the CSV file `path`.
+	 *  This closes the open result of the session. Only a statement that reads data is permitted.
+	 */
+	resultExportCsv: (sessionId: number, statement: string, path: string, options?: InvokeOptions) => typedError<ExportResult_Serialize, CommandError>(__TAURI_INVOKE("result_export_csv", { sessionId, statement, path }, options)),
 };
 
 /* Types */
@@ -38,6 +61,30 @@ export const commands = {
 export type AppInfo = {
 	name: string,
 	version: string,
+};
+
+/**  One column of a result. */
+export type Column = Column_Serialize | Column_Deserialize;
+
+/**  General category of a column type. The grid uses it for the alignment and the sort. */
+export type ColumnKind = "number" | "boolean" | "temporal" | "json" | "text" | 
+/**  The type is not known, or it is not in a different category. */
+"other";
+
+/**  One column of a result. */
+export type Column_Deserialize = {
+	name: string,
+	/**  Type name of the database engine. `None` if the engine did not give the type. */
+	type_name?: string | null,
+	kind: ColumnKind,
+};
+
+/**  One column of a result. */
+export type Column_Serialize = {
+	name: string,
+	/**  Type name of the database engine. `None` if the engine did not give the type. */
+	type_name: string | null,
+	kind: ColumnKind,
 };
 
 /**  A command failure. `message` is for the user. It never contains a secret. */
@@ -56,6 +103,10 @@ export type CommandErrorKind =
 "workspace" | 
 /**  The credential store or an environment variable failed. */
 "secret" | 
+/**  The database session is not open. */
+"no-session" | 
+/**  A request to the database failed. */
+"query" | 
 /**  An error in the application itself. */
 "internal";
 
@@ -124,10 +175,154 @@ export type ConnectionTestResult = { status: "connected"; server: ServerInfo } |
 /**  Environment marker. The UI shows it before the user runs SQL. */
 export type Environment = "development" | "staging" | "production";
 
+/**  Result of a CSV export. A failed statement is a normal result, not a command error. */
+export type ExportResult = ExportResult_Serialize | ExportResult_Deserialize;
+
+/**  Result of a CSV export. A failed statement is a normal result, not a command error. */
+export type ExportResult_Deserialize = { status: "exported"; rows: number } | { status: "failed"; error: QueryError_Deserialize };
+
+/**  Result of a CSV export. A failed statement is a normal result, not a command error. */
+export type ExportResult_Serialize = { status: "exported"; rows: number } | { status: "failed"; error: QueryError_Serialize };
+
+/**  More rows of an open result. */
+export type FetchedPage = FetchedPage_Serialize | FetchedPage_Deserialize;
+
+/**  More rows of an open result. */
+export type FetchedPage_Deserialize = {
+	rows: ((string | null)[])[],
+	/**  `true` if the result has no more rows. The result is then closed. */
+	is_complete: boolean,
+	/**  Number of rows of the complete result. */
+	total_rows?: number | null,
+	/**  The failure that stopped the fetch. The result is then closed. */
+	error?: QueryError_Deserialize | null,
+};
+
+/**  More rows of an open result. */
+export type FetchedPage_Serialize = {
+	rows: ((string | null)[])[],
+	/**  `true` if the result has no more rows. The result is then closed. */
+	is_complete: boolean,
+	/**  Number of rows of the complete result. */
+	total_rows: number | null,
+	/**  The failure that stopped the fetch. The result is then closed. */
+	error: QueryError_Serialize | null,
+};
+
+/**
+ *  A position in a script. `offset` is in UTF-16 code units and starts at 0.
+ *  `line` and `column` start at 1. `column` is in characters.
+ */
+export type Location = {
+	offset: number,
+	line: number,
+	column: number,
+};
+
+/**  The result of one statement. */
+export type Outcome = Outcome_Serialize | Outcome_Deserialize;
+
+/**  The result of one statement. */
+export type Outcome_Deserialize = 
+/**  The statement returned rows. */
+{ type: "rows"; columns: Column_Deserialize[]; rows: ((string | null)[])[]; 
+/**  `false` if the result is open and has more rows to fetch. */
+is_complete: boolean; 
+/**  Number of rows that the statement returned. `None` while the result is open. */
+total_rows?: number | null } | 
+/**  The statement returned no rows. */
+{ type: "command"; affected_rows: number } | 
+/**  The statement failed. `location` is the error position in the script. */
+{ type: "failed"; error: QueryError_Deserialize; location?: Location | null };
+
+/**  The result of one statement. */
+export type Outcome_Serialize = 
+/**  The statement returned rows. */
+{ type: "rows"; columns: Column_Serialize[]; rows: ((string | null)[])[]; 
+/**  `false` if the result is open and has more rows to fetch. */
+is_complete: boolean; 
+/**  Number of rows that the statement returned. `None` while the result is open. */
+total_rows: number | null } | 
+/**  The statement returned no rows. */
+{ type: "command"; affected_rows: number } | 
+/**  The statement failed. `location` is the error position in the script. */
+{ type: "failed"; error: QueryError_Serialize; location: Location | null };
+
+/**  A query failure. */
+export type QueryError = QueryError_Serialize | QueryError_Deserialize;
+
+/**  Category of a query failure. */
+export type QueryErrorKind = 
+/**  The database server rejected the statement. */
+"database" | 
+/**  The user cancelled the statement. */
+"cancelled" | 
+/**  The statement did not answer in the query timeout of the connection. */
+"timeout" | 
+/**  The connection to the server closed. */
+"connection-lost" | "other";
+
+/**  A query failure. */
+export type QueryError_Deserialize = {
+	kind: QueryErrorKind,
+	message: string,
+	detail?: string | null,
+	hint?: string | null,
+	/**  Error code of the database engine (SQLSTATE). */
+	code?: string | null,
+	/**  Position of the error in the statement text, in characters. The first character is 1. */
+	position?: number | null,
+};
+
+/**  A query failure. */
+export type QueryError_Serialize = {
+	kind: QueryErrorKind,
+	message: string,
+	detail: string | null,
+	hint: string | null,
+	/**  Error code of the database engine (SQLSTATE). */
+	code: string | null,
+	/**  Position of the error in the statement text, in characters. The first character is 1. */
+	position: number | null,
+};
+
 export type RecentWorkspace = {
 	path: string,
 	name: string,
 };
+
+/**
+ *  The report of one run. `open_result` identifies the result of the last statement,
+ *  if it has more rows to fetch.
+ */
+export type RunReport = RunReport_Serialize | RunReport_Deserialize;
+
+/**
+ *  The report of one run. `open_result` identifies the result of the last statement,
+ *  if it has more rows to fetch.
+ */
+export type RunReport_Deserialize = {
+	statements: StatementReport_Deserialize[],
+	open_result?: number | null,
+};
+
+/**
+ *  The report of one run. `open_result` identifies the result of the last statement,
+ *  if it has more rows to fetch.
+ */
+export type RunReport_Serialize = {
+	statements: StatementReport_Serialize[],
+	open_result: number | null,
+};
+
+/**  The part of a script to run. Offsets are in UTF-16 code units, as in the editor. */
+export type RunTarget = 
+/**  All statements. */
+{ type: "all" } | 
+/**  The statement at the cursor. */
+{ type: "at"; offset: number } | 
+/**  The statements in the selection. */
+{ type: "range"; from: number; to: number };
 
 /**  Where the password of a connection comes from. The password itself is never in a profile. */
 export type SecretSource = 
@@ -141,6 +336,39 @@ export type SecretSource =
 /**  Data about the server that a successful connection test returns. */
 export type ServerInfo = {
 	version: string,
+};
+
+/**  An open database session. */
+export type SessionInfo = {
+	id: number,
+	connection_id: ConnectionId,
+	server: ServerInfo,
+};
+
+/**  Result of a connect request. A failed connect is a normal result, not a command error. */
+export type SessionOpenResult = { status: "connected"; session: SessionInfo } | { status: "failed"; error: ConnectError };
+
+/**  The report for one statement of a run. */
+export type StatementReport = StatementReport_Serialize | StatementReport_Deserialize;
+
+/**  The report for one statement of a run. */
+export type StatementReport_Deserialize = {
+	range: TextRange,
+	elapsed_ms: number,
+	outcome: Outcome_Deserialize,
+};
+
+/**  The report for one statement of a run. */
+export type StatementReport_Serialize = {
+	range: TextRange,
+	elapsed_ms: number,
+	outcome: Outcome_Serialize,
+};
+
+/**  A range in the script, in UTF-16 code units. */
+export type TextRange = {
+	from: number,
+	to: number,
 };
 
 /**  TLS behaviour. The names and the meanings are the same as the PostgreSQL `sslmode` values. */

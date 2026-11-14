@@ -22,6 +22,30 @@ fn to_secret(password: Option<String>) -> Option<Secret> {
     password.filter(|value| !value.is_empty()).map(Secret::new)
 }
 
+/// Returns the password for a connection. `password` has priority. Without it, the password
+/// comes from the source that the profile specifies. A password that is not available is a
+/// connection failure for the user, not a command error.
+pub async fn resolve_password(
+    state: &AppState,
+    profile: &ConnectionProfile,
+    password: Option<String>,
+) -> Result<Result<Option<Secret>, ConnectError>, CommandError> {
+    if let Some(secret) = to_secret(password) {
+        return Ok(Ok(Some(secret)));
+    }
+    let secrets = state.secrets();
+    let lookup_profile = profile.clone();
+    let resolved = tauri::async_runtime::spawn_blocking(move || {
+        resolve_secret(&lookup_profile, secrets.as_ref(), &|name| {
+            std::env::var(name).ok()
+        })
+    })
+    .await
+    .map_err(|e| CommandError::internal(format!("A background task failed: {e}")))?;
+    Ok(resolved
+        .map_err(|error| ConnectError::new(ConnectErrorKind::MissingSecret, error.to_string())))
+}
+
 /// Runs an operation that changes the workspace, then stores the new workspace in the state.
 async fn update_workspace<F>(
     state: &AppState,
@@ -103,34 +127,14 @@ pub async fn connection_test(
         return Err(CommandError::invalid_profile(issues));
     }
 
-    let secret = match to_secret(password) {
-        Some(secret) => Some(secret),
-        None => {
-            let secrets = state.secrets();
-            let lookup_profile = profile.clone();
-            let resolved = tauri::async_runtime::spawn_blocking(move || {
-                resolve_secret(&lookup_profile, secrets.as_ref(), &|name| {
-                    std::env::var(name).ok()
-                })
-            })
-            .await
-            .map_err(|e| CommandError::internal(format!("A background task failed: {e}")))?;
-            match resolved {
-                Ok(secret) => secret,
-                Err(error) => {
-                    return Ok(ConnectionTestResult::Failed {
-                        error: ConnectError::new(
-                            ConnectErrorKind::MissingSecret,
-                            error.to_string(),
-                        ),
-                    });
-                }
-            }
-        }
+    let secret = match resolve_password(&state, &profile, password).await? {
+        Ok(secret) => secret,
+        Err(error) => return Ok(ConnectionTestResult::Failed { error }),
     };
 
+    let adapter = state.adapter();
     Ok(
-        match tabloxide_adapter_postgres::test_connection(&profile, secret.as_ref()).await {
+        match adapter.test_connection(&profile, secret.as_ref()).await {
             Ok(server) => ConnectionTestResult::Connected { server },
             Err(error) => ConnectionTestResult::Failed { error },
         },

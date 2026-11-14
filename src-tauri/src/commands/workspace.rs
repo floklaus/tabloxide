@@ -34,6 +34,16 @@ fn state_dir(app: &AppHandle) -> Result<PathBuf, CommandError> {
     })
 }
 
+/// Closes all database sessions in the background. The sessions belong to the workspace.
+fn close_sessions(state: &AppState) {
+    let sessions = state.take_sessions();
+    tauri::async_runtime::spawn(async move {
+        for session in sessions {
+            session.close().await;
+        }
+    });
+}
+
 /// Opens the folder `path` as the workspace and adds it to the recent list.
 #[tauri::command]
 #[specta::specta]
@@ -53,6 +63,7 @@ pub async fn workspace_open(
     .await?;
     let snapshot = WorkspaceSnapshot::from(&workspace);
     state.set_workspace(Some(workspace));
+    close_sessions(&state);
     Ok(snapshot)
 }
 
@@ -68,6 +79,7 @@ pub fn workspace_current(state: State<'_, AppState>) -> Option<WorkspaceSnapshot
 #[specta::specta]
 pub fn workspace_close(state: State<'_, AppState>) {
     state.set_workspace(None);
+    close_sessions(&state);
 }
 
 /// Returns the recent workspaces. The most recent workspace is first.

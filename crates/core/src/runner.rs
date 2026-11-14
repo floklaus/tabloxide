@@ -50,10 +50,14 @@ pub enum Outcome {
         /// `false` if the result is open and has more rows to fetch.
         is_complete: bool,
         /// Number of rows that the statement returned. `None` while the result is open.
+        #[cfg_attr(feature = "specta", specta(type = Option<u32>))]
         total_rows: Option<u64>,
     },
     /// The statement returned no rows.
-    Command { affected_rows: u64 },
+    Command {
+        #[cfg_attr(feature = "specta", specta(type = u32))]
+        affected_rows: u64,
+    },
     /// The statement failed. `location` is the error position in the script.
     Failed {
         error: QueryError,
@@ -66,6 +70,7 @@ pub enum Outcome {
 #[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct StatementReport {
     pub range: TextRange,
+    #[cfg_attr(feature = "specta", specta(type = u32))]
     pub elapsed_ms: u64,
     pub outcome: Outcome,
 }

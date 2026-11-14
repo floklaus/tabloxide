@@ -2,4 +2,6 @@
 
 pub mod app;
 pub mod connections;
+pub mod queries;
+pub mod sessions;
 pub mod workspace;

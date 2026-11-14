@@ -31,6 +31,7 @@ pub struct FetchedPage {
     /// `true` if the result has no more rows. The result is then closed.
     pub is_complete: bool,
     /// Number of rows of the complete result.
+    #[cfg_attr(feature = "specta", specta(type = Option<u32>))]
     pub total_rows: Option<u64>,
     /// The failure that stopped the fetch. The result is then closed.
     pub error: Option<QueryError>,

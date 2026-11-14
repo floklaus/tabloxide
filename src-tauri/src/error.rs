@@ -2,7 +2,7 @@
 
 use serde::Serialize;
 use specta::Type;
-use tabloxide_core::ValidationIssue;
+use tabloxide_core::{QueryError, ValidationIssue};
 use tabloxide_workspace::{SecretError, WorkspaceError};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Type)]
@@ -16,6 +16,10 @@ pub enum CommandErrorKind {
     Workspace,
     /// The credential store or an environment variable failed.
     Secret,
+    /// The database session is not open.
+    NoSession,
+    /// A request to the database failed.
+    Query,
     /// An error in the application itself.
     Internal,
 }
@@ -42,6 +46,13 @@ impl CommandError {
         Self::new(CommandErrorKind::NoWorkspace, "No workspace is open.")
     }
 
+    pub fn no_session() -> Self {
+        Self::new(
+            CommandErrorKind::NoSession,
+            "The database session is not open. Connect again.",
+        )
+    }
+
     pub fn internal(message: impl Into<String>) -> Self {
         Self::new(CommandErrorKind::Internal, message)
     }
@@ -52,6 +63,12 @@ impl CommandError {
             message: "The connection settings are not valid.".to_owned(),
             issues,
         }
+    }
+}
+
+impl From<QueryError> for CommandError {
+    fn from(error: QueryError) -> Self {
+        Self::new(CommandErrorKind::Query, error.message)
     }
 }
 

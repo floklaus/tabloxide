@@ -4704,6 +4704,7 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-dialog",
  "tauri-specta",
+ "tokio",
 ]
 
 [[package]]
