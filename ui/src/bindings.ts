@@ -54,6 +54,14 @@ export const commands = {
 	 *  This closes the open result of the session. Only a statement that reads data is permitted.
 	 */
 	resultExportCsv: (sessionId: number, statement: string, path: string, options?: InvokeOptions) => typedError<ExportResult_Serialize, CommandError>(__TAURI_INVOKE("result_export_csv", { sessionId, statement, path }, options)),
+	/**  Lists the schemas of the database of a session. */
+	schemaList: (sessionId: number, options?: InvokeOptions) => typedError<SchemaInfo[], CommandError>(__TAURI_INVOKE("schema_list", { sessionId }, options)),
+	/**  Lists the tables and the views of one schema. */
+	schemaRelations: (sessionId: number, schema: string, options?: InvokeOptions) => typedError<RelationInfo[], CommandError>(__TAURI_INVOKE("schema_relations", { sessionId, schema }, options)),
+	/**  Reads the columns, the indexes, and the constraints of one table or view. */
+	schemaRelationDetail: (sessionId: number, schema: string, relation: string, options?: InvokeOptions) => typedError<RelationDetail_Serialize, CommandError>(__TAURI_INVOKE("schema_relation_detail", { sessionId, schema, relation }, options)),
+	/**  Reads the first rows of one table or view. The query history does not record this read. */
+	schemaSample: (sessionId: number, schema: string, relation: string, options?: InvokeOptions) => typedError<StatementReport_Serialize, CommandError>(__TAURI_INVOKE("schema_sample", { sessionId, schema, relation }, options)),
 	/**  Lists one directory of the workspace. `directory` is empty for the workspace root. */
 	fileList: (directory: string, options?: InvokeOptions) => typedError<FileEntry[], CommandError>(__TAURI_INVOKE("file_list", { directory }, options)),
 	/**  Reads a text file of the workspace. `path` is relative to the workspace root. */
@@ -91,6 +99,26 @@ export type AppInfo = {
 
 /**  One column of a result. */
 export type Column = Column_Serialize | Column_Deserialize;
+
+export type ColumnInfo = ColumnInfo_Serialize | ColumnInfo_Deserialize;
+
+export type ColumnInfo_Deserialize = {
+	name: string,
+	data_type: string,
+	is_nullable: boolean,
+	/**  The default expression of the column. */
+	default?: string | null,
+	is_primary_key: boolean,
+};
+
+export type ColumnInfo_Serialize = {
+	name: string,
+	data_type: string,
+	is_nullable: boolean,
+	/**  The default expression of the column. */
+	default: string | null,
+	is_primary_key: boolean,
+};
 
 /**  General category of a column type. The grid uses it for the alignment and the sort. */
 export type ColumnKind = "number" | "boolean" | "temporal" | "json" | "text" | 
@@ -198,6 +226,14 @@ export type ConnectionProfile_Serialize = {
 /**  Result of a connection test. A failed test is a normal result, not a command error. */
 export type ConnectionTestResult = { status: "connected"; server: ServerInfo } | { status: "failed"; error: ConnectError };
 
+export type ConstraintInfo = {
+	name: string,
+	kind: ConstraintKind,
+	definition: string,
+};
+
+export type ConstraintKind = "primary-key" | "foreign-key" | "unique" | "check" | "exclusion" | "other";
+
 export type EditorPreferences = EditorPreferences_Serialize | EditorPreferences_Deserialize;
 
 export type EditorPreferences_Deserialize = {
@@ -296,6 +332,14 @@ export type HistoryEntry_Serialize = {
 
 export type HistoryStatus = "ok" | "failed" | "cancelled";
 
+export type IndexInfo = {
+	name: string,
+	/**  The statement that makes the index. */
+	definition: string,
+	is_unique: boolean,
+	is_primary: boolean,
+};
+
 /**
  *  A position in a script. `offset` is in UTF-16 code units and starts at 0.
  *  `line` and `column` start at 1. `column` is in characters.
@@ -392,6 +436,31 @@ export type RecentWorkspace = {
 	name: string,
 };
 
+/**  The structure of one table or view. */
+export type RelationDetail = RelationDetail_Serialize | RelationDetail_Deserialize;
+
+/**  The structure of one table or view. */
+export type RelationDetail_Deserialize = {
+	columns: ColumnInfo_Deserialize[],
+	indexes: IndexInfo[],
+	constraints: ConstraintInfo[],
+};
+
+/**  The structure of one table or view. */
+export type RelationDetail_Serialize = {
+	columns: ColumnInfo_Serialize[],
+	indexes: IndexInfo[],
+	constraints: ConstraintInfo[],
+};
+
+/**  One table or view. */
+export type RelationInfo = {
+	name: string,
+	kind: RelationKind,
+};
+
+export type RelationKind = "table" | "view" | "materialized-view" | "foreign-table";
+
 /**
  *  The report of one run. `open_result` identifies the result of the last statement,
  *  if it has more rows to fetch.
@@ -425,6 +494,13 @@ export type RunTarget =
 /**  The statements in the selection. */
 { type: "range"; from: number; to: number };
 
+/**  One schema (namespace) of a database. */
+export type SchemaInfo = {
+	name: string,
+	/**  `true` for a schema of the database engine itself. */
+	is_system: boolean,
+};
+
 /**  Where the password of a connection comes from. The password itself is never in a profile. */
 export type SecretSource = 
 /**  The connection has no password. */
@@ -443,6 +519,8 @@ export type ServerInfo = {
 export type SessionInfo = {
 	id: number,
 	connection_id: ConnectionId,
+	/**  Name of the database that the session uses. */
+	database: string,
 	server: ServerInfo,
 };
 

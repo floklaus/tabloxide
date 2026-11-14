@@ -12,6 +12,8 @@ use tauri::State;
 pub struct SessionInfo {
     pub id: SessionId,
     pub connection_id: ConnectionId,
+    /// Name of the database that the session uses.
+    pub database: String,
     pub server: ServerInfo,
 }
 
@@ -56,6 +58,7 @@ pub async fn session_open(
         session: SessionInfo {
             id,
             connection_id,
+            database: profile.database.clone(),
             server,
         },
     })
