@@ -4710,6 +4710,8 @@ dependencies = [
 name = "tabloxide-adapter-postgres"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
+ "futures-util",
  "rustls",
  "rustls-platform-verifier",
  "tabloxide-core",

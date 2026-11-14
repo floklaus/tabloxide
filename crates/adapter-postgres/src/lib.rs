@@ -1,38 +1,64 @@
-//! PostgreSQL adapter.
-//!
-//! Milestone M1 contains the connection test. Milestone M2 adds query execution
-//! behind the `DbAdapter` trait.
+//! PostgreSQL adapter: the PostgreSQL implementation of the `DbAdapter` interface.
 
+mod columns;
 mod config;
+mod connect;
 mod error;
+mod session;
+mod stream;
 mod tls;
 
+use async_trait::async_trait;
 use std::time::Duration;
 use tabloxide_core::{
-    ConnectError, ConnectErrorKind, ConnectionProfile, Secret, ServerInfo, TlsMode,
+    Capabilities, ConnectError, ConnectionProfile, DbAdapter, Secret, ServerInfo, Session,
 };
-use tokio_postgres::tls::{MakeTlsConnect, TlsConnect};
-use tokio_postgres::{Config, NoTls, Socket};
 
-/// Extra time for the TLS handshake and the authentication after the TCP connection opens.
-const HANDSHAKE_GRACE: Duration = Duration::from_secs(5);
+/// The PostgreSQL database engine.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct PostgresAdapter;
 
-async fn probe<T>(config: &Config, tls: T) -> Result<ServerInfo, tokio_postgres::Error>
-where
-    T: MakeTlsConnect<Socket>,
-    T::Stream: Send + 'static,
-    T::TlsConnect: Send,
-    <T::TlsConnect as TlsConnect<Socket>>::Future: Send,
-{
-    let (client, connection) = config.connect(tls).await?;
-    let connection_task = tokio::spawn(connection);
-    let result = client.query_one("SHOW server_version", &[]).await;
-    drop(client);
-    // The task ends when the client drops. A join error here does not change the result.
-    let _ = connection_task.await;
-    Ok(ServerInfo {
-        version: result?.try_get(0)?,
-    })
+#[async_trait]
+impl DbAdapter for PostgresAdapter {
+    fn capabilities(&self) -> Capabilities {
+        Capabilities {
+            cancel: true,
+            unix_socket: cfg!(unix),
+        }
+    }
+
+    async fn test_connection(
+        &self,
+        profile: &ConnectionProfile,
+        password: Option<&Secret>,
+    ) -> Result<ServerInfo, ConnectError> {
+        let connected = connect::open(profile, password).await?;
+        let version = connect::server_version(&connected.client).await;
+        drop(connected.client);
+        // The task ends when the client drops. A join error here does not change the result.
+        let _ = connected.task.await;
+        Ok(ServerInfo { version: version? })
+    }
+
+    async fn connect(
+        &self,
+        profile: &ConnectionProfile,
+        password: Option<&Secret>,
+    ) -> Result<Box<dyn Session>, ConnectError> {
+        let connected = connect::open(profile, password).await?;
+        let info = ServerInfo {
+            version: connect::server_version(&connected.client).await?,
+        };
+        let query_timeout = profile
+            .query_timeout_secs
+            .map(|secs| Duration::from_secs(u64::from(secs)));
+        Ok(Box::new(session::PgSession::new(
+            connected.client,
+            info,
+            profile.tls_mode,
+            query_timeout,
+        )))
+    }
 }
 
 /// Opens a connection, reads the server version, and closes the connection.
@@ -44,23 +70,5 @@ pub async fn test_connection(
     profile: &ConnectionProfile,
     password: Option<&Secret>,
 ) -> Result<ServerInfo, ConnectError> {
-    let config = config::build_config(profile, password)?;
-    let limit = Duration::from_secs(u64::from(profile.connect_timeout_secs)) + HANDSHAKE_GRACE;
-
-    let attempt = async {
-        match profile.tls_mode {
-            TlsMode::Disable => probe(&config, NoTls).await,
-            mode => probe(&config, tls::connector(mode)?).await,
-        }
-        .map_err(|e| error::map_error(&e))
-    };
-
-    tokio::time::timeout(limit, attempt)
-        .await
-        .unwrap_or_else(|_| {
-            Err(ConnectError::new(
-                ConnectErrorKind::Timeout,
-                format!("The server did not answer in {} seconds.", limit.as_secs()),
-            ))
-        })
+    PostgresAdapter.test_connection(profile, password).await
 }

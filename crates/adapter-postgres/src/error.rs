@@ -1,7 +1,8 @@
 //! Conversion of driver errors to errors that tell the user what to correct.
 
 use std::error::Error;
-use tabloxide_core::{ConnectError, ConnectErrorKind};
+use tabloxide_core::{ConnectError, ConnectErrorKind, QueryError, QueryErrorKind};
+use tokio_postgres::error::ErrorPosition;
 use tokio_postgres::error::SqlState;
 
 fn sources<'a>(
@@ -81,4 +82,35 @@ pub(crate) fn map_error(error: &tokio_postgres::Error) -> ConnectError {
         .as_db_error()
         .map_or_else(|| detail(error), |db| db.message().to_owned());
     ConnectError::new(kind_of(error), message)
+}
+
+/// Converts a driver error of a statement to a query error.
+pub(crate) fn map_query_error(error: &tokio_postgres::Error) -> QueryError {
+    let Some(db) = error.as_db_error() else {
+        return if error.is_closed() {
+            QueryError::new(
+                QueryErrorKind::ConnectionLost,
+                "The connection to the server closed.",
+            )
+        } else {
+            QueryError::new(QueryErrorKind::Other, detail(error))
+        };
+    };
+    let kind = if *db.code() == SqlState::QUERY_CANCELED {
+        QueryErrorKind::Cancelled
+    } else {
+        QueryErrorKind::Database
+    };
+    let position = match db.position() {
+        Some(ErrorPosition::Original(position)) => Some(*position),
+        _ => None,
+    };
+    QueryError {
+        kind,
+        message: db.message().to_owned(),
+        detail: db.detail().map(str::to_owned),
+        hint: db.hint().map(str::to_owned),
+        code: Some(db.code().code().to_owned()),
+        position,
+    }
 }

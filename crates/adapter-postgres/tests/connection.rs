@@ -3,56 +3,14 @@
 //! These tests need Docker. Run them with:
 //! `cargo test -p tabloxide-adapter-postgres -- --ignored`
 
+mod common;
+
+use common::{DATABASE, PASSWORD, POSTGRES_TAG, USER, start_server};
 use std::collections::BTreeMap;
 use tabloxide_adapter_postgres::test_connection;
 use tabloxide_core::{
     ConnectErrorKind, ConnectionId, ConnectionProfile, Environment, Secret, SecretSource, TlsMode,
 };
-use testcontainers_modules::postgres::Postgres;
-use testcontainers_modules::testcontainers::runners::AsyncRunner;
-use testcontainers_modules::testcontainers::{ContainerAsync, ImageExt};
-
-const POSTGRES_TAG: &str = "17";
-const USER: &str = "postgres";
-const PASSWORD: &str = "postgres";
-const DATABASE: &str = "postgres";
-
-/// The Debian image contains a self-signed certificate that the server can use.
-const TLS_ARGS: [&str; 7] = [
-    "postgres",
-    "-c",
-    "ssl=on",
-    "-c",
-    "ssl_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem",
-    "-c",
-    "ssl_key_file=/etc/ssl/private/ssl-cert-snakeoil.key",
-];
-
-async fn start_server(with_tls: bool) -> (ContainerAsync<Postgres>, ConnectionProfile) {
-    let image = Postgres::default().with_tag(POSTGRES_TAG);
-    let container = if with_tls {
-        image.with_cmd(TLS_ARGS).start().await
-    } else {
-        image.start().await
-    }
-    .expect("the PostgreSQL container must start");
-    let profile = ConnectionProfile {
-        id: ConnectionId::from("test"),
-        name: "Test".to_owned(),
-        environment: Environment::Development,
-        host: container.get_host().await.unwrap().to_string(),
-        port: container.get_host_port_ipv4(5432).await.unwrap(),
-        database: DATABASE.to_owned(),
-        user: USER.to_owned(),
-        tls_mode: TlsMode::Disable,
-        socket_path: None,
-        connect_timeout_secs: 5,
-        query_timeout_secs: None,
-        params: BTreeMap::new(),
-        secret: SecretSource::Keychain,
-    };
-    (container, profile)
-}
 
 async fn error_kind(profile: &ConnectionProfile, password: Option<&str>) -> ConnectErrorKind {
     let secret = password.map(Secret::new);
