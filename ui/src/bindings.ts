@@ -54,6 +54,32 @@ export const commands = {
 	 *  This closes the open result of the session. Only a statement that reads data is permitted.
 	 */
 	resultExportCsv: (sessionId: number, statement: string, path: string, options?: InvokeOptions) => typedError<ExportResult_Serialize, CommandError>(__TAURI_INVOKE("result_export_csv", { sessionId, statement, path }, options)),
+	/**  Lists one directory of the workspace. `directory` is empty for the workspace root. */
+	fileList: (directory: string, options?: InvokeOptions) => typedError<FileEntry[], CommandError>(__TAURI_INVOKE("file_list", { directory }, options)),
+	/**  Reads a text file of the workspace. `path` is relative to the workspace root. */
+	fileRead: (path: string, options?: InvokeOptions) => typedError<string, CommandError>(__TAURI_INVOKE("file_read", { path }, options)),
+	/**  Writes a text file of the workspace. `path` is relative to the workspace root. */
+	fileWrite: (path: string, content: string, options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("file_write", { path, content }, options)),
+	/**
+	 *  Converts an absolute path from a file dialog to a path relative to the workspace root.
+	 *  A path that is not in the workspace folder is an error.
+	 */
+	fileRelativePath: (absolute: string, options?: InvokeOptions) => typedError<string, CommandError>(__TAURI_INVOKE("file_relative_path", { absolute }, options)),
+	/**  Returns the history entries of the workspace that contain `query`. The newest is first. */
+	historySearch: (query: string, options?: InvokeOptions) => typedError<HistoryEntry_Serialize[], CommandError>(__TAURI_INVOKE("history_search", { query }, options)),
+	/**  Deletes the query history of the workspace. */
+	historyClear: (options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("history_clear", undefined, options)),
+	/**
+	 *  Returns the preferences. This also deletes the history entries that are older than
+	 *  the retention time.
+	 */
+	preferencesLoad: (options?: InvokeOptions) => typedError<Preferences_Serialize, CommandError>(__TAURI_INVOKE("preferences_load", undefined, options)),
+	/**  Stores the preferences. Returns the stored values, each in its permitted range. */
+	preferencesSave: (preferences: Preferences_Deserialize, options?: InvokeOptions) => typedError<Preferences_Serialize, CommandError>(__TAURI_INVOKE("preferences_save", { preferences }, options)),
+	/**  Returns the open tabs of the workspace from the last session. */
+	uiStateLoad: (options?: InvokeOptions) => typedError<UiState_Serialize, CommandError>(__TAURI_INVOKE("ui_state_load", undefined, options)),
+	/**  Stores the open tabs of the workspace. */
+	uiStateSave: (uiState: UiState_Deserialize, options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("ui_state_save", { uiState }, options)),
 };
 
 /* Types */
@@ -172,6 +198,26 @@ export type ConnectionProfile_Serialize = {
 /**  Result of a connection test. A failed test is a normal result, not a command error. */
 export type ConnectionTestResult = { status: "connected"; server: ServerInfo } | { status: "failed"; error: ConnectError };
 
+export type EditorPreferences = EditorPreferences_Serialize | EditorPreferences_Deserialize;
+
+export type EditorPreferences_Deserialize = {
+	/**  Font size in pixels. */
+	font_size?: number,
+	/**  Number of spaces for one indentation level. */
+	tab_width?: number,
+	line_numbers?: boolean,
+	word_wrap?: boolean,
+};
+
+export type EditorPreferences_Serialize = {
+	/**  Font size in pixels. */
+	font_size: number,
+	/**  Number of spaces for one indentation level. */
+	tab_width: number,
+	line_numbers: boolean,
+	word_wrap: boolean,
+};
+
 /**  Environment marker. The UI shows it before the user runs SQL. */
 export type Environment = "development" | "staging" | "production";
 
@@ -208,6 +254,47 @@ export type FetchedPage_Serialize = {
 	/**  The failure that stopped the fetch. The result is then closed. */
 	error: QueryError_Serialize | null,
 };
+
+/**  One entry of a directory in the workspace. */
+export type FileEntry = {
+	name: string,
+	/**  Path relative to the workspace root, with `/` as the separator. */
+	path: string,
+	is_directory: boolean,
+};
+
+/**  A statement in the history. */
+export type HistoryEntry = HistoryEntry_Serialize | HistoryEntry_Deserialize;
+
+/**  A statement in the history. */
+export type HistoryEntry_Deserialize = {
+	id: number,
+	connection_id: ConnectionId,
+	connection_name: string,
+	sql: string,
+	/**  Time of the run, in seconds since 1970-01-01 UTC. */
+	executed_at_secs: number,
+	elapsed_ms: number,
+	status: HistoryStatus,
+	rows?: number | null,
+	error?: string | null,
+};
+
+/**  A statement in the history. */
+export type HistoryEntry_Serialize = {
+	id: number,
+	connection_id: ConnectionId,
+	connection_name: string,
+	sql: string,
+	/**  Time of the run, in seconds since 1970-01-01 UTC. */
+	executed_at_secs: number,
+	elapsed_ms: number,
+	status: HistoryStatus,
+	rows: number | null,
+	error: string | null,
+};
+
+export type HistoryStatus = "ok" | "failed" | "cancelled";
 
 /**
  *  A position in a script. `offset` is in UTF-16 code units and starts at 0.
@@ -247,6 +334,20 @@ total_rows: number | null } |
 { type: "command"; affected_rows: number } | 
 /**  The statement failed. `location` is the error position in the script. */
 { type: "failed"; error: QueryError_Serialize; location: Location | null };
+
+export type Preferences = Preferences_Serialize | Preferences_Deserialize;
+
+export type Preferences_Deserialize = {
+	editor?: EditorPreferences_Deserialize,
+	/**  The application deletes history entries that are older than this number of days. */
+	history_retention_days?: number,
+};
+
+export type Preferences_Serialize = {
+	editor: EditorPreferences_Serialize,
+	/**  The application deletes history entries that are older than this number of days. */
+	history_retention_days: number,
+};
 
 /**  A query failure. */
 export type QueryError = QueryError_Serialize | QueryError_Deserialize;
@@ -365,6 +466,31 @@ export type StatementReport_Serialize = {
 	outcome: Outcome_Serialize,
 };
 
+/**  One open editor tab. */
+export type TabState = TabState_Serialize | TabState_Deserialize;
+
+/**  One open editor tab. */
+export type TabState_Deserialize = {
+	id: string,
+	title: string,
+	/**  Path of the file in the workspace. `None` for a buffer without a file. */
+	path?: string | null,
+	/**  Text that is not saved. `None` for a file tab without changes. */
+	content?: string | null,
+	connection_id?: ConnectionId | null,
+};
+
+/**  One open editor tab. */
+export type TabState_Serialize = {
+	id: string,
+	title: string,
+	/**  Path of the file in the workspace. `None` for a buffer without a file. */
+	path: string | null,
+	/**  Text that is not saved. `None` for a file tab without changes. */
+	content: string | null,
+	connection_id: ConnectionId | null,
+};
+
 /**  A range in the script, in UTF-16 code units. */
 export type TextRange = {
 	from: number,
@@ -381,6 +507,21 @@ export type TlsMode =
 "require" | 
 /**  Always use TLS. Verify the certificate chain and the host name. */
 "verify-full";
+
+/**  The open tabs of one workspace. */
+export type UiState = UiState_Serialize | UiState_Deserialize;
+
+/**  The open tabs of one workspace. */
+export type UiState_Deserialize = {
+	tabs: TabState_Deserialize[],
+	active_tab?: string | null,
+};
+
+/**  The open tabs of one workspace. */
+export type UiState_Serialize = {
+	tabs: TabState_Serialize[],
+	active_tab: string | null,
+};
 
 /**  One problem in a connection profile. `field` is the name of the profile field. */
 export type ValidationIssue = {

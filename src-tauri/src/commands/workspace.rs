@@ -26,7 +26,7 @@ impl From<&Workspace> for WorkspaceSnapshot {
     }
 }
 
-fn state_dir(app: &AppHandle) -> Result<PathBuf, CommandError> {
+pub fn state_dir(app: &AppHandle) -> Result<PathBuf, CommandError> {
     app.path().app_data_dir().map_err(|error| {
         CommandError::internal(format!(
             "Cannot find the application data directory: {error}"

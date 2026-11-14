@@ -1,5 +1,7 @@
+use crate::commands::local::{now_secs, workspace_key};
+use crate::commands::workspace::state_dir;
 use crate::error::CommandError;
-use crate::state::{AppState, SessionId};
+use crate::state::{AppState, SessionEntry, SessionId, blocking};
 use serde::Serialize;
 use specta::Type;
 use std::path::{Path, PathBuf};
@@ -7,7 +9,8 @@ use tabloxide_core::{
     FetchedPage, QueryError, QueryErrorKind, QuerySession, ResultId, RunLimits, RunReport,
     RunTarget,
 };
-use tauri::State;
+use tabloxide_workspace::entries_from_report;
+use tauri::{AppHandle, State};
 use tokio::io::BufWriter;
 
 /// Number of rows in one page of a result.
@@ -34,18 +37,36 @@ pub enum ExportResult {
     },
 }
 
+/// Adds the statements of a run to the query history of the workspace.
+async fn record_history(
+    app: &AppHandle,
+    state: &AppState,
+    sql: &str,
+    report: &RunReport,
+    entry: &SessionEntry,
+) -> Result<(), CommandError> {
+    let workspace = workspace_key(&state.workspace()?);
+    let local = state.local(&state_dir(app)?)?;
+    let entries = entries_from_report(sql, report, &entry.connection_id, &entry.connection_name);
+    blocking(move || Ok(local.add_history(&workspace, &entries, now_secs())?)).await
+}
+
 /// Runs the statements that `target` selects from `sql`, in sequence.
 /// The run stops at the first failure. The report has one entry for each statement that ran.
 #[tauri::command]
 #[specta::specta]
 pub async fn query_run(
+    app: AppHandle,
     state: State<'_, AppState>,
     session_id: SessionId,
     sql: String,
     target: RunTarget,
 ) -> Result<RunReport, CommandError> {
-    let session = state.session(session_id)?;
-    Ok(session.run(&sql, target, LIMITS).await)
+    let entry = state.session_entry(session_id)?;
+    let report = entry.session.run(&sql, target, LIMITS).await;
+    // The run is complete. A failure to record the history must not hide its result.
+    let _ = record_history(&app, &state, &sql, &report, &entry).await;
+    Ok(report)
 }
 
 /// Cancels the active statement of a session. The run or the fetch then returns

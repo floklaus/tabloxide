@@ -2,21 +2,31 @@
 
 use crate::error::CommandError;
 use std::collections::HashMap;
+use std::path::Path;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use tabloxide_adapter_postgres::PostgresAdapter;
-use tabloxide_core::{DbAdapter, QuerySession};
-use tabloxide_workspace::{KeyringStore, SecretStore, Workspace};
+use tabloxide_core::{ConnectionId, DbAdapter, QuerySession};
+use tabloxide_workspace::{KeyringStore, LocalState, SecretStore, Workspace};
 
 /// Identifier of an open database session.
 pub type SessionId = u32;
+
+/// An open database session and the connection that it uses.
+#[derive(Clone)]
+pub struct SessionEntry {
+    pub session: Arc<QuerySession>,
+    pub connection_id: ConnectionId,
+    pub connection_name: String,
+}
 
 pub struct AppState {
     workspace: Mutex<Option<Workspace>>,
     secrets: Arc<dyn SecretStore>,
     adapter: Arc<dyn DbAdapter>,
-    sessions: Mutex<HashMap<SessionId, Arc<QuerySession>>>,
+    sessions: Mutex<HashMap<SessionId, SessionEntry>>,
     next_session_id: AtomicU32,
+    local: Mutex<Option<Arc<LocalState>>>,
 }
 
 impl Default for AppState {
@@ -27,6 +37,7 @@ impl Default for AppState {
             adapter: Arc::new(PostgresAdapter),
             sessions: Mutex::new(HashMap::new()),
             next_session_id: AtomicU32::new(1),
+            local: Mutex::new(None),
         }
     }
 }
@@ -55,32 +66,47 @@ impl AppState {
         Arc::clone(&self.adapter)
     }
 
-    fn lock_sessions(&self) -> MutexGuard<'_, HashMap<SessionId, Arc<QuerySession>>> {
+    fn lock_sessions(&self) -> MutexGuard<'_, HashMap<SessionId, SessionEntry>> {
         self.sessions.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
-    pub fn add_session(&self, session: QuerySession) -> SessionId {
+    pub fn add_session(&self, entry: SessionEntry) -> SessionId {
         let id = self.next_session_id.fetch_add(1, Ordering::Relaxed);
-        self.lock_sessions().insert(id, Arc::new(session));
+        self.lock_sessions().insert(id, entry);
         id
     }
 
-    pub fn session(&self, id: SessionId) -> Result<Arc<QuerySession>, CommandError> {
+    pub fn session_entry(&self, id: SessionId) -> Result<SessionEntry, CommandError> {
         self.lock_sessions()
             .get(&id)
             .cloned()
             .ok_or_else(CommandError::no_session)
     }
 
+    pub fn session(&self, id: SessionId) -> Result<Arc<QuerySession>, CommandError> {
+        self.session_entry(id).map(|entry| entry.session)
+    }
+
     pub fn remove_session(&self, id: SessionId) -> Option<Arc<QuerySession>> {
-        self.lock_sessions().remove(&id)
+        self.lock_sessions().remove(&id).map(|entry| entry.session)
+    }
+
+    /// Returns the local state database. The first call opens it in `state_dir`.
+    pub fn local(&self, state_dir: &Path) -> Result<Arc<LocalState>, CommandError> {
+        let mut local = self.local.lock().unwrap_or_else(PoisonError::into_inner);
+        if let Some(open) = local.as_ref() {
+            return Ok(Arc::clone(open));
+        }
+        let opened = Arc::new(LocalState::open(state_dir)?);
+        *local = Some(Arc::clone(&opened));
+        Ok(opened)
     }
 
     /// Removes all sessions and returns them, so that the caller can close them.
     pub fn take_sessions(&self) -> Vec<Arc<QuerySession>> {
         self.lock_sessions()
             .drain()
-            .map(|(_, session)| session)
+            .map(|(_, entry)| entry.session)
             .collect()
     }
 }

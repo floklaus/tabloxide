@@ -1,8 +1,9 @@
 use crate::commands::connections::resolve_password;
 use crate::error::CommandError;
-use crate::state::{AppState, SessionId};
+use crate::state::{AppState, SessionEntry, SessionId};
 use serde::Serialize;
 use specta::Type;
+use std::sync::Arc;
 use tabloxide_core::{ConnectError, ConnectionId, QuerySession, ServerInfo};
 use tauri::State;
 
@@ -42,11 +43,15 @@ pub async fn session_open(
     };
     let adapter = state.adapter();
     let session = match adapter.connect(&profile, secret.as_ref()).await {
-        Ok(session) => QuerySession::new(session),
+        Ok(session) => Arc::new(QuerySession::new(session)),
         Err(error) => return Ok(SessionOpenResult::Failed { error }),
     };
     let server = session.server_info().clone();
-    let id = state.add_session(session);
+    let id = state.add_session(SessionEntry {
+        session,
+        connection_id: connection_id.clone(),
+        connection_name: profile.name.clone(),
+    });
     Ok(SessionOpenResult::Connected {
         session: SessionInfo {
             id,

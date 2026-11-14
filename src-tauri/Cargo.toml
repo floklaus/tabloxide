@@ -21,6 +21,7 @@ tabloxide-core = { version = "0.1.0", path = "../crates/core", features = ["spec
 tabloxide-workspace = { version = "0.1.0", path = "../crates/workspace", features = ["specta"] }
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
+tauri-plugin-window-state = "2"
 tauri-specta = { version = "=2.0.0-rc.29", features = ["derive", "typescript"] }
 tokio = { version = "1", features = ["fs", "io-util"] }
 
