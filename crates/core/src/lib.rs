@@ -1,17 +1,27 @@
 //! Domain types that do not depend on a database engine or on Tauri.
 //!
-//! Later milestones add the `DbAdapter` trait, the SQL statement splitter,
-//! and the safety classifier to this crate.
+//! A later milestone adds the safety classifier to this crate.
 
+mod adapter;
 mod connection;
 mod error;
+mod query;
+mod runner;
 mod secret;
+pub mod sql;
+#[cfg(any(test, feature = "testing"))]
+pub mod testing;
 mod validation;
 
+pub use adapter::{CancelHandle, Capabilities, DbAdapter, ResultStream, Session};
 pub use connection::{
     ConnectionId, ConnectionProfile, DEFAULT_CONNECT_TIMEOUT_SECS, DEFAULT_PORT, Environment,
     SecretSource, ServerInfo, TlsMode,
 };
 pub use error::{ConnectError, ConnectErrorKind};
+pub use query::{Column, ColumnKind, Completion, Page, QueryError, QueryErrorKind, Row};
+pub use runner::{
+    Outcome, RunLimits, RunOutput, RunTarget, StatementReport, TextRange, run_script,
+};
 pub use secret::Secret;
 pub use validation::{MAX_TIMEOUT_SECS, ValidationIssue, validate_profile};

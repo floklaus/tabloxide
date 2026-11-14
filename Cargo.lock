@@ -4723,10 +4723,12 @@ dependencies = [
 name = "tabloxide-core"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "serde",
  "serde_json",
  "specta",
  "thiserror 2.0.21",
+ "tokio",
  "uuid",
  "zeroize",
 ]
