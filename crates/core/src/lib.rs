@@ -4,10 +4,12 @@
 
 mod adapter;
 mod connection;
+pub mod csv;
 mod error;
 mod query;
 mod runner;
 mod secret;
+mod sessions;
 pub mod sql;
 #[cfg(any(test, feature = "testing"))]
 pub mod testing;
@@ -24,4 +26,5 @@ pub use runner::{
     Outcome, RunLimits, RunOutput, RunTarget, StatementReport, TextRange, run_script,
 };
 pub use secret::Secret;
+pub use sessions::{FetchedPage, QuerySession, ResultId, RunReport};
 pub use validation::{MAX_TIMEOUT_SECS, ValidationIssue, validate_profile};
