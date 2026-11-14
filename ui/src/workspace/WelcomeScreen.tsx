@@ -17,6 +17,10 @@ export function WelcomeScreen() {
         A workspace is a folder that contains your SQL files and the connection
         definitions.
       </p>
+      <p className="welcome__text">
+        Open a folder first. Then you can add connections, write SQL, and see
+        the schema.
+      </p>
       <button
         type="button"
         className="button button--primary"
