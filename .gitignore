@@ -1,0 +1,23 @@
+# Rust
+/target/
+/target-*/
+
+# Node
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Tauri
+/src-tauri/gen/
+
+# Logs and local files
+*.log
+*.local
+.env
+.env.*
+
+# Editors and OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store

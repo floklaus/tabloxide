@@ -1,0 +1,12 @@
+target/
+target-*/
+dist/
+node_modules/
+pnpm-lock.yaml
+docs/
+.claude/
+src-tauri/gen/
+src-tauri/icons/
+ui/src/bindings.ts
+.agents/
+skills-lock.json
