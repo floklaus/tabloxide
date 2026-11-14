@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-export type ResultsView = 'results' | 'history' | 'table'
+export type ResultsView = 'results' | 'history' | 'table' | 'diff'
 
 type ResultsViewState = {
   view: ResultsView

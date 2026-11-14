@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { ThemeToggle } from '../theme/ThemeToggle'
+import { CloneDialog } from './CloneDialog'
 import { useWorkspaceStore } from './workspaceStore'
 
 export function WelcomeScreen() {
@@ -6,6 +8,7 @@ export function WelcomeScreen() {
   const error = useWorkspaceStore((state) => state.error)
   const openFolder = useWorkspaceStore((state) => state.openFolder)
   const openPath = useWorkspaceStore((state) => state.openPath)
+  const [showsClone, setShowsClone] = useState(false)
 
   return (
     <main className="welcome">
@@ -28,6 +31,14 @@ export function WelcomeScreen() {
       >
         Open folder…
       </button>
+      <button
+        type="button"
+        className="button"
+        onClick={() => setShowsClone(true)}
+      >
+        Clone a repository…
+      </button>
+      {showsClone && <CloneDialog onClose={() => setShowsClone(false)} />}
       {error && (
         <p className="message message--error" role="alert">
           {error}

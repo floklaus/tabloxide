@@ -1,3 +1,4 @@
+import { DiffView } from '../git/DiffView'
 import { HistoryPanel } from '../history/HistoryPanel'
 import {
   activeQueryStore,
@@ -233,6 +234,7 @@ export function ResultsPane() {
     { id: 'results', label: 'Results' },
     { id: 'history', label: 'History' },
     { id: 'table', label: 'Table' },
+    { id: 'diff', label: 'Diff' },
   ]
 
   return (
@@ -254,6 +256,7 @@ export function ResultsPane() {
       {view === 'results' && <Results />}
       {view === 'history' && <HistoryPanel onRun={() => setView('results')} />}
       {view === 'table' && <TableDetail />}
+      {view === 'diff' && <DiffView />}
     </section>
   )
 }

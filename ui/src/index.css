@@ -1193,3 +1193,137 @@ body {
   flex: none;
   height: 18rem;
 }
+
+/* Git panel */
+
+.git {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.git__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.git__branch {
+  flex: 1;
+  min-width: 0;
+}
+
+.git__branch select {
+  width: 100%;
+}
+
+.git__upstream,
+.git__subtitle {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.git__subtitle {
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.git__files {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.git__file {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.git__path {
+  flex: 1;
+  min-width: 0;
+  padding: 0.15rem 0.25rem;
+  overflow: hidden;
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.git__path:hover {
+  background: var(--color-surface);
+}
+
+.git__commit {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.git__message {
+  width: 100%;
+  padding: 0.4rem;
+  resize: vertical;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.git__output {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.git__disable {
+  align-self: flex-start;
+  margin-top: 0.5rem;
+}
+
+.clone__parent {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Diff view */
+
+.diff {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-height: 0;
+}
+
+.diff__sides {
+  overflow: auto;
+}
+
+.diff__sides .cm-mergeView {
+  height: 100%;
+}
+
+.diff__sides .cm-changedLine {
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+.diff__sides .cm-changedText {
+  background: color-mix(in srgb, var(--color-accent) 30%, transparent);
+}

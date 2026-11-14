@@ -211,6 +211,35 @@ describe('tabsStore', () => {
     expect(edited.content).toBe('select 2')
   })
 
+  test('reloads a file tab without changes and keeps unsaved text', async () => {
+    fileRead.mockResolvedValue(ok('old'))
+    await store.getState().openFile('a.sql')
+    await store.getState().openFile('b.sql')
+    store.getState().setContent(active().id, 'my edit')
+    store.getState().newTab('buffer')
+    fileRead.mockClear()
+    fileRead.mockResolvedValue(ok('new'))
+
+    await store.getState().reloadFromDisk()
+
+    const [clean, edited, buffer] = store.getState().tabs
+    expect(clean).toMatchObject({ content: 'new', savedContent: 'new' })
+    expect(edited).toMatchObject({ content: 'my edit', savedContent: 'new' })
+    expect(isDirty(edited)).toBe(true)
+    expect(buffer.content).toBe('buffer')
+    expect(fileRead).toHaveBeenCalledTimes(2)
+  })
+
+  test('keeps a tab when its file is not readable after a reload', async () => {
+    fileRead.mockResolvedValue(ok('old'))
+    await store.getState().openFile('a.sql')
+    fileRead.mockResolvedValue(failed('not found'))
+
+    await store.getState().reloadFromDisk()
+
+    expect(active()).toMatchObject({ content: 'old', savedContent: 'old' })
+  })
+
   describe('persistTabs', () => {
     beforeEach(() => vi.useFakeTimers())
     afterEach(() => vi.useRealTimers())

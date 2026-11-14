@@ -30,6 +30,11 @@ type TabsState = {
   /** Saves a tab. A buffer without a file gets a file from the save dialog. */
   save: (id: string) => Promise<void>
   close: (id: string) => void
+  /**
+   * Reads the file of each tab again. A tab without changes gets the new text.
+   * A tab with unsaved changes keeps its text. Git operations change files on disk.
+   */
+  reloadFromDisk: () => Promise<void>
   setError: (error: string | null) => void
   reset: () => void
 }
@@ -224,6 +229,34 @@ export const useTabsStore = create<TabsState>((set, get) => {
       const next = remaining.length > 0 ? remaining : [makeTab([])]
       const neighbour = next[Math.min(index, next.length - 1)]
       set({ tabs: next, activeId: activeId === id ? neighbour.id : activeId })
+    },
+
+    reloadFromDisk: async () => {
+      const fileTabs = get().tabs.filter((tab) => tab.path !== null)
+      const reads = await Promise.all(
+        fileTabs.map(async (tab) => {
+          try {
+            const file = await commands.fileRead(tab.path ?? '')
+            return file.status === 'ok' ? { id: tab.id, text: file.data } : null
+          } catch {
+            // A file that is not readable now keeps its tab and its text.
+            return null
+          }
+        }),
+      )
+      const texts = new Map(
+        reads
+          .filter((read) => read !== null)
+          .map((read) => [read.id, read.text]),
+      )
+      set({
+        tabs: get().tabs.map((tab) => {
+          const text = texts.get(tab.id)
+          if (text === undefined) return tab
+          const content = isDirty(tab) ? tab.content : text
+          return { ...tab, content, savedContent: text }
+        }),
+      })
     },
 
     setError: (error) => set({ error }),

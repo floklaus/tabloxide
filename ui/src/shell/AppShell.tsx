@@ -7,6 +7,8 @@ import {
 import { useEffect, useState } from 'react'
 import { ConnectionList } from '../connections/ConnectionList'
 import { FileTree } from '../files/FileTree'
+import { GitPanel } from '../git/GitPanel'
+import { useGitStore } from '../git/gitStore'
 import { PreferencesDialog } from '../preferences/PreferencesDialog'
 import { usePreferencesStore } from '../preferences/preferencesStore'
 import { resetQueryStores } from '../query/queryStore'
@@ -20,12 +22,13 @@ import { ThemeToggle } from '../theme/ThemeToggle'
 import { useWorkspaceStore } from '../workspace/workspaceStore'
 import { StatusBar } from './StatusBar'
 
-type SidebarView = 'files' | 'connections' | 'schema'
+type SidebarView = 'files' | 'connections' | 'schema' | 'git'
 
 const SIDEBAR_VIEWS: { id: SidebarView; label: string }[] = [
   { id: 'files', label: 'Files' },
   { id: 'connections', label: 'Connections' },
   { id: 'schema', label: 'Schema' },
+  { id: 'git', label: 'Git' },
 ]
 
 const MAIN_LAYOUT_ID = 'tabloxide.layout.main'
@@ -53,6 +56,7 @@ export function AppShell() {
       useTabsStore.getState().reset()
       resetQueryStores()
       useSchemaStore.getState().reset()
+      useGitStore.getState().reset()
       useResultsViewStore.getState().setView('results')
     }
   }, [])
@@ -140,6 +144,7 @@ export function AppShell() {
             {sidebarView === 'files' && <FileTree />}
             {sidebarView === 'connections' && <ConnectionList />}
             {sidebarView === 'schema' && <SchemaTree />}
+            {sidebarView === 'git' && <GitPanel />}
           </nav>
         </Panel>
         <Separator className="separator" aria-label="Resize the sidebar" />
