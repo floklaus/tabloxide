@@ -66,3 +66,13 @@ pub(crate) async fn server_version(client: &Client) -> Result<String, ConnectErr
         .map_err(|e| error::map_error(&e))?;
     row.try_get(0).map_err(|e| error::map_error(&e))
 }
+
+/// Makes each transaction of the session read-only. The server then refuses a statement
+/// that changes data or the schema. This is a protection against mistakes, not a
+/// security control: a statement can set the session back to read-write.
+pub(crate) async fn set_read_only(client: &Client) -> Result<(), ConnectError> {
+    client
+        .batch_execute("SET default_transaction_read_only = on")
+        .await
+        .map_err(|e| error::map_error(&e))
+}

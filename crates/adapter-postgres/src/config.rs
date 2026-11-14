@@ -110,6 +110,7 @@ mod tests {
             socket_path: None,
             connect_timeout_secs: 7,
             query_timeout_secs: None,
+            read_only: false,
             params: BTreeMap::new(),
             secret: SecretSource::Keychain,
         }

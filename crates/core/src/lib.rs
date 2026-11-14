@@ -24,7 +24,8 @@ pub use connection::{
 pub use error::{ConnectError, ConnectErrorKind};
 pub use query::{Column, ColumnKind, Completion, Page, QueryError, QueryErrorKind, Row};
 pub use runner::{
-    Outcome, RunLimits, RunOutput, RunTarget, StatementReport, TextRange, run_script,
+    Outcome, RunLimits, RunOutput, RunTarget, StatementPreview, StatementReport, TextRange,
+    preview_run, run_script,
 };
 pub use schema::{
     ColumnInfo, ConstraintInfo, ConstraintKind, IndexInfo, RelationDetail, RelationInfo,
@@ -32,4 +33,5 @@ pub use schema::{
 };
 pub use secret::Secret;
 pub use sessions::{FetchedPage, QuerySession, ResultId, RunReport};
+pub use sql::Risk;
 pub use validation::{MAX_TIMEOUT_SECS, ValidationIssue, validate_profile};

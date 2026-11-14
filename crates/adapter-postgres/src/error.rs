@@ -84,6 +84,12 @@ pub(crate) fn map_error(error: &tokio_postgres::Error) -> ConnectError {
     ConnectError::new(kind_of(error), message)
 }
 
+/// SQLSTATE class 08 is a connection exception. The codes 57P01 to 57P03 are a shutdown
+/// of the server or of the session by an administrator.
+fn is_connection_loss(code: &str) -> bool {
+    code.starts_with("08") || matches!(code, "57P01" | "57P02" | "57P03")
+}
+
 /// Converts a driver error of a statement to a query error.
 pub(crate) fn map_query_error(error: &tokio_postgres::Error) -> QueryError {
     let Some(db) = error.as_db_error() else {
@@ -96,8 +102,11 @@ pub(crate) fn map_query_error(error: &tokio_postgres::Error) -> QueryError {
             QueryError::new(QueryErrorKind::Other, detail(error))
         };
     };
+    let code = db.code().code();
     let kind = if *db.code() == SqlState::QUERY_CANCELED {
         QueryErrorKind::Cancelled
+    } else if is_connection_loss(code) {
+        QueryErrorKind::ConnectionLost
     } else {
         QueryErrorKind::Database
     };

@@ -113,6 +113,9 @@ pub struct ConnectionProfile {
     /// Maximum time for one query. `None` means no limit.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub query_timeout_secs: Option<u32>,
+    /// The session refuses statements that change data or the schema.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub read_only: bool,
     /// Extra connection parameters of the database driver.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub params: BTreeMap<String, String>,
@@ -137,6 +140,7 @@ impl ConnectionProfile {
             socket_path: None,
             connect_timeout_secs: DEFAULT_CONNECT_TIMEOUT_SECS,
             query_timeout_secs: None,
+            read_only: false,
             params: BTreeMap::new(),
             secret: SecretSource::Keychain,
         }
@@ -178,6 +182,7 @@ pub(crate) mod tests {
             socket_path: None,
             connect_timeout_secs: DEFAULT_CONNECT_TIMEOUT_SECS,
             query_timeout_secs: None,
+            read_only: false,
             params: BTreeMap::new(),
             secret: SecretSource::Keychain,
         }

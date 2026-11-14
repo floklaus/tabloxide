@@ -1,8 +1,8 @@
 //! Runs the statements of a script in sequence on a session.
 
 use crate::sql::{
-    Location, Span, byte_to_utf16, char_to_byte, is_pageable, locate, split_statements,
-    statement_at, utf16_to_byte,
+    Location, Risk, Span, byte_to_utf16, char_to_byte, classify_risk, is_pageable, locate,
+    split_statements, statement_at, utf16_to_byte,
 };
 use crate::{Column, QueryError, ResultStream, Row, Session};
 use serde::{Deserialize, Serialize};
@@ -101,6 +101,35 @@ fn target_spans(sql: &str, target: RunTarget) -> Vec<Span> {
     }
 }
 
+/// One statement that a run would execute.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+pub struct StatementPreview {
+    pub range: TextRange,
+    /// Has a value if the statement is destructive.
+    pub risk: Option<Risk>,
+}
+
+fn text_range(sql: &str, span: Span) -> TextRange {
+    TextRange {
+        from: byte_to_utf16(sql, span.start),
+        to: byte_to_utf16(sql, span.end),
+    }
+}
+
+/// Returns the statements that `target` selects from `sql`, with the risk of each.
+/// The function does not run a statement. The UI uses it to ask for a confirmation.
+#[must_use]
+pub fn preview_run(sql: &str, target: RunTarget) -> Vec<StatementPreview> {
+    target_spans(sql, target)
+        .into_iter()
+        .map(|span| StatementPreview {
+            range: text_range(sql, span),
+            risk: classify_risk(&sql[span.start..span.end]),
+        })
+        .collect()
+}
+
 fn error_location(sql: &str, span: Span, error: &QueryError) -> Option<Location> {
     let position = usize::try_from(error.position?).ok()?;
     let statement = &sql[span.start..span.end];
@@ -186,10 +215,7 @@ pub async fn run_script(
             },
         };
         statements.push(StatementReport {
-            range: TextRange {
-                from: byte_to_utf16(sql, span.start),
-                to: byte_to_utf16(sql, span.end),
-            },
+            range: text_range(sql, *span),
             elapsed_ms: u64::try_from(start.elapsed().as_millis()).unwrap_or(u64::MAX),
             outcome,
         });
@@ -342,6 +368,23 @@ mod tests {
 
         assert_eq!(executed, vec!["select 2"]);
         assert_eq!(output.statements[0].range, TextRange { from: 10, to: 18 });
+    }
+
+    #[test]
+    fn the_preview_gives_the_risk_of_each_selected_statement() {
+        let sql = "select 1;\ndrop table ü;\ndelete from t";
+
+        let all = preview_run(sql, RunTarget::All);
+        let one = preview_run(sql, RunTarget::At { offset: 12 });
+
+        let risks: Vec<Option<Risk>> = all.iter().map(|p| p.risk).collect();
+        assert_eq!(
+            risks,
+            vec![None, Some(Risk::Drop), Some(Risk::DeleteWithoutWhere)]
+        );
+        assert_eq!(one.len(), 1);
+        assert_eq!(one[0].range, TextRange { from: 10, to: 22 });
+        assert_eq!(one[0].risk, Some(Risk::Drop));
     }
 
     #[tokio::test]

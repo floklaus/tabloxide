@@ -46,6 +46,7 @@ pub async fn start_server(with_tls: bool) -> (ContainerAsync<Postgres>, Connecti
         socket_path: None,
         connect_timeout_secs: 5,
         query_timeout_secs: None,
+        read_only: false,
         params: BTreeMap::new(),
         secret: SecretSource::Keychain,
     };

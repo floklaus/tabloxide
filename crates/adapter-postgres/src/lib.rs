@@ -50,6 +50,9 @@ impl DbAdapter for PostgresAdapter {
         let info = ServerInfo {
             version: connect::server_version(&connected.client).await?,
         };
+        if profile.read_only {
+            connect::set_read_only(&connected.client).await?;
+        }
         let query_timeout = profile
             .query_timeout_secs
             .map(|secs| Duration::from_secs(u64::from(secs)));

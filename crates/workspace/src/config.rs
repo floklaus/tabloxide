@@ -183,6 +183,7 @@ pub(crate) mod tests {
             socket_path: None,
             connect_timeout_secs: 10,
             query_timeout_secs: Some(30),
+            read_only: false,
             params: BTreeMap::from([("application_name".to_owned(), "tabloxide".to_owned())]),
             secret: SecretSource::EnvVar {
                 name: "APP_DB_PASSWORD".to_owned(),
@@ -219,6 +220,7 @@ pub(crate) mod tests {
                 secret: SecretSource::Keychain,
                 params: BTreeMap::new(),
                 query_timeout_secs: None,
+                read_only: false,
                 socket_path: Some("/var/run/postgresql".to_owned()),
                 ..profile("b", "Local")
             })

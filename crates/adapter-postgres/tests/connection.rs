@@ -132,6 +132,7 @@ async fn closed_port_is_an_unreachable_error() {
         socket_path: None,
         connect_timeout_secs: 2,
         query_timeout_secs: None,
+        read_only: false,
         params: BTreeMap::new(),
         secret: SecretSource::None,
     };

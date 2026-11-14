@@ -401,3 +401,35 @@ async fn reads_the_structure_of_the_database() {
         Outcome::Rows { rows, is_complete: true, .. } if rows.len() == 10
     ));
 }
+
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "needs Docker"]
+async fn a_read_only_session_refuses_changes_and_a_lost_connection_is_reported() {
+    let (_container, profile) = start_server(false).await;
+    let mut admin = connect(&profile).await;
+    run(admin.as_mut(), "CREATE TABLE item (id int)")
+        .await
+        .unwrap();
+
+    // A read-only session can read, but the server refuses a change.
+    let read_only = ConnectionProfile {
+        read_only: true,
+        ..profile.clone()
+    };
+    let mut session = connect(&read_only).await;
+    run(session.as_mut(), "SELECT * FROM item").await.unwrap();
+    let error = run(session.as_mut(), "INSERT INTO item VALUES (1)")
+        .await
+        .unwrap_err();
+    assert_eq!(error.code.as_deref(), Some("25006"));
+    let error = run(session.as_mut(), "DROP TABLE item").await.unwrap_err();
+    assert_eq!(error.code.as_deref(), Some("25006"));
+
+    // When an administrator ends the session, the next statement reports a lost connection.
+    let terminate = "SELECT pg_terminate_backend(pid) FROM pg_stat_activity \
+                     WHERE pid <> pg_backend_pid() AND application_name = 'Tabloxide'";
+    run(admin.as_mut(), terminate).await.unwrap();
+    tokio::time::sleep(Duration::from_millis(300)).await;
+    let error = run(session.as_mut(), "SELECT 1").await.unwrap_err();
+    assert_eq!(error.kind, QueryErrorKind::ConnectionLost, "{error:?}");
+}
