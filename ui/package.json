@@ -13,6 +13,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tanstack/react-virtual": "^3.14.26",
     "@tauri-apps/api": "^2.12.4",
     "@tauri-apps/plugin-dialog": "^2",
     "react": "^19.3.1",

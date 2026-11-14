@@ -20,7 +20,7 @@ Section 7 of the backlog lists four open product decisions. The product owner ac
 | Shell | Tauri 2 | The backlog specifies it. |
 | UI | React, TypeScript, Vite | This stack has the most components for the editor, the grid, and the panes. |
 | Editor | CodeMirror 6 with `@codemirror/lang-sql` and `@codemirror/merge` | It is small and it supports SQL dialects. The merge view shows diffs in Phase 1 and merge conflicts in Phase 2. |
-| Result grid | TanStack Table with TanStack Virtual | It gives virtual rows and columns, sort, resize, and column visibility. It is not a large dependency. |
+| Result grid | TanStack Virtual with a small grid component of the project | TanStack Virtual gives virtual rows. The grid component does the sort, the resize, and the column visibility. Each value is text, thus a table library is not necessary. |
 | Panes | `react-resizable-panels` | It gives a resizable layout and it stores the pane sizes. |
 | UI state | Zustand | It gives one simple store for each concern (tabs, connections, Git). |
 | Typed IPC | `tauri-specta` | It generates TypeScript bindings from the Rust commands. The two sides cannot become different. |

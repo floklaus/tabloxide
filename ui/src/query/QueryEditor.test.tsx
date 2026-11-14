@@ -1,0 +1,220 @@
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { commands } from '../bindings'
+import { ResultsPane } from '../results/ResultsPane'
+import { makeProfile, makeWorkspace } from '../test/fixtures'
+import { useWorkspaceStore } from '../workspace/workspaceStore'
+import { QueryEditor } from './QueryEditor'
+import { useQueryStore } from './queryStore'
+
+vi.mock('../bindings', async () =>
+  (await import('../test/mockBindings')).createBindingsMock(),
+)
+vi.mock('@tauri-apps/plugin-dialog', () => ({ open: vi.fn(), save: vi.fn() }))
+
+const sessionOpen = vi.mocked(commands.sessionOpen)
+const queryRun = vi.mocked(commands.queryRun)
+const queryCancel = vi.mocked(commands.queryCancel)
+const initialWorkspaceState = useWorkspaceStore.getState()
+const live = makeProfile({
+  id: 'id-2',
+  name: 'Live',
+  environment: 'production',
+})
+
+function ok<T>(data: T) {
+  return { status: 'ok' as const, data }
+}
+
+function renderEditor() {
+  useWorkspaceStore.setState({
+    workspace: makeWorkspace([makeProfile(), live]),
+  })
+  render(
+    <>
+      <QueryEditor />
+      <ResultsPane />
+    </>,
+  )
+  return userEvent.setup()
+}
+
+async function connect(user: ReturnType<typeof userEvent.setup>) {
+  sessionOpen.mockResolvedValue(
+    ok({
+      status: 'connected',
+      session: { id: 7, connection_id: 'id-2', server: { version: '17.2' } },
+    }),
+  )
+  await user.selectOptions(screen.getByRole('combobox'), 'Live')
+  await screen.findByText('PostgreSQL 17.2')
+}
+
+describe('QueryEditor', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    useWorkspaceStore.setState(initialWorkspaceState, true)
+    useQueryStore.getState().reset()
+  })
+
+  test('disables the run buttons without a session', () => {
+    renderEditor()
+
+    expect(screen.getByRole('button', { name: 'Run' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Run all' })).toBeDisabled()
+    expect(
+      screen.getByText('Connect to a database, then run a statement.'),
+    ).toBeInTheDocument()
+  })
+
+  test('connects and shows the environment of the connection', async () => {
+    const user = renderEditor()
+
+    await connect(user)
+
+    expect(sessionOpen).toHaveBeenCalledWith('id-2')
+    expect(screen.getByText('production')).toHaveClass('badge--production')
+    expect(screen.getByRole('button', { name: 'Run' })).toBeEnabled()
+  })
+
+  test('shows the failure and the advice when the connect fails', async () => {
+    const user = renderEditor()
+    sessionOpen.mockResolvedValue(
+      ok({
+        status: 'failed',
+        error: {
+          kind: 'authentication',
+          advice: 'Check the user and the password.',
+          detail: 'password authentication failed',
+        },
+      }),
+    )
+
+    await user.selectOptions(screen.getByRole('combobox'), 'Live')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'password authentication failed',
+    )
+    expect(screen.getByRole('alert')).toHaveTextContent('Check the user')
+  })
+
+  test('runs the statement at the cursor with Ctrl+Enter', async () => {
+    const user = renderEditor()
+    await connect(user)
+    queryRun.mockResolvedValue(ok({ statements: [], open_result: null }))
+
+    await user.type(screen.getByRole('textbox', { name: 'SQL' }), 'select 1')
+    await user.keyboard('{Control>}{Enter}{/Control}')
+
+    expect(queryRun).toHaveBeenCalledWith(7, 'select 1', {
+      type: 'at',
+      offset: 8,
+    })
+  })
+
+  test('runs the selection when text is selected', async () => {
+    const user = renderEditor()
+    await connect(user)
+    queryRun.mockResolvedValue(ok({ statements: [], open_result: null }))
+    const input = screen.getByRole<HTMLTextAreaElement>('textbox', {
+      name: 'SQL',
+    })
+
+    await user.type(input, 'select 1; select 2')
+    input.setSelectionRange(10, 18)
+    await user.click(screen.getByRole('button', { name: 'Run' }))
+
+    expect(queryRun).toHaveBeenCalledWith(7, 'select 1; select 2', {
+      type: 'range',
+      from: 10,
+      to: 18,
+    })
+  })
+
+  test('runs all statements with the Run all button', async () => {
+    const user = renderEditor()
+    await connect(user)
+    queryRun.mockResolvedValue(ok({ statements: [], open_result: null }))
+
+    await user.type(screen.getByRole('textbox', { name: 'SQL' }), 'select 1')
+    await user.click(screen.getByRole('button', { name: 'Run all' }))
+
+    expect(queryRun).toHaveBeenCalledWith(7, 'select 1', { type: 'all' })
+    expect(
+      await screen.findByText('There is no statement to run.'),
+    ).toBeInTheDocument()
+  })
+
+  test('cancels a run that is in progress', async () => {
+    const user = renderEditor()
+    await connect(user)
+    queryRun.mockReturnValue(new Promise(() => {}))
+
+    await user.click(screen.getByRole('button', { name: 'Run all' }))
+    expect(await screen.findByText('Running…')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+
+    expect(queryCancel).toHaveBeenCalledWith(7)
+    expect(await screen.findByText('Cancelling…')).toBeInTheDocument()
+  })
+
+  test('shows the results of a script and the error position', async () => {
+    const user = renderEditor()
+    await connect(user)
+    queryRun.mockResolvedValue(
+      ok({
+        open_result: null,
+        statements: [
+          {
+            range: { from: 0, to: 18 },
+            elapsed_ms: 4,
+            outcome: { type: 'command', affected_rows: 3 },
+          },
+          {
+            range: { from: 20, to: 32 },
+            elapsed_ms: 1,
+            outcome: {
+              type: 'failed',
+              error: {
+                kind: 'database',
+                message: 'column "idd" does not exist',
+                detail: null,
+                hint: 'Perhaps you meant "id".',
+                code: '42703',
+                position: 8,
+              },
+              location: { offset: 27, line: 1, column: 28 },
+            },
+          },
+        ],
+      }),
+    )
+    const input = screen.getByRole<HTMLTextAreaElement>('textbox', {
+      name: 'SQL',
+    })
+    await user.type(input, 'update t set a = 1; select idd t')
+
+    await user.click(screen.getByRole('button', { name: 'Run all' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'column "idd" does not exist',
+    )
+    expect(screen.getByRole('alert')).toHaveTextContent('Error code: 42703')
+    const statements = screen.getByRole('list', {
+      name: 'Statements of the run',
+    })
+    expect(statements).toHaveTextContent('update t set a = 1')
+    expect(statements).toHaveTextContent('3 rows')
+    expect(statements).toHaveTextContent('Failed')
+
+    await user.click(
+      screen.getByRole('button', { name: 'Go to line 1, column 28' }),
+    )
+    expect(input).toHaveFocus()
+    expect(input.selectionStart).toBe(27)
+
+    await user.click(screen.getByRole('button', { name: /update t set/ }))
+    expect(screen.getByText(/3 rows affected/)).toBeInTheDocument()
+  })
+})

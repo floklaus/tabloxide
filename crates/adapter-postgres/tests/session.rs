@@ -234,3 +234,62 @@ async fn cancels_and_stops_statements() {
     let after = run(limited.as_mut(), "SELECT 1").await.unwrap();
     assert_eq!(after.rows, vec![vec![text("1")]]);
 }
+
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "needs Docker"]
+async fn runs_a_script_and_exports_a_result() {
+    use tabloxide_core::{Outcome, QuerySession, RunLimits, RunTarget};
+
+    let limits = RunLimits {
+        page_rows: 100,
+        buffered_rows: 250,
+    };
+    let (_container, profile) = start_server(false).await;
+    let session = QuerySession::new(connect(&profile).await);
+
+    // A script runs in sequence. The last statement stays open for paged reads.
+    let script = "CREATE TABLE n AS SELECT i FROM generate_series(1, 1000) AS i;\n\
+                  UPDATE n SET i = i WHERE i <= 10 RETURNING i;\n\
+                  SELECT i, 'ü,\"x\"' AS t, NULL AS e FROM n ORDER BY i";
+    let report = session.run(script, RunTarget::All, limits).await;
+    assert_eq!(report.statements.len(), 3);
+    assert!(matches!(
+        report.statements[0].outcome,
+        Outcome::Command {
+            affected_rows: 1000
+        }
+    ));
+    assert!(matches!(
+        &report.statements[1].outcome,
+        Outcome::Rows { rows, is_complete: true, total_rows: Some(10), .. } if rows.len() == 10
+    ));
+    assert!(matches!(
+        &report.statements[2].outcome,
+        Outcome::Rows { rows, is_complete: false, .. } if rows.len() == 100
+    ));
+    let open = report.open_result.expect("the last result must be open");
+    let page = session.fetch(open, 100).await.unwrap();
+    assert_eq!(page.rows[0][0], text("101"));
+
+    // The export runs the statement again and writes all rows.
+    let mut out: Vec<u8> = Vec::new();
+    let statement = "SELECT i, 'ü,\"x\"' AS t, NULL AS e FROM n WHERE i <= 2 ORDER BY i";
+    let count = session.export_csv(statement, &mut out, 100).await.unwrap();
+    assert_eq!(count, 2);
+    assert_eq!(
+        String::from_utf8(out).unwrap(),
+        "i,t,e\n1,\"ü,\"\"x\"\"\",\n2,\"ü,\"\"x\"\"\",\n"
+    );
+    // The export closed the open result.
+    assert_eq!(session.fetch(open, 100).await, None);
+
+    // A failure stops the script and gives the position in the script.
+    let script = "SELECT 1;\nSELECT ü, nope FROM n;\nSELECT 3";
+    let report = session.run(script, RunTarget::All, limits).await;
+    assert_eq!(report.statements.len(), 2);
+    let Outcome::Failed { location, .. } = &report.statements[1].outcome else {
+        panic!("the second statement must fail");
+    };
+    let location = location.expect("the server gives the position");
+    assert_eq!((location.line, location.column), (2, 8));
+}

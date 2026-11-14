@@ -16,6 +16,13 @@ export function createBindingsMock() {
       connectionDelete: vi.fn(),
       connectionDuplicate: vi.fn(),
       connectionTest: vi.fn(),
+      sessionOpen: vi.fn(),
+      sessionClose: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
+      queryRun: vi.fn(),
+      queryCancel: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
+      resultFetch: vi.fn(),
+      resultClose: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
+      resultExportCsv: vi.fn(),
     },
   }
 }

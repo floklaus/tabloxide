@@ -5,6 +5,8 @@ import {
   useDefaultLayout,
 } from 'react-resizable-panels'
 import { ConnectionList } from '../connections/ConnectionList'
+import { QueryEditor } from '../query/QueryEditor'
+import { ResultsPane } from '../results/ResultsPane'
 import { ThemeToggle } from '../theme/ThemeToggle'
 import { useWorkspaceStore } from '../workspace/workspaceStore'
 import { StatusBar } from './StatusBar'
@@ -70,20 +72,14 @@ export function AppShell() {
             onLayoutChanged={workLayout.onLayoutChanged}
           >
             <Panel id="editor" defaultSize="60%" minSize="15%">
-              <section className="pane" aria-label="Editor">
-                <h2 className="pane__title">Editor</h2>
-                <p className="pane__hint">The SQL editor shows here.</p>
-              </section>
+              <QueryEditor />
             </Panel>
             <Separator
               className="separator"
               aria-label="Resize the editor and the results"
             />
             <Panel id="results" minSize="15%">
-              <section className="pane" aria-label="Results">
-                <h2 className="pane__title">Results</h2>
-                <p className="pane__hint">Query results show here.</p>
-              </section>
+              <ResultsPane />
             </Panel>
           </Group>
         </Panel>
