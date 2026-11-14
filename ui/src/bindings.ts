@@ -7,6 +7,30 @@ import type { InvokeOptions } from "@tauri-apps/api/core";
 export const commands = {
 	/**  Returns the name and the version of the application. */
 	appInfo: (options?: InvokeOptions) => __TAURI_INVOKE<AppInfo>("app_info", undefined, options),
+	/**  Opens the folder `path` as the workspace and adds it to the recent list. */
+	workspaceOpen: (path: string, options?: InvokeOptions) => typedError<WorkspaceSnapshot_Serialize, CommandError>(__TAURI_INVOKE("workspace_open", { path }, options)),
+	/**  Returns the open workspace, or `null` if no workspace is open. */
+	workspaceCurrent: (options?: InvokeOptions) => __TAURI_INVOKE<WorkspaceSnapshot_Serialize | null>("workspace_current", undefined, options),
+	/**  Closes the workspace. */
+	workspaceClose: (options?: InvokeOptions) => __TAURI_INVOKE<void>("workspace_close", undefined, options),
+	/**  Returns the recent workspaces. The most recent workspace is first. */
+	workspaceRecent: (options?: InvokeOptions) => typedError<RecentWorkspace[], CommandError>(__TAURI_INVOKE("workspace_recent", undefined, options)),
+	/**  Returns an empty connection profile that has a new identifier and the default settings. */
+	connectionTemplate: (options?: InvokeOptions) => __TAURI_INVOKE<ConnectionProfile_Serialize>("connection_template", undefined, options),
+	/**
+	 *  Adds or replaces a connection. `password` goes to the credential store of the operating
+	 *  system when the password source is the keychain. `null` keeps the stored password.
+	 */
+	connectionSave: (profile: ConnectionProfile_Deserialize, password: string | null, options?: InvokeOptions) => typedError<WorkspaceSnapshot_Serialize, CommandError>(__TAURI_INVOKE("connection_save", { profile, password }, options)),
+	/**  Removes a connection and its stored password. */
+	connectionDelete: (id: ConnectionId, options?: InvokeOptions) => typedError<WorkspaceSnapshot_Serialize, CommandError>(__TAURI_INVOKE("connection_delete", { id }, options)),
+	/**  Adds a copy of a connection, with a copy of its stored password. */
+	connectionDuplicate: (id: ConnectionId, options?: InvokeOptions) => typedError<WorkspaceSnapshot_Serialize, CommandError>(__TAURI_INVOKE("connection_duplicate", { id }, options)),
+	/**
+	 *  Tests a connection. The profile does not have to be saved.
+	 *  If `password` is `null`, the password comes from the source that the profile specifies.
+	 */
+	connectionTest: (profile: ConnectionProfile_Deserialize, password: string | null, options?: InvokeOptions) => typedError<ConnectionTestResult, CommandError>(__TAURI_INVOKE("connection_test", { profile, password }, options)),
 };
 
 /* Types */
@@ -15,3 +39,150 @@ export type AppInfo = {
 	name: string,
 	version: string,
 };
+
+/**  A command failure. `message` is for the user. It never contains a secret. */
+export type CommandError = {
+	kind: CommandErrorKind,
+	message: string,
+	issues: ValidationIssue[],
+};
+
+export type CommandErrorKind = 
+/**  No workspace is open. */
+"no-workspace" | 
+/**  The connection settings are not valid. `issues` lists the problems. */
+"invalid-profile" | 
+/**  A workspace file or folder operation failed. */
+"workspace" | 
+/**  The credential store or an environment variable failed. */
+"secret" | 
+/**  An error in the application itself. */
+"internal";
+
+/**
+ *  A connection failure. `detail` is the message from the driver or the server.
+ *  It never contains the password.
+ */
+export type ConnectError = {
+	kind: ConnectErrorKind,
+	advice: string,
+	detail: string,
+};
+
+/**  Category of a connection failure. */
+export type ConnectErrorKind = "authentication" | "missing-secret" | "database-not-found" | "tls" | "unreachable" | "timeout" | "invalid-configuration" | "other";
+
+/**  Stable identifier of a connection profile. */
+export type ConnectionId = string;
+
+/**  Definition of one database connection. */
+export type ConnectionProfile = ConnectionProfile_Serialize | ConnectionProfile_Deserialize;
+
+/**  Definition of one database connection. */
+export type ConnectionProfile_Deserialize = {
+	id: ConnectionId,
+	name: string,
+	environment?: Environment,
+	host?: string,
+	port?: number,
+	database: string,
+	user: string,
+	tls_mode?: TlsMode,
+	/**  Directory of the Unix socket. When this field has a value, the driver ignores `host`. */
+	socket_path?: string | null,
+	connect_timeout_secs?: number,
+	/**  Maximum time for one query. `None` means no limit. */
+	query_timeout_secs?: number | null,
+	/**  Extra connection parameters of the database driver. */
+	params?: { [key in string]: string },
+	secret?: SecretSource,
+};
+
+/**  Definition of one database connection. */
+export type ConnectionProfile_Serialize = {
+	id: ConnectionId,
+	name: string,
+	environment: Environment,
+	host: string,
+	port: number,
+	database: string,
+	user: string,
+	tls_mode: TlsMode,
+	/**  Directory of the Unix socket. When this field has a value, the driver ignores `host`. */
+	socket_path?: string,
+	connect_timeout_secs: number,
+	/**  Maximum time for one query. `None` means no limit. */
+	query_timeout_secs?: number,
+	/**  Extra connection parameters of the database driver. */
+	params?: { [key in string]: string },
+	secret: SecretSource,
+};
+
+/**  Result of a connection test. A failed test is a normal result, not a command error. */
+export type ConnectionTestResult = { status: "connected"; server: ServerInfo } | { status: "failed"; error: ConnectError };
+
+/**  Environment marker. The UI shows it before the user runs SQL. */
+export type Environment = "development" | "staging" | "production";
+
+export type RecentWorkspace = {
+	path: string,
+	name: string,
+};
+
+/**  Where the password of a connection comes from. The password itself is never in a profile. */
+export type SecretSource = 
+/**  The connection has no password. */
+{ type: "none" } | 
+/**  The password is in the credential store of the operating system. */
+{ type: "keychain" } | 
+/**  The password is in an environment variable. */
+{ type: "env-var"; name: string };
+
+/**  Data about the server that a successful connection test returns. */
+export type ServerInfo = {
+	version: string,
+};
+
+/**  TLS behaviour. The names and the meanings are the same as the PostgreSQL `sslmode` values. */
+export type TlsMode = 
+/**  No TLS. */
+"disable" | 
+/**  Use TLS if the server supports it. Do not verify the certificate. */
+"prefer" | 
+/**  Always use TLS. Do not verify the certificate. */
+"require" | 
+/**  Always use TLS. Verify the certificate chain and the host name. */
+"verify-full";
+
+/**  One problem in a connection profile. `field` is the name of the profile field. */
+export type ValidationIssue = {
+	field: string,
+	message: string,
+};
+
+/**  The open workspace as the UI sees it. */
+export type WorkspaceSnapshot = WorkspaceSnapshot_Serialize | WorkspaceSnapshot_Deserialize;
+
+/**  The open workspace as the UI sees it. */
+export type WorkspaceSnapshot_Deserialize = {
+	path: string,
+	name: string,
+	connections: ConnectionProfile_Deserialize[],
+};
+
+/**  The open workspace as the UI sees it. */
+export type WorkspaceSnapshot_Serialize = {
+	path: string,
+	name: string,
+	connections: ConnectionProfile_Serialize[],
+};
+
+/* Tauri Specta runtime */
+async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {
+    try {
+        return { status: "ok", data: await result };
+    } catch (e) {
+        if (e instanceof Error) throw e;
+        return { status: "error", error: e as any };
+    }
+}

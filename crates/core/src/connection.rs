@@ -121,6 +121,27 @@ pub struct ConnectionProfile {
 }
 
 impl ConnectionProfile {
+    /// Returns an empty profile that has a new identifier and the default settings.
+    /// The UI uses it as the start of a new connection.
+    #[must_use]
+    pub fn template() -> Self {
+        Self {
+            id: ConnectionId::generate(),
+            name: String::new(),
+            environment: Environment::default(),
+            host: "localhost".to_owned(),
+            port: DEFAULT_PORT,
+            database: String::new(),
+            user: String::new(),
+            tls_mode: TlsMode::default(),
+            socket_path: None,
+            connect_timeout_secs: DEFAULT_CONNECT_TIMEOUT_SECS,
+            query_timeout_secs: None,
+            params: BTreeMap::new(),
+            secret: SecretSource::Keychain,
+        }
+    }
+
     /// Returns a copy that has a new identifier and a name that shows it is a copy.
     #[must_use]
     pub fn duplicate(&self) -> Self {
@@ -171,6 +192,16 @@ pub(crate) mod tests {
         assert_ne!(copy.id, original.id);
         assert_eq!(copy.name, "Local (copy)");
         assert_eq!(copy.host, original.host);
+    }
+
+    #[test]
+    fn template_has_a_new_id_and_the_default_settings() {
+        let first = ConnectionProfile::template();
+        let second = ConnectionProfile::template();
+
+        assert_ne!(first.id, second.id);
+        assert_eq!(first.port, DEFAULT_PORT);
+        assert_eq!(first.secret, SecretSource::Keychain);
     }
 
     #[test]

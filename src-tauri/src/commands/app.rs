@@ -1,5 +1,3 @@
-//! Tauri commands. Each command is a thin layer. Business logic is in the `crates/` libraries.
-
 use serde::Serialize;
 use specta::Type;
 

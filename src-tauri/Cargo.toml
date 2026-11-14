@@ -16,7 +16,11 @@ workspace = true
 serde = { version = "1.0.229", features = ["derive"] }
 specta = "=2.0.0-rc.28"
 specta-typescript = "0.0.15"
+tabloxide-adapter-postgres = { version = "0.1.0", path = "../crates/adapter-postgres" }
+tabloxide-core = { version = "0.1.0", path = "../crates/core", features = ["specta"] }
+tabloxide-workspace = { version = "0.1.0", path = "../crates/workspace", features = ["specta"] }
 tauri = "2"
+tauri-plugin-dialog = "2"
 tauri-specta = { version = "=2.0.0-rc.29", features = ["derive", "typescript"] }
 
 [build-dependencies]
