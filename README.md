@@ -2,13 +2,14 @@
 
 Tabloxide is a cross-platform SQL client with built-in Git. It uses Tauri 2, a React and TypeScript UI, and a Rust backend.
 
-The project is at milestone M0 (foundation). Refer to `docs/Implementation Plan.md` for the plan.
+The project is at milestone M1 (connections and secrets). Refer to `docs/Implementation Plan.md` for the plan.
 
 ## Requirements
 
 - Rust (stable). `rust-toolchain.toml` selects the toolchain.
 - Node.js 20.19 or later, or 22.12 or later. `.nvmrc` selects Node.js 26.13.1.
 - pnpm 9.
+- Docker, only for the database tests.
 - The Tauri 2 system libraries for your operating system.
 
 On Ubuntu or Debian, install the system libraries with this command:
@@ -34,6 +35,14 @@ Run these commands from the repository root.
 | `pnpm typecheck` | Checks the TypeScript types.                           |
 | `pnpm format`    | Formats the TypeScript code and the Rust code.         |
 | `pnpm bindings`  | Generates `ui/src/bindings.ts` from the Rust commands. |
+
+### Database tests
+
+The integration tests of the PostgreSQL adapter start a PostgreSQL server in Docker. They do not run with `pnpm test`. Run them with this command:
+
+```sh
+cargo test -p tabloxide-adapter-postgres -- --ignored
+```
 
 ## Repository layout
 

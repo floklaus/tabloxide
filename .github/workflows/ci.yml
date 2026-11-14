@@ -74,6 +74,11 @@ jobs:
       - name: Test Rust
         run: cargo test --workspace
 
+      # The Linux runner has Docker. The macOS and Windows runners do not run these tests.
+      - name: Test the PostgreSQL adapter against a real server
+        if: runner.os == 'Linux'
+        run: cargo test -p tabloxide-adapter-postgres -- --ignored
+
       - name: Check that the TypeScript bindings are current
         run: git diff --exit-code -- ui/src/bindings.ts
 
