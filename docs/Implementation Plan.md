@@ -68,10 +68,29 @@ Phase 2 adds a second engine to test this boundary. Until then, do not put Postg
 * **Values as text.** The backend runs user SQL with the simple query protocol. This protocol returns each value in the PostgreSQL text form.
   * The app does not need a decoder for each data type.
   * The grid shows values the same as `psql` shows them.
-  * The row description gives the column type for alignment and sort.
-  * The M2 spike must check that this protocol gives the type metadata that the grid needs. The alternative is the extended protocol with a request for text format.
+  * The simple query protocol of the driver gives the column names only. Thus the backend prepares the statement first and reads the column types from the prepared statement. If the preparation fails, the grid shows the columns without types.
+* **Paged statements.** The backend pages only a statement that reads data (`SELECT`, `TABLE`, `VALUES`, and `WITH` without a data change). To close a paged result early, the backend cancels the statement.
+  * The backend reads all rows of each other statement immediately. A cancel of such a statement would undo its data change. The backend keeps a bounded number of these rows.
+  * In a script, only the last statement can stay open. The backend reads each earlier statement to its end.
 * **Statement splitter in Rust.** The command "Run current statement" needs a splitter that understands strings, dollar quotes, and comments. The splitter is in `core` and has a large table-driven test suite. The splitter offsets convert the error position from the server to an editor line and column.
 * **Cancel.** The backend sends the cancel token of the driver on a separate connection. The tab shows one of these states: running, cancelling, cancelled, failed.
+
+### Results of the M2 spike
+
+The spike ran on 2026-11-14 against PostgreSQL 17 in a container, with a table of 5 million rows and 7 columns.
+
+| Question | Result |
+|---|---|
+| Time to the first 500 rows | 2 ms |
+| Memory of the process during a pause of 3 seconds | No change (9.7 MB). The server waited in the `ClientWrite` state, thus the driver did not read from the socket. |
+| Memory of the process while it read 2 million rows in pages | 9.8 MB maximum |
+| Cancel during the fetch | The stream stopped after 7 ms with SQLSTATE `57014`. The session was usable again. |
+| Column types from the simple query protocol | Not available. The driver gives the names only. |
+| Column types from a prepared statement | Available. The preparation took less than 1 ms. |
+| A result that the code drops without a cancel | The next statement waited 6.4 seconds, because the server sent all remaining rows. Thus the backend must cancel a result that it closes early. |
+| Error position | The server gives a character position in the statement text. |
+
+Known limit: while a paged result is open, the statement stays active on the server and keeps its snapshot. The row limit and the close of the result set a bound on this time.
 
 ### Workspace files and secrets
 
