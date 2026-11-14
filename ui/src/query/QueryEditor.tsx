@@ -1,72 +1,68 @@
-import { useEffect, useRef, type KeyboardEvent } from 'react'
+import { useEffect, useRef } from 'react'
 import type { RunTarget } from '../bindings'
+import { CodeEditor, type CodeEditorHandle } from '../editor/CodeEditor'
+import { usePreferencesStore } from '../preferences/preferencesStore'
+import { TabBar } from '../tabs/TabBar'
+import { isDirty, useTabsStore } from '../tabs/tabsStore'
 import { useWorkspaceStore } from '../workspace/workspaceStore'
-import { useQueryStore } from './queryStore'
+import { activeQueryStore, useQuery } from './queryStore'
 
 const NO_CONNECTIONS: never[] = []
 
-/** The selection is the target. Without a selection, the statement at the cursor is the target. */
-function targetOf(input: HTMLTextAreaElement | null): RunTarget {
-  if (!input) return { type: 'all' }
-  const { selectionStart: from, selectionEnd: to } = input
-  return from === to
-    ? { type: 'at', offset: from }
-    : { type: 'range', from, to }
-}
-
 export function QueryEditor() {
-  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const editorRef = useRef<CodeEditorHandle>(null)
   const connections = useWorkspaceStore(
     (state) => state.workspace?.connections ?? NO_CONNECTIONS,
   )
-  const session = useQueryStore((state) => state.session)
-  const connectState = useQueryStore((state) => state.connectState)
-  const sql = useQueryStore((state) => state.sql)
-  const runState = useQueryStore((state) => state.runState)
-  const jumpTo = useQueryStore((state) => state.jumpTo)
-  const connect = useQueryStore((state) => state.connect)
-  const disconnect = useQueryStore((state) => state.disconnect)
-  const setSql = useQueryStore((state) => state.setSql)
-  const run = useQueryStore((state) => state.run)
-  const cancel = useQueryStore((state) => state.cancel)
-  const setJumpTo = useQueryStore((state) => state.setJumpTo)
-  const reset = useQueryStore((state) => state.reset)
-
-  const active = connections.find((c) => c.id === session?.connectionId)
-  const isConnecting = connectState.status === 'connecting'
-  const canRun = session !== null && runState === 'idle'
-
-  // The backend closes the sessions when the workspace closes.
-  useEffect(() => reset, [reset])
+  const tab = useTabsStore((state) =>
+    state.tabs.find((item) => item.id === state.activeId),
+  )
+  const setContent = useTabsStore((state) => state.setContent)
+  const setConnection = useTabsStore((state) => state.setConnection)
+  const saveTab = useTabsStore((state) => state.save)
+  const editorPreferences = usePreferencesStore(
+    (state) => state.preferences.editor,
+  )
+  const session = useQuery((state) => state.session)
+  const connectState = useQuery((state) => state.connectState)
+  const runState = useQuery((state) => state.runState)
+  const jumpTo = useQuery((state) => state.jumpTo)
 
   useEffect(() => {
     if (jumpTo === null) return
-    inputRef.current?.focus()
-    inputRef.current?.setSelectionRange(jumpTo, jumpTo)
-    setJumpTo(null)
-  }, [jumpTo, setJumpTo])
+    editorRef.current?.focusAt(jumpTo)
+    activeQueryStore().getState().setJumpTo(null)
+  }, [jumpTo])
 
-  const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey)) return
-    event.preventDefault()
-    void run(event.shiftKey ? { type: 'all' } : targetOf(inputRef.current))
+  if (!tab) return <section className="pane query" aria-label="Editor" />
+
+  const active = connections.find((c) => c.id === tab.connectionId)
+  const isConnecting = connectState.status === 'connecting'
+  const canRun = active !== undefined && runState === 'idle' && !isConnecting
+  const run = (target: RunTarget) => {
+    if (!canRun) return
+    void activeQueryStore()
+      .getState()
+      .run(tab.content, target, tab.connectionId)
+  }
+  const selectConnection = (connectionId: string) => {
+    const query = activeQueryStore().getState()
+    setConnection(tab.id, connectionId || null)
+    void (connectionId ? query.connect(connectionId) : query.disconnect())
   }
 
   return (
     <section className="pane query" aria-label="Editor">
+      <TabBar />
       <div className="query__bar">
         <label className="query__connection">
           <span className="visually-hidden">Connection</span>
           <select
-            value={session?.connectionId ?? ''}
+            value={active?.id ?? ''}
             disabled={isConnecting || runState !== 'idle'}
-            onChange={(event) =>
-              void (event.target.value
-                ? connect(event.target.value)
-                : disconnect())
-            }
+            onChange={(event) => selectConnection(event.target.value)}
           >
-            <option value="">Not connected</option>
+            <option value="">No connection</option>
             {connections.map((connection) => (
               <option key={connection.id} value={connection.id}>
                 {connection.name}
@@ -83,13 +79,25 @@ export function QueryEditor() {
         {session && (
           <span className="query__server">PostgreSQL {session.version}</span>
         )}
+        {active && !session && !isConnecting && (
+          <span className="query__server">Connects at the first run</span>
+        )}
         <span className="title-bar__spacer" />
+        <button
+          type="button"
+          className="button button--small"
+          disabled={!isDirty(tab)}
+          title="Save the file (Ctrl+S)"
+          onClick={() => void saveTab(tab.id)}
+        >
+          Save
+        </button>
         <button
           type="button"
           className="button button--small button--primary"
           disabled={!canRun}
           title="Run the selection, or the statement at the cursor (Ctrl+Enter)"
-          onClick={() => void run(targetOf(inputRef.current))}
+          onClick={() => run(editorRef.current?.getTarget() ?? { type: 'all' })}
         >
           Run
         </button>
@@ -98,7 +106,7 @@ export function QueryEditor() {
           className="button button--small"
           disabled={!canRun}
           title="Run all statements (Ctrl+Shift+Enter)"
-          onClick={() => void run({ type: 'all' })}
+          onClick={() => run({ type: 'all' })}
         >
           Run all
         </button>
@@ -106,7 +114,7 @@ export function QueryEditor() {
           type="button"
           className="button button--small button--danger"
           disabled={runState !== 'running'}
-          onClick={() => void cancel()}
+          onClick={() => void activeQueryStore().getState().cancel()}
         >
           Cancel
         </button>
@@ -120,15 +128,14 @@ export function QueryEditor() {
           )}
         </div>
       )}
-      <textarea
-        ref={inputRef}
-        className="query__input"
-        aria-label="SQL"
-        spellCheck={false}
-        placeholder="Write SQL here. Ctrl+Enter runs the statement at the cursor."
-        value={sql}
-        onChange={(event) => setSql(event.target.value)}
-        onKeyDown={onKeyDown}
+      <CodeEditor
+        ref={editorRef}
+        tabId={tab.id}
+        value={tab.content}
+        preferences={editorPreferences}
+        onChange={(value) => setContent(tab.id, value)}
+        onRun={run}
+        onSave={() => void saveTab(tab.id)}
       />
     </section>
   )

@@ -4,7 +4,13 @@ import {
   Separator,
   useDefaultLayout,
 } from 'react-resizable-panels'
+import { useEffect, useState } from 'react'
 import { ConnectionList } from '../connections/ConnectionList'
+import { FileTree } from '../files/FileTree'
+import { PreferencesDialog } from '../preferences/PreferencesDialog'
+import { usePreferencesStore } from '../preferences/preferencesStore'
+import { resetQueryStores } from '../query/queryStore'
+import { persistTabs, useTabsStore } from '../tabs/tabsStore'
 import { QueryEditor } from '../query/QueryEditor'
 import { ResultsPane } from '../results/ResultsPane'
 import { ThemeToggle } from '../theme/ThemeToggle'
@@ -21,6 +27,21 @@ export function AppShell() {
   const error = useWorkspaceStore((state) => state.error)
   const setError = useWorkspaceStore((state) => state.setError)
   const close = useWorkspaceStore((state) => state.close)
+  const tabsError = useTabsStore((state) => state.error)
+  const setTabsError = useTabsStore((state) => state.setError)
+  const [showsPreferences, setShowsPreferences] = useState(false)
+
+  // The tabs and the sessions belong to the workspace. They start and end with this screen.
+  useEffect(() => {
+    void usePreferencesStore.getState().load()
+    void useTabsStore.getState().load()
+    const stopPersist = persistTabs()
+    return () => {
+      stopPersist()
+      useTabsStore.getState().reset()
+      resetQueryStores()
+    }
+  }, [])
 
   return (
     <div className="app-shell">
@@ -36,6 +57,13 @@ export function AppShell() {
           onClick={() => void close()}
         >
           Close workspace
+        </button>
+        <button
+          type="button"
+          className="button button--small"
+          onClick={() => setShowsPreferences(true)}
+        >
+          Preferences
         </button>
         <ThemeToggle />
       </header>
@@ -53,6 +81,22 @@ export function AppShell() {
         </div>
       )}
 
+      {tabsError && (
+        <div className="banner" role="alert">
+          <span>{tabsError}</span>
+          <button
+            type="button"
+            className="link-button"
+            onClick={() => setTabsError(null)}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+      {showsPreferences && (
+        <PreferencesDialog onClose={() => setShowsPreferences(false)} />
+      )}
+
       <Group
         className="app-shell__panes"
         orientation="horizontal"
@@ -61,6 +105,7 @@ export function AppShell() {
       >
         <Panel id="sidebar" defaultSize="20%" minSize="12%" collapsible>
           <nav className="pane" aria-label="Sidebar">
+            <FileTree />
             <ConnectionList />
           </nav>
         </Panel>

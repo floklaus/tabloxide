@@ -6,16 +6,27 @@ import { ResultsPane } from '../results/ResultsPane'
 import { makeProfile, makeWorkspace } from '../test/fixtures'
 import { useWorkspaceStore } from '../workspace/workspaceStore'
 import { QueryEditor } from './QueryEditor'
-import { useQueryStore } from './queryStore'
+import { useTabsStore, type Tab } from '../tabs/tabsStore'
+import { resetQueryStores } from './queryStore'
 
 vi.mock('../bindings', async () =>
   (await import('../test/mockBindings')).createBindingsMock(),
 )
+vi.mock('../editor/CodeEditor', () => import('../test/FakeCodeEditor'))
 vi.mock('@tauri-apps/plugin-dialog', () => ({ open: vi.fn(), save: vi.fn() }))
 
 const sessionOpen = vi.mocked(commands.sessionOpen)
 const queryRun = vi.mocked(commands.queryRun)
 const queryCancel = vi.mocked(commands.queryCancel)
+const fileWrite = vi.mocked(commands.fileWrite)
+const tab: Tab = {
+  id: 'tab-1',
+  title: 'Query 1',
+  path: null,
+  content: '',
+  savedContent: null,
+  connectionId: null,
+}
 const initialWorkspaceState = useWorkspaceStore.getState()
 const live = makeProfile({
   id: 'id-2',
@@ -55,16 +66,22 @@ describe('QueryEditor', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     useWorkspaceStore.setState(initialWorkspaceState, true)
-    useQueryStore.getState().reset()
+    resetQueryStores()
+    useTabsStore.setState({
+      tabs: [tab],
+      activeId: tab.id,
+      isLoaded: true,
+      error: null,
+    })
   })
 
-  test('disables the run buttons without a session', () => {
+  test('disables the run buttons without a connection', () => {
     renderEditor()
 
     expect(screen.getByRole('button', { name: 'Run' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Run all' })).toBeDisabled()
     expect(
-      screen.getByText('Connect to a database, then run a statement.'),
+      screen.getByText('Select a connection, then run a statement.'),
     ).toBeInTheDocument()
   })
 
@@ -97,6 +114,49 @@ describe('QueryEditor', () => {
       'password authentication failed',
     )
     expect(screen.getByRole('alert')).toHaveTextContent('Check the user')
+  })
+
+  test('connects at the first run when the tab has a connection from the last session', async () => {
+    useTabsStore.setState({
+      tabs: [{ ...tab, content: 'select 1', connectionId: 'id-2' }],
+    })
+    const user = renderEditor()
+    sessionOpen.mockResolvedValue(
+      ok({
+        status: 'connected',
+        session: { id: 7, connection_id: 'id-2', server: { version: '17.2' } },
+      }),
+    )
+    queryRun.mockResolvedValue(ok({ statements: [], open_result: null }))
+
+    expect(screen.getByText('Connects at the first run')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Run all' }))
+
+    expect(sessionOpen).toHaveBeenCalledWith('id-2')
+    expect(queryRun).toHaveBeenCalledWith(7, 'select 1', { type: 'all' })
+  })
+
+  test('shows a marker for unsaved changes and saves a file tab with Ctrl+S', async () => {
+    useTabsStore.setState({
+      tabs: [
+        {
+          ...tab,
+          title: 'a.sql',
+          path: 'q/a.sql',
+          content: 'x',
+          savedContent: 'x',
+        },
+      ],
+    })
+    const user = renderEditor()
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
+
+    await user.type(screen.getByRole('textbox', { name: 'SQL' }), 'y')
+    expect(screen.getByLabelText('Unsaved changes')).toBeInTheDocument()
+    await user.keyboard('{Control>}s{/Control}')
+
+    expect(fileWrite).toHaveBeenCalledWith('q/a.sql', 'xy')
+    expect(screen.queryByLabelText('Unsaved changes')).not.toBeInTheDocument()
   })
 
   test('runs the statement at the cursor with Ctrl+Enter', async () => {

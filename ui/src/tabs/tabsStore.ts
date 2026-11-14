@@ -1,0 +1,269 @@
+import { save } from '@tauri-apps/plugin-dialog'
+import { create } from 'zustand'
+import { commands, type UiState_Serialize } from '../bindings'
+import { toMessage } from '../lib/errors'
+
+export type Tab = {
+  id: string
+  title: string
+  /** Path of the file in the workspace. `null` for a buffer without a file. */
+  path: string | null
+  content: string
+  /** The text of the file on disk. `null` for a buffer without a file. */
+  savedContent: string | null
+  /** The connection that the tab uses. The tab connects at the first run. */
+  connectionId: string | null
+}
+
+type TabsState = {
+  tabs: Tab[]
+  activeId: string | null
+  isLoaded: boolean
+  error: string | null
+  /** Restores the tabs of the last session. Always leaves a minimum of one tab. */
+  load: () => Promise<void>
+  newTab: (content?: string) => string
+  openFile: (path: string) => Promise<void>
+  activate: (id: string) => void
+  setContent: (id: string, content: string) => void
+  setConnection: (id: string, connectionId: string | null) => void
+  /** Saves a tab. A buffer without a file gets a file from the save dialog. */
+  save: (id: string) => Promise<void>
+  close: (id: string) => void
+  setError: (error: string | null) => void
+  reset: () => void
+}
+
+export function isDirty(tab: Tab): boolean {
+  return tab.path === null
+    ? tab.content !== ''
+    : tab.content !== tab.savedContent
+}
+
+function fileName(path: string): string {
+  return path.split('/').at(-1) ?? path
+}
+
+function nextTitle(tabs: Tab[]): string {
+  const used = new Set(tabs.map((tab) => tab.title))
+  let number = 1
+  while (used.has(`Query ${number}`)) number += 1
+  return `Query ${number}`
+}
+
+function makeTab(tabs: Tab[], content = ''): Tab {
+  return {
+    id: crypto.randomUUID(),
+    title: nextTitle(tabs),
+    path: null,
+    content,
+    savedContent: null,
+    connectionId: null,
+  }
+}
+
+/** Converts the tabs to the form that the backend stores. */
+export function toUiState(
+  tabs: Tab[],
+  activeId: string | null,
+): UiState_Serialize {
+  return {
+    active_tab: activeId,
+    tabs: tabs.map((tab) => ({
+      id: tab.id,
+      title: tab.title,
+      path: tab.path,
+      // A file tab without changes gets its text from the file at the next start.
+      content: tab.path !== null && !isDirty(tab) ? null : tab.content,
+      connection_id: tab.connectionId,
+    })),
+  }
+}
+
+type StoredTab = UiState_Serialize['tabs'][number]
+
+/** Restores one tab. Returns `null` if its file is not readable and it has no unsaved text. */
+async function restoreTab(stored: StoredTab): Promise<Tab | null> {
+  const base = {
+    id: stored.id,
+    title: stored.title,
+    connectionId: stored.connection_id,
+  }
+  if (stored.path === null) {
+    return {
+      ...base,
+      path: null,
+      content: stored.content ?? '',
+      savedContent: null,
+    }
+  }
+  const file = await commands.fileRead(stored.path)
+  if (file.status === 'ok') {
+    const content = stored.content ?? file.data
+    return { ...base, path: stored.path, content, savedContent: file.data }
+  }
+  if (stored.content === null) return null
+  // The file is gone, but the unsaved text is not. Keep the text in a buffer without a file.
+  return { ...base, path: null, content: stored.content, savedContent: null }
+}
+
+const INITIAL = {
+  tabs: [] as Tab[],
+  activeId: null as string | null,
+  isLoaded: false,
+  error: null as string | null,
+}
+
+export const useTabsStore = create<TabsState>((set, get) => {
+  const update = (id: string, change: Partial<Tab>) =>
+    set({
+      tabs: get().tabs.map((tab) =>
+        tab.id === id ? { ...tab, ...change } : tab,
+      ),
+    })
+
+  const saveAs = async (tab: Tab): Promise<string | null> => {
+    const selected = await save({
+      defaultPath: `${tab.title}.sql`,
+      filters: [{ name: 'SQL', extensions: ['sql'] }],
+    })
+    if (!selected) return null
+    const relative = await commands.fileRelativePath(selected)
+    if (relative.status === 'error') {
+      set({
+        error: `${relative.error.message} Save the file in the workspace folder.`,
+      })
+      return null
+    }
+    return relative.data
+  }
+
+  return {
+    ...INITIAL,
+
+    load: async () => {
+      let restored: Tab[] = []
+      let activeId: string | null = null
+      try {
+        const result = await commands.uiStateLoad()
+        if (result.status === 'ok') {
+          const tabs = await Promise.all(result.data.tabs.map(restoreTab))
+          restored = tabs.filter((tab) => tab !== null)
+          activeId = result.data.active_tab
+        } else {
+          set({ error: result.error.message })
+        }
+      } catch (error) {
+        set({ error: toMessage(error) })
+      }
+      const tabs = restored.length > 0 ? restored : [makeTab([])]
+      const active = tabs.find((tab) => tab.id === activeId) ?? tabs[0]
+      set({ tabs, activeId: active.id, isLoaded: true })
+    },
+
+    newTab: (content = '') => {
+      const tab = makeTab(get().tabs, content)
+      set({ tabs: [...get().tabs, tab], activeId: tab.id })
+      return tab.id
+    },
+
+    openFile: async (path) => {
+      const open = get().tabs.find((tab) => tab.path === path)
+      if (open) {
+        set({ activeId: open.id })
+        return
+      }
+      try {
+        const file = await commands.fileRead(path)
+        if (file.status === 'error') {
+          set({ error: file.error.message })
+          return
+        }
+        const tab: Tab = {
+          ...makeTab(get().tabs),
+          title: fileName(path),
+          path,
+          content: file.data,
+          savedContent: file.data,
+        }
+        set({ tabs: [...get().tabs, tab], activeId: tab.id, error: null })
+      } catch (error) {
+        set({ error: toMessage(error) })
+      }
+    },
+
+    activate: (id) => set({ activeId: id }),
+    setContent: (id, content) => update(id, { content }),
+    setConnection: (id, connectionId) => update(id, { connectionId }),
+
+    save: async (id) => {
+      const tab = get().tabs.find((item) => item.id === id)
+      if (!tab) return
+      try {
+        const path = tab.path ?? (await saveAs(tab))
+        if (path === null) return
+        const { content } = tab
+        const result = await commands.fileWrite(path, content)
+        if (result.status === 'error') {
+          set({ error: result.error.message })
+          return
+        }
+        // The user can type during the write. Only the written text is the saved text.
+        update(id, { path, title: fileName(path), savedContent: content })
+        set({ error: null })
+      } catch (error) {
+        set({ error: toMessage(error) })
+      }
+    },
+
+    close: (id) => {
+      const { tabs, activeId } = get()
+      const index = tabs.findIndex((tab) => tab.id === id)
+      if (index < 0) return
+      const remaining = tabs.filter((tab) => tab.id !== id)
+      const next = remaining.length > 0 ? remaining : [makeTab([])]
+      const neighbour = next[Math.min(index, next.length - 1)]
+      set({ tabs: next, activeId: activeId === id ? neighbour.id : activeId })
+    },
+
+    setError: (error) => set({ error }),
+    reset: () => set(INITIAL),
+  }
+})
+
+/** Time without a change before the application stores the tabs. */
+const PERSIST_DELAY_MS = 400
+
+/**
+ * Stores the tabs in the backend after each change, so that the next start restores them.
+ * Returns a function that stops the subscription and stores the last change immediately.
+ */
+export function persistTabs(): () => void {
+  let timer: ReturnType<typeof setTimeout> | null = null
+  const store = () => {
+    timer = null
+    const { tabs, activeId, isLoaded } = useTabsStore.getState()
+    if (!isLoaded) return
+    commands.uiStateSave(toUiState(tabs, activeId)).then(
+      (result) => {
+        if (result.status === 'error') {
+          useTabsStore.setState({ error: result.error.message })
+        }
+      },
+      (error: unknown) => useTabsStore.setState({ error: toMessage(error) }),
+    )
+  }
+  const unsubscribe = useTabsStore.subscribe((state, previous) => {
+    if (state.tabs === previous.tabs && state.activeId === previous.activeId)
+      return
+    if (timer) clearTimeout(timer)
+    timer = setTimeout(store, PERSIST_DELAY_MS)
+  })
+  return () => {
+    unsubscribe()
+    if (timer) {
+      clearTimeout(timer)
+      store()
+    }
+  }
+}

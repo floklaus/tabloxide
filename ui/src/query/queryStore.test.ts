@@ -2,8 +2,8 @@ import { save } from '@tauri-apps/plugin-dialog'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { commands } from '../bindings'
 import {
+  createQueryStore,
   MAX_LOADED_ROWS,
-  useQueryStore,
   type StatementReport,
 } from './queryStore'
 
@@ -17,7 +17,7 @@ const queryRun = vi.mocked(commands.queryRun)
 const resultFetch = vi.mocked(commands.resultFetch)
 const resultClose = vi.mocked(commands.resultClose)
 const resultExportCsv = vi.mocked(commands.resultExportCsv)
-const store = useQueryStore
+let store = createQueryStore()
 
 function rowsStatement(rows: string[][], isComplete: boolean): StatementReport {
   return {
@@ -40,7 +40,6 @@ function ok<T>(data: T) {
 async function connectAndRun(openResult: number | null) {
   store.setState({
     session: { id: 7, connectionId: 'id-1', version: '17.0' },
-    sql: 'select 1',
   })
   queryRun.mockResolvedValue(
     ok({
@@ -48,7 +47,7 @@ async function connectAndRun(openResult: number | null) {
       open_result: openResult,
     }),
   )
-  await store.getState().run({ type: 'all' })
+  await store.getState().run('select 1', { type: 'all' })
 }
 
 function loadedRows(): number {
@@ -59,7 +58,7 @@ function loadedRows(): number {
 describe('queryStore', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    store.getState().reset()
+    store = createQueryStore()
   })
 
   test('stores the session after a successful connect', async () => {
@@ -90,9 +89,34 @@ describe('queryStore', () => {
   })
 
   test('does not run without a session', async () => {
-    await store.getState().run({ type: 'all' })
+    await store.getState().run('select 1', { type: 'all' })
 
     expect(queryRun).not.toHaveBeenCalled()
+  })
+
+  test('connects before the run when the tab has a connection', async () => {
+    sessionOpen.mockResolvedValue(
+      ok({
+        status: 'connected',
+        session: { id: 9, connection_id: 'id-1', server: { version: '17.0' } },
+      }),
+    )
+    queryRun.mockResolvedValue(ok({ statements: [], open_result: null }))
+
+    await store.getState().run('select 1', { type: 'all' }, 'id-1')
+
+    expect(sessionOpen).toHaveBeenCalledWith('id-1')
+    expect(queryRun).toHaveBeenCalledWith(9, 'select 1', { type: 'all' })
+  })
+
+  test('does not run when the connect before the run fails', async () => {
+    const error = { kind: 'unreachable', advice: 'Check.', detail: 'no' }
+    sessionOpen.mockResolvedValue(ok({ status: 'failed', error } as never))
+
+    await store.getState().run('select 1', { type: 'all' }, 'id-1')
+
+    expect(queryRun).not.toHaveBeenCalled()
+    expect(store.getState().connectState.status).toBe('failed')
   })
 
   test('stores the report and the open result of a run', async () => {
@@ -111,7 +135,7 @@ describe('queryStore', () => {
       error: { kind: 'no-session', message: 'Connect again.', issues: [] },
     })
 
-    await store.getState().run({ type: 'all' })
+    await store.getState().run('select 1', { type: 'all' })
 
     expect(store.getState().session).toBeNull()
     expect(store.getState().notice).toBe('Connect again.')
@@ -203,7 +227,6 @@ describe('queryStore', () => {
 
   test('exports the statement text of the last run', async () => {
     await connectAndRun(4)
-    store.getState().setSql('changed after the run')
     vi.mocked(save).mockResolvedValue('/tmp/out.csv')
     resultExportCsv.mockResolvedValue(ok({ status: 'exported', rows: 12 }))
 

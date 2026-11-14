@@ -1,4 +1,10 @@
-import { MAX_LOADED_ROWS, useQueryStore } from '../query/queryStore'
+import { useState } from 'react'
+import { HistoryPanel } from '../history/HistoryPanel'
+import {
+  activeQueryStore,
+  MAX_LOADED_ROWS,
+  useQuery,
+} from '../query/queryStore'
 import type { QueryError, StatementReport } from '../query/queryStore'
 import type { Location } from '../bindings'
 import { ResultGrid } from './ResultGrid'
@@ -42,7 +48,7 @@ const ERROR_TITLES: Record<QueryError['kind'], string> = {
 
 function ErrorMessage(props: { error: QueryError; location: Location | null }) {
   const { error, location } = props
-  const setJumpTo = useQueryStore((state) => state.setJumpTo)
+  const setJumpTo = useQuery((state) => state.setJumpTo)
   return (
     <div className="message message--error" role="alert">
       <p className="message__title">{ERROR_TITLES[error.kind]}</p>
@@ -67,9 +73,9 @@ function ErrorMessage(props: { error: QueryError; location: Location | null }) {
 
 function RowsStatus(props: { statement: StatementReport; index: number }) {
   const { statement, index } = props
-  const open = useQueryStore((state) => state.open)
-  const isFetching = useQueryStore((state) => state.isFetching)
-  const stopReason = useQueryStore((state) => state.stopReason)
+  const open = useQuery((state) => state.open)
+  const isFetching = useQuery((state) => state.isFetching)
+  const stopReason = useQuery((state) => state.stopReason)
   const { outcome } = statement
   if (outcome.type !== 'rows') return null
 
@@ -97,12 +103,12 @@ function RowsStatus(props: { statement: StatementReport; index: number }) {
 
 function StatementView(props: { statement: StatementReport; index: number }) {
   const { statement, index } = props
-  const open = useQueryStore((state) => state.open)
-  const fetchError = useQueryStore((state) => state.fetchError)
-  const isExporting = useQueryStore((state) => state.isExporting)
-  const fetchMore = useQueryStore((state) => state.fetchMore)
-  const stopFetch = useQueryStore((state) => state.stopFetch)
-  const exportCsv = useQueryStore((state) => state.exportCsv)
+  const open = useQuery((state) => state.open)
+  const fetchError = useQuery((state) => state.fetchError)
+  const isExporting = useQuery((state) => state.isExporting)
+  const fetchMore = useQuery((state) => state.fetchMore)
+  const stopFetch = useQuery((state) => state.stopFetch)
+  const exportCsv = useQuery((state) => state.exportCsv)
   const { outcome } = statement
 
   if (outcome.type === 'failed') {
@@ -156,22 +162,24 @@ function StatementView(props: { statement: StatementReport; index: number }) {
 
 /** Only the last statement of a run can have an open result and thus a fetch error. */
 function isLast(index: number): boolean {
-  return index === useQueryStore.getState().statements.length - 1
+  return index === activeQueryStore().getState().statements.length - 1
 }
 
-export function ResultsPane() {
-  const session = useQueryStore((state) => state.session)
-  const runState = useQueryStore((state) => state.runState)
-  const statements = useQueryStore((state) => state.statements)
-  const selected = useQueryStore((state) => state.selected)
-  const ranSql = useQueryStore((state) => state.ranSql)
-  const notice = useQueryStore((state) => state.notice)
-  const select = useQueryStore((state) => state.select)
-  const setNotice = useQueryStore((state) => state.setNotice)
+type View = 'results' | 'history'
+
+function Results() {
+  const hasConnection = useQuery((state) => state.session !== null)
+  const runState = useQuery((state) => state.runState)
+  const statements = useQuery((state) => state.statements)
+  const selected = useQuery((state) => state.selected)
+  const ranSql = useQuery((state) => state.ranSql)
+  const notice = useQuery((state) => state.notice)
+  const select = useQuery((state) => state.select)
+  const setNotice = useQuery((state) => state.setNotice)
   const statement = statements[selected]
 
   return (
-    <section className="pane results" aria-label="Results">
+    <>
       {notice && (
         <div className="banner" role="status">
           <span>{notice}</span>
@@ -191,9 +199,9 @@ export function ResultsPane() {
       )}
       {runState === 'idle' && !statement && (
         <p className="pane__hint">
-          {session
+          {hasConnection
             ? 'Run a statement to see its result here.'
-            : 'Connect to a database, then run a statement.'}
+            : 'Select a connection, then run a statement.'}
         </p>
       )}
       {statements.length > 1 && (
@@ -215,6 +223,38 @@ export function ResultsPane() {
         </ol>
       )}
       {statement && <StatementView statement={statement} index={selected} />}
+    </>
+  )
+}
+
+export function ResultsPane() {
+  const [view, setView] = useState<View>('results')
+  const views: { id: View; label: string }[] = [
+    { id: 'results', label: 'Results' },
+    { id: 'history', label: 'History' },
+  ]
+
+  return (
+    <section className="pane results" aria-label="Results">
+      <div className="results__views" role="tablist" aria-label="Results views">
+        {views.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            role="tab"
+            className="results__view"
+            aria-selected={view === item.id}
+            onClick={() => setView(item.id)}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+      {view === 'results' ? (
+        <Results />
+      ) : (
+        <HistoryPanel onRun={() => setView('results')} />
+      )}
     </section>
   )
 }

@@ -23,6 +23,30 @@ export function createBindingsMock() {
       resultFetch: vi.fn(),
       resultClose: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
       resultExportCsv: vi.fn(),
+      fileList: vi.fn().mockResolvedValue({ status: 'ok', data: [] }),
+      fileRead: vi.fn(),
+      fileWrite: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
+      fileRelativePath: vi.fn(),
+      historySearch: vi.fn().mockResolvedValue({ status: 'ok', data: [] }),
+      historyClear: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
+      preferencesLoad: vi.fn().mockResolvedValue({
+        status: 'ok',
+        data: {
+          editor: {
+            font_size: 14,
+            tab_width: 2,
+            line_numbers: true,
+            word_wrap: false,
+          },
+          history_retention_days: 90,
+        },
+      }),
+      preferencesSave: vi.fn(),
+      uiStateLoad: vi.fn().mockResolvedValue({
+        status: 'ok',
+        data: { tabs: [], active_tab: null },
+      }),
+      uiStateSave: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
     },
   }
 }
