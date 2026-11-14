@@ -1,8 +1,8 @@
 //! A session without a database, for tests of the code that uses the adapter interface.
 
 use crate::{
-    CancelHandle, Column, ColumnKind, Completion, Page, QueryError, QueryErrorKind, ResultStream,
-    Row, ServerInfo, Session,
+    CancelHandle, Column, ColumnInfo, ColumnKind, Completion, Page, QueryError, QueryErrorKind,
+    RelationDetail, RelationInfo, RelationKind, ResultStream, Row, SchemaInfo, ServerInfo, Session,
 };
 use async_trait::async_trait;
 use std::collections::VecDeque;
@@ -143,5 +143,40 @@ impl Session for ScriptedSession {
             is_done: false,
             probe: Arc::clone(&self.probe),
         }))
+    }
+
+    async fn schemas(&mut self) -> Result<Vec<SchemaInfo>, QueryError> {
+        Ok(vec![SchemaInfo {
+            name: "public".to_owned(),
+            is_system: false,
+        }])
+    }
+
+    async fn relations(&mut self, schema: &str) -> Result<Vec<RelationInfo>, QueryError> {
+        Ok(vec![RelationInfo {
+            name: format!("{schema}_table"),
+            kind: RelationKind::Table,
+        }])
+    }
+
+    async fn relation_detail(
+        &mut self,
+        _schema: &str,
+        relation: &str,
+    ) -> Result<RelationDetail, QueryError> {
+        Ok(RelationDetail {
+            columns: vec![ColumnInfo {
+                name: format!("{relation}_id"),
+                data_type: "integer".to_owned(),
+                is_nullable: false,
+                default: None,
+                is_primary_key: true,
+            }],
+            ..RelationDetail::default()
+        })
+    }
+
+    fn sample_statement(&self, schema: &str, relation: &str, limit: u32) -> String {
+        format!("select * from {schema}.{relation} limit {limit}")
     }
 }

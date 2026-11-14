@@ -293,3 +293,111 @@ async fn runs_a_script_and_exports_a_result() {
     let location = location.expect("the server gives the position");
     assert_eq!((location.line, location.column), (2, 8));
 }
+
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "needs Docker"]
+async fn reads_the_structure_of_the_database() {
+    use tabloxide_core::{ConstraintKind, Outcome, QuerySession, RelationKind};
+
+    let (_container, profile) = start_server(false).await;
+    let mut setup = connect(&profile).await;
+    for statement in [
+        "CREATE SCHEMA \"Shop\"",
+        "CREATE TABLE \"Shop\".customer (id int PRIMARY KEY, email text NOT NULL UNIQUE)",
+        "CREATE TABLE \"Shop\".\"Order Item\" (
+            id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            customer_id int NOT NULL REFERENCES \"Shop\".customer (id),
+            quantity numeric(10, 2) DEFAULT 1 CHECK (quantity > 0),
+            note varchar(40))",
+        "CREATE INDEX item_note ON \"Shop\".\"Order Item\" (note)",
+        "CREATE VIEW \"Shop\".big AS SELECT * FROM \"Shop\".\"Order Item\" WHERE quantity > 10",
+        "INSERT INTO \"Shop\".customer VALUES (1, 'a@example.com')",
+        "INSERT INTO \"Shop\".\"Order Item\" (customer_id, note)
+            SELECT 1, 'n' || i FROM generate_series(1, 30) AS i",
+    ] {
+        run(setup.as_mut(), statement).await.unwrap();
+    }
+    let session = QuerySession::new(connect(&profile).await);
+
+    // User schemas are before the system schemas.
+    let schemas = session.schemas().await.unwrap();
+    let names: Vec<&str> = schemas.iter().map(|s| s.name.as_str()).collect();
+    assert_eq!(names[..2], ["Shop", "public"]);
+    assert!(
+        schemas
+            .iter()
+            .any(|s| s.name == "pg_catalog" && s.is_system)
+    );
+    assert!(!schemas[0].is_system);
+
+    let relations = session.relations("Shop").await.unwrap();
+    let listed: Vec<(&str, RelationKind)> = relations
+        .iter()
+        .map(|r| (r.name.as_str(), r.kind))
+        .collect();
+    assert_eq!(
+        listed,
+        vec![
+            ("Order Item", RelationKind::Table),
+            ("big", RelationKind::View),
+            ("customer", RelationKind::Table),
+        ]
+    );
+    assert!(
+        session
+            .relations("no_such_schema")
+            .await
+            .unwrap()
+            .is_empty()
+    );
+
+    let detail = session.relation_detail("Shop", "Order Item").await.unwrap();
+    let columns: Vec<(&str, &str, bool, bool)> = detail
+        .columns
+        .iter()
+        .map(|c| {
+            (
+                c.name.as_str(),
+                c.data_type.as_str(),
+                c.is_nullable,
+                c.is_primary_key,
+            )
+        })
+        .collect();
+    assert_eq!(
+        columns,
+        vec![
+            ("id", "bigint", false, true),
+            ("customer_id", "integer", false, false),
+            ("quantity", "numeric(10,2)", true, false),
+            ("note", "character varying(40)", true, false),
+        ]
+    );
+    assert_eq!(detail.columns[2].default.as_deref(), Some("1"));
+    let indexes: Vec<(&str, bool)> = detail
+        .indexes
+        .iter()
+        .map(|i| (i.name.as_str(), i.is_primary))
+        .collect();
+    assert_eq!(
+        indexes,
+        vec![("Order Item_pkey", true), ("item_note", false)]
+    );
+    assert!(detail.indexes[1].definition.contains("(note)"));
+    let kinds: Vec<ConstraintKind> = detail.constraints.iter().map(|c| c.kind).collect();
+    assert!(kinds.contains(&ConstraintKind::PrimaryKey));
+    assert!(kinds.contains(&ConstraintKind::ForeignKey));
+    assert!(kinds.contains(&ConstraintKind::Check));
+
+    // A view has columns, but no indexes.
+    let view = session.relation_detail("Shop", "big").await.unwrap();
+    assert_eq!(view.columns.len(), 4);
+    assert!(view.indexes.is_empty());
+
+    // The sample has a row limit and uses quoted identifiers.
+    let sample = session.sample("Shop", "Order Item", 10).await.unwrap();
+    assert!(matches!(
+        &sample.outcome,
+        Outcome::Rows { rows, is_complete: true, .. } if rows.len() == 10
+    ));
+}

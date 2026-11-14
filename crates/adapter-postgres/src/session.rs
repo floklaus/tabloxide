@@ -1,12 +1,13 @@
 //! A session and its cancel handle.
 
 use crate::stream::PgStream;
-use crate::{columns, error, tls};
+use crate::{columns, error, introspect, tls};
 use async_trait::async_trait;
 use std::sync::Arc;
 use std::time::Duration;
 use tabloxide_core::{
-    CancelHandle, QueryError, QueryErrorKind, ResultStream, ServerInfo, Session, TlsMode,
+    CancelHandle, QueryError, QueryErrorKind, RelationDetail, RelationInfo, ResultStream,
+    SchemaInfo, ServerInfo, Session, TlsMode,
 };
 use tokio_postgres::{CancelToken, Client, NoTls};
 
@@ -78,5 +79,25 @@ impl Session for PgSession {
         let cancel = Arc::clone(&self.cancel) as Arc<dyn CancelHandle>;
         let stream = PgStream::start(messages, types, cancel, self.query_timeout).await?;
         Ok(Box::new(stream))
+    }
+
+    async fn schemas(&mut self) -> Result<Vec<SchemaInfo>, QueryError> {
+        introspect::schemas(&self.client).await
+    }
+
+    async fn relations(&mut self, schema: &str) -> Result<Vec<RelationInfo>, QueryError> {
+        introspect::relations(&self.client, schema).await
+    }
+
+    async fn relation_detail(
+        &mut self,
+        schema: &str,
+        relation: &str,
+    ) -> Result<RelationDetail, QueryError> {
+        introspect::relation_detail(&self.client, schema, relation).await
+    }
+
+    fn sample_statement(&self, schema: &str, relation: &str, limit: u32) -> String {
+        introspect::sample_statement(schema, relation, limit)
     }
 }

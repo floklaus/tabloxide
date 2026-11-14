@@ -3,8 +3,8 @@
 use crate::csv::export_csv;
 use crate::sql::is_pageable;
 use crate::{
-    CancelHandle, QueryError, QueryErrorKind, ResultStream, Row, RunLimits, RunTarget, ServerInfo,
-    Session, StatementReport, run_script,
+    CancelHandle, QueryError, QueryErrorKind, RelationDetail, RelationInfo, ResultStream, Row,
+    RunLimits, RunTarget, SchemaInfo, ServerInfo, Session, StatementReport, run_script,
 };
 use serde::Serialize;
 use std::sync::Arc;
@@ -173,6 +173,65 @@ impl QuerySession {
         result
     }
 
+    /// Lists the schemas of the database. This closes the open result.
+    ///
+    /// # Errors
+    ///
+    /// Returns the error of the database.
+    pub async fn schemas(&self) -> Result<Vec<SchemaInfo>, QueryError> {
+        let mut inner = self.inner.lock().await;
+        inner.close_open_result().await;
+        inner.session.schemas().await
+    }
+
+    /// Lists the tables and the views of one schema. This closes the open result.
+    ///
+    /// # Errors
+    ///
+    /// Returns the error of the database.
+    pub async fn relations(&self, schema: &str) -> Result<Vec<RelationInfo>, QueryError> {
+        let mut inner = self.inner.lock().await;
+        inner.close_open_result().await;
+        inner.session.relations(schema).await
+    }
+
+    /// Reads the structure of one table or view. This closes the open result.
+    ///
+    /// # Errors
+    ///
+    /// Returns the error of the database.
+    pub async fn relation_detail(
+        &self,
+        schema: &str,
+        relation: &str,
+    ) -> Result<RelationDetail, QueryError> {
+        let mut inner = self.inner.lock().await;
+        inner.close_open_result().await;
+        inner.session.relation_detail(schema, relation).await
+    }
+
+    /// Reads a maximum of `limit` rows of a table or view. The result does not stay open.
+    pub async fn sample(
+        &self,
+        schema: &str,
+        relation: &str,
+        limit: u32,
+    ) -> Option<StatementReport> {
+        let mut inner = self.inner.lock().await;
+        inner.close_open_result().await;
+        let statement = inner.session.sample_statement(schema, relation, limit);
+        let row_limit = usize::try_from(limit).unwrap_or(usize::MAX);
+        let limits = RunLimits {
+            page_rows: row_limit.saturating_add(1),
+            buffered_rows: row_limit,
+        };
+        let output = run_script(inner.session.as_mut(), &statement, RunTarget::All, limits).await;
+        if let Some(stream) = output.open {
+            stream.close().await;
+        }
+        output.statements.into_iter().next()
+    }
+
     /// Closes the open result. The connection closes when the session drops.
     pub async fn close(&self) {
         self.inner.lock().await.close_open_result().await;
@@ -284,6 +343,41 @@ mod tests {
         assert_eq!(String::from_utf8(out).unwrap(), "n\n1\n2\n3\n");
         assert_eq!(probe.executed.lock().unwrap().len(), 2);
         assert_eq!(probe.closed_early.load(Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    async fn introspection_closes_the_open_result() {
+        let (session, probe) = session(vec![Scripted::Rows(100)]);
+        run(&session, "select 1").await;
+
+        let schemas = session.schemas().await.unwrap();
+        let relations = session.relations("public").await.unwrap();
+        let detail = session.relation_detail("public", "item").await.unwrap();
+
+        assert_eq!(schemas[0].name, "public");
+        assert_eq!(relations[0].name, "public_table");
+        assert_eq!(detail.columns[0].name, "item_id");
+        assert_eq!(probe.closed_early.load(Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    async fn the_sample_runs_the_statement_of_the_adapter() {
+        let (session, probe) = session(vec![Scripted::Rows(3)]);
+
+        let report = session.sample("public", "item", 100).await.unwrap();
+
+        assert_eq!(
+            *probe.executed.lock().unwrap(),
+            vec!["select * from public.item limit 100"]
+        );
+        assert!(matches!(
+            report.outcome,
+            Outcome::Rows {
+                is_complete: true,
+                total_rows: Some(3),
+                ..
+            }
+        ));
     }
 
     #[tokio::test]

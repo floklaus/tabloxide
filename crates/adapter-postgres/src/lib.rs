@@ -4,6 +4,7 @@ mod columns;
 mod config;
 mod connect;
 mod error;
+mod introspect;
 mod session;
 mod stream;
 mod tls;

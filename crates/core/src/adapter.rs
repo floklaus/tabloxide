@@ -1,6 +1,9 @@
 //! The database interface that the other parts of the application use.
 
-use crate::{Column, ConnectError, ConnectionProfile, Page, QueryError, Secret, ServerInfo};
+use crate::{
+    Column, ConnectError, ConnectionProfile, Page, QueryError, RelationDetail, RelationInfo,
+    SchemaInfo, Secret, ServerInfo,
+};
 use async_trait::async_trait;
 use serde::Serialize;
 use std::sync::Arc;
@@ -46,6 +49,23 @@ pub trait Session: Send {
     ///
     /// Read the result stream to its end, or close it, before the next call.
     async fn execute(&mut self, statement: &str) -> Result<Box<dyn ResultStream>, QueryError>;
+
+    /// Lists the schemas of the database. User schemas are first.
+    async fn schemas(&mut self) -> Result<Vec<SchemaInfo>, QueryError>;
+
+    /// Lists the tables and the views of one schema, in alphabetical sequence.
+    async fn relations(&mut self, schema: &str) -> Result<Vec<RelationInfo>, QueryError>;
+
+    /// Reads the columns, the indexes, and the constraints of one table or view.
+    async fn relation_detail(
+        &mut self,
+        schema: &str,
+        relation: &str,
+    ) -> Result<RelationDetail, QueryError>;
+
+    /// Returns a statement that reads a maximum of `limit` rows of a table or view.
+    /// The statement has the identifiers in quotes.
+    fn sample_statement(&self, schema: &str, relation: &str, limit: u32) -> String;
 }
 
 /// Cancels the active statement of a session.

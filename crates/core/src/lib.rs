@@ -8,6 +8,7 @@ pub mod csv;
 mod error;
 mod query;
 mod runner;
+mod schema;
 mod secret;
 mod sessions;
 pub mod sql;
@@ -24,6 +25,10 @@ pub use error::{ConnectError, ConnectErrorKind};
 pub use query::{Column, ColumnKind, Completion, Page, QueryError, QueryErrorKind, Row};
 pub use runner::{
     Outcome, RunLimits, RunOutput, RunTarget, StatementReport, TextRange, run_script,
+};
+pub use schema::{
+    ColumnInfo, ConstraintInfo, ConstraintKind, IndexInfo, RelationDetail, RelationInfo,
+    RelationKind, SchemaInfo,
 };
 pub use secret::Secret;
 pub use sessions::{FetchedPage, QuerySession, ResultId, RunReport};
