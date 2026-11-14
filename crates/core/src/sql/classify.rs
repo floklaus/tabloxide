@@ -24,6 +24,22 @@ pub fn is_pageable(statement: &str) -> bool {
     is(first, "with") && !words.any(|token| DATA_CHANGE_WORDS.iter().any(|w| is(token, w)))
 }
 
+/// Returns `true` if `statement` can contain a password.
+///
+/// The query history does not record the text of such a statement. The function finds
+/// the keyword `PASSWORD` (for example in `ALTER ROLE`) and a connection string in a
+/// string literal (for example in `dblink`).
+#[must_use]
+pub fn can_contain_password(statement: &str) -> bool {
+    tokenize(statement).iter().any(|token| match token.kind {
+        TokenKind::Word => token.is_word(statement, "password"),
+        TokenKind::Quoted => statement[token.start..token.end]
+            .to_ascii_lowercase()
+            .contains("password"),
+        _ => false,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -56,6 +72,28 @@ mod tests {
         ];
         for (statement, expected) in cases {
             assert_eq!(is_pageable(statement), expected, "{statement}");
+        }
+    }
+
+    #[test]
+    fn finds_statements_that_can_contain_a_password() {
+        let cases = [
+            ("ALTER ROLE app PASSWORD 'secret'", true),
+            ("create user u with password 'x'", true),
+            (
+                "SELECT * FROM dblink('host=a password=b', 'select 1') AS t(a int)",
+                true,
+            ),
+            (
+                "CREATE USER MAPPING FOR u SERVER s OPTIONS (user 'a', password 'b')",
+                true,
+            ),
+            ("SELECT password_hash FROM account", false),
+            ("SELECT 1 -- password", false),
+            ("SELECT * FROM item", false),
+        ];
+        for (statement, expected) in cases {
+            assert_eq!(can_contain_password(statement), expected, "{statement}");
         }
     }
 }

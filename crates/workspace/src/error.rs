@@ -32,6 +32,18 @@ pub enum WorkspaceError {
     #[error("The connection does not exist: {0}")]
     ConnectionNotFound(ConnectionId),
 
+    #[error("The path is not in the workspace folder: {0}")]
+    OutsideWorkspace(String),
+
+    #[error("{} is too large to open. The limit is {limit_mb} MB.", path.display())]
+    FileTooLarge { path: PathBuf, limit_mb: u64 },
+
+    #[error("{} is not a UTF-8 text file.", path.display())]
+    NotText { path: PathBuf },
+
+    #[error("The local state database failed: {0}")]
+    Database(String),
+
     #[error(transparent)]
     Secret(#[from] crate::secrets::SecretError),
 }
