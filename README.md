@@ -109,7 +109,7 @@ Push a tag such as `v0.1.0`. The workflow `.github/workflows/release.yml` builds
 
 ### `symbol lookup error` in the VS Code terminal on Linux
 
-If VS Code is a snap package, its terminal sets GTK variables that point into the snap. The application then stops at startup with a `symbol lookup error`. Start the application from a terminal outside VS Code, or remove the variables first:
+If VS Code is a snap package, its terminal sets GTK variables that point into the snap. The application then stops at startup with a `symbol lookup error`. Start the application from a terminal outside VS Code, or unset the variables first:
 
 ```sh
 unset GTK_PATH GTK_EXE_PREFIX GIO_MODULE_DIR GSETTINGS_SCHEMA_DIR \
