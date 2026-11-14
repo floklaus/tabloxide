@@ -10,12 +10,23 @@ import { FileTree } from '../files/FileTree'
 import { PreferencesDialog } from '../preferences/PreferencesDialog'
 import { usePreferencesStore } from '../preferences/preferencesStore'
 import { resetQueryStores } from '../query/queryStore'
+import { useResultsViewStore } from '../results/resultsViewStore'
+import { SchemaTree } from '../schema/SchemaTree'
+import { useSchemaStore } from '../schema/schemaStore'
 import { persistTabs, useTabsStore } from '../tabs/tabsStore'
 import { QueryEditor } from '../query/QueryEditor'
 import { ResultsPane } from '../results/ResultsPane'
 import { ThemeToggle } from '../theme/ThemeToggle'
 import { useWorkspaceStore } from '../workspace/workspaceStore'
 import { StatusBar } from './StatusBar'
+
+type SidebarView = 'files' | 'connections' | 'schema'
+
+const SIDEBAR_VIEWS: { id: SidebarView; label: string }[] = [
+  { id: 'files', label: 'Files' },
+  { id: 'connections', label: 'Connections' },
+  { id: 'schema', label: 'Schema' },
+]
 
 const MAIN_LAYOUT_ID = 'tabloxide.layout.main'
 const WORK_LAYOUT_ID = 'tabloxide.layout.work'
@@ -30,6 +41,7 @@ export function AppShell() {
   const tabsError = useTabsStore((state) => state.error)
   const setTabsError = useTabsStore((state) => state.setError)
   const [showsPreferences, setShowsPreferences] = useState(false)
+  const [sidebarView, setSidebarView] = useState<SidebarView>('files')
 
   // The tabs and the sessions belong to the workspace. They start and end with this screen.
   useEffect(() => {
@@ -40,6 +52,8 @@ export function AppShell() {
       stopPersist()
       useTabsStore.getState().reset()
       resetQueryStores()
+      useSchemaStore.getState().reset()
+      useResultsViewStore.getState().setView('results')
     }
   }, [])
 
@@ -105,8 +119,27 @@ export function AppShell() {
       >
         <Panel id="sidebar" defaultSize="20%" minSize="12%" collapsible>
           <nav className="pane" aria-label="Sidebar">
-            <FileTree />
-            <ConnectionList />
+            <div
+              className="results__views"
+              role="tablist"
+              aria-label="Sidebar views"
+            >
+              {SIDEBAR_VIEWS.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="tab"
+                  className="results__view"
+                  aria-selected={sidebarView === item.id}
+                  onClick={() => setSidebarView(item.id)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+            {sidebarView === 'files' && <FileTree />}
+            {sidebarView === 'connections' && <ConnectionList />}
+            {sidebarView === 'schema' && <SchemaTree />}
           </nav>
         </Panel>
         <Separator className="separator" aria-label="Resize the sidebar" />

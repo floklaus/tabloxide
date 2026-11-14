@@ -109,7 +109,12 @@ describe('HistoryPanel', () => {
     sessionOpen.mockResolvedValue(
       ok({
         status: 'connected',
-        session: { id: 4, connection_id: 'c1', server: { version: '17' } },
+        session: {
+          id: 4,
+          connection_id: 'c1',
+          database: 'app',
+          server: { version: '17' },
+        },
       }),
     )
     queryRun.mockResolvedValue(ok({ statements: [], open_result: null }))

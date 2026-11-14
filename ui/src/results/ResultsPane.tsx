@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { HistoryPanel } from '../history/HistoryPanel'
 import {
   activeQueryStore,
@@ -7,7 +6,9 @@ import {
 } from '../query/queryStore'
 import type { QueryError, StatementReport } from '../query/queryStore'
 import type { Location } from '../bindings'
+import { TableDetail } from '../schema/TableDetail'
 import { ResultGrid } from './ResultGrid'
+import { useResultsViewStore, type ResultsView } from './resultsViewStore'
 
 const PREVIEW_LENGTH = 48
 const numberFormat = new Intl.NumberFormat('en-US')
@@ -165,8 +166,6 @@ function isLast(index: number): boolean {
   return index === activeQueryStore().getState().statements.length - 1
 }
 
-type View = 'results' | 'history'
-
 function Results() {
   const hasConnection = useQuery((state) => state.session !== null)
   const runState = useQuery((state) => state.runState)
@@ -228,10 +227,12 @@ function Results() {
 }
 
 export function ResultsPane() {
-  const [view, setView] = useState<View>('results')
-  const views: { id: View; label: string }[] = [
+  const view = useResultsViewStore((state) => state.view)
+  const setView = useResultsViewStore((state) => state.setView)
+  const views: { id: ResultsView; label: string }[] = [
     { id: 'results', label: 'Results' },
     { id: 'history', label: 'History' },
+    { id: 'table', label: 'Table' },
   ]
 
   return (
@@ -250,11 +251,9 @@ export function ResultsPane() {
           </button>
         ))}
       </div>
-      {view === 'results' ? (
-        <Results />
-      ) : (
-        <HistoryPanel onRun={() => setView('results')} />
-      )}
+      {view === 'results' && <Results />}
+      {view === 'history' && <HistoryPanel onRun={() => setView('results')} />}
+      {view === 'table' && <TableDetail />}
     </section>
   )
 }

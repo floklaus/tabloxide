@@ -65,7 +65,12 @@ describe('queryStore', () => {
     sessionOpen.mockResolvedValue(
       ok({
         status: 'connected',
-        session: { id: 7, connection_id: 'id-1', server: { version: '17.0' } },
+        session: {
+          id: 7,
+          connection_id: 'id-1',
+          database: 'app',
+          server: { version: '17.0' },
+        },
       }),
     )
 
@@ -98,7 +103,12 @@ describe('queryStore', () => {
     sessionOpen.mockResolvedValue(
       ok({
         status: 'connected',
-        session: { id: 9, connection_id: 'id-1', server: { version: '17.0' } },
+        session: {
+          id: 9,
+          connection_id: 'id-1',
+          database: 'app',
+          server: { version: '17.0' },
+        },
       }),
     )
     queryRun.mockResolvedValue(ok({ statements: [], open_result: null }))

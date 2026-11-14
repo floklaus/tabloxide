@@ -1059,3 +1059,137 @@ body {
   align-items: center;
   gap: 0.5rem;
 }
+
+/* Schema browser */
+
+.pane:has(.schema) {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.schema {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-height: 0;
+}
+
+.schema__select {
+  width: 100%;
+}
+
+.schema__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.schema__rows {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.schema__row {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  overflow: hidden;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.schema__button,
+.schema__toggle {
+  padding: 0.1rem 0.25rem;
+  overflow: hidden;
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.schema__button:hover,
+.schema__toggle:hover {
+  background: var(--color-surface);
+}
+
+.schema__button[data-system='true'],
+.schema__detail,
+.schema__group {
+  color: var(--color-text-muted);
+}
+
+.schema__group {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.schema__item {
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+}
+
+/* Table detail */
+
+.table-detail {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.table-detail__title,
+.table-detail__subtitle {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.table-detail__table {
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.table-detail__table caption {
+  padding-bottom: 0.2rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  text-align: left;
+}
+
+.table-detail__table th,
+.table-detail__table td {
+  padding: 0.15rem 0.6rem 0.15rem 0;
+  border-bottom: 1px solid var(--color-border);
+  font-family: var(--font-mono);
+  font-weight: normal;
+  text-align: left;
+  vertical-align: top;
+}
+
+.table-detail__table thead th {
+  color: var(--color-text-muted);
+  font-family: var(--font-ui);
+}
+
+.table-detail__grid {
+  display: flex;
+  flex: none;
+  height: 18rem;
+}

@@ -55,7 +55,12 @@ async function connect(user: ReturnType<typeof userEvent.setup>) {
   sessionOpen.mockResolvedValue(
     ok({
       status: 'connected',
-      session: { id: 7, connection_id: 'id-2', server: { version: '17.2' } },
+      session: {
+        id: 7,
+        connection_id: 'id-2',
+        database: 'app',
+        server: { version: '17.2' },
+      },
     }),
   )
   await user.selectOptions(screen.getByRole('combobox'), 'Live')
@@ -124,7 +129,12 @@ describe('QueryEditor', () => {
     sessionOpen.mockResolvedValue(
       ok({
         status: 'connected',
-        session: { id: 7, connection_id: 'id-2', server: { version: '17.2' } },
+        session: {
+          id: 7,
+          connection_id: 'id-2',
+          database: 'app',
+          server: { version: '17.2' },
+        },
       }),
     )
     queryRun.mockResolvedValue(ok({ statements: [], open_result: null }))
