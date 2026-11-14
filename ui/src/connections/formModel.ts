@@ -25,6 +25,7 @@ export type ConnectionDraft = {
   params: string
   secretKind: SecretKind
   envVarName: string
+  readOnly: boolean
 }
 
 export type DraftResult =
@@ -56,6 +57,7 @@ export function toDraft(profile: ConnectionProfile): ConnectionDraft {
     params: paramsToText(profile.params),
     secretKind: profile.secret.type,
     envVarName: profile.secret.type === 'env-var' ? profile.secret.name : '',
+    readOnly: profile.read_only ?? false,
   }
 }
 
@@ -151,6 +153,7 @@ export function toProfile(draft: ConnectionDraft): DraftResult {
         ? {}
         : { query_timeout_secs: queryTimeout }),
       ...(Object.keys(params).length === 0 ? {} : { params }),
+      ...(draft.readOnly ? { read_only: true } : {}),
     },
   }
 }

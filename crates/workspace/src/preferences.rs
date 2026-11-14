@@ -39,6 +39,10 @@ pub struct Preferences {
     pub editor: EditorPreferences,
     /// The application deletes history entries that are older than this number of days.
     pub history_retention_days: u32,
+    /// Ask before a destructive statement runs.
+    pub confirm_destructive: bool,
+    /// Ask before a statement runs on a production connection.
+    pub confirm_production: bool,
 }
 
 impl Default for Preferences {
@@ -46,6 +50,8 @@ impl Default for Preferences {
         Self {
             editor: EditorPreferences::default(),
             history_retention_days: DEFAULT_HISTORY_RETENTION_DAYS,
+            confirm_destructive: true,
+            confirm_production: true,
         }
     }
 }
@@ -70,6 +76,7 @@ impl Preferences {
             history_retention_days: self
                 .history_retention_days
                 .clamp(HISTORY_RETENTION_RANGE.0, HISTORY_RETENTION_RANGE.1),
+            ..self
         }
     }
 }
@@ -88,6 +95,8 @@ mod tests {
                 word_wrap: true,
             },
             history_retention_days: 0,
+            confirm_destructive: false,
+            confirm_production: true,
         };
 
         let normalized = preferences.normalized();
@@ -97,6 +106,8 @@ mod tests {
         assert!(!normalized.editor.line_numbers);
         assert!(normalized.editor.word_wrap);
         assert_eq!(normalized.history_retention_days, 1);
+        assert!(!normalized.confirm_destructive);
+        assert!(normalized.confirm_production);
     }
 
     #[test]
@@ -110,5 +121,7 @@ mod tests {
             preferences.history_retention_days,
             DEFAULT_HISTORY_RETENTION_DAYS
         );
+        assert!(preferences.confirm_destructive);
+        assert!(preferences.confirm_production);
     }
 }

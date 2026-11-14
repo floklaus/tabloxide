@@ -193,6 +193,50 @@ describe('queryStore', () => {
     expect(store.getState().open).toBeNull()
   })
 
+  test('drops the session after a lost connection, so that the next run connects again', async () => {
+    store.setState({ session: { id: 7, connectionId: 'id-1', version: '17' } })
+    const lost = {
+      range: { from: 0, to: 8 },
+      elapsed_ms: 1,
+      outcome: {
+        type: 'failed' as const,
+        error: {
+          kind: 'connection-lost' as const,
+          message: 'The connection to the server closed.',
+          detail: null,
+          hint: null,
+          code: null,
+          position: null,
+        },
+        location: null,
+      },
+    }
+    queryRun.mockResolvedValue(ok({ statements: [lost], open_result: null }))
+
+    await store.getState().run('select 1', { type: 'all' }, 'id-1')
+
+    expect(store.getState().session).toBeNull()
+    expect(store.getState().notice).toContain('The next run connects again')
+    expect(commands.sessionClose).toHaveBeenCalledWith(7)
+    expect(store.getState().statements).toHaveLength(1)
+
+    sessionOpen.mockResolvedValue(
+      ok({
+        status: 'connected',
+        session: {
+          id: 8,
+          connection_id: 'id-1',
+          database: 'app',
+          server: { version: '17' },
+        },
+      }),
+    )
+    queryRun.mockResolvedValue(ok({ statements: [], open_result: null }))
+    await store.getState().run('select 1', { type: 'all' }, 'id-1')
+
+    expect(queryRun).toHaveBeenLastCalledWith(8, 'select 1', { type: 'all' })
+  })
+
   test('does not fetch when no result is open', async () => {
     await connectAndRun(null)
 

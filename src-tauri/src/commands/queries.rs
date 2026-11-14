@@ -7,7 +7,7 @@ use specta::Type;
 use std::path::{Path, PathBuf};
 use tabloxide_core::{
     FetchedPage, QueryError, QueryErrorKind, QuerySession, ResultId, RunLimits, RunReport,
-    RunTarget,
+    RunTarget, StatementPreview, preview_run,
 };
 use tabloxide_workspace::entries_from_report;
 use tauri::{AppHandle, State};
@@ -67,6 +67,14 @@ pub async fn query_run(
     // The run is complete. A failure to record the history must not hide its result.
     let _ = record_history(&app, &state, &sql, &report, &entry).await;
     Ok(report)
+}
+
+/// Returns the statements that a run would execute, with the risk of each destructive
+/// statement. This command does not run a statement.
+#[tauri::command]
+#[specta::specta]
+pub fn query_preview(sql: String, target: RunTarget) -> Vec<StatementPreview> {
+    preview_run(&sql, target)
 }
 
 /// Cancels the active statement of a session. The run or the fetch then returns

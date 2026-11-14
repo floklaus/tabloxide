@@ -1327,3 +1327,24 @@ body {
 .diff__sides .cm-changedText {
   background: color-mix(in srgb, var(--color-accent) 30%, transparent);
 }
+
+.tabs__connection {
+  color: var(--color-text-muted);
+}
+
+.confirm__list {
+  max-height: 14rem;
+  padding-left: 1.2rem;
+  overflow-y: auto;
+}
+
+.confirm__list li {
+  margin-bottom: 0.4rem;
+}
+
+.confirm__list code {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}

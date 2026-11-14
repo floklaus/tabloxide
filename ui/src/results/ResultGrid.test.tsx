@@ -123,6 +123,28 @@ describe('ResultGrid', () => {
     expect(writeText).toHaveBeenLastCalledWith('')
   })
 
+  test('moves the selected cell with the arrow keys', async () => {
+    const { user } = renderGrid()
+    const selected = () =>
+      screen
+        .getAllByRole('gridcell')
+        .find((cell) => cell.getAttribute('aria-selected') === 'true')
+        ?.textContent
+
+    screen.getByRole('grid').focus()
+    await user.keyboard('{ArrowDown}')
+    expect(selected()).toBe('10')
+
+    await user.keyboard('{ArrowDown}{ArrowRight}')
+    expect(selected()).toBe('NULL')
+
+    await user.keyboard('{ArrowRight}{ArrowDown}{ArrowDown}')
+    expect(selected()).toBe('a')
+
+    await user.keyboard('{Home}{ArrowUp}{ArrowUp}{ArrowUp}')
+    expect(selected()).toBe('10')
+  })
+
   test('asks for more rows when the end is near and the result has more', () => {
     const { onNeedMore } = renderGrid({ hasMore: true })
 

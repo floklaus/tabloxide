@@ -27,6 +27,20 @@ const FETCH_THRESHOLD_ROWS = 100
 
 type CellPosition = { row: number; column: number }
 
+const PAGE_ROWS = 20
+
+/** The row step and the column step of each navigation key. */
+const KEY_STEPS: Record<string, (columns: number) => [number, number]> = {
+  ArrowDown: () => [1, 0],
+  ArrowUp: () => [-1, 0],
+  ArrowRight: () => [0, 1],
+  ArrowLeft: () => [0, -1],
+  PageDown: () => [PAGE_ROWS, 0],
+  PageUp: () => [-PAGE_ROWS, 0],
+  Home: (columns) => [0, -columns],
+  End: (columns) => [0, columns],
+}
+
 type Props = {
   columns: Column[]
   rows: Row[]
@@ -113,11 +127,30 @@ export function ResultGrid({ columns, rows, hasMore, onNeedMore }: Props) {
   const copyRow = () => {
     if (selectedRow) void copyText(rowsToTsv([selectedRow], visible))
   }
+  /** Moves the selected cell. The grid scrolls so that the cell is visible. */
+  const moveSelection = (rowStep: number, columnStep: number) => {
+    if (order.length === 0 || visible.length === 0) return
+    const row = selected ? order.indexOf(selected.row) : -1
+    const column = selected ? visible.indexOf(selected.column) : -1
+    const clamp = (value: number, max: number) =>
+      Math.min(Math.max(value, 0), max)
+    // Without a selection, the first key selects the first cell.
+    const nextRow = row < 0 ? 0 : clamp(row + rowStep, order.length - 1)
+    const nextColumn =
+      column < 0 ? 0 : clamp(column + columnStep, visible.length - 1)
+    setSelected({ row: order[nextRow], column: visible[nextColumn] })
+    virtualizer.scrollToIndex(nextRow)
+  }
   const onKeyDown = (event: KeyboardEvent) => {
     if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
       event.preventDefault()
       copyCell()
+      return
     }
+    const step = KEY_STEPS[event.key]
+    if (!step) return
+    event.preventDefault()
+    moveSelection(...step(visible.length))
   }
   const toggleColumn = (index: number) => {
     const next = new Set(hidden)

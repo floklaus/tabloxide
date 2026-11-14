@@ -6,6 +6,7 @@ import { TabBar } from '../tabs/TabBar'
 import { isDirty, useTabsStore } from '../tabs/tabsStore'
 import { useWorkspaceStore } from '../workspace/workspaceStore'
 import { activeQueryStore, useQuery } from './queryStore'
+import { requestRun } from './runConfirm'
 
 const NO_CONNECTIONS: never[] = []
 
@@ -41,9 +42,7 @@ export function QueryEditor() {
   const canRun = active !== undefined && runState === 'idle' && !isConnecting
   const run = (target: RunTarget) => {
     if (!canRun) return
-    void activeQueryStore()
-      .getState()
-      .run(tab.content, target, tab.connectionId)
+    void requestRun(tab.content, target)
   }
   const selectConnection = (connectionId: string) => {
     const query = activeQueryStore().getState()
@@ -75,6 +74,7 @@ export function QueryEditor() {
             {active.environment}
           </span>
         )}
+        {active?.read_only && <span className="badge">read-only</span>}
         {isConnecting && <span role="status">Connecting…</span>}
         {session && (
           <span className="query__server">PostgreSQL {session.version}</span>

@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { ConfirmDialog } from '../connections/ConfirmDialog'
 import { disposeQueryStore } from '../query/queryStore'
+import { useWorkspaceStore } from '../workspace/workspaceStore'
 import { isDirty, useTabsStore, type Tab } from './tabsStore'
+
+const NO_CONNECTIONS: never[] = []
 
 export function TabBar() {
   const tabs = useTabsStore((state) => state.tabs)
@@ -10,6 +13,11 @@ export function TabBar() {
   const newTab = useTabsStore((state) => state.newTab)
   const close = useTabsStore((state) => state.close)
   const [closing, setClosing] = useState<Tab | null>(null)
+  const connections = useWorkspaceStore(
+    (state) => state.workspace?.connections ?? NO_CONNECTIONS,
+  )
+  const connectionName = (tab: Tab) =>
+    connections.find((item) => item.id === tab.connectionId)?.name
 
   const closeNow = (tab: Tab) => {
     disposeQueryStore(tab.id)
@@ -37,6 +45,12 @@ export function TabBar() {
                 onClick={() => activate(tab.id)}
               >
                 {tab.title}
+                {connectionName(tab) && (
+                  <span className="tabs__connection">
+                    {' '}
+                    — {connectionName(tab)}
+                  </span>
+                )}
                 {dirty && (
                   <span className="tabs__dirty" aria-label="Unsaved changes">
                     {' '}

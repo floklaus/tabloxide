@@ -41,7 +41,7 @@ export function ConnectionForm({
     value: ConnectionDraft[K],
   ) => setDraft((current) => ({ ...current, [key]: value }))
 
-  const text = (key: keyof ConnectionDraft) => ({
+  const text = (key: Exclude<keyof ConnectionDraft, 'readOnly'>) => ({
     value: draft[key],
     onChange: (event: { target: { value: string } }) =>
       update(key, event.target.value as never),
@@ -146,6 +146,18 @@ export function ConnectionForm({
             </select>
           )}
         </Field>
+
+        <label className="field field--check">
+          <input
+            type="checkbox"
+            checked={draft.readOnly}
+            onChange={(event) => update('readOnly', event.target.checked)}
+          />
+          <span>
+            Read-only. The server refuses statements that change data or the
+            schema.
+          </span>
+        </label>
 
         <div className="form__grid">
           <Field label="Password source" error={error('secret')}>

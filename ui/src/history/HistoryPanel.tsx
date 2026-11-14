@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { commands, type HistoryEntry_Serialize } from '../bindings'
 import { ConfirmDialog } from '../connections/ConfirmDialog'
 import { toMessage } from '../lib/errors'
-import { activeQueryStore } from '../query/queryStore'
+import { requestRun } from '../query/runConfirm'
 import { useTabsStore } from '../tabs/tabsStore'
 
 export type HistoryEntry = HistoryEntry_Serialize
@@ -66,11 +66,8 @@ export function HistoryPanel({ onRun }: Props) {
   const runAgain = (entry: HistoryEntry) => {
     const tabs = useTabsStore.getState()
     const tab = tabs.tabs.find((item) => item.id === tabs.activeId)
-    const connectionId = tab?.connectionId ?? entry.connection_id
-    if (tab && !tab.connectionId) setConnection(tab.id, connectionId)
-    void activeQueryStore()
-      .getState()
-      .run(entry.sql, { type: 'all' }, connectionId)
+    if (tab && !tab.connectionId) setConnection(tab.id, entry.connection_id)
+    void requestRun(entry.sql, { type: 'all' })
     onRun()
   }
   const clear = async () => {

@@ -7,6 +7,7 @@ describe('formModel', () => {
     const profile = makeProfile({
       socket_path: '/var/run/postgresql',
       query_timeout_secs: 30,
+      read_only: true,
       params: { application_name: 'tabloxide', options: '-c a=b' },
       secret: { type: 'env-var', name: 'PGPASSWORD' },
     })

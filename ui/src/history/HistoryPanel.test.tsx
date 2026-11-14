@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { commands } from '../bindings'
 import { resetQueryStores } from '../query/queryStore'
 import { useTabsStore } from '../tabs/tabsStore'
+import { makeProfile, makeWorkspace } from '../test/fixtures'
+import { useWorkspaceStore } from '../workspace/workspaceStore'
 import { HistoryPanel, type HistoryEntry } from './HistoryPanel'
 
 vi.mock('../bindings', async () =>
@@ -48,6 +50,9 @@ describe('HistoryPanel', () => {
     resetQueryStores()
     useTabsStore.getState().reset()
     useTabsStore.getState().newTab()
+    useWorkspaceStore.setState({
+      workspace: makeWorkspace([makeProfile({ id: 'c1' })]),
+    })
   })
 
   test('shows the entries with the connection and the result', async () => {

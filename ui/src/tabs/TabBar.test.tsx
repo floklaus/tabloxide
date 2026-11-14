@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { commands } from '../bindings'
 import { getQueryStore, resetQueryStores } from '../query/queryStore'
+import { makeProfile, makeWorkspace } from '../test/fixtures'
+import { useWorkspaceStore } from '../workspace/workspaceStore'
 import { TabBar } from './TabBar'
 import { useTabsStore, type Tab } from './tabsStore'
 
@@ -37,6 +39,7 @@ describe('TabBar', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     useTabsStore.getState().reset()
+    useWorkspaceStore.setState({ workspace: null })
     resetQueryStores()
   })
 
@@ -51,6 +54,16 @@ describe('TabBar', () => {
       'aria-selected',
       'true',
     )
+  })
+
+  test('shows the connection name of a tab', () => {
+    useWorkspaceStore.setState({
+      workspace: makeWorkspace([makeProfile({ id: 'c1', name: 'Live' })]),
+    })
+
+    renderTabs([tab({ connectionId: 'c1' }), tab({ id: 't2', title: 'b.sql' })])
+
+    expect(titles()).toEqual(['Query 1 — Live', 'b.sql'])
   })
 
   test('activates a tab when the user clicks it', async () => {

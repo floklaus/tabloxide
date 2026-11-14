@@ -8,6 +8,8 @@ export type Preferences = Preferences_Serialize
 export const DEFAULT_PREFERENCES: Preferences = {
   editor: { font_size: 14, tab_width: 2, line_numbers: true, word_wrap: false },
   history_retention_days: 90,
+  confirm_destructive: true,
+  confirm_production: true,
 }
 
 export const LIMITS = {

@@ -12,6 +12,7 @@ import { useGitStore } from '../git/gitStore'
 import { PreferencesDialog } from '../preferences/PreferencesDialog'
 import { usePreferencesStore } from '../preferences/preferencesStore'
 import { resetQueryStores } from '../query/queryStore'
+import { RunConfirmDialog } from '../query/RunConfirmDialog'
 import { useResultsViewStore } from '../results/resultsViewStore'
 import { SchemaTree } from '../schema/SchemaTree'
 import { useSchemaStore } from '../schema/schemaStore'
@@ -111,6 +112,7 @@ export function AppShell() {
           </button>
         </div>
       )}
+      <RunConfirmDialog />
       {showsPreferences && (
         <PreferencesDialog onClose={() => setShowsPreferences(false)} />
       )}

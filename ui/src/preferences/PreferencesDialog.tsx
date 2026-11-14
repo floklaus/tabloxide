@@ -91,6 +91,29 @@ export function PreferencesDialog({ onClose }: Props) {
               setDraft({ ...draft, history_retention_days })
             }
           />
+          <label className="field field--check">
+            <input
+              type="checkbox"
+              checked={draft.confirm_destructive}
+              onChange={(event) =>
+                setDraft({
+                  ...draft,
+                  confirm_destructive: event.target.checked,
+                })
+              }
+            />
+            <span>Ask before a destructive statement runs</span>
+          </label>
+          <label className="field field--check">
+            <input
+              type="checkbox"
+              checked={draft.confirm_production}
+              onChange={(event) =>
+                setDraft({ ...draft, confirm_production: event.target.checked })
+              }
+            />
+            <span>Ask before a statement runs on a production connection</span>
+          </label>
         </div>
         <div className="modal__actions">
           <button type="button" className="button" onClick={onClose}>

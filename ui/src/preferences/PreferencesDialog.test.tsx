@@ -41,6 +41,8 @@ describe('PreferencesDialog', () => {
         word_wrap: true,
       },
       history_retention_days: 90,
+      confirm_destructive: true,
+      confirm_production: true,
     }
     preferencesSave.mockResolvedValue({ status: 'ok', data: changed })
     render(<PreferencesDialog onClose={onClose} />)

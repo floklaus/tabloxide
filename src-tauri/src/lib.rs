@@ -24,6 +24,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
             connections::connection_test,
             sessions::session_open,
             sessions::session_close,
+            queries::query_preview,
             queries::query_run,
             queries::query_cancel,
             queries::result_fetch,

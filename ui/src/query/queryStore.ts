@@ -135,6 +135,20 @@ export const createQueryStore = (): QueryStore =>
       })
     }
 
+    /** After a lost connection, the next run connects again. */
+    const dropLostSession = (error: QueryError | null | undefined) => {
+      const { session } = get()
+      if (error?.kind !== 'connection-lost' || !session) return
+      set({
+        session: null,
+        open: null,
+        notice:
+          'The connection to the server closed. The next run connects again.',
+      })
+      // The backend session is of no more use. A failure to close it changes nothing.
+      commands.sessionClose(session.id).catch(() => {})
+    }
+
     return {
       ...INITIAL,
 
@@ -199,6 +213,10 @@ export const createQueryStore = (): QueryStore =>
             notice:
               statements.length === 0 ? 'There is no statement to run.' : null,
           })
+          const lastOutcome = statements.at(-1)?.outcome
+          dropLostSession(
+            lastOutcome?.type === 'failed' ? lastOutcome.error : null,
+          )
         } catch (error) {
           set({ runState: 'idle', notice: toMessage(error) })
         }
@@ -248,6 +266,7 @@ export const createQueryStore = (): QueryStore =>
               open: page.is_complete || page.error ? null : open,
               fetchError: page.error,
             })
+            dropLostSession(page.error)
           }
         } catch (error) {
           set({ open: null, notice: toMessage(error) })

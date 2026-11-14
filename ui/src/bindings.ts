@@ -36,6 +36,11 @@ export const commands = {
 	/**  Closes a database session. This cancels its open result. */
 	sessionClose: (sessionId: number, options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("session_close", { sessionId }, options)),
 	/**
+	 *  Returns the statements that a run would execute, with the risk of each destructive
+	 *  statement. This command does not run a statement.
+	 */
+	queryPreview: (sql: string, target: RunTarget, options?: InvokeOptions) => __TAURI_INVOKE<StatementPreview_Serialize[]>("query_preview", { sql, target }, options),
+	/**
 	 *  Runs the statements that `target` selects from `sql`, in sequence.
 	 *  The run stops at the first failure. The report has one entry for each statement that ran.
 	 */
@@ -244,6 +249,8 @@ export type ConnectionProfile_Deserialize = {
 	connect_timeout_secs?: number,
 	/**  Maximum time for one query. `None` means no limit. */
 	query_timeout_secs?: number | null,
+	/**  The session refuses statements that change data or the schema. */
+	read_only?: boolean,
 	/**  Extra connection parameters of the database driver. */
 	params?: { [key in string]: string },
 	secret?: SecretSource,
@@ -264,6 +271,8 @@ export type ConnectionProfile_Serialize = {
 	connect_timeout_secs: number,
 	/**  Maximum time for one query. `None` means no limit. */
 	query_timeout_secs?: number,
+	/**  The session refuses statements that change data or the schema. */
+	read_only?: boolean,
 	/**  Extra connection parameters of the database driver. */
 	params?: { [key in string]: string },
 	secret: SecretSource,
@@ -493,12 +502,20 @@ export type Preferences_Deserialize = {
 	editor?: EditorPreferences_Deserialize,
 	/**  The application deletes history entries that are older than this number of days. */
 	history_retention_days?: number,
+	/**  Ask before a destructive statement runs. */
+	confirm_destructive?: boolean,
+	/**  Ask before a statement runs on a production connection. */
+	confirm_production?: boolean,
 };
 
 export type Preferences_Serialize = {
 	editor: EditorPreferences_Serialize,
 	/**  The application deletes history entries that are older than this number of days. */
 	history_retention_days: number,
+	/**  Ask before a destructive statement runs. */
+	confirm_destructive: boolean,
+	/**  Ask before a statement runs on a production connection. */
+	confirm_production: boolean,
 };
 
 /**  A query failure. */
@@ -569,6 +586,13 @@ export type RelationInfo = {
 
 export type RelationKind = "table" | "view" | "materialized-view" | "foreign-table";
 
+/**  Why a statement needs a confirmation before it runs. */
+export type Risk = "drop" | "truncate" | "alter" | 
+/**  `DELETE` without `WHERE` removes all rows. */
+"delete-without-where" | 
+/**  `UPDATE` without `WHERE` changes all rows. */
+"update-without-where";
+
 /**
  *  The report of one run. `open_result` identifies the result of the last statement,
  *  if it has more rows to fetch.
@@ -634,6 +658,23 @@ export type SessionInfo = {
 
 /**  Result of a connect request. A failed connect is a normal result, not a command error. */
 export type SessionOpenResult = { status: "connected"; session: SessionInfo } | { status: "failed"; error: ConnectError };
+
+/**  One statement that a run would execute. */
+export type StatementPreview = StatementPreview_Serialize | StatementPreview_Deserialize;
+
+/**  One statement that a run would execute. */
+export type StatementPreview_Deserialize = {
+	range: TextRange,
+	/**  Has a value if the statement is destructive. */
+	risk?: Risk | null,
+};
+
+/**  One statement that a run would execute. */
+export type StatementPreview_Serialize = {
+	range: TextRange,
+	/**  Has a value if the statement is destructive. */
+	risk: Risk | null,
+};
 
 /**  The report for one statement of a run. */
 export type StatementReport = StatementReport_Serialize | StatementReport_Deserialize;
