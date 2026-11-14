@@ -4,7 +4,9 @@ import {
   Separator,
   useDefaultLayout,
 } from 'react-resizable-panels'
+import { ConnectionList } from '../connections/ConnectionList'
 import { ThemeToggle } from '../theme/ThemeToggle'
+import { useWorkspaceStore } from '../workspace/workspaceStore'
 import { StatusBar } from './StatusBar'
 
 const MAIN_LAYOUT_ID = 'tabloxide.layout.main'
@@ -13,13 +15,41 @@ const WORK_LAYOUT_ID = 'tabloxide.layout.work'
 export function AppShell() {
   const mainLayout = useDefaultLayout({ id: MAIN_LAYOUT_ID })
   const workLayout = useDefaultLayout({ id: WORK_LAYOUT_ID })
+  const workspaceName = useWorkspaceStore((state) => state.workspace?.name)
+  const error = useWorkspaceStore((state) => state.error)
+  const setError = useWorkspaceStore((state) => state.setError)
+  const close = useWorkspaceStore((state) => state.close)
 
   return (
     <div className="app-shell">
       <header className="title-bar">
         <span className="title-bar__name">Tabloxide</span>
+        {workspaceName && (
+          <span className="title-bar__workspace">{workspaceName}</span>
+        )}
+        <span className="title-bar__spacer" />
+        <button
+          type="button"
+          className="button button--small"
+          onClick={() => void close()}
+        >
+          Close workspace
+        </button>
         <ThemeToggle />
       </header>
+
+      {error && (
+        <div className="banner" role="alert">
+          <span>{error}</span>
+          <button
+            type="button"
+            className="link-button"
+            onClick={() => setError(null)}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       <Group
         className="app-shell__panes"
@@ -29,10 +59,7 @@ export function AppShell() {
       >
         <Panel id="sidebar" defaultSize="20%" minSize="12%" collapsible>
           <nav className="pane" aria-label="Sidebar">
-            <h2 className="pane__title">Sidebar</h2>
-            <p className="pane__hint">
-              Connections, schema, and files show here.
-            </p>
+            <ConnectionList />
           </nav>
         </Panel>
         <Separator className="separator" aria-label="Resize the sidebar" />

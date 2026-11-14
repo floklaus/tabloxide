@@ -5,9 +5,10 @@ import { commands } from '../bindings'
 import { useThemeStore } from '../theme/themeStore'
 import { AppShell } from './AppShell'
 
-vi.mock('../bindings', () => ({
-  commands: { appInfo: vi.fn() },
-}))
+vi.mock('../bindings', async () =>
+  (await import('../test/mockBindings')).createBindingsMock(),
+)
+vi.mock('@tauri-apps/plugin-dialog', () => ({ open: vi.fn() }))
 
 const appInfo = vi.mocked(commands.appInfo)
 
