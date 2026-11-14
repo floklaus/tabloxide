@@ -123,6 +123,8 @@ Known limit: while a paged result is open, the statement stays active on the ser
 
 ## 4. Phase 1 milestones
 
+Status on 2026-11-14: the milestones M0 to M6 are complete in code. The sections below show the plan. The commit messages show what each milestone delivered and where it is different from the plan.
+
 The estimates assume one full-time developer. They are approximate.
 
 ### M0 — Foundation (1 week)

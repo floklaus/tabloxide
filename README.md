@@ -2,7 +2,48 @@
 
 Tabloxide is a cross-platform SQL client with built-in Git. It uses Tauri 2, a React and TypeScript UI, and a Rust backend.
 
-The project is at milestone M1 (connections and secrets). Refer to `docs/Implementation Plan.md` for the plan.
+Phase 1 of `docs/Implementation Plan.md` (milestones M0 to M6) is complete in code. The first database engine is PostgreSQL.
+
+## Functions
+
+- **Workspace:** A workspace is a folder with your SQL files. The file `tabloxide.toml` in that folder holds the connection definitions without secrets.
+- **Connections:** Add, edit, duplicate, delete, and test connections. A password is in the credential store of the operating system, or it comes from an environment variable.
+- **Editor:** SQL editor with tabs for files and for buffers without a file. Each tab has its own database session.
+- **Results:** Result grid with virtual rows, sort, column resize, column visibility, and copy. Export of a result to a CSV file.
+- **History:** Query history with a search. The history is in the application data directory, not in the workspace.
+- **Schema:** Schema browser with tables, views, columns, indexes, and constraints.
+- **Git:** Status, stage, unstage, discard, diff, commit, branches, fetch, pull, and push. The application uses the `git` executable of the system.
+- **Safety:** Confirmation before a destructive statement and before a run on a production connection. Read-only connections.
+
+## Install
+
+A release has installers for Linux (`.deb`, `.rpm`, `.AppImage`), macOS (`.dmg`), and Windows (`.msi`, `-setup.exe`). The file `SHA256SUMS.txt` in the release has the checksum of each installer.
+
+The installers have no code signature. macOS and Windows show a warning for an application without a signature.
+
+To use the Git functions, install Git and make sure that `git` is in the `PATH`. On Linux, the credential store needs a Secret Service, for example GNOME Keyring or KWallet.
+
+## Keyboard shortcuts
+
+| Keys                                              | Function                                            |
+| ------------------------------------------------- | --------------------------------------------------- |
+| `Ctrl+Enter`                                      | Runs the selection, or the statement at the cursor. |
+| `Ctrl+Shift+Enter`                                | Runs all statements of the tab.                     |
+| `Ctrl+S`                                          | Saves the file of the tab.                          |
+| `Ctrl+F`                                          | Opens the search in the editor.                     |
+| Arrow keys, `Home`, `End`, `Page Up`, `Page Down` | Move the selected cell in the result grid.          |
+| `Ctrl+C` in the result grid                       | Copies the selected cell.                           |
+| `Escape`                                          | Closes a dialog.                                    |
+
+On macOS, use `Cmd` in place of `Ctrl`.
+
+## Security
+
+- A password is never in a file of the workspace, in the history, or in an error message.
+- The history does not record the text of a statement that can contain a password.
+- A Git message that the application shows has no user and no password in its URLs.
+- File access stays in the workspace folder.
+- A read-only connection is a protection against mistakes. It is not a security control, because a statement can set the session back to read-write. For a real restriction, use a database user that has only read permissions.
 
 ## Requirements
 
@@ -46,15 +87,19 @@ cargo test -p tabloxide-adapter-postgres -- --ignored
 
 ## Repository layout
 
-| Path                      | Contents                                                         |
-| ------------------------- | ---------------------------------------------------------------- |
-| `crates/core`             | Domain types that do not depend on a database engine or on Tauri |
-| `crates/adapter-postgres` | PostgreSQL adapter                                               |
-| `crates/git`              | Wrapper for the system `git` executable                          |
-| `crates/workspace`        | Project configuration, local state, history, secret references   |
-| `src-tauri`               | Tauri commands and application wiring                            |
-| `ui`                      | React application                                                |
-| `docs`                    | Feature backlog and implementation plan                          |
+| Path                      | Contents                                                           |
+| ------------------------- | ------------------------------------------------------------------ |
+| `crates/core`             | Domain types, adapter interface, statement splitter, script runner |
+| `crates/adapter-postgres` | PostgreSQL adapter                                                 |
+| `crates/git`              | Wrapper for the system `git` executable                            |
+| `crates/workspace`        | Project configuration, local state, history, secret references     |
+| `src-tauri`               | Tauri commands and application wiring                              |
+| `ui`                      | React application                                                  |
+| `docs`                    | Feature backlog and implementation plan                            |
+
+## Release
+
+Push a tag such as `v0.1.0`. The workflow `.github/workflows/release.yml` builds the installers on the three platforms and makes a draft release with the installers and `SHA256SUMS.txt`. Examine the draft, then publish it.
 
 ## TypeScript bindings
 
