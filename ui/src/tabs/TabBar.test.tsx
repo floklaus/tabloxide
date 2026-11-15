@@ -85,7 +85,7 @@ describe('TabBar', () => {
   test('closes a tab without changes immediately', async () => {
     const user = renderTabs([tab({}), tab({ id: 't2', title: 'a.sql' })])
 
-    await user.click(screen.getByRole('button', { name: 'Close a.sql' }))
+    await user.click(screen.getByTitle('Close a.sql (Delete)'))
 
     expect(titles()).toEqual(['Query 1'])
   })
@@ -103,16 +103,90 @@ describe('TabBar', () => {
     ])
     expect(screen.getByLabelText('Unsaved changes')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Close a.sql' }))
+    await user.click(screen.getByTitle('Close a.sql (Delete)'))
     const dialog = screen.getByRole('dialog', { name: 'Close the tab?' })
     await user.click(within(dialog).getByRole('button', { name: 'Cancel' }))
     expect(titles()).toHaveLength(2)
 
-    await user.click(screen.getByRole('button', { name: 'Close a.sql' }))
+    await user.click(screen.getByTitle('Close a.sql (Delete)'))
     await user.click(
       screen.getByRole('button', { name: 'Close without saving' }),
     )
     expect(titles()).toEqual(['Query 1'])
+  })
+
+  test('moves between the tabs with the arrow keys, Home, and End', async () => {
+    const user = renderTabs([
+      tab({}),
+      tab({ id: 't2', title: 'a.sql' }),
+      tab({ id: 't3', title: 'b.sql' }),
+    ])
+    screen.getByRole('tab', { name: 'Query 1' }).focus()
+
+    await user.keyboard('{ArrowRight}')
+    expect(screen.getByRole('tab', { name: 'a.sql' })).toHaveFocus()
+    expect(useTabsStore.getState().activeId).toBe('t2')
+
+    await user.keyboard('{End}')
+    expect(screen.getByRole('tab', { name: 'b.sql' })).toHaveFocus()
+
+    await user.keyboard('{ArrowRight}')
+    expect(screen.getByRole('tab', { name: 'Query 1' })).toHaveFocus()
+
+    await user.keyboard('{ArrowLeft}')
+    expect(screen.getByRole('tab', { name: 'b.sql' })).toHaveFocus()
+
+    await user.keyboard('{Home}')
+    expect(screen.getByRole('tab', { name: 'Query 1' })).toHaveFocus()
+    expect(useTabsStore.getState().activeId).toBe('t1')
+  })
+
+  test('has only the active tab in the Tab key sequence', () => {
+    renderTabs([tab({}), tab({ id: 't2', title: 'a.sql' })])
+
+    expect(screen.getByRole('tab', { name: 'Query 1' })).toHaveAttribute(
+      'tabindex',
+      '0',
+    )
+    expect(screen.getByRole('tab', { name: 'a.sql' })).toHaveAttribute(
+      'tabindex',
+      '-1',
+    )
+  })
+
+  test('closes the tab with the Delete key and moves the focus to the active tab', async () => {
+    const user = renderTabs([tab({}), tab({ id: 't2', title: 'a.sql' })])
+    screen.getByRole('tab', { name: 'Query 1' }).focus()
+
+    await user.keyboard('{Delete}')
+
+    expect(titles()).toEqual(['a.sql'])
+    expect(screen.getByRole('tab', { name: 'a.sql' })).toHaveFocus()
+  })
+
+  test('asks before the Delete key closes a tab with unsaved changes', async () => {
+    const user = renderTabs([
+      tab({ content: 'new', savedContent: 'old' }),
+      tab({ id: 't2', title: 'a.sql' }),
+    ])
+    screen.getByRole('tab', { name: /Query 1/ }).focus()
+
+    await user.keyboard('{Delete}')
+    expect(titles()).toHaveLength(2)
+    await user.click(
+      screen.getByRole('button', { name: 'Close without saving' }),
+    )
+
+    expect(titles()).toEqual(['a.sql'])
+    expect(screen.getByRole('tab', { name: 'a.sql' })).toHaveFocus()
+  })
+
+  test('tells a screen reader that the Delete key closes a tab', () => {
+    renderTabs([tab({})])
+
+    expect(
+      screen.getByRole('tab', { name: 'Query 1' }),
+    ).toHaveAccessibleDescription('Press Delete to close the tab.')
   })
 
   test('closes the database session of a closed tab', async () => {
@@ -121,7 +195,7 @@ describe('TabBar', () => {
       session: { id: 5, connectionId: 'c1', version: '17' },
     })
 
-    await user.click(screen.getByRole('button', { name: 'Close a.sql' }))
+    await user.click(screen.getByTitle('Close a.sql (Delete)'))
 
     expect(commands.sessionClose).toHaveBeenCalledWith(5)
   })

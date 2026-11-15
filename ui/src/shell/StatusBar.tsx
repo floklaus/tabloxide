@@ -15,8 +15,8 @@ export function StatusBar() {
   const state = useAppInfo()
 
   return (
-    <footer className="status-bar" role="status">
-      {statusText(state)}
+    <footer className="status-bar">
+      <span role="status">{statusText(state)}</span>
     </footer>
   )
 }

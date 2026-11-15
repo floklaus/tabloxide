@@ -23,6 +23,24 @@ async function list(directory: string): Promise<Listing> {
   }
 }
 
+/** The note that shows in place of the tree while the root has no entry to show. */
+function renderRootNote(listing: Listing | undefined) {
+  if (!listing || listing.status === 'loading') {
+    return <p className="files__note">Loading…</p>
+  }
+  if (listing.status === 'failed') {
+    return (
+      <p className="files__note files__note--error" role="alert">
+        {listing.message}
+      </p>
+    )
+  }
+  if (listing.entries.length === 0) {
+    return <p className="files__note">The workspace folder is empty.</p>
+  }
+  return null
+}
+
 /** The files of the workspace. The tree loads a directory only when the user opens it. */
 export function FileTree() {
   const [listings, setListings] = useState<Record<string, Listing>>({})
@@ -73,9 +91,10 @@ export function FileTree() {
   const renderDirectory = (directory: string, depth: number) => {
     const listing = listings[directory]
     const indent = { paddingLeft: `${depth * INDENT_REM}rem` }
+    // A tree can contain only tree items. Thus a note is a presentation item.
     if (!listing || listing.status === 'loading') {
       return (
-        <li className="files__note" style={indent}>
+        <li className="files__note" style={indent} role="none">
           Loading…
         </li>
       )
@@ -85,14 +104,11 @@ export function FileTree() {
         <li
           className="files__note files__note--error"
           style={indent}
-          role="alert"
+          role="none"
         >
-          {listing.message}
+          <span role="alert">{listing.message}</span>
         </li>
       )
-    }
-    if (listing.entries.length === 0 && directory === ROOT) {
-      return <li className="files__note">The workspace folder is empty.</li>
     }
     return listing.entries.map((entry) => {
       const isOpen = expanded.has(entry.path)
@@ -129,6 +145,9 @@ export function FileTree() {
     })
   }
 
+  // A tree without a tree item is not valid. Thus a note replaces the tree.
+  const rootNote = renderRootNote(listings[ROOT])
+
   return (
     <section className="files" aria-label="Files">
       <div className="connections__header">
@@ -137,9 +156,11 @@ export function FileTree() {
           Refresh
         </button>
       </div>
-      <ul className="files__tree" role="tree" aria-label="Workspace files">
-        {renderDirectory(ROOT, 0)}
-      </ul>
+      {rootNote ?? (
+        <ul className="files__tree" role="tree" aria-label="Workspace files">
+          {renderDirectory(ROOT, 0)}
+        </ul>
+      )}
     </section>
   )
 }

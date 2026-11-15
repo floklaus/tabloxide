@@ -65,6 +65,7 @@ Text:
 - Write the test before the code that it tests, when that is possible.
 - Use the structure Arrange, Act, Assert. Give each test a name that describes the behaviour.
 - A correction of a defect has a test that fails without the correction.
+- Each UI test also checks the accessibility rules of axe-core on the DOM that it leaves. `ui/src/test/setup.ts` contains this check. A test fails if its last state breaks a rule.
 
 | Command                                                 | Scope                                                                                                          |
 | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |

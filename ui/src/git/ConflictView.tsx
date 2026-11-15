@@ -1,8 +1,7 @@
 import { MergeView } from '@codemirror/merge'
-import { EditorView } from '@codemirror/view'
 import { useEffect, useRef } from 'react'
 import type { ConflictSides_Serialize as ConflictSides } from '../bindings'
-import { DIFF_BASE, READ_ONLY } from './diffExtensions'
+import { DIFF_BASE, readOnlySide, sideLabel } from './diffExtensions'
 import { useGitStore, type ConflictState } from './gitStore'
 
 type TwoSidesProps = {
@@ -24,15 +23,13 @@ function TwoSides({ path, ours, theirs }: TwoSidesProps) {
   useEffect(() => {
     const view = new MergeView({
       parent: hostRef.current ?? undefined,
-      a: { doc: theirs, extensions: READ_ONLY },
+      a: {
+        doc: theirs,
+        extensions: readOnlySide(`Incoming version of ${path}`),
+      },
       b: {
         doc: ours,
-        extensions: [
-          ...DIFF_BASE,
-          EditorView.contentAttributes.of({
-            'aria-label': `Result for ${path}`,
-          }),
-        ],
+        extensions: [...DIFF_BASE, sideLabel(`Result for ${path}`)],
       },
       // Each changed block gets a button that copies the incoming block into the result.
       revertControls: 'a-to-b',

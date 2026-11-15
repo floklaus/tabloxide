@@ -2,7 +2,7 @@ import { MergeView } from '@codemirror/merge'
 import { useEffect, useRef } from 'react'
 import type { FileDiff } from '../bindings'
 import { ConflictView } from './ConflictView'
-import { READ_ONLY } from './diffExtensions'
+import { readOnlySide } from './diffExtensions'
 import { useGitStore } from './gitStore'
 
 function Sides({ diff }: { diff: FileDiff }) {
@@ -11,8 +11,8 @@ function Sides({ diff }: { diff: FileDiff }) {
   useEffect(() => {
     const view = new MergeView({
       parent: hostRef.current ?? undefined,
-      a: { doc: diff.original, extensions: READ_ONLY },
-      b: { doc: diff.modified, extensions: READ_ONLY },
+      a: { doc: diff.original, extensions: readOnlySide('Original version') },
+      b: { doc: diff.modified, extensions: readOnlySide('Changed version') },
       collapseUnchanged: { margin: 3, minSize: 6 },
     })
     return () => view.destroy()

@@ -11,9 +11,17 @@ export const DIFF_BASE: Extension[] = [
   syntaxHighlighting(classHighlighter),
 ]
 
-/** Extensions for a side that the user cannot change. */
-export const READ_ONLY: Extension[] = [
-  EditorState.readOnly.of(true),
-  EditorView.editable.of(false),
-  ...DIFF_BASE,
-]
+/** Gives the text of a side a name for a screen reader. */
+export function sideLabel(label: string): Extension {
+  return EditorView.contentAttributes.of({ 'aria-label': label })
+}
+
+/** Extensions for a side that the user cannot change. `label` is its accessible name. */
+export function readOnlySide(label: string): Extension[] {
+  return [
+    EditorState.readOnly.of(true),
+    EditorView.editable.of(false),
+    sideLabel(label),
+    ...DIFF_BASE,
+  ]
+}
