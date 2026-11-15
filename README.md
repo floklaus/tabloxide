@@ -40,18 +40,19 @@ To use the Git functions, install Git and make sure that `git` is in the `PATH`.
 
 ## Keyboard shortcuts
 
-| Keys                                              | Function                                            |
-| ------------------------------------------------- | --------------------------------------------------- |
-| `Ctrl+Enter`                                      | Runs the selection, or the statement at the cursor. |
-| `Ctrl+Shift+Enter`                                | Runs all statements of the tab.                     |
-| `Ctrl+S`                                          | Saves the file of the tab.                          |
-| `Ctrl+F`                                          | Opens the search in the editor.                     |
-| Arrow keys, `Home`, `End`, `Page Up`, `Page Down` | Move the selected cell in the result grid.          |
-| `Ctrl+C` in the result grid                       | Copies the selected cell.                           |
-| `Left`, `Right`, `Home`, `End` on an editor tab   | Move to a different editor tab.                     |
-| `Delete` on an editor tab                         | Closes the editor tab.                              |
-| `Escape`, then `Tab` in the editor                | Moves the focus out of the editor.                  |
-| `Escape`                                          | Closes a dialog.                                    |
+| Keys                                              | Function                                                              |
+| ------------------------------------------------- | --------------------------------------------------------------------- |
+| `Ctrl+Enter`                                      | Runs the selection, or the statement at the cursor.                   |
+| `Ctrl+Shift+Enter`                                | Runs all statements of the tab.                                       |
+| `Ctrl+S`                                          | Saves the file of the tab.                                            |
+| `Ctrl+F`                                          | Opens the search in the editor.                                       |
+| Arrow keys, `Home`, `End`, `Page Up`, `Page Down` | Move the selected cell in the result grid.                            |
+| `Ctrl+C` in the result grid                       | Copies the selected cell.                                             |
+| `Left`, `Right`, `Home`, `End` on an editor tab   | Move to a different editor tab.                                       |
+| `Delete` on an editor tab                         | Closes the editor tab.                                                |
+| Arrow keys, `Home`, `End` in the file tree        | Move between the files. `Right` opens a folder, and `Left` closes it. |
+| `Escape`, then `Tab` in the editor                | Moves the focus out of the editor.                                    |
+| `Escape`                                          | Closes a dialog.                                                      |
 
 On macOS, use `Cmd` in place of `Ctrl`.
 

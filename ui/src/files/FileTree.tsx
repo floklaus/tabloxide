@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from 'react'
 import { commands, type FileEntry } from '../bindings'
 import { toMessage } from '../lib/errors'
 import { useWorkspaceChangeStore } from '../workspace/watch'
@@ -21,6 +27,12 @@ async function list(directory: string): Promise<Listing> {
   } catch (error) {
     return { status: 'failed', message: toMessage(error) }
   }
+}
+
+/** Returns the path of the directory that contains `path`. */
+function parentOf(path: string): string {
+  const end = path.lastIndexOf('/')
+  return end < 0 ? ROOT : path.slice(0, end)
 }
 
 /** The note that shows in place of the tree while the root has no entry to show. */
@@ -66,6 +78,21 @@ export function FileTree() {
     }
   }, [])
 
+  // Only one tree item is in the Tab key sequence. The arrow keys move between the items.
+  const [focusPath, setFocusPath] = useState<string | null>(null)
+  const visiblePaths = (directory: string): string[] => {
+    const listing = listings[directory]
+    if (listing?.status !== 'loaded') return []
+    return listing.entries.flatMap((entry) =>
+      entry.is_directory && expanded.has(entry.path)
+        ? [entry.path, ...visiblePaths(entry.path)]
+        : [entry.path],
+    )
+  }
+  const visible = visiblePaths(ROOT)
+  const tabStop =
+    focusPath !== null && visible.includes(focusPath) ? focusPath : visible[0]
+
   const refresh = () => {
     for (const directory of expanded) void load(directory)
   }
@@ -86,6 +113,39 @@ export function FileTree() {
       void load(directory)
     }
     setExpanded(next)
+  }
+
+  /** The keyboard behaviour of the ARIA tree view pattern. */
+  const onTreeKeyDown = (event: KeyboardEvent<HTMLUListElement>) => {
+    const items = Array.from(
+      event.currentTarget.querySelectorAll<HTMLElement>('[role="treeitem"]'),
+    )
+    const index = items.indexOf(event.target as HTMLElement)
+    if (index < 0) return
+    const item = items[index]
+    const path = item.dataset.path ?? ROOT
+    const isOpen = item.getAttribute('aria-expanded')
+    const focusPathItem = (target: string) =>
+      items.find((candidate) => candidate.dataset.path === target)?.focus()
+    const actions: Record<string, (() => void) | undefined> = {
+      ArrowDown: () => items[index + 1]?.focus(),
+      ArrowUp: () => items[index - 1]?.focus(),
+      Home: () => items[0].focus(),
+      End: () => items[items.length - 1].focus(),
+      ArrowRight: () => {
+        if (isOpen === 'false') toggle(path)
+        else if (isOpen === 'true')
+          focusPathItem(visible[visible.indexOf(path) + 1])
+      },
+      ArrowLeft: () => {
+        if (isOpen === 'true') toggle(path)
+        else focusPathItem(parentOf(path))
+      },
+    }
+    const action = actions[event.key]
+    if (!action) return
+    event.preventDefault()
+    action()
   }
 
   const renderDirectory = (directory: string, depth: number) => {
@@ -120,6 +180,9 @@ export function FileTree() {
               role="treeitem"
               className="files__item"
               style={indent}
+              data-path={entry.path}
+              tabIndex={entry.path === tabStop ? 0 : -1}
+              onFocus={() => setFocusPath(entry.path)}
               aria-expanded={isOpen}
               onClick={() => toggle(entry.path)}
             >
@@ -131,6 +194,9 @@ export function FileTree() {
               role="treeitem"
               className="files__item"
               style={indent}
+              data-path={entry.path}
+              tabIndex={entry.path === tabStop ? 0 : -1}
+              onFocus={() => setFocusPath(entry.path)}
               aria-current={entry.path === activePath}
               onClick={() => void openFile(entry.path)}
             >
@@ -157,7 +223,12 @@ export function FileTree() {
         </button>
       </div>
       {rootNote ?? (
-        <ul className="files__tree" role="tree" aria-label="Workspace files">
+        <ul
+          className="files__tree"
+          role="tree"
+          aria-label="Workspace files"
+          onKeyDown={onTreeKeyDown}
+        >
           {renderDirectory(ROOT, 0)}
         </ul>
       )}
