@@ -22,6 +22,12 @@ Object.defineProperty(window, '__TAURI_INTERNALS__', {
   },
 })
 
+// jsdom has no layout, thus a text range has no rectangles. The SQL editor measures
+// its text in an animation frame, which can occur while the accessibility check runs.
+Range.prototype.getClientRects = () =>
+  Object.assign([], { item: () => null }) as unknown as DOMRectList
+Range.prototype.getBoundingClientRect = () => new DOMRect()
+
 // jsdom has no canvas. axe-core asks for one, and jsdom then prints a message.
 HTMLCanvasElement.prototype.getContext = () => null
 
