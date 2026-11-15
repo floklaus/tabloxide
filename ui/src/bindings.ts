@@ -282,6 +282,18 @@ export type CommitInfo = {
 	subject: string,
 };
 
+/**  When the application asks the user before it runs statements on a connection. */
+export type ConfirmRule = 
+/**  Never ask. */
+"never" | 
+/**
+ *  Ask before a statement that the risk classifier flags: a destructive statement,
+ *  or a statement with an effect outside the database.
+ */
+"risky" | 
+/**  Ask before each run. */
+"always";
+
 /**
  *  The versions of one file with a conflict. A version is `None` if the file is
  *  not in that side, for example because that side deleted it.
@@ -554,6 +566,23 @@ export type GitRemoteEvent =
 /**  `true` if the UI must hide the answer while the user types it. */
 is_secret: boolean };
 
+/**  The confirmation rule for the connections of each environment. */
+export type Guardrails = Guardrails_Serialize | Guardrails_Deserialize;
+
+/**  The confirmation rule for the connections of each environment. */
+export type Guardrails_Deserialize = {
+	development?: ConfirmRule,
+	staging?: ConfirmRule,
+	production?: ConfirmRule,
+};
+
+/**  The confirmation rule for the connections of each environment. */
+export type Guardrails_Serialize = {
+	development: ConfirmRule,
+	staging: ConfirmRule,
+	production: ConfirmRule,
+};
+
 /**  A statement in the history. */
 export type HistoryEntry = HistoryEntry_Serialize | HistoryEntry_Deserialize;
 
@@ -640,20 +669,16 @@ export type Preferences_Deserialize = {
 	editor?: EditorPreferences_Deserialize,
 	/**  The application deletes history entries that are older than this number of days. */
 	history_retention_days?: number,
-	/**  Ask before a destructive statement runs. */
-	confirm_destructive?: boolean,
-	/**  Ask before a statement runs on a production connection. */
-	confirm_production?: boolean,
+	/**  When the application asks before a run. Each environment has its own rule. */
+	guardrails?: Guardrails_Deserialize,
 };
 
 export type Preferences_Serialize = {
 	editor: EditorPreferences_Serialize,
 	/**  The application deletes history entries that are older than this number of days. */
 	history_retention_days: number,
-	/**  Ask before a destructive statement runs. */
-	confirm_destructive: boolean,
-	/**  Ask before a statement runs on a production connection. */
-	confirm_production: boolean,
+	/**  When the application asks before a run. Each environment has its own rule. */
+	guardrails: Guardrails_Serialize,
 };
 
 /**  A query failure. */

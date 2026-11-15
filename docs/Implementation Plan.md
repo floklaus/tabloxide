@@ -235,6 +235,13 @@ Notes:
 
 Status on 2026-11-15: M7, M8, and M9 are complete in code. The second engine is DuckDB, not SQLite. The product owner made this selection after the spike below.
 
+Status of M10 on 2026-11-15: M10 is complete in code.
+
+* The preferences have a confirmation rule for each environment: never, before a risky statement, or before each run. The defaults are the behaviour of Phase 1.
+* The rule "before a risky statement" covers the DuckDB statements that write files or load an extension. A DuckDB statement that reads a file of the disk has no confirmation.
+* The result grid renders only the visible columns.
+* Alt+Shift+Left and Alt+Shift+Right change the width of the column of the selected cell.
+
 Status of M12 on 2026-11-15:
 
 * The user documentation is complete: `docs/user/install.md`, `docs/user/troubleshooting.md`, `CONTRIBUTING.md`, and `SECURITY.md`.

@@ -545,6 +545,17 @@ body {
   color: var(--color-danger);
 }
 
+.form__group {
+  margin: 1rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.form__group legend {
+  padding: 0;
+  font-weight: 600;
+}
+
 /* Query input */
 
 .visually-hidden {

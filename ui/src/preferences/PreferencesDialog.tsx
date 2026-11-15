@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import type { ConfirmRule, Environment } from '../bindings'
 import { Modal } from '../connections/Modal'
 import {
   LIMITS,
@@ -33,6 +34,18 @@ function NumberField({ label, value, limits, onChange }: NumberFieldProps) {
     </label>
   )
 }
+
+const ENVIRONMENTS: { value: Environment; label: string }[] = [
+  { value: 'development', label: 'Development connections' },
+  { value: 'staging', label: 'Staging connections' },
+  { value: 'production', label: 'Production connections' },
+]
+
+const CONFIRM_RULES: { value: ConfirmRule; label: string }[] = [
+  { value: 'never', label: 'Never' },
+  { value: 'risky', label: 'Before a destructive statement' },
+  { value: 'always', label: 'Before each run' },
+]
 
 export function PreferencesDialog({ onClose }: Props) {
   const stored = usePreferencesStore((state) => state.preferences)
@@ -91,30 +104,39 @@ export function PreferencesDialog({ onClose }: Props) {
               setDraft({ ...draft, history_retention_days })
             }
           />
-          <label className="field field--check">
-            <input
-              type="checkbox"
-              checked={draft.confirm_destructive}
-              onChange={(event) =>
-                setDraft({
-                  ...draft,
-                  confirm_destructive: event.target.checked,
-                })
-              }
-            />
-            <span>Ask before a destructive statement runs</span>
-          </label>
-          <label className="field field--check">
-            <input
-              type="checkbox"
-              checked={draft.confirm_production}
-              onChange={(event) =>
-                setDraft({ ...draft, confirm_production: event.target.checked })
-              }
-            />
-            <span>Ask before a statement runs on a production connection</span>
-          </label>
         </div>
+        <fieldset className="form__group">
+          <legend>Ask before a run</legend>
+          <p className="field__hint">
+            A destructive statement removes or changes data or structure, writes
+            files, or loads an extension.
+          </p>
+          <div className="form__grid">
+            {ENVIRONMENTS.map((environment) => (
+              <label key={environment.value} className="field">
+                <span className="field__label">{environment.label}</span>
+                <select
+                  value={draft.guardrails[environment.value]}
+                  onChange={(event) =>
+                    setDraft({
+                      ...draft,
+                      guardrails: {
+                        ...draft.guardrails,
+                        [environment.value]: event.target.value as ConfirmRule,
+                      },
+                    })
+                  }
+                >
+                  {CONFIRM_RULES.map((rule) => (
+                    <option key={rule.value} value={rule.value}>
+                      {rule.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+          </div>
+        </fieldset>
         <div className="modal__actions">
           <button type="button" className="button" onClick={onClose}>
             Cancel

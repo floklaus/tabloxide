@@ -27,7 +27,7 @@ pub use history::{
     HistoryEntry, HistoryStatus, NOT_RECORDED, NewHistoryEntry, entries_from_report,
 };
 pub use local_state::{LocalState, MAX_HISTORY_RESULTS, TabState, UiState};
-pub use preferences::{EditorPreferences, Preferences};
+pub use preferences::{ConfirmRule, EditorPreferences, Guardrails, Preferences};
 pub use recent::{MAX_RECENT_WORKSPACES, RecentWorkspace, RecentWorkspaces};
 pub use secrets::{KeyringStore, MemoryStore, SecretError, SecretStore, resolve_secret};
 pub use watch::{QUIET_TIME, WorkspaceWatcher, is_relevant};

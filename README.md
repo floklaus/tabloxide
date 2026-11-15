@@ -21,7 +21,7 @@ Phase 1 of `docs/Implementation Plan.md` (milestones M0 to M6) is complete in co
 - **Branches:** Create, switch, rename, and delete.
 - **Commit history:** The commits of the current branch, with the files and the diff of each commit.
 - **Merge conflicts:** A side-by-side view for each file with a conflict. You edit the result, or you copy blocks from the incoming version. You can abort the merge.
-- **Safety:** Confirmation before a destructive statement and before a run on a production connection. Read-only connections.
+- **Safety:** Confirmation before a run. The preferences have one rule for each environment (development, staging, production): never, before a destructive statement, or before each run. Read-only connections.
 
 ## Install
 
@@ -65,7 +65,7 @@ On macOS, use `Cmd` in place of `Ctrl`.
 - The application sends your answer to a credential prompt of Git only to Git. It does not store the answer and does not write it to a log. To store a credential, configure a credential helper or an SSH agent for Git.
 - The file tree and the editor read and write files only in the workspace folder.
 - A DuckDB statement can read and write files on your disk, and it can install and load extensions. Do not run a script that you do not know against a DuckDB connection.
-  - The application asks before `COPY ... TO`, `EXPORT DATABASE`, `INSTALL`, and `LOAD`.
+  - The application asks before `COPY ... TO`, `EXPORT DATABASE`, `INSTALL`, and `LOAD`, unless the rule of the environment in the preferences is "Never".
   - DuckDB does not install an extension from the network automatically. You must use `INSTALL`.
 - A read-only DuckDB connection is a real restriction. A statement cannot change the mode.
 - A read-only PostgreSQL connection is a protection against mistakes. It is not a security control, because a statement can set the session back to read-write. For a real restriction, use a database user that has only read permissions.

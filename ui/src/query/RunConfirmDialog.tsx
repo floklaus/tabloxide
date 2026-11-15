@@ -1,7 +1,7 @@
 import { Modal } from '../connections/Modal'
 import { useRunConfirmStore } from './runConfirm'
 
-/** Asks the user before a destructive statement or a run on a production connection. */
+/** Asks the user before a run, when the rule of the environment of the connection says so. */
 export function RunConfirmDialog() {
   const pending = useRunConfirmStore((state) => state.pending)
   const confirm = useRunConfirmStore((state) => state.confirm)
@@ -10,9 +10,16 @@ export function RunConfirmDialog() {
 
   return (
     <Modal title="Run the statements?" onClose={cancel}>
-      {pending.isProduction && (
-        <p className="message message--error">
-          <strong>{pending.connectionName}</strong> is a production connection.
+      {pending.asksAlways && (
+        <p
+          className={
+            pending.environment === 'production'
+              ? 'message message--error'
+              : 'message'
+          }
+        >
+          <strong>{pending.connectionName}</strong> is a {pending.environment}{' '}
+          connection.
         </p>
       )}
       {pending.risky.length > 0 && (

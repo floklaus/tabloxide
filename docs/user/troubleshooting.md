@@ -225,6 +225,8 @@ The TLS modes have the same names and the same meanings as the `sslmode` values 
 
 **Solution:** read the statement. Continue only if you know what the statement does.
 
+The preferences have a rule for each environment of a connection: never, before a destructive statement, or before each run. The dialog shows when the rule of the connection says so.
+
 ### An extension does not load
 
 **Symptom:** a statement fails with a message that an extension is not installed.

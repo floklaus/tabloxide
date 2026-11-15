@@ -74,8 +74,11 @@ export function createBindingsMock() {
             word_wrap: false,
           },
           history_retention_days: 90,
-          confirm_destructive: true,
-          confirm_production: true,
+          guardrails: {
+            development: 'risky',
+            staging: 'risky',
+            production: 'always',
+          },
         },
       }),
       preferencesSave: vi.fn(),

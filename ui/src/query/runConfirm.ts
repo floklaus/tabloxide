@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import {
   commands,
+  type Environment,
   type Risk,
   type RunTarget,
   type StatementPreview_Serialize,
@@ -30,7 +31,9 @@ export type PendingRun = {
   target: RunTarget
   connectionId: string
   connectionName: string
-  isProduction: boolean
+  environment: Environment
+  /** `true` if the rule of the environment asks before each run. */
+  asksAlways: boolean
   risky: RiskyStatement[]
 }
 
@@ -71,9 +74,9 @@ function toRisky(
 }
 
 /**
- * Runs `sql` in the active tab. Asks for a confirmation first if a statement is
- * destructive or if the connection is a production connection. The preferences can
- * disable the two rules.
+ * Runs `sql` in the active tab. The preferences have a confirmation rule for each
+ * environment. The rule of the environment of the connection decides if the
+ * application asks first: never, before a risky statement, or before each run.
  */
 export async function requestRun(
   sql: string,
@@ -85,9 +88,9 @@ export async function requestRun(
   const connection = connections.find((item) => item.id === tab?.connectionId)
   if (!connection) return
   const run = { sql, target, connectionId: connection.id }
-  const { confirm_destructive, confirm_production } =
-    usePreferencesStore.getState().preferences
-  if (!confirm_destructive && !confirm_production) {
+  const { guardrails } = usePreferencesStore.getState().preferences
+  const rule = guardrails[connection.environment]
+  if (rule === 'never') {
     start(run)
     return
   }
@@ -99,16 +102,19 @@ export async function requestRun(
     activeQueryStore().getState().setNotice(toMessage(error))
     return
   }
-  const risky = confirm_destructive ? toRisky(sql, previews) : []
-  const isProduction =
-    confirm_production &&
-    connection.environment === 'production' &&
-    previews.length > 0
-  if (risky.length === 0 && !isProduction) {
+  const risky = toRisky(sql, previews)
+  const asksAlways = rule === 'always' && previews.length > 0
+  if (risky.length === 0 && !asksAlways) {
     start(run)
     return
   }
   useRunConfirmStore.setState({
-    pending: { ...run, connectionName: connection.name, isProduction, risky },
+    pending: {
+      ...run,
+      connectionName: connection.name,
+      environment: connection.environment,
+      asksAlways,
+      risky,
+    },
   })
 }
