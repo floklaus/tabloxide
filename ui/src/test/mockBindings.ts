@@ -42,6 +42,17 @@ export function createBindingsMock() {
       gitCommit: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
       gitBranchCreate: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
       gitBranchSwitch: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
+      gitBranchRename: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
+      gitBranchDelete: vi
+        .fn()
+        .mockResolvedValue({ status: 'ok', data: 'deleted' }),
+      gitLog: vi.fn().mockResolvedValue({ status: 'ok', data: [] }),
+      gitCommitFiles: vi.fn().mockResolvedValue({ status: 'ok', data: [] }),
+      gitCommitDiff: vi.fn(),
+      gitConflict: vi.fn(),
+      gitResolveText: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
+      gitResolveDelete: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
+      gitMergeAbort: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
       gitFetch: vi.fn().mockResolvedValue({ status: 'ok', data: '' }),
       gitPull: vi.fn().mockResolvedValue({ status: 'ok', data: '' }),
       gitPush: vi.fn().mockResolvedValue({ status: 'ok', data: '' }),

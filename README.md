@@ -2,7 +2,7 @@
 
 Tabloxide is a cross-platform SQL client with built-in Git. It uses Tauri 2, a React and TypeScript UI, and a Rust backend.
 
-Phase 1 of `docs/Implementation Plan.md` (milestones M0 to M6) is complete in code. The first database engine is PostgreSQL.
+Phase 1 of `docs/Implementation Plan.md` (milestones M0 to M6) is complete in code. Phase 2 is in work, and its first milestone M7 is complete in code. The first database engine is PostgreSQL.
 
 ## Functions
 
@@ -12,7 +12,10 @@ Phase 1 of `docs/Implementation Plan.md` (milestones M0 to M6) is complete in co
 - **Results:** Result grid with virtual rows, sort, column resize, column visibility, and copy. Export of a result to a CSV file.
 - **History:** Query history with a search. The history is in the application data directory, not in the workspace.
 - **Schema:** Schema browser with tables, views, columns, indexes, and constraints.
-- **Git:** Status, stage, unstage, discard, diff, commit, branches, fetch, pull, and push. The application uses the `git` executable of the system.
+- **Git:** Status, stage, unstage, discard, diff, commit, fetch, pull, and push. The application uses the `git` executable of the system.
+- **Branches:** Create, switch, rename, and delete.
+- **Commit history:** The commits of the current branch, with the files and the diff of each commit.
+- **Merge conflicts:** A side-by-side view for each file with a conflict. You edit the result, or you copy blocks from the incoming version. You can abort the merge.
 - **Safety:** Confirmation before a destructive statement and before a run on a production connection. Read-only connections.
 
 ## Install

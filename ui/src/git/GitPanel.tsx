@@ -1,21 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import type {
-  ChangeKind,
-  FileStatus_Serialize as FileStatus,
-} from '../bindings'
+import type { FileStatus_Serialize as FileStatus } from '../bindings'
 import { ConfirmDialog } from '../connections/ConfirmDialog'
+import { Branches } from './Branches'
+import { CHANGE_LABELS } from './changeLabels'
+import { CommitHistory } from './CommitHistory'
 import { useGitStore, type GitOverview } from './gitStore'
 
 type Repository = Extract<GitOverview, { state: 'repository' }>
-
-const CHANGE_LABELS: Record<ChangeKind, string> = {
-  added: 'added',
-  modified: 'modified',
-  deleted: 'deleted',
-  renamed: 'renamed',
-  copied: 'copied',
-  'type-changed': 'type changed',
-}
 
 function changeLabel(file: FileStatus, isStagedList: boolean): string {
   if (file.is_conflicted) return 'conflict'
@@ -36,6 +27,7 @@ function FileList({ title, files, isStagedList, onDiscard }: FileListProps) {
   const stage = useGitStore((state) => state.stage)
   const unstage = useGitStore((state) => state.unstage)
   const showDiff = useGitStore((state) => state.showDiff)
+  const showConflict = useGitStore((state) => state.showConflict)
   if (files.length === 0) return null
   const paths = files.map((file) => file.path)
   const moveAll = isStagedList ? unstage : stage
@@ -46,14 +38,16 @@ function FileList({ title, files, isStagedList, onDiscard }: FileListProps) {
         <h3 className="git__subtitle">
           {title} ({files.length})
         </h3>
-        <button
-          type="button"
-          className="link-button"
-          disabled={busy !== null}
-          onClick={() => void moveAll(paths)}
-        >
-          {isStagedList ? 'Unstage all' : 'Stage all'}
-        </button>
+        {!files[0].is_conflicted && (
+          <button
+            type="button"
+            className="link-button"
+            disabled={busy !== null}
+            onClick={() => void moveAll(paths)}
+          >
+            {isStagedList ? 'Unstage all' : 'Stage all'}
+          </button>
+        )}
       </div>
       <ul className="git__files">
         {files.map((file) => (
@@ -61,23 +55,42 @@ function FileList({ title, files, isStagedList, onDiscard }: FileListProps) {
             <button
               type="button"
               className="git__path"
-              title={`Show the diff of ${file.path}`}
-              onClick={() => void showDiff(file.path, isStagedList)}
+              title={
+                file.is_conflicted
+                  ? `Resolve the conflict in ${file.path}`
+                  : `Show the diff of ${file.path}`
+              }
+              onClick={() =>
+                void (file.is_conflicted
+                  ? showConflict(file.path)
+                  : showDiff(file.path, isStagedList))
+              }
             >
               {file.path}{' '}
               <span className="schema__detail">
                 {changeLabel(file, isStagedList)}
               </span>
             </button>
-            <button
-              type="button"
-              className="link-button"
-              disabled={busy !== null}
-              aria-label={`${isStagedList ? 'Unstage' : 'Stage'} ${file.path}`}
-              onClick={() => void moveAll([file.path])}
-            >
-              {isStagedList ? 'Unstage' : 'Stage'}
-            </button>
+            {file.is_conflicted ? (
+              <button
+                type="button"
+                className="link-button"
+                aria-label={`Resolve ${file.path}`}
+                onClick={() => void showConflict(file.path)}
+              >
+                Resolve
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="link-button"
+                disabled={busy !== null}
+                aria-label={`${isStagedList ? 'Unstage' : 'Stage'} ${file.path}`}
+                onClick={() => void moveAll([file.path])}
+              >
+                {isStagedList ? 'Unstage' : 'Stage'}
+              </button>
+            )}
             {!isStagedList && !file.is_conflicted && (
               <button
                 type="button"
@@ -96,84 +109,6 @@ function FileList({ title, files, isStagedList, onDiscard }: FileListProps) {
   )
 }
 
-function Branches({ repository }: { repository: Repository }) {
-  const busy = useGitStore((state) => state.busy)
-  const switchBranch = useGitStore((state) => state.switchBranch)
-  const createBranch = useGitStore((state) => state.createBranch)
-  const [newName, setNewName] = useState<string | null>(null)
-  const { status, branches } = repository
-
-  const submit = async (event: FormEvent) => {
-    event.preventDefault()
-    if (newName && (await createBranch(newName.trim()))) setNewName(null)
-  }
-
-  return (
-    <>
-      <div className="git__row">
-        <label className="git__branch">
-          <span className="visually-hidden">Branch</span>
-          <select
-            value={status.branch ?? ''}
-            disabled={busy !== null}
-            onChange={(event) => void switchBranch(event.target.value)}
-          >
-            {status.branch === null && <option value="">Detached HEAD</option>}
-            {status.branch !== null &&
-              !branches.some((branch) => branch.name === status.branch) && (
-                <option value={status.branch}>{status.branch}</option>
-              )}
-            {branches.map((branch) => (
-              <option key={branch.name} value={branch.name}>
-                {branch.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="button"
-          className="link-button"
-          disabled={busy !== null || !status.has_commits}
-          onClick={() => setNewName('')}
-        >
-          New branch
-        </button>
-      </div>
-      {newName !== null && (
-        <form className="git__row" onSubmit={(event) => void submit(event)}>
-          <input
-            className="history__search"
-            aria-label="Name of the new branch"
-            placeholder="Name of the new branch"
-            autoFocus
-            value={newName}
-            onChange={(event) => setNewName(event.target.value)}
-          />
-          <button
-            type="submit"
-            className="button button--small"
-            disabled={!newName.trim() || busy !== null}
-          >
-            Create
-          </button>
-          <button
-            type="button"
-            className="link-button"
-            onClick={() => setNewName(null)}
-          >
-            Cancel
-          </button>
-        </form>
-      )}
-      <p className="git__upstream">
-        {status.upstream
-          ? `${status.upstream}: ${status.ahead} to push, ${status.behind} to pull`
-          : 'The branch has no upstream. The first push sets it to origin.'}
-      </p>
-    </>
-  )
-}
-
 function RepositoryView({ repository }: { repository: Repository }) {
   const busy = useGitStore((state) => state.busy)
   const commit = useGitStore((state) => state.commit)
@@ -181,9 +116,13 @@ function RepositoryView({ repository }: { repository: Repository }) {
   const fetch = useGitStore((state) => state.fetch)
   const pull = useGitStore((state) => state.pull)
   const push = useGitStore((state) => state.push)
+  const abortMerge = useGitStore((state) => state.abortMerge)
+  const [isAborting, setIsAborting] = useState(false)
   const [message, setMessage] = useState('')
   const [discarding, setDiscarding] = useState<FileStatus | null>(null)
   const { files } = repository.status
+  const mergeMessage = repository.merge_message
+  const isMerging = mergeMessage !== null
 
   const conflicted = files.filter((file) => file.is_conflicted)
   const staged = files.filter((file) => file.staged !== null)
@@ -193,8 +132,12 @@ function RepositoryView({ repository }: { repository: Repository }) {
   )
   const submit = async (event: FormEvent) => {
     event.preventDefault()
-    if (await commit(message)) setMessage('')
+    if (await commit(effectiveMessage)) setMessage('')
   }
+  // A merge has a prepared message. The user can replace it.
+  const effectiveMessage = message.trim() ? message : (mergeMessage ?? '')
+  // A merge without a staged change still needs its commit.
+  const canCommit = isMerging ? conflicted.length === 0 : staged.length > 0
 
   return (
     <>
@@ -216,14 +159,27 @@ function RepositoryView({ repository }: { repository: Repository }) {
           </button>
         ))}
       </div>
-      {conflicted.length > 0 && (
-        <div className="message message--error" role="alert">
-          <p className="message__title">Merge conflict</p>
-          <p className="message__detail">
-            Resolve the conflict in these files in a terminal or an editor, then
-            stage the files and commit:{' '}
-            {conflicted.map((f) => f.path).join(', ')}
+      {isMerging && (
+        <div
+          className={`message ${conflicted.length > 0 ? 'message--error' : ''}`}
+          role={conflicted.length > 0 ? 'alert' : 'status'}
+        >
+          <p className="message__title">
+            {conflicted.length > 0 ? 'Merge conflict' : 'Merge in progress'}
           </p>
+          <p className="message__detail">
+            {conflicted.length > 0
+              ? 'Select each file in the Conflicts list and resolve it. Then commit to complete the merge.'
+              : 'All conflicts are resolved. Commit to complete the merge.'}
+          </p>
+          <button
+            type="button"
+            className="link-button link-button--danger"
+            disabled={busy !== null}
+            onClick={() => setIsAborting(true)}
+          >
+            Abort the merge
+          </button>
         </div>
       )}
       <FileList
@@ -251,7 +207,7 @@ function RepositoryView({ repository }: { repository: Repository }) {
         <textarea
           className="git__message"
           aria-label="Commit message"
-          placeholder="Commit message"
+          placeholder={mergeMessage || 'Commit message'}
           rows={3}
           value={message}
           onChange={(event) => setMessage(event.target.value)}
@@ -259,11 +215,25 @@ function RepositoryView({ repository }: { repository: Repository }) {
         <button
           type="submit"
           className="button button--small button--primary"
-          disabled={busy !== null || staged.length === 0 || !message.trim()}
+          disabled={busy !== null || !canCommit || !effectiveMessage.trim()}
         >
-          Commit {staged.length > 0 ? `(${staged.length})` : ''}
+          {isMerging ? 'Commit the merge' : 'Commit'}{' '}
+          {staged.length > 0 ? `(${staged.length})` : ''}
         </button>
       </form>
+      <CommitHistory />
+      {isAborting && (
+        <ConfirmDialog
+          title="Abort the merge?"
+          message="This restores the files to their state before the merge. You lose the conflicts that you resolved."
+          confirmLabel="Abort the merge"
+          onConfirm={() => {
+            void abortMerge()
+            setIsAborting(false)
+          }}
+          onCancel={() => setIsAborting(false)}
+        />
+      )}
       {discarding && (
         <ConfirmDialog
           title="Discard the changes?"

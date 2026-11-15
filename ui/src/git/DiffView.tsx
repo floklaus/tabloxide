@@ -1,20 +1,9 @@
-import { PostgreSQL, sql } from '@codemirror/lang-sql'
-import { syntaxHighlighting } from '@codemirror/language'
 import { MergeView } from '@codemirror/merge'
-import { EditorState, type Extension } from '@codemirror/state'
-import { EditorView, lineNumbers } from '@codemirror/view'
-import { classHighlighter } from '@lezer/highlight'
 import { useEffect, useRef } from 'react'
 import type { FileDiff } from '../bindings'
+import { ConflictView } from './ConflictView'
+import { READ_ONLY } from './diffExtensions'
 import { useGitStore } from './gitStore'
-
-const READ_ONLY: Extension[] = [
-  EditorState.readOnly.of(true),
-  EditorView.editable.of(false),
-  lineNumbers(),
-  sql({ dialect: PostgreSQL }),
-  syntaxHighlighting(classHighlighter),
-]
 
 function Sides({ diff }: { diff: FileDiff }) {
   const hostRef = useRef<HTMLDivElement>(null)
@@ -32,31 +21,30 @@ function Sides({ diff }: { diff: FileDiff }) {
   return <div ref={hostRef} className="diff__sides code-editor" />
 }
 
-/** The two sides of the diff of the file that the user selected in the Git panel. */
+/** The diff or the conflict of the file that the user selected in the Git panel. */
 export function DiffView() {
   const diff = useGitStore((state) => state.diff)
+  const conflict = useGitStore((state) => state.conflict)
+  if (conflict) return <ConflictView key={conflict.path} conflict={conflict} />
   if (!diff) {
     return (
       <p className="pane__hint">
-        Select a changed file in the Git panel to see its diff here.
+        Select a changed file or a commit in the Git panel to see its diff here.
       </p>
     )
   }
-  const sides = diff.isStaged
-    ? 'Left: last commit. Right: staged.'
-    : 'Left: staged or last commit. Right: file on disk.'
 
   return (
     <div className="diff">
-      <h3 className="table-detail__title">{diff.path}</h3>
-      <p className="results__status">{sides}</p>
+      <h3 className="table-detail__title">{diff.title}</h3>
+      <p className="results__status">{diff.sides}</p>
       {diff.load.status === 'loading' && <p role="status">Loading the diff…</p>}
       {diff.load.status === 'failed' && (
         <p className="message message--error" role="alert">
           {diff.load.message}
         </p>
       )}
-      {diff.load.status === 'loaded' && <Sides diff={diff.load.diff} />}
+      {diff.load.status === 'loaded' && <Sides diff={diff.load.data} />}
     </div>
   )
 }

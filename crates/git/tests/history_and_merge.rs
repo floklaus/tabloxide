@@ -262,3 +262,20 @@ fn does_not_write_a_resolution_through_a_symbolic_link() {
     assert!(matches!(result, Err(GitError::InvalidName(_))));
     assert_eq!(std::fs::read_to_string(&outside).unwrap(), "keep\n");
 }
+
+#[test]
+fn does_not_write_a_file_that_has_no_conflict() {
+    let (_home, git, clone) = conflicted_clone("from remote\n", "from local\n");
+    std::fs::write(clone.join("other.sql"), "keep\n").unwrap();
+
+    let other = git.resolve_with_text(&clone, "other.sql", "overwritten\n");
+    let hook = git.resolve_with_text(&clone, ".git/hooks/pre-commit", "#!/bin/sh\n");
+
+    assert!(matches!(other, Err(GitError::InvalidName(_))));
+    assert!(matches!(hook, Err(GitError::InvalidName(_))));
+    assert_eq!(
+        std::fs::read_to_string(clone.join("other.sql")).unwrap(),
+        "keep\n"
+    );
+    assert!(!clone.join(".git/hooks/pre-commit").exists());
+}

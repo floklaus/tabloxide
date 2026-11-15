@@ -1281,6 +1281,28 @@ body {
   font: inherit;
 }
 
+.git__commit-row {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.git__commit-subject {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.conflict__kept {
+  flex: 1;
+  margin: 0;
+  padding: 0.5rem;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
 .git__output {
   font-family: var(--font-mono);
   font-size: 0.8rem;

@@ -93,9 +93,16 @@ impl Git {
     ///
     /// # Errors
     ///
-    /// Returns an error if the path is not valid, the file is not writable, or Git fails.
+    /// Returns an error if the path is not valid, the file has no conflict, the file is
+    /// not writable, or Git fails.
     pub fn resolve_with_text(&self, root: &Path, path: &str, text: &str) -> Result<(), GitError> {
         let target = writable_target(root, path)?;
+        // Only a file with a conflict is a permitted target. Thus this operation cannot
+        // write a different file, for example a hook in the `.git` folder.
+        let unmerged = self.run(root, ["ls-files", "--unmerged", "--", path])?;
+        if unmerged.stdout.is_empty() {
+            return Err(invalid(path));
+        }
         // Write a temporary file and rename it. A crash cannot leave a partial file.
         let mut temporary = target.clone().into_os_string();
         temporary.push(".tabloxide-tmp");

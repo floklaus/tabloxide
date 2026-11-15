@@ -1,11 +1,12 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { commands, type FileStatus_Serialize as FileStatus } from '../bindings'
+import { commands } from '../bindings'
 import { useResultsViewStore } from '../results/resultsViewStore'
 import { useTabsStore } from '../tabs/tabsStore'
 import { DiffView } from './DiffView'
 import { GitPanel } from './GitPanel'
+import { failed, file, ok, repository } from '../test/gitFixtures'
 import { useGitStore, type GitOverview } from './gitStore'
 
 vi.mock('../bindings', async () =>
@@ -18,53 +19,6 @@ const gitCommit = vi.mocked(commands.gitCommit)
 const gitPull = vi.mocked(commands.gitPull)
 const gitDiff = vi.mocked(commands.gitDiff)
 const fileRead = vi.mocked(commands.fileRead)
-
-function ok<T>(data: T) {
-  return { status: 'ok' as const, data }
-}
-
-function failed(message: string) {
-  return {
-    status: 'error' as const,
-    error: { kind: 'git' as const, message, issues: [] },
-  }
-}
-
-function file(overrides: Partial<FileStatus>): FileStatus {
-  return {
-    path: 'a.sql',
-    original_path: null,
-    staged: null,
-    unstaged: null,
-    is_untracked: false,
-    is_conflicted: false,
-    ...overrides,
-  }
-}
-
-function repository(
-  files: FileStatus[] = [],
-  overrides: object = {},
-): GitOverview {
-  return {
-    state: 'repository',
-    version: '2.43.0',
-    root: '/work/sql-project',
-    branches: [
-      { name: 'feature', is_current: false },
-      { name: 'main', is_current: true },
-    ],
-    status: {
-      branch: 'main',
-      has_commits: true,
-      upstream: 'origin/main',
-      ahead: 2,
-      behind: 1,
-      files,
-      ...overrides,
-    },
-  }
-}
 
 const changes = [
   file({ path: 'staged.sql', staged: 'modified' }),
@@ -296,17 +250,22 @@ describe('GitPanel', () => {
       failed('CONFLICT (content): Merge conflict in a.sql'),
     )
     gitOverview.mockResolvedValue(
-      ok(repository([file({ path: 'a.sql', is_conflicted: true })])),
+      ok(
+        repository([file({ path: 'a.sql', is_conflicted: true })], {}, 'Merge'),
+      ),
     )
 
     await user.click(screen.getByRole('button', { name: 'Pull' }))
 
     expect(await screen.findByText('Merge conflict')).toBeInTheDocument()
     expect(
-      screen.getByText(/Resolve the conflict in these files/),
-    ).toHaveTextContent('a.sql')
+      screen.getByRole('button', { name: 'Resolve a.sql' }),
+    ).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Discard a.sql' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Stage a.sql' }),
     ).not.toBeInTheDocument()
   })
 

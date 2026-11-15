@@ -5,7 +5,10 @@ use crate::state::{AppState, blocking};
 use serde::Serialize;
 use specta::Type;
 use std::path::{Path, PathBuf};
-use tabloxide_git::{BranchInfo, FileDiff, Git, GitError, StatusReport};
+use tabloxide_git::{
+    BranchDeletion, BranchInfo, CommitFile, CommitInfo, ConflictSides, FileDiff, Git, GitError,
+    StatusReport,
+};
 use tauri::{AppHandle, State};
 
 /// The Git state of the workspace.
@@ -24,8 +27,13 @@ pub enum GitOverview {
         root: String,
         status: StatusReport,
         branches: Vec<BranchInfo>,
+        /// The message for the merge commit. `None` if no merge is in progress.
+        merge_message: Option<String>,
     },
 }
+
+/// Largest number of commits that one request for the history returns.
+const MAX_LOG_PAGE: u32 = 200;
 
 /// Finds the repository of the workspace.
 fn repository(git: &Git, workspace_root: &Path) -> Result<PathBuf, GitError> {
@@ -50,6 +58,7 @@ fn overview(git: &Git, workspace_root: &Path) -> Result<GitOverview, GitError> {
         version,
         status: git.status(&root)?,
         branches: git.branches(&root)?,
+        merge_message: git.merge_message(&root)?,
         root: root.display().to_string(),
     })
 }
@@ -216,4 +225,113 @@ pub async fn git_pull(state: State<'_, AppState>) -> Result<String, CommandError
 #[specta::specta]
 pub async fn git_push(state: State<'_, AppState>) -> Result<String, CommandError> {
     with_repository(&state, |git, root| git.push(root)).await
+}
+
+/// Gives a branch a new name.
+#[tauri::command]
+#[specta::specta]
+pub async fn git_branch_rename(
+    state: State<'_, AppState>,
+    old_name: String,
+    new_name: String,
+) -> Result<(), CommandError> {
+    with_repository(&state, move |git, root| {
+        git.rename_branch(root, &old_name, &new_name)
+    })
+    .await
+}
+
+/// Deletes a branch. Without `force`, a branch with commits that are in no other branch
+/// stays, and the result tells the UI to ask the user.
+#[tauri::command]
+#[specta::specta]
+pub async fn git_branch_delete(
+    state: State<'_, AppState>,
+    name: String,
+    force: bool,
+) -> Result<BranchDeletion, CommandError> {
+    with_repository(&state, move |git, root| {
+        git.delete_branch(root, &name, force)
+    })
+    .await
+}
+
+/// Lists the commits of the current branch from new to old. `skip` gives the next page.
+#[tauri::command]
+#[specta::specta]
+pub async fn git_log(
+    state: State<'_, AppState>,
+    limit: u32,
+    skip: u32,
+) -> Result<Vec<CommitInfo>, CommandError> {
+    with_repository(&state, move |git, root| {
+        git.log(root, limit.min(MAX_LOG_PAGE), skip)
+    })
+    .await
+}
+
+/// Lists the files that a commit changed.
+#[tauri::command]
+#[specta::specta]
+pub async fn git_commit_files(
+    state: State<'_, AppState>,
+    id: String,
+) -> Result<Vec<CommitFile>, CommandError> {
+    with_repository(&state, move |git, root| git.commit_files(root, &id)).await
+}
+
+/// Returns the two sides of the diff of one file in a commit.
+#[tauri::command]
+#[specta::specta]
+pub async fn git_commit_diff(
+    state: State<'_, AppState>,
+    id: String,
+    path: String,
+    original_path: Option<String>,
+) -> Result<FileDiff, CommandError> {
+    with_repository(&state, move |git, root| {
+        git.commit_diff(root, &id, &path, original_path.as_deref())
+    })
+    .await
+}
+
+/// Returns the versions of a file that has a merge conflict.
+#[tauri::command]
+#[specta::specta]
+pub async fn git_conflict(
+    state: State<'_, AppState>,
+    path: String,
+) -> Result<ConflictSides, CommandError> {
+    with_repository(&state, move |git, root| git.conflict(root, &path)).await
+}
+
+/// Resolves the conflict of one file: writes `text` to the file and stages it.
+#[tauri::command]
+#[specta::specta]
+pub async fn git_resolve_text(
+    state: State<'_, AppState>,
+    path: String,
+    text: String,
+) -> Result<(), CommandError> {
+    with_repository(&state, move |git, root| {
+        git.resolve_with_text(root, &path, &text)
+    })
+    .await
+}
+
+/// Resolves the conflict of one file: deletes the file.
+#[tauri::command]
+#[specta::specta]
+pub async fn git_resolve_delete(
+    state: State<'_, AppState>,
+    path: String,
+) -> Result<(), CommandError> {
+    with_repository(&state, move |git, root| git.resolve_by_delete(root, &path)).await
+}
+
+/// Stops the merge and restores the state before the merge. The UI asks for confirmation first.
+#[tauri::command]
+#[specta::specta]
+pub async fn git_merge_abort(state: State<'_, AppState>) -> Result<(), CommandError> {
+    with_repository(&state, |git, root| git.abort_merge(root)).await
 }

@@ -1,6 +1,6 @@
 # Tabloxide — Implementation Plan
 
-This plan accompanies `Cross-Platform SQL Client Feature Backlog.md`. It gives the full plan for Phase 1 (usable MVP). It gives an outline for Phase 2 and Phase 3.
+This plan accompanies `Cross-Platform SQL Client Feature Backlog.md`. It gives the full plan for Phase 1 (usable MVP). It gives the milestones of Phase 2 and an outline for Phase 3.
 
 ## 1. Product decisions
 
@@ -210,17 +210,29 @@ Total: approximately 12 to 13 weeks.
 
 M0 and M1 are first. After M1, the database milestones (M2 to M4) and the Git milestone (M5) share only the shell and the workspace code. Thus two developers can do them at the same time. M6 is after M4 and M5.
 
-## 5. Phase 2 outline — public release
+## 5. Phase 2 milestones — public release
 
-* Merge conflict resolution with a side-by-side view. Commit history with a diff for each commit. Branch rename and delete.
-* In-app prompts for Git credentials and passphrases through `GIT_ASKPASS`.
-* A second engine. SQLite and MySQL are the useful candidates.
-  * SQLite tests the adapter for a database that is a file without a server.
-  * MySQL tests the adapter for a different SQL dialect.
-  * Expect changes to `DbAdapter` in this step.
-* Code signing and notarisation. Automatic updates that the user can defer. Release notes.
-* An accessibility audit with screen readers on each platform.
-* User documentation: install, troubleshooting, contribution, security reports.
+Phase 2 has six milestones. The sequence puts the work that needs no decision of the product owner first.
+
+| Milestone | Content | Necessary from the product owner |
+|---|---|---|
+| M7 — Git history and conflicts | Commit history with a diff for each commit. Branch rename and delete. Conflict resolution with a side-by-side view. Abort of a merge. | Nothing |
+| M8 — Git credentials and live status | In-app prompts for Git credentials and passphrases through `GIT_ASKPASS`. A stream of progress lines for fetch, pull, and push. A file watcher that updates the Git status and the open tabs. | Nothing |
+| M9 — Second engine | SQLite as the second engine. Changes to `DbAdapter` that the second engine shows to be necessary. | Agreement with SQLite, or a different selection |
+| M10 — Guardrails and large results | Guardrails that the user can configure for each environment. Column virtualization in the grid. Keyboard resize of columns. | Nothing |
+| M11 — Packaging | Code signing and notarisation. Automatic updates that the user can defer. Release notes. | Certificates for macOS and Windows, and a remote repository |
+| M12 — Accessibility and documentation | An accessibility audit with screen readers on each platform. User documentation: install, troubleshooting, contribution, security reports. | A person who does the audit with a screen reader |
+
+Notes:
+
+* SQLite is the recommended second engine.
+  * It tests the adapter for a database that is a file without a server.
+  * Its tests need no server. The project uses `rusqlite` already.
+  * MySQL tests the adapter for a different SQL dialect. It can be the third engine.
+* Expect changes to `DbAdapter` in M9.
+* M11 cannot be complete without the certificates. Without them, the milestone delivers the updater and the workflow steps only.
+
+Status on 2026-11-14: M7 is complete in code.
 
 ## 6. Phase 3 outline — differentiators
 

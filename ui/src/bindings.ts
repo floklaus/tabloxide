@@ -109,6 +109,27 @@ export const commands = {
 	gitBranchCreate: (name: string, options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("git_branch_create", { name }, options)),
 	/**  Switches to a branch. Git refuses the switch if it would lose a change in the working tree. */
 	gitBranchSwitch: (name: string, options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("git_branch_switch", { name }, options)),
+	/**  Gives a branch a new name. */
+	gitBranchRename: (oldName: string, newName: string, options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("git_branch_rename", { oldName, newName }, options)),
+	/**
+	 *  Deletes a branch. Without `force`, a branch with commits that are in no other branch
+	 *  stays, and the result tells the UI to ask the user.
+	 */
+	gitBranchDelete: (name: string, force: boolean, options?: InvokeOptions) => typedError<BranchDeletion, CommandError>(__TAURI_INVOKE("git_branch_delete", { name, force }, options)),
+	/**  Lists the commits of the current branch from new to old. `skip` gives the next page. */
+	gitLog: (limit: number, skip: number, options?: InvokeOptions) => typedError<CommitInfo[], CommandError>(__TAURI_INVOKE("git_log", { limit, skip }, options)),
+	/**  Lists the files that a commit changed. */
+	gitCommitFiles: (id: string, options?: InvokeOptions) => typedError<CommitFile_Serialize[], CommandError>(__TAURI_INVOKE("git_commit_files", { id }, options)),
+	/**  Returns the two sides of the diff of one file in a commit. */
+	gitCommitDiff: (id: string, path: string, originalPath: string | null, options?: InvokeOptions) => typedError<FileDiff, CommandError>(__TAURI_INVOKE("git_commit_diff", { id, path, originalPath }, options)),
+	/**  Returns the versions of a file that has a merge conflict. */
+	gitConflict: (path: string, options?: InvokeOptions) => typedError<ConflictSides_Serialize, CommandError>(__TAURI_INVOKE("git_conflict", { path }, options)),
+	/**  Resolves the conflict of one file: writes `text` to the file and stages it. */
+	gitResolveText: (path: string, text: string, options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("git_resolve_text", { path, text }, options)),
+	/**  Resolves the conflict of one file: deletes the file. */
+	gitResolveDelete: (path: string, options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("git_resolve_delete", { path }, options)),
+	/**  Stops the merge and restores the state before the merge. The UI asks for confirmation first. */
+	gitMergeAbort: (options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("git_merge_abort", undefined, options)),
 	/**  Gets the new commits of the remote. Returns the text that Git wrote. */
 	gitFetch: (options?: InvokeOptions) => typedError<string, CommandError>(__TAURI_INVOKE("git_fetch", undefined, options)),
 	/**  Gets and merges the new commits of the upstream branch. Returns the text that Git wrote. */
@@ -138,6 +159,11 @@ export type AppInfo = {
 	name: string,
 	version: string,
 };
+
+/**  The result of a request to delete a branch. */
+export type BranchDeletion = "deleted" | 
+/**  The branch has commits that are in no other branch. Git did not delete it. */
+"not-merged";
 
 export type BranchInfo = {
 	name: string,
@@ -214,6 +240,72 @@ export type CommandErrorKind =
 "git" | 
 /**  An error in the application itself. */
 "internal";
+
+/**  One file that a commit changed. The paths are relative to the repository root. */
+export type CommitFile = CommitFile_Serialize | CommitFile_Deserialize;
+
+/**  One file that a commit changed. The paths are relative to the repository root. */
+export type CommitFile_Deserialize = {
+	path: string,
+	/**  The path before a rename or a copy. */
+	original_path?: string | null,
+	kind: ChangeKind,
+};
+
+/**  One file that a commit changed. The paths are relative to the repository root. */
+export type CommitFile_Serialize = {
+	path: string,
+	/**  The path before a rename or a copy. */
+	original_path: string | null,
+	kind: ChangeKind,
+};
+
+export type CommitInfo = {
+	/**  The full object name of the commit. */
+	id: string,
+	short_id: string,
+	author: string,
+	/**  The author date in the ISO 8601 format. */
+	date: string,
+	/**  The first line of the commit message. */
+	subject: string,
+};
+
+/**
+ *  The versions of one file with a conflict. A version is `None` if the file is
+ *  not in that side, for example because that side deleted it.
+ */
+export type ConflictSides = ConflictSides_Serialize | ConflictSides_Deserialize;
+
+/**
+ *  The versions of one file with a conflict. A version is `None` if the file is
+ *  not in that side, for example because that side deleted it.
+ */
+export type ConflictSides_Deserialize = {
+	/**  The version in the common ancestor of the two branches. */
+	base?: string | null,
+	/**  The version in the current branch. */
+	ours?: string | null,
+	/**  The version in the branch that the merge brings in. */
+	theirs?: string | null,
+	/**  The file on disk. Git wrote conflict markers into it. */
+	working?: string | null,
+};
+
+/**
+ *  The versions of one file with a conflict. A version is `None` if the file is
+ *  not in that side, for example because that side deleted it.
+ */
+export type ConflictSides_Serialize = {
+	/**  The version in the common ancestor of the two branches. */
+	base: string | null,
+	/**  The version in the current branch. */
+	ours: string | null,
+	/**  The version in the branch that the merge brings in. */
+	theirs: string | null,
+	/**  The file on disk. Git wrote conflict markers into it. */
+	working: string | null,
+};
 
 /**
  *  A connection failure. `detail` is the message from the driver or the server.
@@ -403,7 +495,9 @@ export type GitOverview_Deserialize =
 /**  The workspace folder is not in a repository. */
 { state: "no-repository"; version: string } | { state: "repository"; version: string; 
 /**  Root of the repository. The file paths of the status are relative to it. */
-root: string; status: StatusReport_Deserialize; branches: BranchInfo[] };
+root: string; status: StatusReport_Deserialize; branches: BranchInfo[]; 
+/**  The message for the merge commit. `None` if no merge is in progress. */
+merge_message?: string | null };
 
 /**  The Git state of the workspace. */
 export type GitOverview_Serialize = 
@@ -414,7 +508,9 @@ export type GitOverview_Serialize =
 /**  The workspace folder is not in a repository. */
 { state: "no-repository"; version: string } | { state: "repository"; version: string; 
 /**  Root of the repository. The file paths of the status are relative to it. */
-root: string; status: StatusReport_Serialize; branches: BranchInfo[] };
+root: string; status: StatusReport_Serialize; branches: BranchInfo[]; 
+/**  The message for the merge commit. `None` if no merge is in progress. */
+merge_message: string | null };
 
 /**  A statement in the history. */
 export type HistoryEntry = HistoryEntry_Serialize | HistoryEntry_Deserialize;
