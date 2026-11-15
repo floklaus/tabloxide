@@ -47,6 +47,7 @@ pub async fn start_server(with_tls: bool) -> (ContainerAsync<Postgres>, Connecti
         connect_timeout_secs: 5,
         query_timeout_secs: None,
         read_only: false,
+        engine: tabloxide_core::Engine::Postgres,
         params: BTreeMap::new(),
         secret: SecretSource::Keychain,
     };

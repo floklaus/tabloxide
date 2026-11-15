@@ -1,6 +1,6 @@
 //! Validation of connection profiles at the system boundary.
 
-use crate::connection::{ConnectionProfile, SecretSource};
+use crate::connection::{ConnectionProfile, Engine, SecretSource};
 use serde::Serialize;
 
 pub const MAX_TIMEOUT_SECS: u32 = 3600;
@@ -45,6 +45,34 @@ fn timeout_issue(field: &str, seconds: u32) -> Option<ValidationIssue> {
             format!("The timeout must be between 1 and {MAX_TIMEOUT_SECS} seconds."),
         )
     })
+}
+
+/// A file engine needs only a name and the path of the database file.
+fn file_engine_issues(profile: &ConnectionProfile) -> Vec<ValidationIssue> {
+    let checks = [
+        (is_blank(&profile.name), "name", "Enter a name."),
+        (
+            is_blank(&profile.database),
+            "database",
+            "Enter the path of the database file.",
+        ),
+        (
+            profile.secret != SecretSource::None,
+            "secret",
+            "A database file has no password.",
+        ),
+    ];
+    checks
+        .into_iter()
+        .filter(|(is_invalid, _, _)| *is_invalid)
+        .map(|(_, field, message)| issue(field, message))
+        .collect()
+}
+
+fn query_timeout_issue(profile: &ConnectionProfile) -> Option<ValidationIssue> {
+    profile
+        .query_timeout_secs
+        .and_then(|seconds| timeout_issue("query_timeout_secs", seconds))
 }
 
 fn required_field_issues(profile: &ConnectionProfile) -> Vec<ValidationIssue> {
@@ -103,17 +131,24 @@ fn secret_issue(profile: &ConnectionProfile) -> Option<ValidationIssue> {
 /// Returns all problems in the profile. An empty list means that the profile is valid.
 #[must_use]
 pub fn validate_profile(profile: &ConnectionProfile) -> Vec<ValidationIssue> {
+    if profile.engine.is_file() {
+        return file_engine_issues(profile)
+            .into_iter()
+            .chain(query_timeout_issue(profile))
+            .collect();
+    }
+    server_engine_issues(profile)
+}
+
+fn server_engine_issues(profile: &ConnectionProfile) -> Vec<ValidationIssue> {
+    debug_assert_eq!(profile.engine, Engine::Postgres);
     required_field_issues(profile)
         .into_iter()
         .chain(timeout_issue(
             "connect_timeout_secs",
             profile.connect_timeout_secs,
         ))
-        .chain(
-            profile
-                .query_timeout_secs
-                .and_then(|seconds| timeout_issue("query_timeout_secs", seconds)),
-        )
+        .chain(query_timeout_issue(profile))
         .chain(param_issues(profile))
         .chain(secret_issue(profile))
         .collect()
@@ -206,6 +241,42 @@ mod tests {
 
             assert_eq!(fields(&validate_profile(&profile)), ["secret"], "{name}");
         }
+    }
+
+    fn duckdb_profile() -> ConnectionProfile {
+        ConnectionProfile {
+            engine: Engine::Duckdb,
+            database: "data/app.duckdb".to_owned(),
+            host: String::new(),
+            port: 0,
+            user: String::new(),
+            connect_timeout_secs: 0,
+            secret: SecretSource::None,
+            ..sample_profile()
+        }
+    }
+
+    #[test]
+    fn a_file_engine_needs_only_a_name_and_a_file() {
+        assert!(validate_profile(&duckdb_profile()).is_empty());
+    }
+
+    #[test]
+    fn a_file_engine_reports_a_missing_name_and_file_and_a_password() {
+        let profile = ConnectionProfile {
+            name: String::new(),
+            database: "  ".to_owned(),
+            secret: SecretSource::Keychain,
+            query_timeout_secs: Some(0),
+            ..duckdb_profile()
+        };
+
+        let issues = validate_profile(&profile);
+
+        assert_eq!(
+            fields(&issues),
+            ["name", "database", "secret", "query_timeout_secs"]
+        );
     }
 
     #[test]

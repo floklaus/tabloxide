@@ -111,6 +111,7 @@ mod tests {
             connect_timeout_secs: 7,
             query_timeout_secs: None,
             read_only: false,
+            engine: tabloxide_core::Engine::Postgres,
             params: BTreeMap::new(),
             secret: SecretSource::Keychain,
         }

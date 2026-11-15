@@ -43,8 +43,11 @@ pub async fn session_open(
         Ok(secret) => secret,
         Err(error) => return Ok(SessionOpenResult::Failed { error }),
     };
-    let adapter = state.adapter();
-    let session = match adapter.connect(&profile, secret.as_ref()).await {
+    let adapter = state.adapter(profile.engine);
+    let connected = adapter
+        .connect(&profile, secret.as_ref(), workspace.root())
+        .await;
+    let session = match connected {
         Ok(session) => Arc::new(QuerySession::new(session)),
         Err(error) => return Ok(SessionOpenResult::Failed { error }),
     };

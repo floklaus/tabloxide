@@ -40,6 +40,35 @@ impl fmt::Display for ConnectionId {
     }
 }
 
+/// The database engine of a connection.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(rename_all = "kebab-case")]
+pub enum Engine {
+    /// A PostgreSQL server.
+    #[default]
+    Postgres,
+    /// A DuckDB database file. `database` of the profile is the path of the file.
+    Duckdb,
+}
+
+impl Engine {
+    /// Returns `true` for the engine that a profile has when it does not name one.
+    #[must_use]
+    pub fn is_default(&self) -> bool {
+        *self == Self::default()
+    }
+
+    /// Returns `true` if the database is a file on this machine and not a server.
+    #[must_use]
+    pub fn is_file(self) -> bool {
+        matches!(self, Self::Duckdb)
+    }
+}
+
+/// The value of `database` that makes a DuckDB database in memory, without a file.
+pub const MEMORY_DATABASE: &str = ":memory:";
+
 /// Environment marker. The UI shows it before the user runs SQL.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
@@ -95,13 +124,19 @@ fn default_connect_timeout_secs() -> u32 {
 pub struct ConnectionProfile {
     pub id: ConnectionId,
     pub name: String,
+    /// A profile without this field is a PostgreSQL connection.
+    #[serde(default, skip_serializing_if = "Engine::is_default")]
+    pub engine: Engine,
     #[serde(default)]
     pub environment: Environment,
     #[serde(default)]
     pub host: String,
     #[serde(default = "default_port")]
     pub port: u16,
+    /// The database name. For a file engine, the path of the database file. A relative
+    /// path starts at the workspace folder.
     pub database: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
     pub user: String,
     #[serde(default)]
     pub tls_mode: TlsMode,
@@ -131,6 +166,7 @@ impl ConnectionProfile {
         Self {
             id: ConnectionId::generate(),
             name: String::new(),
+            engine: Engine::default(),
             environment: Environment::default(),
             host: "localhost".to_owned(),
             port: DEFAULT_PORT,
@@ -173,6 +209,7 @@ pub(crate) mod tests {
         ConnectionProfile {
             id: ConnectionId::from("11111111-1111-4111-8111-111111111111"),
             name: "Local".to_owned(),
+            engine: Engine::Postgres,
             environment: Environment::Development,
             host: "localhost".to_owned(),
             port: DEFAULT_PORT,
@@ -225,6 +262,31 @@ pub(crate) mod tests {
         assert_eq!(profile.environment, Environment::Development);
         assert_eq!(profile.secret, SecretSource::None);
         assert_eq!(profile.connect_timeout_secs, DEFAULT_CONNECT_TIMEOUT_SECS);
+    }
+
+    #[test]
+    fn a_profile_without_an_engine_is_a_postgres_profile() {
+        let json = r#"{"id":"a","name":"n","database":"d","user":"u"}"#;
+
+        let profile: ConnectionProfile = serde_json::from_str(json).unwrap();
+        let written = serde_json::to_string(&profile).unwrap();
+
+        assert_eq!(profile.engine, Engine::Postgres);
+        assert!(!written.contains("engine"), "{written}");
+    }
+
+    #[test]
+    fn a_duckdb_profile_needs_no_user_and_writes_its_engine() {
+        let json = r#"{"id":"a","name":"n","engine":"duckdb","database":"data/app.duckdb"}"#;
+
+        let profile: ConnectionProfile = serde_json::from_str(json).unwrap();
+        let written = serde_json::to_string(&profile).unwrap();
+
+        assert_eq!(profile.engine, Engine::Duckdb);
+        assert!(profile.engine.is_file());
+        assert_eq!(profile.user, "");
+        assert!(written.contains(r#""engine":"duckdb""#), "{written}");
+        assert!(!written.contains(r#""user""#), "{written}");
     }
 
     #[test]

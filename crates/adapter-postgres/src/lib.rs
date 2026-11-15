@@ -10,6 +10,7 @@ mod stream;
 mod tls;
 
 use async_trait::async_trait;
+use std::path::Path;
 use std::time::Duration;
 use tabloxide_core::{
     Capabilities, ConnectError, ConnectionProfile, DbAdapter, Secret, ServerInfo, Session,
@@ -32,6 +33,7 @@ impl DbAdapter for PostgresAdapter {
         &self,
         profile: &ConnectionProfile,
         password: Option<&Secret>,
+        _workspace_root: &Path,
     ) -> Result<ServerInfo, ConnectError> {
         let connected = connect::open(profile, password).await?;
         let version = connect::server_version(&connected.client).await;
@@ -45,6 +47,7 @@ impl DbAdapter for PostgresAdapter {
         &self,
         profile: &ConnectionProfile,
         password: Option<&Secret>,
+        _workspace_root: &Path,
     ) -> Result<Box<dyn Session>, ConnectError> {
         let connected = connect::open(profile, password).await?;
         let info = ServerInfo {
@@ -74,5 +77,7 @@ pub async fn test_connection(
     profile: &ConnectionProfile,
     password: Option<&Secret>,
 ) -> Result<ServerInfo, ConnectError> {
-    PostgresAdapter.test_connection(profile, password).await
+    PostgresAdapter
+        .test_connection(profile, password, Path::new("."))
+        .await
 }

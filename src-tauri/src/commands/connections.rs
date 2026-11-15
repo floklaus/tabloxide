@@ -132,11 +132,13 @@ pub async fn connection_test(
         Err(error) => return Ok(ConnectionTestResult::Failed { error }),
     };
 
-    let adapter = state.adapter();
-    Ok(
-        match adapter.test_connection(&profile, secret.as_ref()).await {
-            Ok(server) => ConnectionTestResult::Connected { server },
-            Err(error) => ConnectionTestResult::Failed { error },
-        },
-    )
+    let workspace = state.workspace()?;
+    let adapter = state.adapter(profile.engine);
+    let tested = adapter
+        .test_connection(&profile, secret.as_ref(), workspace.root())
+        .await;
+    Ok(match tested {
+        Ok(server) => ConnectionTestResult::Connected { server },
+        Err(error) => ConnectionTestResult::Failed { error },
+    })
 }

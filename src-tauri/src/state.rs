@@ -6,8 +6,9 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
+use tabloxide_adapter_duckdb::DuckDbAdapter;
 use tabloxide_adapter_postgres::PostgresAdapter;
-use tabloxide_core::{ConnectionId, DbAdapter, QuerySession};
+use tabloxide_core::{ConnectionId, DbAdapter, Engine, QuerySession};
 use tabloxide_git::AskpassServer;
 use tabloxide_workspace::{KeyringStore, LocalState, SecretStore, Workspace, WorkspaceWatcher};
 
@@ -25,7 +26,9 @@ pub struct SessionEntry {
 pub struct AppState {
     workspace: Mutex<Option<Workspace>>,
     secrets: Arc<dyn SecretStore>,
-    adapter: Arc<dyn DbAdapter>,
+    postgres: Arc<dyn DbAdapter>,
+    /// This adapter holds the open database files. Thus the application has only one.
+    duckdb: Arc<dyn DbAdapter>,
     sessions: Mutex<HashMap<SessionId, SessionEntry>>,
     next_session_id: AtomicU32,
     local: Mutex<Option<Arc<LocalState>>>,
@@ -41,7 +44,8 @@ impl Default for AppState {
         Self {
             workspace: Mutex::new(None),
             secrets: Arc::new(KeyringStore),
-            adapter: Arc::new(PostgresAdapter),
+            postgres: Arc::new(PostgresAdapter),
+            duckdb: Arc::new(DuckDbAdapter::default()),
             sessions: Mutex::new(HashMap::new()),
             next_session_id: AtomicU32::new(1),
             local: Mutex::new(None),
@@ -72,8 +76,12 @@ impl AppState {
         Arc::clone(&self.secrets)
     }
 
-    pub fn adapter(&self) -> Arc<dyn DbAdapter> {
-        Arc::clone(&self.adapter)
+    /// Returns the adapter for a database engine.
+    pub fn adapter(&self, engine: Engine) -> Arc<dyn DbAdapter> {
+        match engine {
+            Engine::Postgres => Arc::clone(&self.postgres),
+            Engine::Duckdb => Arc::clone(&self.duckdb),
+        }
     }
 
     fn lock_sessions(&self) -> MutexGuard<'_, HashMap<SessionId, SessionEntry>> {

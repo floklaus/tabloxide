@@ -1,6 +1,5 @@
 //! Domain types that do not depend on a database engine or on Tauri.
 //!
-//! A later milestone adds the safety classifier to this crate.
 
 mod adapter;
 mod connection;
@@ -18,8 +17,8 @@ mod validation;
 
 pub use adapter::{CancelHandle, Capabilities, DbAdapter, ResultStream, Session};
 pub use connection::{
-    ConnectionId, ConnectionProfile, DEFAULT_CONNECT_TIMEOUT_SECS, DEFAULT_PORT, Environment,
-    SecretSource, ServerInfo, TlsMode,
+    ConnectionId, ConnectionProfile, DEFAULT_CONNECT_TIMEOUT_SECS, DEFAULT_PORT, Engine,
+    Environment, MEMORY_DATABASE, SecretSource, ServerInfo, TlsMode,
 };
 pub use error::{ConnectError, ConnectErrorKind};
 pub use query::{Column, ColumnKind, Completion, Page, QueryError, QueryErrorKind, Row};

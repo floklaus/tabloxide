@@ -5,12 +5,25 @@ use serde::Serialize;
 
 const DATA_CHANGE_WORDS: [&str; 4] = ["insert", "update", "delete", "merge"];
 
+/// First keywords of statements that only read data.
+const READ_WORDS: [&str; 8] = [
+    "select",
+    "table",
+    "values",
+    "from",
+    "describe",
+    "summarize",
+    "pivot",
+    "unpivot",
+];
+
 /// Returns `true` if the backend can read the result of `statement` in pages
 /// and cancel the statement to close the result early.
 ///
 /// This is correct only for a statement that reads data. A cancel of a statement
 /// that changes data undoes the change. Thus the function accepts `SELECT`, `TABLE`,
-/// `VALUES`, and `WITH` that has no data change in it.
+/// `VALUES`, and `WITH` that has no data change in it. It also accepts the read
+/// statements of DuckDB: `FROM`, `DESCRIBE`, `SUMMARIZE`, `PIVOT`, and `UNPIVOT`.
 #[must_use]
 pub fn is_pageable(statement: &str) -> bool {
     let tokens = tokenize(statement);
@@ -19,7 +32,7 @@ pub fn is_pageable(statement: &str) -> bool {
         return false;
     };
     let is = |token: &Token, word: &str| token.is_word(statement, word);
-    if ["select", "table", "values"].iter().any(|w| is(first, w)) {
+    if READ_WORDS.iter().any(|w| is(first, w)) {
         return true;
     }
     is(first, "with") && !words.any(|token| DATA_CHANGE_WORDS.iter().any(|w| is(token, w)))
@@ -37,6 +50,10 @@ pub enum Risk {
     DeleteWithoutWhere,
     /// `UPDATE` without `WHERE` changes all rows.
     UpdateWithoutWhere,
+    /// `COPY ... TO` and `EXPORT DATABASE` write files on a disk.
+    WriteFile,
+    /// `INSTALL` and `LOAD` add program code to the database engine.
+    LoadExtension,
 }
 
 /// The keywords of `statement` that are not in parentheses, in lower case.
@@ -66,8 +83,10 @@ pub fn classify_risk(statement: &str) -> Option<Risk> {
     let has_where = words.iter().any(|word| word == "where");
     // The primary verb of `WITH ... DELETE` is after the common table expressions.
     let verbs = [
-        "drop", "truncate", "alter", "delete", "update", "insert", "select",
+        "drop", "truncate", "alter", "delete", "update", "insert", "select", "copy", "export",
+        "install", "load",
     ];
+    let has = |word: &str| words.iter().any(|candidate| candidate == word);
     let verb = words.iter().find(|word| verbs.contains(&word.as_str()))?;
     let first = words.first()?;
     if first != verb && first != "with" {
@@ -79,6 +98,10 @@ pub fn classify_risk(statement: &str) -> Option<Risk> {
         "alter" => Some(Risk::Alter),
         "delete" if !has_where => Some(Risk::DeleteWithoutWhere),
         "update" if !has_where => Some(Risk::UpdateWithoutWhere),
+        // `COPY ... TO STDOUT` sends the data to the client and writes no file.
+        "copy" if has("to") && !has("stdout") => Some(Risk::WriteFile),
+        "export" => Some(Risk::WriteFile),
+        "install" | "load" => Some(Risk::LoadExtension),
         _ => None,
     }
 }
@@ -126,6 +149,12 @@ mod tests {
             ("insert into t values (1) returning *", false),
             ("explain analyze delete from t", false),
             ("show all", false),
+            ("from t select a", true),
+            ("FROM 'data.csv'", true),
+            ("describe t", true),
+            ("summarize select * from t", true),
+            ("pivot t on a using sum(b)", true),
+            ("copy t to 'out.csv'", false),
             ("", false),
             ("-- comment", false),
         ];
@@ -160,6 +189,17 @@ mod tests {
             ("insert into item values (1)", None),
             ("create table item (a int)", None),
             ("explain delete from item", None),
+            ("COPY item TO 'out.csv'", Some(Risk::WriteFile)),
+            (
+                "copy (select * from item where a) to '/tmp/x.parquet' (format parquet)",
+                Some(Risk::WriteFile),
+            ),
+            ("copy item to stdout", None),
+            ("copy item from 'in.csv'", None),
+            ("EXPORT DATABASE 'backup'", Some(Risk::WriteFile)),
+            ("install httpfs", Some(Risk::LoadExtension)),
+            ("LOAD 'my_extension'", Some(Risk::LoadExtension)),
+            ("select load from item", None),
             ("", None),
         ];
         for (statement, expected) in cases {

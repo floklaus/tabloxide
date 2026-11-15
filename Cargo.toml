@@ -12,3 +12,9 @@ unsafe_code = "forbid"
 
 [workspace.lints.clippy]
 all = { level = "warn", priority = -1 }
+
+# DuckDB is C++ code that this workspace compiles from source. Without optimization
+# and with debug data, the development build is very large and its queries are slow.
+[profile.dev.package.libduckdb-sys]
+opt-level = 2
+debug = false

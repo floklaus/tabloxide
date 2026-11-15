@@ -6,6 +6,7 @@ use crate::{
 };
 use async_trait::async_trait;
 use serde::Serialize;
+use std::path::Path;
 use std::sync::Arc;
 
 /// Functions that a database engine supports. The UI hides a function that is not supported.
@@ -22,10 +23,14 @@ pub trait DbAdapter: Send + Sync {
     fn capabilities(&self) -> Capabilities;
 
     /// Opens a connection, reads the server version, and closes the connection.
+    ///
+    /// `workspace_root` is the folder of the workspace. A file engine uses it as the
+    /// start of a relative path. A server engine ignores it.
     async fn test_connection(
         &self,
         profile: &ConnectionProfile,
         password: Option<&Secret>,
+        workspace_root: &Path,
     ) -> Result<ServerInfo, ConnectError>;
 
     /// Opens a session. One session runs one statement at a time.
@@ -33,6 +38,7 @@ pub trait DbAdapter: Send + Sync {
         &self,
         profile: &ConnectionProfile,
         password: Option<&Secret>,
+        workspace_root: &Path,
     ) -> Result<Box<dyn Session>, ConnectError>;
 }
 

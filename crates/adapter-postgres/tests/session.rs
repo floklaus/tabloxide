@@ -16,7 +16,11 @@ const LARGE_QUERY: &str = "SELECT i, md5(i::text) FROM generate_series(1, 300000
 
 async fn connect(profile: &ConnectionProfile) -> Box<dyn Session> {
     PostgresAdapter
-        .connect(profile, Some(&Secret::new(PASSWORD)))
+        .connect(
+            profile,
+            Some(&Secret::new(PASSWORD)),
+            std::path::Path::new("."),
+        )
         .await
         .expect("the session must open")
 }
