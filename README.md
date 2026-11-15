@@ -126,7 +126,10 @@ cargo test -p tabloxide-adapter-postgres -- --ignored
 
 ## Release
 
-Push a tag such as `v0.1.0`. The workflow `.github/workflows/release.yml` builds the installers on the three platforms and makes a draft release with the installers and `SHA256SUMS.txt`. Examine the draft, then publish it.
+1. In `CHANGELOG.md`, change the title `## Unreleased` to the version and the date, for example `## 0.1.0 (2026-12-01)`. Add a new, empty section `## Unreleased` above it. Commit the change.
+2. Push a tag for that version, for example `v0.1.0`.
+3. The workflow `.github/workflows/release.yml` builds the installers on the three platforms. It makes a draft release with the installers, `SHA256SUMS.txt`, and the section of the version from `CHANGELOG.md`. The workflow stops if `CHANGELOG.md` has no section for the version.
+4. Examine the draft, then publish it.
 
 ## TypeScript bindings
 

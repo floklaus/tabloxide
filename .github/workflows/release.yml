@@ -1,7 +1,8 @@
 name: Release
 
 # A tag such as v0.1.0 builds the installers for the three platforms and makes a
-# draft release with the installers and their SHA-256 checksums.
+# draft release with the installers, their SHA-256 checksums, and the release notes.
+# The release notes are the section of the version in CHANGELOG.md.
 on:
   push:
     tags: ['v*']
@@ -69,6 +70,23 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the release notes of this version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version="${TAG#v}"
+          awk -v version="$version" '
+            /^## / { found = ($2 == version) ; next }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          if ! grep -q '[^[:space:]]' release-notes.md; then
+            echo "CHANGELOG.md has no section with the title \"## $version\"." >&2
+            exit 1
+          fi
+          cat release-notes.md
+
       - uses: actions/download-artifact@v4
         with:
           path: installers
@@ -88,4 +106,4 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft \
-            --title "Tabloxide $TAG" --generate-notes -- *
+            --title "Tabloxide $TAG" --notes-file ../release-notes.md -- *
