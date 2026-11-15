@@ -1,5 +1,7 @@
+import { open } from '@tauri-apps/plugin-dialog'
 import { useState, type FormEvent } from 'react'
-import type { ValidationIssue } from '../bindings'
+import { commands, type Engine, type ValidationIssue } from '../bindings'
+import { toMessage } from '../lib/errors'
 import {
   runConnectionTest,
   useConnectionStore,
@@ -7,14 +9,21 @@ import {
 } from './connectionStore'
 import { Field } from './Field'
 import {
+  isFileEngine,
   issueFor,
   toDraft,
   toProfile,
+  withEngine,
   type ConnectionDraft,
   type ConnectionProfile,
 } from './formModel'
 import { Modal } from './Modal'
-import { ENVIRONMENT_OPTIONS, SECRET_OPTIONS, TLS_OPTIONS } from './options'
+import {
+  ENGINE_OPTIONS,
+  ENVIRONMENT_OPTIONS,
+  SECRET_OPTIONS,
+  TLS_OPTIONS,
+} from './options'
 import { TestResult } from './TestResult'
 
 type ConnectionFormProps = {
@@ -81,6 +90,37 @@ export function ConnectionForm({
   }
 
   const error = (field: string) => issueFor(issues, field)
+  const isFile = isFileEngine(draft.engine)
+
+  /** Lets the user select a database file. A file in the workspace gets a relative path. */
+  const chooseFile = async () => {
+    try {
+      const selected = await open({ directory: false, multiple: false })
+      if (typeof selected !== 'string') return
+      const relative = await commands.fileRelativePath(selected)
+      // A file outside the workspace folder keeps its absolute path.
+      update('database', relative.status === 'ok' ? relative.data : selected)
+    } catch (failure) {
+      setSaveError(toMessage(failure))
+    }
+  }
+
+  const queryTimeoutField = (
+    <Field
+      label="Query timeout (seconds)"
+      error={error('query_timeout_secs')}
+      hint="Empty means no limit."
+    >
+      {(props) => (
+        <input
+          {...props}
+          type="text"
+          inputMode="numeric"
+          {...text('queryTimeoutSecs')}
+        />
+      )}
+    </Field>
+  )
 
   return (
     <Modal
@@ -93,6 +133,25 @@ export function ConnectionForm({
         noValidate
       >
         <div className="form__grid">
+          <Field label="Database engine">
+            {(props) => (
+              <select
+                {...props}
+                value={draft.engine}
+                onChange={(event) =>
+                  setDraft((current) =>
+                    withEngine(current, event.target.value as Engine),
+                  )
+                }
+              >
+                {ENGINE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
           <Field label="Name" error={error('name')}>
             {(props) => <input {...props} type="text" {...text('name')} />}
           </Field>
@@ -107,45 +166,74 @@ export function ConnectionForm({
               </select>
             )}
           </Field>
-          <Field label="Host" error={error('host')}>
-            {(props) => <input {...props} type="text" {...text('host')} />}
-          </Field>
-          <Field label="Port" error={error('port')}>
-            {(props) => (
-              <input
-                {...props}
-                type="text"
-                inputMode="numeric"
-                {...text('port')}
-              />
-            )}
-          </Field>
-          <Field label="Database" error={error('database')}>
-            {(props) => <input {...props} type="text" {...text('database')} />}
-          </Field>
-          <Field label="User" error={error('user')}>
-            {(props) => (
-              <input
-                {...props}
-                type="text"
-                autoComplete="off"
-                {...text('user')}
-              />
-            )}
-          </Field>
+          {!isFile && (
+            <>
+              <Field label="Host" error={error('host')}>
+                {(props) => <input {...props} type="text" {...text('host')} />}
+              </Field>
+              <Field label="Port" error={error('port')}>
+                {(props) => (
+                  <input
+                    {...props}
+                    type="text"
+                    inputMode="numeric"
+                    {...text('port')}
+                  />
+                )}
+              </Field>
+              <Field label="Database" error={error('database')}>
+                {(props) => (
+                  <input {...props} type="text" {...text('database')} />
+                )}
+              </Field>
+              <Field label="User" error={error('user')}>
+                {(props) => (
+                  <input
+                    {...props}
+                    type="text"
+                    autoComplete="off"
+                    {...text('user')}
+                  />
+                )}
+              </Field>
+            </>
+          )}
         </div>
 
-        <Field label="TLS mode">
-          {(props) => (
-            <select {...props} {...text('tlsMode')}>
-              {TLS_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          )}
-        </Field>
+        {isFile && (
+          <>
+            <Field
+              label="Database file"
+              error={error('database')}
+              hint="A path in the workspace folder, an absolute path, or :memory: for a database in memory. If the file does not exist, the first connection makes it."
+            >
+              {(props) => (
+                <input {...props} type="text" {...text('database')} />
+              )}
+            </Field>
+            <button
+              type="button"
+              className="button button--small"
+              onClick={() => void chooseFile()}
+            >
+              Select file…
+            </button>
+          </>
+        )}
+
+        {!isFile && (
+          <Field label="TLS mode">
+            {(props) => (
+              <select {...props} {...text('tlsMode')}>
+                {TLS_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
+        )}
 
         <label className="field field--check">
           <input
@@ -154,100 +242,94 @@ export function ConnectionForm({
             onChange={(event) => update('readOnly', event.target.checked)}
           />
           <span>
-            Read-only. The server refuses statements that change data or the
+            Read-only. The database refuses statements that change data or the
             schema.
           </span>
         </label>
 
-        <div className="form__grid">
-          <Field label="Password source" error={error('secret')}>
-            {(props) => (
-              <select {...props} {...text('secretKind')}>
-                {SECRET_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            )}
-          </Field>
-          {draft.secretKind === 'keychain' && (
-            <Field
-              label="Password"
-              hint={
-                isNew
-                  ? undefined
-                  : 'Leave this field empty to keep the stored password.'
-              }
-            >
-              {(props) => (
-                <input
-                  {...props}
-                  type="password"
-                  autoComplete="off"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                />
+        {isFile && queryTimeoutField}
+        {!isFile && (
+          <>
+            <div className="form__grid">
+              <Field label="Password source" error={error('secret')}>
+                {(props) => (
+                  <select {...props} {...text('secretKind')}>
+                    {SECRET_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </Field>
+              {draft.secretKind === 'keychain' && (
+                <Field
+                  label="Password"
+                  hint={
+                    isNew
+                      ? undefined
+                      : 'Leave this field empty to keep the stored password.'
+                  }
+                >
+                  {(props) => (
+                    <input
+                      {...props}
+                      type="password"
+                      autoComplete="off"
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                    />
+                  )}
+                </Field>
               )}
-            </Field>
-          )}
-          {draft.secretKind === 'env-var' && (
-            <Field label="Environment variable name">
-              {(props) => (
-                <input {...props} type="text" {...text('envVarName')} />
+              {draft.secretKind === 'env-var' && (
+                <Field label="Environment variable name">
+                  {(props) => (
+                    <input {...props} type="text" {...text('envVarName')} />
+                  )}
+                </Field>
               )}
-            </Field>
-          )}
-        </div>
+            </div>
 
-        <details className="form__advanced">
-          <summary>Advanced settings</summary>
-          <div className="form__grid">
-            <Field
-              label="Socket directory"
-              error={error('socket_path')}
-              hint="Unix socket directory. When it has a value, the host is ignored."
-            >
-              {(props) => (
-                <input {...props} type="text" {...text('socketPath')} />
-              )}
-            </Field>
-            <Field
-              label="Connection timeout (seconds)"
-              error={error('connect_timeout_secs')}
-            >
-              {(props) => (
-                <input
-                  {...props}
-                  type="text"
-                  inputMode="numeric"
-                  {...text('connectTimeoutSecs')}
-                />
-              )}
-            </Field>
-            <Field
-              label="Query timeout (seconds)"
-              error={error('query_timeout_secs')}
-              hint="Empty means no limit."
-            >
-              {(props) => (
-                <input
-                  {...props}
-                  type="text"
-                  inputMode="numeric"
-                  {...text('queryTimeoutSecs')}
-                />
-              )}
-            </Field>
-          </div>
-          <Field
-            label="Extra parameters"
-            error={error('params')}
-            hint="One parameter on each line as name=value."
-          >
-            {(props) => <textarea {...props} rows={3} {...text('params')} />}
-          </Field>
-        </details>
+            <details className="form__advanced">
+              <summary>Advanced settings</summary>
+              <div className="form__grid">
+                <Field
+                  label="Socket directory"
+                  error={error('socket_path')}
+                  hint="Unix socket directory. When it has a value, the host is ignored."
+                >
+                  {(props) => (
+                    <input {...props} type="text" {...text('socketPath')} />
+                  )}
+                </Field>
+                <Field
+                  label="Connection timeout (seconds)"
+                  error={error('connect_timeout_secs')}
+                >
+                  {(props) => (
+                    <input
+                      {...props}
+                      type="text"
+                      inputMode="numeric"
+                      {...text('connectTimeoutSecs')}
+                    />
+                  )}
+                </Field>
+                {queryTimeoutField}
+              </div>
+              <Field
+                label="Extra parameters"
+                error={error('params')}
+                hint="One parameter on each line as name=value."
+              >
+                {(props) => (
+                  <textarea {...props} rows={3} {...text('params')} />
+                )}
+              </Field>
+            </details>
+          </>
+        )}
 
         <TestResult state={testState} />
         {saveError && (

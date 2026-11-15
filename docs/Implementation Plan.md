@@ -40,6 +40,7 @@ tabloxide/
   crates/
     core/               domain types, DbAdapter trait, SQL statement splitter, safety classifier
     adapter-postgres/   PostgreSQL implementation of DbAdapter
+    adapter-duckdb/     DuckDB implementation of DbAdapter
     git/                wrapper for the system git executable
     workspace/          project configuration, local state, history, secret references
   src-tauri/            Tauri commands and app wiring only, no business logic
@@ -232,7 +233,16 @@ Notes:
 * Expect changes to `DbAdapter` in M9.
 * M11 cannot be complete without the certificates. Without them, the milestone delivers the updater and the workflow steps only.
 
-Status on 2026-11-14: M7 and M8 are complete in code.
+Status on 2026-11-15: M7, M8, and M9 are complete in code. The second engine is DuckDB, not SQLite. The product owner made this selection after the spike below.
+
+Changes to the adapter boundary in M9:
+
+* A connection profile has an `engine` field. A profile without this field is a PostgreSQL profile, thus an old `tabloxide.toml` stays valid.
+* For a file engine, `database` is the path of the file. A relative path starts at the workspace folder. Such a profile has no host, no user, and no password.
+* `connect` and `test_connection` of `DbAdapter` have the workspace folder as a new parameter.
+* The application state has one adapter for each engine. The DuckDB adapter holds the open database files.
+* The traits `Session`, `ResultStream`, and `CancelHandle` did not change.
+* The classifier in `core` accepts the read statements of DuckDB (`FROM`, `DESCRIBE`, `SUMMARIZE`, `PIVOT`, `UNPIVOT`). It has two new risks: a statement that writes files, and a statement that loads an extension.
 
 Design of the credential prompts (M8):
 

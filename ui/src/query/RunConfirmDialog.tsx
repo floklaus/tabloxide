@@ -17,7 +17,10 @@ export function RunConfirmDialog() {
       )}
       {pending.risky.length > 0 && (
         <>
-          <p>These statements are destructive. You cannot undo them.</p>
+          <p>
+            These statements are destructive, or they have an effect outside the
+            database. You cannot undo them.
+          </p>
           <ul className="confirm__list">
             {pending.risky.map((statement, index) => (
               <li key={index}>

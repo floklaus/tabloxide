@@ -1,7 +1,12 @@
-import type { Environment, TlsMode } from '../bindings'
+import type { Engine, Environment, TlsMode } from '../bindings'
 import type { SecretKind } from './formModel'
 
 type Option<T extends string> = { value: T; label: string }
+
+export const ENGINE_OPTIONS: Option<Engine>[] = [
+  { value: 'postgres', label: 'PostgreSQL' },
+  { value: 'duckdb', label: 'DuckDB' },
+]
 
 export const ENVIRONMENT_OPTIONS: Option<Environment>[] = [
   { value: 'development', label: 'Development' },

@@ -12,8 +12,9 @@ type ConnectionItemProps = {
 }
 
 function target(profile: ConnectionProfile): string {
+  if (profile.engine === 'duckdb') return `DuckDB: ${profile.database}`
   const server = profile.socket_path ?? `${profile.host}:${profile.port}`
-  return `${profile.user}@${server}/${profile.database}`
+  return `${profile.user ?? ''}@${server}/${profile.database}`
 }
 
 function statusText(state: TestState | undefined): string {

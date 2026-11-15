@@ -1,5 +1,6 @@
 import type {
   ConnectionProfile_Serialize,
+  Engine,
   Environment,
   TlsMode,
   ValidationIssue,
@@ -13,6 +14,7 @@ export type SecretKind = 'keychain' | 'env-var' | 'none'
 export type ConnectionDraft = {
   id: string
   name: string
+  engine: Engine
   environment: Environment
   host: string
   port: string
@@ -42,11 +44,12 @@ export function toDraft(profile: ConnectionProfile): ConnectionDraft {
   return {
     id: profile.id,
     name: profile.name,
+    engine: profile.engine ?? 'postgres',
     environment: profile.environment,
     host: profile.host,
     port: String(profile.port),
     database: profile.database,
-    user: profile.user,
+    user: profile.user ?? '',
     tlsMode: profile.tls_mode,
     socketPath: profile.socket_path ?? '',
     connectTimeoutSecs: String(profile.connect_timeout_secs),
@@ -92,11 +95,69 @@ function toSecret(draft: ConnectionDraft): ConnectionProfile['secret'] {
   }
 }
 
+/** The settings of a server that a database file does not use. */
+const FILE_ENGINE_DEFAULTS = {
+  host: '',
+  port: 5432,
+  tls_mode: 'disable',
+  connect_timeout_secs: 10,
+  secret: { type: 'none' },
+} as const
+
+/** Returns `true` if the database of the engine is a file and not a server. */
+export function isFileEngine(engine: Engine): boolean {
+  return engine === 'duckdb'
+}
+
+/** Returns the draft for a different engine. A database file has no password. */
+export function withEngine(
+  draft: ConnectionDraft,
+  engine: Engine,
+): ConnectionDraft {
+  const secretKind = isFileEngine(engine) ? 'none' : 'keychain'
+  return { ...draft, engine, secretKind }
+}
+
+/** Converts the form state of a database file to a profile. */
+function toFileProfile(draft: ConnectionDraft): DraftResult {
+  const queryTimeout =
+    draft.queryTimeoutSecs.trim() === ''
+      ? undefined
+      : parseInteger(draft.queryTimeoutSecs)
+  if (queryTimeout === null) {
+    return {
+      ok: false,
+      issues: [
+        {
+          field: 'query_timeout_secs',
+          message: 'Enter a number of seconds, or leave it empty.',
+        },
+      ],
+    }
+  }
+  return {
+    ok: true,
+    profile: {
+      ...FILE_ENGINE_DEFAULTS,
+      id: draft.id,
+      name: draft.name.trim(),
+      engine: draft.engine,
+      environment: draft.environment,
+      database: draft.database.trim(),
+      ...(queryTimeout === undefined
+        ? {}
+        : { query_timeout_secs: queryTimeout }),
+      ...(draft.readOnly ? { read_only: true } : {}),
+    },
+  }
+}
+
 /**
  * Converts the form state to a profile. This function checks only what the form itself can
  * get wrong (numbers and the parameter syntax). The backend validates all other rules.
  */
 export function toProfile(draft: ConnectionDraft): DraftResult {
+  if (isFileEngine(draft.engine)) return toFileProfile(draft)
   const port = parseInteger(draft.port)
   const connectTimeout = parseInteger(draft.connectTimeoutSecs)
   const queryTimeout =

@@ -2,9 +2,12 @@
 
 Tabloxide is a cross-platform SQL client with built-in Git. It uses Tauri 2, a React and TypeScript UI, and a Rust backend.
 
-Phase 1 of `docs/Implementation Plan.md` (milestones M0 to M6) is complete in code. Phase 2 is in work, and its milestones M7 and M8 are complete in code. The first database engine is PostgreSQL.
+Phase 1 of `docs/Implementation Plan.md` (milestones M0 to M6) is complete in code. Phase 2 is in work, and its milestones M7, M8, and M9 are complete in code. The database engines are PostgreSQL and DuckDB.
 
 ## Functions
+
+- **Database engines:** PostgreSQL servers and DuckDB database files. A connection selects its engine.
+- **DuckDB:** A DuckDB connection opens a database file, or a database in memory with the file name `:memory:`. A statement can read the CSV, Parquet, and JSON files of the workspace folder directly, for example `SELECT * FROM 'data.csv'`.
 
 - **Workspace:** A workspace is a folder with your SQL files. The file `tabloxide.toml` in that folder holds the connection definitions without secrets.
 - **Connections:** Add, edit, duplicate, delete, and test connections. A password is in the credential store of the operating system, or it comes from an environment variable.
@@ -48,12 +51,17 @@ On macOS, use `Cmd` in place of `Ctrl`.
 - The history does not record the text of a statement that can contain a password.
 - A Git message that the application shows has no user and no password in its URLs.
 - The application sends your answer to a credential prompt of Git only to Git. It does not store the answer and does not write it to a log. To store a credential, configure a credential helper or an SSH agent for Git.
-- File access stays in the workspace folder.
-- A read-only connection is a protection against mistakes. It is not a security control, because a statement can set the session back to read-write. For a real restriction, use a database user that has only read permissions.
+- The file tree and the editor read and write files only in the workspace folder.
+- A DuckDB statement can read and write files on your disk, and it can install and load extensions. Do not run a script that you do not know against a DuckDB connection.
+  - The application asks before `COPY ... TO`, `EXPORT DATABASE`, `INSTALL`, and `LOAD`.
+  - DuckDB does not install an extension from the network automatically. You must use `INSTALL`.
+- A read-only DuckDB connection is a real restriction. A statement cannot change the mode.
+- A read-only PostgreSQL connection is a protection against mistakes. It is not a security control, because a statement can set the session back to read-write. For a real restriction, use a database user that has only read permissions.
 
 ## Requirements
 
 - Rust (stable). `rust-toolchain.toml` selects the toolchain.
+- A C++ compiler. The build compiles DuckDB from source. The first build takes approximately 7 minutes longer on a machine with 16 processor cores.
 - Node.js 20.19 or later, or 22.12 or later. `.nvmrc` selects Node.js 26.13.1.
 - pnpm 9.
 - Docker, only for the database tests.
@@ -97,6 +105,7 @@ cargo test -p tabloxide-adapter-postgres -- --ignored
 | ------------------------- | ------------------------------------------------------------------ |
 | `crates/core`             | Domain types, adapter interface, statement splitter, script runner |
 | `crates/adapter-postgres` | PostgreSQL adapter                                                 |
+| `crates/adapter-duckdb`   | DuckDB adapter                                                     |
 | `crates/git`              | Wrapper for the system `git` executable                            |
 | `crates/workspace`        | Project configuration, local state, history, secret references     |
 | `src-tauri`               | Tauri commands and application wiring                              |

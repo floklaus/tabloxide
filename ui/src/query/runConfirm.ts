@@ -19,6 +19,8 @@ const RISK_LABELS: Record<Risk, string> = {
   alter: 'ALTER changes the structure',
   'delete-without-where': 'DELETE without WHERE removes all rows',
   'update-without-where': 'UPDATE without WHERE changes all rows',
+  'write-file': 'The statement writes files on the disk',
+  'load-extension': 'The statement adds program code to the database engine',
 }
 
 export type RiskyStatement = { text: string; reason: string }
