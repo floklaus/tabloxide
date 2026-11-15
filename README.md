@@ -2,7 +2,7 @@
 
 Tabloxide is a cross-platform SQL client with built-in Git. It uses Tauri 2, a React and TypeScript UI, and a Rust backend.
 
-Phase 1 of `docs/Implementation Plan.md` (milestones M0 to M6) is complete in code. Phase 2 is in work, and its first milestone M7 is complete in code. The first database engine is PostgreSQL.
+Phase 1 of `docs/Implementation Plan.md` (milestones M0 to M6) is complete in code. Phase 2 is in work, and its milestones M7 and M8 are complete in code. The first database engine is PostgreSQL.
 
 ## Functions
 
@@ -13,6 +13,8 @@ Phase 1 of `docs/Implementation Plan.md` (milestones M0 to M6) is complete in co
 - **History:** Query history with a search. The history is in the application data directory, not in the workspace.
 - **Schema:** Schema browser with tables, views, columns, indexes, and constraints.
 - **Git:** Status, stage, unstage, discard, diff, commit, fetch, pull, and push. The application uses the `git` executable of the system.
+- **Git credentials:** When Git or SSH needs a user name, a password, or a passphrase, the application asks you in a dialog. Fetch, pull, push, and clone show the progress of Git.
+- **External changes:** The application watches the workspace folder. It updates the file tree, the open tabs, and the Git status after a different program changed files.
 - **Branches:** Create, switch, rename, and delete.
 - **Commit history:** The commits of the current branch, with the files and the diff of each commit.
 - **Merge conflicts:** A side-by-side view for each file with a conflict. You edit the result, or you copy blocks from the incoming version. You can abort the merge.
@@ -24,7 +26,7 @@ A release has installers for Linux (`.deb`, `.rpm`, `.AppImage`), macOS (`.dmg`)
 
 The installers have no code signature. macOS and Windows show a warning for an application without a signature.
 
-To use the Git functions, install Git and make sure that `git` is in the `PATH`. On Linux, the credential store needs a Secret Service, for example GNOME Keyring or KWallet.
+To use the Git functions, install Git and make sure that `git` is in the `PATH`. A passphrase prompt for an SSH key needs OpenSSH 8.4 or later. On Linux, the credential store needs a Secret Service, for example GNOME Keyring or KWallet.
 
 ## Keyboard shortcuts
 
@@ -45,6 +47,7 @@ On macOS, use `Cmd` in place of `Ctrl`.
 - A password is never in a file of the workspace, in the history, or in an error message.
 - The history does not record the text of a statement that can contain a password.
 - A Git message that the application shows has no user and no password in its URLs.
+- The application sends your answer to a credential prompt of Git only to Git. It does not store the answer and does not write it to a log. To store a credential, configure a credential helper or an SSH agent for Git.
 - File access stays in the workspace folder.
 - A read-only connection is a protection against mistakes. It is not a security control, because a statement can set the session back to read-write. For a real restriction, use a database user that has only read permissions.
 

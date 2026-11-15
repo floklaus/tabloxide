@@ -1,14 +1,17 @@
 use crate::commands::local::workspace_key;
 use crate::commands::workspace::state_dir;
+use crate::credentials::{ANSWER_TIMEOUT, RequestId};
 use crate::error::CommandError;
 use crate::state::{AppState, blocking};
 use serde::Serialize;
 use specta::Type;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use tabloxide_git::{
-    BranchDeletion, BranchInfo, CommitFile, CommitInfo, ConflictSides, FileDiff, Git, GitError,
-    StatusReport,
+    AskpassSession, BranchDeletion, BranchInfo, CommitFile, CommitInfo, ConflictSides, FileDiff,
+    Git, GitError, Prompt, StatusReport,
 };
+use tauri::ipc::Channel;
 use tauri::{AppHandle, State};
 
 /// The Git state of the workspace.
@@ -34,6 +37,103 @@ pub enum GitOverview {
 
 /// Largest number of commits that one request for the history returns.
 const MAX_LOG_PAGE: u32 = 200;
+
+/// A message from a remote operation (fetch, pull, push, clone) to the UI.
+#[derive(Debug, Clone, Serialize, Type)]
+#[serde(tag = "type", rename_all = "kebab-case")]
+pub enum GitRemoteEvent {
+    /// One progress line that Git wrote.
+    Progress { line: String },
+    /// Git or SSH needs an answer from the user. The UI answers with
+    /// `git_credential_answer`.
+    Credential {
+        id: RequestId,
+        prompt: String,
+        /// `true` if the UI must hide the answer while the user types it.
+        is_secret: bool,
+    },
+}
+
+/// A Git for one remote operation. It sends the progress lines and the credential
+/// prompts to the UI.
+struct RemoteGit {
+    git: Git,
+    /// Keeps the registration for the prompts until the operation ends.
+    _prompts: Option<AskpassSession>,
+}
+
+/// Registers the UI as the receiver of the prompts of one operation.
+/// Returns `None` if the prompt server or the helper program is not available.
+/// Then Git fails when it needs a credential, with a message for the user.
+fn register_prompts(
+    state: &AppState,
+    on_event: &Channel<GitRemoteEvent>,
+) -> Option<(AskpassSession, PathBuf)> {
+    // The application is its own helper program. Refer to `run` in `lib.rs`.
+    let helper = std::env::current_exe().ok()?;
+    let credentials = state.credentials();
+    let channel = on_event.clone();
+    let handler = Arc::new(move |prompt: Prompt| {
+        let Prompt { text, is_secret } = prompt;
+        let announce = |id| {
+            let event = GitRemoteEvent::Credential {
+                id,
+                prompt: text,
+                is_secret,
+            };
+            channel.send(event).is_ok()
+        };
+        credentials.ask(announce, ANSWER_TIMEOUT)
+    });
+    let session = state.askpass().ok()?.register(handler).ok()?;
+    Some((session, helper))
+}
+
+fn remote_git(state: &AppState, on_event: Channel<GitRemoteEvent>) -> RemoteGit {
+    let prompts = register_prompts(state, &on_event);
+    let git = Git::new().with_progress(Arc::new(move |line: &str| {
+        let line = line.to_owned();
+        // The UI is gone when the send fails. Then no one needs the line.
+        let _ = on_event.send(GitRemoteEvent::Progress { line });
+    }));
+    match prompts {
+        Some((session, helper)) => RemoteGit {
+            git: git.with_askpass(session.env(&helper)),
+            _prompts: Some(session),
+        },
+        None => RemoteGit {
+            git,
+            _prompts: None,
+        },
+    }
+}
+
+/// Runs a remote operation on the repository of the workspace.
+async fn with_remote<F>(
+    state: &AppState,
+    on_event: Channel<GitRemoteEvent>,
+    operation: F,
+) -> Result<String, CommandError>
+where
+    F: FnOnce(&Git, &Path) -> Result<String, GitError> + Send + 'static,
+{
+    let workspace = state.workspace()?;
+    let remote = remote_git(state, on_event);
+    blocking(move || {
+        let root = repository(&remote.git, workspace.root())?;
+        Ok(operation(&remote.git, &root)?)
+    })
+    .await
+}
+
+/// Gives the answer of the user to a credential prompt. `answer` is `null` if the
+/// user cancelled. Then Git stops the operation.
+#[tauri::command]
+#[specta::specta]
+pub fn git_credential_answer(state: State<'_, AppState>, id: RequestId, answer: Option<String>) {
+    // No operation waits if the prompt timed out. Then the answer is of no use.
+    state.credentials().answer(id, answer);
+}
 
 /// Finds the repository of the workspace.
 fn repository(git: &Git, workspace_root: &Path) -> Result<PathBuf, GitError> {
@@ -122,7 +222,14 @@ pub async fn git_init(state: State<'_, AppState>) -> Result<(), CommandError> {
 /// This command does not need an open workspace.
 #[tauri::command]
 #[specta::specta]
-pub async fn git_clone(url: String, parent: String, name: String) -> Result<String, CommandError> {
+pub async fn git_clone(
+    state: State<'_, AppState>,
+    url: String,
+    parent: String,
+    name: String,
+    on_event: Channel<GitRemoteEvent>,
+) -> Result<String, CommandError> {
+    let remote = remote_git(&state, on_event);
     blocking(move || {
         let is_plain_name =
             !name.is_empty() && !name.starts_with('.') && !name.contains(['/', '\\']);
@@ -130,7 +237,7 @@ pub async fn git_clone(url: String, parent: String, name: String) -> Result<Stri
             return Err(GitError::InvalidName(name).into());
         }
         let destination = PathBuf::from(parent).join(name);
-        Git::new().clone_repository(&url, &destination)?;
+        remote.git.clone_repository(&url, &destination)?;
         Ok(destination.display().to_string())
     })
     .await
@@ -209,22 +316,31 @@ pub async fn git_branch_switch(
 /// Gets the new commits of the remote. Returns the text that Git wrote.
 #[tauri::command]
 #[specta::specta]
-pub async fn git_fetch(state: State<'_, AppState>) -> Result<String, CommandError> {
-    with_repository(&state, |git, root| git.fetch(root)).await
+pub async fn git_fetch(
+    state: State<'_, AppState>,
+    on_event: Channel<GitRemoteEvent>,
+) -> Result<String, CommandError> {
+    with_remote(&state, on_event, |git, root| git.fetch(root)).await
 }
 
 /// Gets and merges the new commits of the upstream branch. Returns the text that Git wrote.
 #[tauri::command]
 #[specta::specta]
-pub async fn git_pull(state: State<'_, AppState>) -> Result<String, CommandError> {
-    with_repository(&state, |git, root| git.pull(root)).await
+pub async fn git_pull(
+    state: State<'_, AppState>,
+    on_event: Channel<GitRemoteEvent>,
+) -> Result<String, CommandError> {
+    with_remote(&state, on_event, |git, root| git.pull(root)).await
 }
 
 /// Sends the commits of the current branch to the remote. Returns the text that Git wrote.
 #[tauri::command]
 #[specta::specta]
-pub async fn git_push(state: State<'_, AppState>) -> Result<String, CommandError> {
-    with_repository(&state, |git, root| git.push(root)).await
+pub async fn git_push(
+    state: State<'_, AppState>,
+    on_event: Channel<GitRemoteEvent>,
+) -> Result<String, CommandError> {
+    with_remote(&state, on_event, |git, root| git.push(root)).await
 }
 
 /// Gives a branch a new name.

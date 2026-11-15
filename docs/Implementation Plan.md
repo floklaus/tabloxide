@@ -232,7 +232,15 @@ Notes:
 * Expect changes to `DbAdapter` in M9.
 * M11 cannot be complete without the certificates. Without them, the milestone delivers the updater and the workflow steps only.
 
-Status on 2026-11-14: M7 is complete in code.
+Status on 2026-11-14: M7 and M8 are complete in code.
+
+Design of the credential prompts (M8):
+
+* Git and SSH start a helper program when they need an answer from the user. The helper program is the executable of the application.
+* When the environment has the variables of a prompt, the executable does not open a window. It sends the prompt to the application that runs, prints the answer, and stops.
+* The application listens on the loopback address. Each Git operation has a random token, and the application answers only a request with a known token.
+* The UI shows the prompt in a dialog. The answer goes to Git only. No part of the application stores it.
+* If the user gives no answer in 5 minutes, Git stops the operation.
 
 ## 6. Phase 3 outline — differentiators
 

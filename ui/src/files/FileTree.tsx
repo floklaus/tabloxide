@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { commands, type FileEntry } from '../bindings'
 import { toMessage } from '../lib/errors'
+import { useWorkspaceChangeStore } from '../workspace/watch'
 import { useTabsStore } from '../tabs/tabsStore'
 
 type Listing =
@@ -50,6 +51,16 @@ export function FileTree() {
   const refresh = () => {
     for (const directory of expanded) void load(directory)
   }
+  // A different program changed files. Read the open directories again.
+  const changeCount = useWorkspaceChangeStore((state) => state.count)
+  const expandedRef = useRef(expanded)
+  useEffect(() => {
+    expandedRef.current = expanded
+  }, [expanded])
+  useEffect(() => {
+    if (changeCount === 0) return
+    for (const directory of expandedRef.current) void load(directory)
+  }, [changeCount, load])
   const toggle = (directory: string) => {
     const next = new Set(expanded)
     if (!next.delete(directory)) {

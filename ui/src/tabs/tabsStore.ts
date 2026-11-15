@@ -45,6 +45,12 @@ export function isDirty(tab: Tab): boolean {
     : tab.content !== tab.savedContent
 }
 
+/** Tells the user that a save replaces the version that a different program wrote. */
+function changedOnDiskMessage(tabs: Tab[]): string {
+  const names = tabs.map((tab) => tab.title).join(', ')
+  return `A different program changed these files on disk: ${names}. The tabs keep your text. If you save a tab, you replace the version on disk.`
+}
+
 function fileName(path: string): string {
   return path.split('/').at(-1) ?? path
 }
@@ -249,6 +255,11 @@ export const useTabsStore = create<TabsState>((set, get) => {
           .filter((read) => read !== null)
           .map((read) => [read.id, read.text]),
       )
+      // A tab with unsaved changes keeps its text when its file changed on disk.
+      const kept = get().tabs.filter((tab) => {
+        const text = texts.get(tab.id)
+        return text !== undefined && isDirty(tab) && text !== tab.savedContent
+      })
       set({
         tabs: get().tabs.map((tab) => {
           const text = texts.get(tab.id)
@@ -256,6 +267,7 @@ export const useTabsStore = create<TabsState>((set, get) => {
           const content = isDirty(tab) ? tab.content : text
           return { ...tab, content, savedContent: text }
         }),
+        ...(kept.length > 0 && { error: changedOnDiskMessage(kept) }),
       })
     },
 

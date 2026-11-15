@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { CredentialDialog } from './git/CredentialDialog'
 import { AppShell } from './shell/AppShell'
 import { WelcomeScreen } from './workspace/WelcomeScreen'
 import { useWorkspaceStore } from './workspace/workspaceStore'
@@ -13,5 +14,10 @@ export default function App() {
   }, [init])
 
   if (isLoading) return null
-  return hasWorkspace ? <AppShell /> : <WelcomeScreen />
+  return (
+    <>
+      {hasWorkspace ? <AppShell /> : <WelcomeScreen />}
+      <CredentialDialog />
+    </>
+  )
 }

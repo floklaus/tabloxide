@@ -53,6 +53,8 @@ export function createBindingsMock() {
       gitResolveText: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
       gitResolveDelete: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
       gitMergeAbort: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
+      gitCredentialAnswer: vi.fn().mockResolvedValue(undefined),
+      workspaceWatch: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
       gitFetch: vi.fn().mockResolvedValue({ status: 'ok', data: '' }),
       gitPull: vi.fn().mockResolvedValue({ status: 'ok', data: '' }),
       gitPush: vi.fn().mockResolvedValue({ status: 'ok', data: '' }),

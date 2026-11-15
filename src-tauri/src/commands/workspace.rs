@@ -4,7 +4,8 @@ use serde::Serialize;
 use specta::Type;
 use std::path::PathBuf;
 use tabloxide_core::ConnectionProfile;
-use tabloxide_workspace::{RecentWorkspace, RecentWorkspaces, Workspace};
+use tabloxide_workspace::{RecentWorkspace, RecentWorkspaces, Workspace, WorkspaceWatcher};
+use tauri::ipc::Channel;
 use tauri::{AppHandle, Manager, State};
 
 /// The open workspace as the UI sees it.
@@ -62,6 +63,8 @@ pub async fn workspace_open(
     })
     .await?;
     let snapshot = WorkspaceSnapshot::from(&workspace);
+    // The watcher of the last workspace must not report changes for this workspace.
+    state.set_watcher(None);
     state.set_workspace(Some(workspace));
     close_sessions(&state);
     Ok(snapshot)
@@ -78,8 +81,42 @@ pub fn workspace_current(state: State<'_, AppState>) -> Option<WorkspaceSnapshot
 #[tauri::command]
 #[specta::specta]
 pub fn workspace_close(state: State<'_, AppState>) {
+    state.set_watcher(None);
     state.set_workspace(None);
     close_sessions(&state);
+}
+
+/// Starts to watch the workspace folder. Sends a message on `on_change` after a
+/// different program changed files. One message covers all changes of a short time.
+/// The watch stops when the workspace closes.
+#[tauri::command]
+#[specta::specta]
+pub async fn workspace_watch(
+    state: State<'_, AppState>,
+    on_change: Channel<()>,
+) -> Result<(), CommandError> {
+    let workspace = state.workspace()?;
+    let root = workspace.root().to_owned();
+    let watcher = blocking(move || {
+        WorkspaceWatcher::start(workspace.root(), move || {
+            // The UI is gone when the send fails. Then no one needs the message.
+            let _ = on_change.send(());
+        })
+        .map_err(|error| {
+            CommandError::internal(format!(
+                "The application cannot watch the workspace folder for changes: {error}"
+            ))
+        })
+    })
+    .await?;
+    // A different workspace can be open now. Then this watcher is not applicable.
+    if state
+        .workspace()
+        .is_ok_and(|current| current.root() == root)
+    {
+        state.set_watcher(Some(watcher));
+    }
+    Ok(())
 }
 
 /// Returns the recent workspaces. The most recent workspace is first.

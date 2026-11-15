@@ -56,6 +56,7 @@ describe('CloneDialog', () => {
       'https://example.com/team/sql.git',
       '/home/me/projects',
       'sql',
+      expect.anything(),
     )
     expect(workspaceOpen).toHaveBeenCalledWith('/home/me/projects/sql')
     expect(onClose).toHaveBeenCalled()

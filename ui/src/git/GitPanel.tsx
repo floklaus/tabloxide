@@ -5,6 +5,7 @@ import { Branches } from './Branches'
 import { CHANGE_LABELS } from './changeLabels'
 import { CommitHistory } from './CommitHistory'
 import { useGitStore, type GitOverview } from './gitStore'
+import { useRemoteStore } from './remoteStore'
 
 type Repository = Extract<GitOverview, { state: 'repository' }>
 
@@ -258,6 +259,7 @@ function RepositoryView({ repository }: { repository: Repository }) {
 export function GitPanel() {
   const overview = useGitStore((state) => state.overview)
   const busy = useGitStore((state) => state.busy)
+  const progress = useRemoteStore((state) => state.progress)
   const output = useGitStore((state) => state.output)
   const error = useGitStore((state) => state.error)
   const refresh = useGitStore((state) => state.refresh)
@@ -285,7 +287,11 @@ export function GitPanel() {
           Refresh
         </button>
       </div>
-      {busy && <p role="status">{busy}…</p>}
+      {busy && (
+        <p role="status">
+          {busy}…{progress && <span className="git__progress">{progress}</span>}
+        </p>
+      )}
       {error && (
         <div className="message message--error" role="alert">
           <p className="message__detail git__output">{error}</p>

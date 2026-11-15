@@ -1,5 +1,6 @@
 //! Application state that the commands share.
 
+use crate::credentials::CredentialRequests;
 use crate::error::CommandError;
 use std::collections::HashMap;
 use std::path::Path;
@@ -7,7 +8,8 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use tabloxide_adapter_postgres::PostgresAdapter;
 use tabloxide_core::{ConnectionId, DbAdapter, QuerySession};
-use tabloxide_workspace::{KeyringStore, LocalState, SecretStore, Workspace};
+use tabloxide_git::AskpassServer;
+use tabloxide_workspace::{KeyringStore, LocalState, SecretStore, Workspace, WorkspaceWatcher};
 
 /// Identifier of an open database session.
 pub type SessionId = u32;
@@ -27,6 +29,11 @@ pub struct AppState {
     sessions: Mutex<HashMap<SessionId, SessionEntry>>,
     next_session_id: AtomicU32,
     local: Mutex<Option<Arc<LocalState>>>,
+    /// The watcher of the workspace folder. It stops when the workspace closes.
+    watcher: Mutex<Option<WorkspaceWatcher>>,
+    /// The server for the credential prompts of Git. The first remote operation starts it.
+    askpass: Mutex<Option<Arc<AskpassServer>>>,
+    credentials: Arc<CredentialRequests>,
 }
 
 impl Default for AppState {
@@ -38,6 +45,9 @@ impl Default for AppState {
             sessions: Mutex::new(HashMap::new()),
             next_session_id: AtomicU32::new(1),
             local: Mutex::new(None),
+            watcher: Mutex::new(None),
+            askpass: Mutex::new(None),
+            credentials: Arc::default(),
         }
     }
 }
@@ -100,6 +110,30 @@ impl AppState {
         let opened = Arc::new(LocalState::open(state_dir)?);
         *local = Some(Arc::clone(&opened));
         Ok(opened)
+    }
+
+    /// Replaces the watcher of the workspace folder. `None` stops the watch.
+    pub fn set_watcher(&self, watcher: Option<WorkspaceWatcher>) {
+        *self.watcher.lock().unwrap_or_else(PoisonError::into_inner) = watcher;
+    }
+
+    pub fn credentials(&self) -> Arc<CredentialRequests> {
+        Arc::clone(&self.credentials)
+    }
+
+    /// Returns the server for the credential prompts of Git. The first call starts it.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operating system gives no port.
+    pub fn askpass(&self) -> std::io::Result<Arc<AskpassServer>> {
+        let mut askpass = self.askpass.lock().unwrap_or_else(PoisonError::into_inner);
+        if let Some(server) = askpass.as_ref() {
+            return Ok(Arc::clone(server));
+        }
+        let server = Arc::new(AskpassServer::start()?);
+        *askpass = Some(Arc::clone(&server));
+        Ok(server)
     }
 
     /// Removes all sessions and returns them, so that the caller can close them.

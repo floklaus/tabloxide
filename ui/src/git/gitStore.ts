@@ -11,6 +11,7 @@ import {
 } from '../bindings'
 import { toMessage } from '../lib/errors'
 import { useResultsViewStore } from '../results/resultsViewStore'
+import { remoteChannel, useRemoteStore } from './remoteStore'
 import { useTabsStore } from '../tabs/tabsStore'
 
 export type GitOverview = GitOverview_Serialize
@@ -61,6 +62,8 @@ type GitState = {
   commitFiles: CommitFilesState | null
 
   refresh: () => Promise<void>
+  /** Reads the status again after a different program changed the repository. */
+  refreshAfterExternalChange: () => Promise<void>
   setEnabled: (isEnabled: boolean) => Promise<void>
   init: () => Promise<void>
   stage: (paths: string[]) => Promise<void>
@@ -251,14 +254,24 @@ export const useGitStore = create<GitState>((set, get) => {
         true,
       )
     },
+    refreshAfterExternalChange: async () => {
+      // The panel was not open, or an operation reads the status at its end.
+      if (!get().overview || get().busy) return
+      await refresh()
+      if (get().history) await loadHistory()
+    },
+
     fetch: async () => {
-      await operate('Fetching', () => commands.gitFetch())
+      await operate('Fetching', () => commands.gitFetch(remoteChannel()))
+      useRemoteStore.getState().end()
     },
     pull: async () => {
-      await operate('Pulling', () => commands.gitPull(), true)
+      await operate('Pulling', () => commands.gitPull(remoteChannel()), true)
+      useRemoteStore.getState().end()
     },
     push: async () => {
-      await operate('Pushing', () => commands.gitPush())
+      await operate('Pushing', () => commands.gitPush(remoteChannel()))
+      useRemoteStore.getState().end()
     },
 
     renameBranch: async (oldName, newName) => {

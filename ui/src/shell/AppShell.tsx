@@ -9,6 +9,7 @@ import { ConnectionList } from '../connections/ConnectionList'
 import { FileTree } from '../files/FileTree'
 import { GitPanel } from '../git/GitPanel'
 import { useGitStore } from '../git/gitStore'
+import { startWorkspaceWatch } from '../workspace/watch'
 import { PreferencesDialog } from '../preferences/PreferencesDialog'
 import { usePreferencesStore } from '../preferences/preferencesStore'
 import { resetQueryStores } from '../query/queryStore'
@@ -52,6 +53,10 @@ export function AppShell() {
     void usePreferencesStore.getState().load()
     void useTabsStore.getState().load()
     const stopPersist = persistTabs()
+    // Without the watch, the application shows external changes only after a refresh.
+    void startWorkspaceWatch().then((message) => {
+      if (message) useWorkspaceStore.getState().setError(message)
+    })
     return () => {
       stopPersist()
       useTabsStore.getState().reset()

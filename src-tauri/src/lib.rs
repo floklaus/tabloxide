@@ -1,6 +1,7 @@
 //! Application wiring for Tabloxide. This crate contains no business logic.
 
 mod commands;
+mod credentials;
 mod error;
 mod state;
 
@@ -17,6 +18,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
             workspace::workspace_current,
             workspace::workspace_close,
             workspace::workspace_recent,
+            workspace::workspace_watch,
             connections::connection_template,
             connections::connection_save,
             connections::connection_delete,
@@ -61,6 +63,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
             git::git_fetch,
             git::git_pull,
             git::git_push,
+            git::git_credential_answer,
             local::history_search,
             local::history_clear,
             local::preferences_load,
@@ -76,6 +79,11 @@ fn specta_builder() -> Builder<tauri::Wry> {
 ///
 /// Panics if the Tauri runtime cannot start.
 pub fn run() {
+    // Git starts this executable as its helper program when it needs a credential.
+    // Then the process sends the prompt to the application that runs, and stops.
+    if let Some(exit_code) = tabloxide_git::run_askpass_helper() {
+        std::process::exit(exit_code);
+    }
     let builder = specta_builder();
 
     tauri::Builder::default()

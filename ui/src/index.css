@@ -1303,6 +1303,16 @@ body {
   font-size: 0.8rem;
 }
 
+.git__progress {
+  display: block;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .git__output {
   font-family: var(--font-mono);
   font-size: 0.8rem;
