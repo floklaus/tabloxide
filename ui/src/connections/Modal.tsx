@@ -1,4 +1,10 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react'
+import {
+  useEffect,
+  useId,
+  useRef,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react'
 
 type ModalProps = {
   title: string
@@ -6,7 +12,41 @@ type ModalProps = {
   children: ReactNode
 }
 
-/** A modal dialog. The Escape key closes it. Focus moves into it when it opens. */
+const FOCUSABLE = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(', ')
+
+/**
+ * Keeps the focus in `panel` when the user presses Tab on its last control, or
+ * Shift+Tab on its first control. The content behind a modal dialog is not usable.
+ */
+function keepFocusInside(event: KeyboardEvent, panel: HTMLElement) {
+  const controls = panel.querySelectorAll<HTMLElement>(FOCUSABLE)
+  if (controls.length === 0) {
+    event.preventDefault()
+    return
+  }
+  const first = controls[0]
+  const last = controls[controls.length - 1]
+  const current = document.activeElement
+  if (event.shiftKey && (current === first || current === panel)) {
+    event.preventDefault()
+    last.focus()
+  } else if (!event.shiftKey && current === last) {
+    event.preventDefault()
+    first.focus()
+  }
+}
+
+/**
+ * A modal dialog. The Escape key closes it. Focus moves into it when it opens,
+ * and the Tab key does not move the focus out of it.
+ */
 export function Modal({ title, onClose, children }: ModalProps) {
   const titleId = useId()
   const panelRef = useRef<HTMLDivElement>(null)
@@ -36,6 +76,8 @@ export function Modal({ title, onClose, children }: ModalProps) {
           if (event.key === 'Escape') {
             event.stopPropagation()
             onClose()
+          } else if (event.key === 'Tab') {
+            keepFocusInside(event, event.currentTarget)
           }
         }}
       >

@@ -50,6 +50,7 @@ To use the Git functions, install Git and make sure that `git` is in the `PATH`.
 | `Ctrl+C` in the result grid                       | Copies the selected cell.                           |
 | `Left`, `Right`, `Home`, `End` on an editor tab   | Move to a different editor tab.                     |
 | `Delete` on an editor tab                         | Closes the editor tab.                              |
+| `Escape`, then `Tab` in the editor                | Moves the focus out of the editor.                  |
 | `Escape`                                          | Closes a dialog.                                    |
 
 On macOS, use `Cmd` in place of `Ctrl`.
