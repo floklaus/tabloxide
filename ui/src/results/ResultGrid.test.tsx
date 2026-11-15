@@ -226,4 +226,37 @@ describe('ResultGrid', () => {
 
     expect(onNeedMore).not.toHaveBeenCalled()
   })
+
+  test('does not change the width of a hidden column', async () => {
+    const { user } = renderGrid()
+    await user.click(screen.getByText('b'))
+    await user.click(screen.getByText('Columns'))
+    await user.click(screen.getByRole('checkbox', { name: 'name' }))
+    screen.getByRole('grid').focus()
+
+    await user.keyboard('{Alt>}{Shift>}{ArrowRight}{/Shift}{/Alt}')
+    await user.click(screen.getByRole('checkbox', { name: 'name' }))
+
+    expect(screen.getAllByRole('row')[0].style.gridTemplateColumns).toContain(
+      '160px 160px',
+    )
+  })
+
+  test('moves the focus to the grid after a click on a column header', async () => {
+    const { user } = renderGrid()
+
+    await user.click(screen.getByRole('button', { name: 'id' }))
+
+    expect(screen.getByRole('grid')).toHaveFocus()
+  })
+
+  test('keeps the focus on the column header after a sort with the keyboard', async () => {
+    const { user } = renderGrid()
+    const header = screen.getByRole('button', { name: 'id' })
+    header.focus()
+
+    await user.keyboard('{Enter}')
+
+    expect(screen.getByRole('button', { name: /^id/ })).toHaveFocus()
+  })
 })

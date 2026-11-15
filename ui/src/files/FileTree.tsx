@@ -134,8 +134,11 @@ export function FileTree() {
       End: () => items[items.length - 1].focus(),
       ArrowRight: () => {
         if (isOpen === 'false') toggle(path)
-        else if (isOpen === 'true')
-          focusPathItem(visible[visible.indexOf(path) + 1])
+        else if (isOpen === 'true') {
+          // An open folder can have no visible entry. Then the focus stays.
+          const next = visible[visible.indexOf(path) + 1]
+          if (next?.startsWith(`${path}/`)) focusPathItem(next)
+        }
       },
       ArrowLeft: () => {
         if (isOpen === 'true') toggle(path)

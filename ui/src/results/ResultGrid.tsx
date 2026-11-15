@@ -189,6 +189,8 @@ export function ResultGrid({ columns, rows, hasMore, onNeedMore }: Props) {
     const direction = { ArrowRight: 1, ArrowLeft: -1 }[event.key]
     if (!direction) return false
     const { column } = selected
+    // The user cannot see a change of a hidden column.
+    if (!visible.includes(column)) return true
     // The new width comes from the stored width, thus fast key presses add up.
     setWidths((current) => ({
       ...current,
@@ -301,7 +303,14 @@ export function ResultGrid({ columns, rows, hasMore, onNeedMore }: Props) {
                   type="button"
                   className="grid__sort"
                   title={columns[index].type_name ?? undefined}
-                  onClick={() => setSort(nextSort(sort, index))}
+                  onClick={(event) => {
+                    setSort(nextSort(sort, index))
+                    // A header leaves the DOM when the user scrolls it out of view,
+                    // and its focus would go to the page. After a click with the
+                    // pointer, the grid gets the focus, thus its keys stay usable.
+                    // `detail` is 0 for a click from the keyboard.
+                    if (event.detail > 0) scrollRef.current?.focus()
+                  }}
                 >
                   {columns[index].name}
                   {sortLabel(sort, index)}

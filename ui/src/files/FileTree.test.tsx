@@ -188,4 +188,18 @@ describe('FileTree', () => {
 
     expect(fileRead).toHaveBeenCalledWith('readme.md')
   })
+
+  test('keeps the focus on an open directory without entries when the user presses the right arrow key', async () => {
+    const user = userEvent.setup()
+    listings.queries = []
+    render(<FileTree />)
+    const directory = await screen.findByRole('treeitem', { name: /queries/ })
+    directory.focus()
+    await user.keyboard('{ArrowRight}')
+    expect(directory).toHaveAttribute('aria-expanded', 'true')
+
+    await user.keyboard('{ArrowRight}')
+
+    expect(directory).toHaveFocus()
+  })
 })

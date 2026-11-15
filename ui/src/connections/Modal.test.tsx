@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, test, vi } from 'vitest'
 import { Modal } from './Modal'
@@ -49,5 +49,24 @@ describe('Modal', () => {
     await user.keyboard('{Escape}')
 
     expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  test('keeps the focus in the dialog when the user clicks the area around it', () => {
+    renderModal()
+    const backdrop = screen.getByRole('dialog').parentElement as HTMLElement
+
+    const isDefault = fireEvent.mouseDown(backdrop)
+
+    expect(isDefault).toBe(false)
+  })
+
+  test('lets a click in the dialog move the focus', () => {
+    renderModal()
+
+    const isDefault = fireEvent.mouseDown(
+      screen.getByRole('button', { name: 'Last' }),
+    )
+
+    expect(isDefault).toBe(true)
   })
 })

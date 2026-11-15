@@ -131,6 +131,9 @@ export function TabBar() {
                 tabIndex={-1}
                 aria-hidden="true"
                 title={`Close ${tab.title} (Delete)`}
+                // The button must not get the focus, because a screen reader
+                // cannot see it. The focus stays where it was.
+                onMouseDown={(event) => event.preventDefault()}
                 onClick={() => requestClose(tab, false)}
               >
                 ×

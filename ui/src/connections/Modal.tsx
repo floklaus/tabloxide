@@ -64,7 +64,14 @@ export function Modal({ title, onClose, children }: ModalProps) {
   }, [])
 
   return (
-    <div className="modal__backdrop">
+    <div
+      className="modal__backdrop"
+      // A click on the area around the dialog must not take the focus out of the
+      // dialog. If it did, the Tab key would go to the content behind the dialog.
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) event.preventDefault()
+      }}
+    >
       <div
         ref={panelRef}
         className="modal"

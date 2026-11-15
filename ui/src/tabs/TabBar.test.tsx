@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { commands } from '../bindings'
@@ -198,5 +198,15 @@ describe('TabBar', () => {
     await user.click(screen.getByTitle('Close a.sql (Delete)'))
 
     expect(commands.sessionClose).toHaveBeenCalledWith(5)
+  })
+
+  test('does not give the focus to the close button, which a screen reader cannot see', () => {
+    renderTabs([tab({}), tab({ id: 't2', title: 'a.sql' })])
+
+    const isDefault = fireEvent.mouseDown(
+      screen.getByTitle('Close a.sql (Delete)'),
+    )
+
+    expect(isDefault).toBe(false)
   })
 })
