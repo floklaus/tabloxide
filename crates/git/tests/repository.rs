@@ -1,64 +1,9 @@
 //! Tests against real repositories in temporary directories. They need the `git` executable.
 
-use std::path::{Path, PathBuf};
+mod common;
+
+use common::{Fixture, git, two_clones};
 use tabloxide_git::{ChangeKind, Git, GitError, STARTER_GITIGNORE};
-use tempfile::TempDir;
-
-/// A Git that ignores the configuration of the machine and has a test identity.
-fn git(home: &Path) -> Git {
-    let empty = home.join("empty-gitconfig");
-    std::fs::write(&empty, "").unwrap();
-    Git::new()
-        .with_env("GIT_CONFIG_GLOBAL", &empty.display().to_string())
-        .with_env("GIT_CONFIG_NOSYSTEM", "1")
-        .with_env("GIT_AUTHOR_NAME", "Test")
-        .with_env("GIT_AUTHOR_EMAIL", "test@example.com")
-        .with_env("GIT_COMMITTER_NAME", "Test")
-        .with_env("GIT_COMMITTER_EMAIL", "test@example.com")
-        .with_env("GIT_CONFIG_COUNT", "3")
-        .with_env("GIT_CONFIG_KEY_0", "user.name")
-        .with_env("GIT_CONFIG_VALUE_0", "Test")
-        .with_env("GIT_CONFIG_KEY_1", "user.email")
-        .with_env("GIT_CONFIG_VALUE_1", "test@example.com")
-        .with_env("GIT_CONFIG_KEY_2", "init.defaultBranch")
-        .with_env("GIT_CONFIG_VALUE_2", "main")
-}
-
-struct Fixture {
-    _home: TempDir,
-    git: Git,
-    root: PathBuf,
-}
-
-impl Fixture {
-    fn new() -> Self {
-        let home = tempfile::tempdir().unwrap();
-        let git = git(home.path());
-        let root = home.path().join("repo");
-        std::fs::create_dir(&root).unwrap();
-        git.init(&root).unwrap();
-        Self {
-            _home: home,
-            git,
-            root,
-        }
-    }
-
-    fn write(&self, path: &str, text: &str) {
-        std::fs::write(self.root.join(path), text).unwrap();
-    }
-
-    fn commit_file(&self, path: &str, text: &str) {
-        self.write(path, text);
-        self.git.stage(&self.root, &[path.to_owned()]).unwrap();
-        self.git.commit(&self.root, &format!("add {path}")).unwrap();
-    }
-
-    fn paths(&self) -> Vec<String> {
-        let status = self.git.status(&self.root).unwrap();
-        status.files.into_iter().map(|f| f.path).collect()
-    }
-}
 
 #[test]
 fn reports_the_version() {
@@ -299,42 +244,6 @@ fn rejects_invalid_branch_names() {
     }
     let missing = fixture.git.switch_branch(&fixture.root, "no-such-branch");
     assert!(matches!(missing, Err(GitError::Failed { .. })));
-}
-
-/// Makes a bare remote and two clones of it. The first clone has one commit that is pushed.
-fn two_clones() -> (TempDir, Git, PathBuf, PathBuf) {
-    let home = tempfile::tempdir().unwrap();
-    let git = git(home.path());
-    let remote = home.path().join("remote.git");
-    std::fs::create_dir(&remote).unwrap();
-    git.init(&remote).unwrap();
-    std::fs::remove_file(remote.join(".gitignore")).unwrap();
-    // A push to the current branch of a repository with a working tree is refused.
-    let first = home.path().join("first");
-    let second = home.path().join("second");
-    let bare = home.path().join("bare.git");
-    git.clone_repository(&remote.display().to_string(), &first)
-        .unwrap();
-    std::fs::write(first.join("a.sql"), "select 1\n").unwrap();
-    git.stage(&first, &["a.sql".to_owned()]).unwrap();
-    git.commit(&first, "first").unwrap();
-    // Make the real remote as a bare copy of the first clone, then point the clones at it.
-    std::process::Command::new("git")
-        .args(["clone", "--quiet", "--bare"])
-        .arg(&first)
-        .arg(&bare)
-        .status()
-        .unwrap();
-    std::process::Command::new("git")
-        .current_dir(&first)
-        .args(["remote", "set-url", "origin"])
-        .arg(&bare)
-        .status()
-        .unwrap();
-    git.push(&first).unwrap();
-    git.clone_repository(&bare.display().to_string(), &second)
-        .unwrap();
-    (home, git, first, second)
 }
 
 #[test]

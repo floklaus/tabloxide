@@ -45,7 +45,7 @@ pub struct StatusReport {
     pub files: Vec<FileStatus>,
 }
 
-fn change_kind(code: char) -> Option<ChangeKind> {
+pub(crate) fn change_kind(code: char) -> Option<ChangeKind> {
     match code {
         'A' => Some(ChangeKind::Added),
         'M' => Some(ChangeKind::Modified),

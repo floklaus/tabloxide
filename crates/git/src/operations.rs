@@ -19,6 +19,16 @@ pub struct BranchInfo {
     pub is_current: bool,
 }
 
+/// The result of a request to delete a branch.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(rename_all = "kebab-case")]
+pub enum BranchDeletion {
+    Deleted,
+    /// The branch has commits that are in no other branch. Git did not delete it.
+    NotMerged,
+}
+
 /// The two sides of the diff of one file.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
@@ -27,12 +37,12 @@ pub struct FileDiff {
     pub modified: String,
 }
 
-fn invalid(name: &str) -> GitError {
+pub(crate) fn invalid(name: &str) -> GitError {
     GitError::InvalidName(name.to_owned())
 }
 
 /// A path for a Git command must stay in the repository and must not look like an option.
-fn check_path(path: &str) -> Result<(), GitError> {
+pub(crate) fn check_path(path: &str) -> Result<(), GitError> {
     let is_plain = Path::new(path)
         .components()
         .all(|part| matches!(part, Component::Normal(_)));
@@ -42,7 +52,7 @@ fn check_path(path: &str) -> Result<(), GitError> {
     Ok(())
 }
 
-fn to_text(bytes: Vec<u8>, path: &str) -> Result<String, GitError> {
+pub(crate) fn to_text(bytes: Vec<u8>, path: &str) -> Result<String, GitError> {
     if bytes.len() > MAX_DIFF_BYTES || bytes.contains(&0) {
         return Err(GitError::NotText(path.to_owned()));
     }
@@ -177,7 +187,7 @@ impl Git {
     }
 
     /// Reads one version of a file from the object database. A missing version is empty text.
-    fn show(&self, root: &Path, revision: &str, path: &str) -> Result<String, GitError> {
+    pub(crate) fn show(&self, root: &Path, revision: &str, path: &str) -> Result<String, GitError> {
         let output = self.output(root, ["show", &format!("{revision}:{path}")])?;
         if output.is_success {
             to_text(output.stdout, path)
@@ -295,6 +305,49 @@ impl Git {
     pub fn switch_branch(&self, root: &Path, name: &str) -> Result<(), GitError> {
         self.check_branch_name(root, name)?;
         self.run(root, ["switch", "--quiet", name]).map(|_| ())
+    }
+
+    /// Gives the branch `old_name` the name `new_name`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if a name is not valid, or a branch with the new name exists.
+    pub fn rename_branch(
+        &self,
+        root: &Path,
+        old_name: &str,
+        new_name: &str,
+    ) -> Result<(), GitError> {
+        self.check_branch_name(root, old_name)?;
+        self.check_branch_name(root, new_name)?;
+        self.run(root, ["branch", "--move", old_name, new_name])
+            .map(|_| ())
+    }
+
+    /// Deletes the branch `name`. Without `force`, Git does not delete a branch that
+    /// has commits that are in no other branch.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the name is not valid, or the branch is the current branch.
+    pub fn delete_branch(
+        &self,
+        root: &Path,
+        name: &str,
+        force: bool,
+    ) -> Result<BranchDeletion, GitError> {
+        self.check_branch_name(root, name)?;
+        let mode = if force { "--force" } else { "--no-force" };
+        let output = self.output(root, ["branch", "--delete", mode, name])?;
+        if output.is_success {
+            Ok(BranchDeletion::Deleted)
+        } else if !force && output.stderr.contains("not fully merged") {
+            Ok(BranchDeletion::NotMerged)
+        } else {
+            Err(GitError::Failed {
+                message: output.message(),
+            })
+        }
     }
 
     /// Gets the new commits of the remote. Returns the text that Git wrote.
