@@ -17,5 +17,8 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     restoreMocks: true,
+    // Without this setting, Vitest replaces a style sheet with an empty text.
+    // The colour contrast test reads the colour tokens from the style sheet.
+    css: true,
   },
 })
