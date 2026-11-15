@@ -1,6 +1,7 @@
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -22,6 +23,12 @@ const OVERSCAN_ROWS = 12
 const DEFAULT_COLUMN_WIDTH = 160
 const MIN_COLUMN_WIDTH = 48
 const ROW_NUMBER_WIDTH = 64
+/** The grid renders this number of columns on each side of the visible columns. */
+const OVERSCAN_COLUMNS = 3
+/** One press of a resize key changes the width of a column by this number of pixels. */
+const RESIZE_STEP = 16
+/** The row number is the first column of the grid. The data columns start after it. */
+const FIRST_DATA_COLUMN = 2
 /** The grid asks for more rows when the user is this number of rows from the end. */
 const FETCH_THRESHOLD_ROWS = 100
 
@@ -96,10 +103,13 @@ export function ResultGrid({ columns, rows, hasMore, onNeedMore }: Props) {
     () => columns.map((_, index) => index).filter((i) => !hidden.has(i)),
     [columns, hidden],
   )
-  const template = [
-    `${ROW_NUMBER_WIDTH}px`,
-    ...visible.map((i) => `${widths[i] ?? DEFAULT_COLUMN_WIDTH}px`),
-  ].join(' ')
+  const widthOf = (column: number) => widths[column] ?? DEFAULT_COLUMN_WIDTH
+  const setWidth = (column: number, width: number) =>
+    setWidths((current) => ({
+      ...current,
+      [column]: Math.max(MIN_COLUMN_WIDTH, width),
+    }))
+  const hintId = useId()
 
   // The virtual list is not compatible with the React Compiler. This project does not use the compiler.
   // oxlint-disable-next-line react/incompatible-library
@@ -110,6 +120,37 @@ export function ResultGrid({ columns, rows, hasMore, onNeedMore }: Props) {
     overscan: OVERSCAN_ROWS,
   })
   const items = virtualizer.getVirtualItems()
+
+  // A result can have hundreds of columns. The grid renders only the columns near
+  // the visible area. An empty grid track before and after them keeps their position.
+  // oxlint-disable-next-line react/incompatible-library
+  const columnVirtualizer = useVirtualizer({
+    horizontal: true,
+    count: visible.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: (position) => widthOf(visible[position]),
+    overscan: OVERSCAN_COLUMNS,
+    paddingStart: ROW_NUMBER_WIDTH,
+    scrollPaddingStart: ROW_NUMBER_WIDTH,
+  })
+  // The virtual list keeps the sizes. It must calculate them again after a change.
+  useEffect(() => {
+    columnVirtualizer.measure()
+  }, [columnVirtualizer, widths, visible])
+  const virtualColumns = columnVirtualizer.getVirtualItems()
+  const spaceBefore =
+    (virtualColumns[0]?.start ?? ROW_NUMBER_WIDTH) - ROW_NUMBER_WIDTH
+  const spaceAfter =
+    columnVirtualizer.getTotalSize() -
+    (virtualColumns.at(-1)?.end ?? ROW_NUMBER_WIDTH)
+  const template = [
+    `${ROW_NUMBER_WIDTH}px`,
+    `${spaceBefore}px`,
+    ...virtualColumns.map((item) => `${item.size}px`),
+    `${spaceAfter}px`,
+  ].join(' ')
+  /** The grid track of a rendered column. Track 2 is the empty space before the columns. */
+  const trackOf = (renderedPosition: number) => renderedPosition + 3
   const lastVisible = items.at(-1)?.index ?? 0
 
   useEffect(() => {
@@ -140,11 +181,32 @@ export function ResultGrid({ columns, rows, hasMore, onNeedMore }: Props) {
       column < 0 ? 0 : clamp(column + columnStep, visible.length - 1)
     setSelected({ row: order[nextRow], column: visible[nextColumn] })
     virtualizer.scrollToIndex(nextRow)
+    columnVirtualizer.scrollToIndex(nextColumn)
+  }
+  /** Changes the width of the column of the selected cell. Returns `false` for other keys. */
+  const resizeWithKey = (event: KeyboardEvent): boolean => {
+    if (!event.altKey || !event.shiftKey || !selected) return false
+    const direction = { ArrowRight: 1, ArrowLeft: -1 }[event.key]
+    if (!direction) return false
+    const { column } = selected
+    // The new width comes from the stored width, thus fast key presses add up.
+    setWidths((current) => ({
+      ...current,
+      [column]: Math.max(
+        MIN_COLUMN_WIDTH,
+        (current[column] ?? DEFAULT_COLUMN_WIDTH) + direction * RESIZE_STEP,
+      ),
+    }))
+    return true
   }
   const onKeyDown = (event: KeyboardEvent) => {
     if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
       event.preventDefault()
       copyCell()
+      return
+    }
+    if (resizeWithKey(event)) {
+      event.preventDefault()
       return
     }
     const step = KEY_STEPS[event.key]
@@ -207,6 +269,8 @@ export function ResultGrid({ columns, rows, hasMore, onNeedMore }: Props) {
         role="grid"
         aria-label="Result rows"
         aria-rowcount={order.length + 1}
+        aria-colcount={visible.length + 1}
+        aria-describedby={hintId}
         tabIndex={0}
         onKeyDown={onKeyDown}
       >
@@ -215,39 +279,45 @@ export function ResultGrid({ columns, rows, hasMore, onNeedMore }: Props) {
           role="row"
           style={{ gridTemplateColumns: template }}
         >
-          <div className="grid__cell grid__cell--number" role="columnheader">
+          <div
+            className="grid__cell grid__cell--number"
+            role="columnheader"
+            aria-colindex={1}
+          >
             #
           </div>
-          {visible.map((index) => (
-            <div
-              key={index}
-              className="grid__cell grid__cell--header"
-              role="columnheader"
-              aria-sort={ariaSort(sort, index)}
-            >
-              <button
-                type="button"
-                className="grid__sort"
-                title={columns[index].type_name ?? undefined}
-                onClick={() => setSort(nextSort(sort, index))}
+          {virtualColumns.map((item, rendered) => {
+            const index = visible[item.index]
+            return (
+              <div
+                key={index}
+                className="grid__cell grid__cell--header"
+                role="columnheader"
+                aria-colindex={item.index + FIRST_DATA_COLUMN}
+                aria-sort={ariaSort(sort, index)}
+                style={{ gridColumnStart: trackOf(rendered) }}
               >
-                {columns[index].name}
-                {sortLabel(sort, index)}
-              </button>
-              <span
-                className="grid__resize"
-                aria-hidden="true"
-                onPointerDown={(event) =>
-                  startResize(
-                    event,
-                    widths[index] ?? DEFAULT_COLUMN_WIDTH,
-                    (width) =>
-                      setWidths((current) => ({ ...current, [index]: width })),
-                  )
-                }
-              />
-            </div>
-          ))}
+                <button
+                  type="button"
+                  className="grid__sort"
+                  title={columns[index].type_name ?? undefined}
+                  onClick={() => setSort(nextSort(sort, index))}
+                >
+                  {columns[index].name}
+                  {sortLabel(sort, index)}
+                </button>
+                <span
+                  className="grid__resize"
+                  aria-hidden="true"
+                  onPointerDown={(event) =>
+                    startResize(event, widthOf(index), (width) =>
+                      setWidth(index, width),
+                    )
+                  }
+                />
+              </div>
+            )
+          })}
         </div>
 
         <div
@@ -270,10 +340,15 @@ export function ResultGrid({ columns, rows, hasMore, onNeedMore }: Props) {
                   transform: `translateY(${item.start}px)`,
                 }}
               >
-                <div className="grid__cell grid__cell--number" role="rowheader">
+                <div
+                  className="grid__cell grid__cell--number"
+                  role="rowheader"
+                  aria-colindex={1}
+                >
                   {item.index + 1}
                 </div>
-                {visible.map((column) => {
+                {virtualColumns.map((virtualColumn, rendered) => {
+                  const column = visible[virtualColumn.index]
                   const value = row[column]
                   const isSelected =
                     selected?.row === rowIndex && selected.column === column
@@ -287,7 +362,9 @@ export function ResultGrid({ columns, rows, hasMore, onNeedMore }: Props) {
                       key={column}
                       className={classes.filter(Boolean).join(' ')}
                       role="gridcell"
+                      aria-colindex={virtualColumn.index + FIRST_DATA_COLUMN}
                       aria-selected={isSelected}
+                      style={{ gridColumnStart: trackOf(rendered) }}
                       onClick={() => setSelected({ row: rowIndex, column })}
                     >
                       {value === null ? (
@@ -303,6 +380,10 @@ export function ResultGrid({ columns, rows, hasMore, onNeedMore }: Props) {
           })}
         </div>
       </div>
+      <p id={hintId} className="visually-hidden">
+        Use the arrow keys to move between the cells. Press Alt+Shift+Left or
+        Alt+Shift+Right to change the width of the column of the selected cell.
+      </p>
     </div>
   )
 }

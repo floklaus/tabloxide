@@ -12,7 +12,7 @@ Phase 1 of `docs/Implementation Plan.md` (milestones M0 to M6) is complete in co
 - **Workspace:** A workspace is a folder with your SQL files. The file `tabloxide.toml` in that folder holds the connection definitions without secrets.
 - **Connections:** Add, edit, duplicate, delete, and test connections. A password is in the credential store of the operating system, or it comes from an environment variable.
 - **Editor:** SQL editor with tabs for files and for buffers without a file. Each tab has its own database session.
-- **Results:** Result grid with virtual rows, sort, column resize, column visibility, and copy. Export of a result to a CSV file.
+- **Results:** Result grid with virtual rows and virtual columns, sort, column resize, column visibility, and copy. Export of a result to a CSV file.
 - **History:** Query history with a search. The history is in the application data directory, not in the workspace.
 - **Schema:** Schema browser with tables, views, columns, indexes, and constraints.
 - **Git:** Status, stage, unstage, discard, diff, commit, fetch, pull, and push. The application uses the `git` executable of the system.
@@ -40,19 +40,20 @@ To use the Git functions, install Git and make sure that `git` is in the `PATH`.
 
 ## Keyboard shortcuts
 
-| Keys                                              | Function                                                              |
-| ------------------------------------------------- | --------------------------------------------------------------------- |
-| `Ctrl+Enter`                                      | Runs the selection, or the statement at the cursor.                   |
-| `Ctrl+Shift+Enter`                                | Runs all statements of the tab.                                       |
-| `Ctrl+S`                                          | Saves the file of the tab.                                            |
-| `Ctrl+F`                                          | Opens the search in the editor.                                       |
-| Arrow keys, `Home`, `End`, `Page Up`, `Page Down` | Move the selected cell in the result grid.                            |
-| `Ctrl+C` in the result grid                       | Copies the selected cell.                                             |
-| `Left`, `Right`, `Home`, `End` on an editor tab   | Move to a different editor tab.                                       |
-| `Delete` on an editor tab                         | Closes the editor tab.                                                |
-| Arrow keys, `Home`, `End` in the file tree        | Move between the files. `Right` opens a folder, and `Left` closes it. |
-| `Escape`, then `Tab` in the editor                | Moves the focus out of the editor.                                    |
-| `Escape`                                          | Closes a dialog.                                                      |
+| Keys                                                   | Function                                                              |
+| ------------------------------------------------------ | --------------------------------------------------------------------- |
+| `Ctrl+Enter`                                           | Runs the selection, or the statement at the cursor.                   |
+| `Ctrl+Shift+Enter`                                     | Runs all statements of the tab.                                       |
+| `Ctrl+S`                                               | Saves the file of the tab.                                            |
+| `Ctrl+F`                                               | Opens the search in the editor.                                       |
+| Arrow keys, `Home`, `End`, `Page Up`, `Page Down`      | Move the selected cell in the result grid.                            |
+| `Ctrl+C` in the result grid                            | Copies the selected cell.                                             |
+| `Alt+Shift+Left`, `Alt+Shift+Right` in the result grid | Change the width of the column of the selected cell.                  |
+| `Left`, `Right`, `Home`, `End` on an editor tab        | Move to a different editor tab.                                       |
+| `Delete` on an editor tab                              | Closes the editor tab.                                                |
+| Arrow keys, `Home`, `End` in the file tree             | Move between the files. `Right` opens a folder, and `Left` closes it. |
+| `Escape`, then `Tab` in the editor                     | Moves the focus out of the editor.                                    |
+| `Escape`                                               | Closes a dialog.                                                      |
 
 On macOS, use `Cmd` in place of `Ctrl`.
 

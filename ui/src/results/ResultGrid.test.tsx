@@ -145,6 +145,76 @@ describe('ResultGrid', () => {
     expect(selected()).toBe('10')
   })
 
+  test('renders only the columns near the visible area', () => {
+    const wide: Column[] = Array.from({ length: 300 }, (_, i) => ({
+      name: `c${i}`,
+      type_name: 'text',
+      kind: 'text',
+    }))
+    const row: Row = wide.map((_, i) => `v${i}`)
+
+    renderGrid({ columns: wide, rows: [row] })
+
+    expect(screen.getAllByRole('columnheader').length).toBeLessThan(30)
+    expect(screen.getAllByRole('gridcell').length).toBeLessThan(30)
+    expect(screen.getByRole('grid')).toHaveAttribute('aria-colcount', '301')
+    expect(screen.getByRole('button', { name: 'c0' })).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'c299' }),
+    ).not.toBeInTheDocument()
+  })
+
+  test('gives each cell its column position', () => {
+    renderGrid()
+
+    const first = screen.getAllByRole('row')[1]
+    expect(within(first).getByRole('rowheader')).toHaveAttribute(
+      'aria-colindex',
+      '1',
+    )
+    expect(
+      within(first)
+        .getAllByRole('gridcell')
+        .map((cell) => cell.getAttribute('aria-colindex')),
+    ).toEqual(['2', '3'])
+  })
+
+  test('changes the width of the selected column with Alt+Shift and an arrow key', async () => {
+    const { user } = renderGrid()
+    const template = () =>
+      screen.getAllByRole('row')[0].style.gridTemplateColumns
+
+    await user.click(screen.getByText('b'))
+    expect(template()).toContain('160px 160px')
+
+    await user.keyboard('{Alt>}{Shift>}{ArrowRight}{/Shift}{/Alt}')
+    expect(template()).toContain('160px 176px')
+
+    await user.keyboard('{Alt>}{Shift>}{ArrowLeft}{ArrowLeft}{/Shift}{/Alt}')
+    expect(template()).toContain('160px 144px')
+  })
+
+  test('does not make a column narrower than the minimum width', async () => {
+    const { user } = renderGrid()
+    await user.click(screen.getByText('b'))
+
+    for (let press = 0; press < 12; press += 1) {
+      await user.keyboard('{Alt>}{Shift>}{ArrowLeft}{/Shift}{/Alt}')
+    }
+
+    expect(screen.getAllByRole('row')[0].style.gridTemplateColumns).toContain(
+      '160px 48px',
+    )
+  })
+
+  test('tells a screen reader the keys that change the column width', () => {
+    renderGrid()
+
+    expect(screen.getByRole('grid')).toHaveAccessibleDescription(
+      /Alt\+Shift\+Right/,
+    )
+  })
+
   test('asks for more rows when the end is near and the result has more', () => {
     const { onNeedMore } = renderGrid({ hasMore: true })
 
