@@ -242,6 +242,42 @@ Design of the credential prompts (M8):
 * The UI shows the prompt in a dialog. The answer goes to Git only. No part of the application stores it.
 * If the user gives no answer in 5 minutes, Git stops the operation.
 
+### Results of the DuckDB spike
+
+The spike ran on 2026-11-14 on Linux with the crate `duckdb` 1.20000.2 and its `bundled` feature (DuckDB 2.0.0). The table had 5 million rows and 7 columns in a database file of 118 MB. The spike code is not in the repository.
+
+| Question | Result |
+|---|---|
+| Clean build with the bundled DuckDB, 16 processor cores | Debug: 6 min 35 s. Release: 7 min 30 s. The two builds used 65 and 99 minutes of processor time. |
+| Size of the release executable of the spike | 52 MB without symbols |
+| Time to the first 2048 rows of a stream | 51 ms |
+| Memory during a pause of 3 seconds in a stream | No increase |
+| Memory while the stream read 2 million rows | 255 MB maximum. The process had 225 MB before the read. |
+| A stream that the code drops early | The drop took less than 1 ms. The next statement ran immediately. A cancel is not necessary. |
+| A statement with `ORDER BY` on all rows | First rows after 328 ms. The memory of the process increased by 500 MB. |
+| Cancel of a long statement | The statement stopped 4 ms after the interrupt. The connection was usable again. |
+| Cancel during a stream | The next read gave the interrupt error. The connection was usable again. |
+| Values as text | `SELECT CAST(COLUMNS(*) AS VARCHAR) FROM (statement)` gives each value as the text of DuckDB, also for lists, structures, and maps. `NULL` and the empty string stay different. |
+| Column names and types | `DESCRIBE statement` gives them in 2 ms and does not run the statement. The text wrapper changes a column name that occurs two times, thus the names must come from `DESCRIBE`. |
+| Error position | With the setting `errors_as_json`, the error has a character position that starts at 0. |
+| Number of changed rows | `execute` returns it. |
+| More than one statement in one text | DuckDB runs all of them and returns the result of the last one. The statement splitter of `core` must split the text first. |
+| Catalog queries with parameters | `information_schema` gives the schemas, the relations, and the columns. `duckdb_constraints()` and `duckdb_indexes()` give the constraints and the indexes. |
+| Query of a CSV file | `select * from 'file.csv'` operates without an import. |
+| Read-only mode | The database refuses a write, and a statement cannot change the mode. |
+
+Design rules for the adapter that come from the spike:
+
+* **One instance for each file.** The adapter opens a database file one time and makes each session with `try_clone`.
+  * A second open of the same file in the same process made a second, independent instance. The two instances did not see the changes of each other.
+  * When the code dropped the second instance, the process lost its file lock, and a different process could open the file for a write.
+* **A worker thread for each session.** The API blocks, and a stream borrows its statement and its connection. Thus one thread must own the three.
+* **A clone is independent for cancel.** An interrupt of one clone did not stop the stream of a different clone.
+* **File lock between processes.** While the application has a file open for a write, no other process can open it, also not for a read. Many processes can open one file in read-only mode at the same time.
+* **Access to the machine.** A DuckDB statement can read and write files on the disk and can install and load extensions. The setting `enable_external_access = false` stops this, but it also stops the query of CSV files. The guardrails of M10 must cover this.
+
+Not measured: the build on macOS and on Windows, and the build time on the CI machines, which have fewer processor cores.
+
 ## 6. Phase 3 outline — differentiators
 
 * Autocomplete from the schema cache.
