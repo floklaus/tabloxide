@@ -235,6 +235,17 @@ Notes:
 
 Status on 2026-11-15: M7, M8, and M9 are complete in code. The second engine is DuckDB, not SQLite. The product owner made this selection after the spike below.
 
+Status of M12 on 2026-11-15:
+
+* The user documentation is complete: `docs/user/install.md`, `docs/user/troubleshooting.md`, `CONTRIBUTING.md`, and `SECURITY.md`.
+* The automated part of the accessibility audit is complete.
+  * Each UI test checks the rules of axe-core on the DOM that it leaves.
+  * A test checks the colour contrast of the two themes.
+  * The editor tabs, the file tree, and the dialogs have the keyboard behaviour of the ARIA patterns.
+* The audit with a screen reader on each platform is open. It needs a person.
+* The procedures for macOS and Windows in `install.md` come from the build configuration. No person did them on these systems.
+* `SECURITY.md` refers to the private report function of the repository host. The owner must enable this function when the remote repository exists.
+
 Changes to the adapter boundary in M9:
 
 * A connection profile has an `engine` field. A profile without this field is a PostgreSQL profile, thus an old `tabloxide.toml` stays valid.
