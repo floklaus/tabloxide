@@ -7,6 +7,7 @@
 //! - [`LocalState`] is the SQLite database for the query history, the open tabs, and the
 //!   preferences. It is also in the application data directory.
 //! - [`files`] reads and writes the files in the workspace folder.
+//! - [`WorkspaceWatcher`] reports changes that a different program made in the workspace folder.
 
 mod config;
 mod error;
@@ -16,6 +17,7 @@ mod local_state;
 mod preferences;
 mod recent;
 mod secrets;
+mod watch;
 mod workspace;
 
 pub use config::{CONFIG_FILE_NAME, WorkspaceConfig};
@@ -28,4 +30,5 @@ pub use local_state::{LocalState, MAX_HISTORY_RESULTS, TabState, UiState};
 pub use preferences::{EditorPreferences, Preferences};
 pub use recent::{MAX_RECENT_WORKSPACES, RecentWorkspace, RecentWorkspaces};
 pub use secrets::{KeyringStore, MemoryStore, SecretError, SecretStore, resolve_secret};
+pub use watch::{QUIET_TIME, WorkspaceWatcher, is_relevant};
 pub use workspace::Workspace;
