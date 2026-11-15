@@ -318,3 +318,43 @@ fn a_failed_command_gives_the_message_of_git() {
         "{error}"
     );
 }
+
+#[test]
+fn sends_the_progress_lines_of_a_remote_operation() {
+    let (_home, git, first, second) = two_clones();
+    common::commit_change(&git, &first, "select 2\n");
+    let lines = std::sync::Arc::new(std::sync::Mutex::new(Vec::<String>::new()));
+    let record = std::sync::Arc::clone(&lines);
+    let with_progress = git.clone().with_progress(std::sync::Arc::new(move |line| {
+        record.lock().unwrap().push(line.to_owned());
+    }));
+
+    let pushed = with_progress.push(&first).unwrap();
+    let pulled = with_progress.pull(&second).unwrap();
+
+    let lines = lines.lock().unwrap();
+    assert!(
+        lines.iter().any(|line| line.contains("main -> main")),
+        "{lines:?}"
+    );
+    assert!(pushed.contains("main -> main"), "{pushed}");
+    assert!(!pushed.contains('\r'), "{pushed}");
+    assert!(pulled.contains("a.sql"), "{pulled}");
+    assert_eq!(
+        std::fs::read_to_string(second.join("a.sql")).unwrap(),
+        "select 2\n"
+    );
+}
+
+#[test]
+fn a_failed_remote_operation_with_progress_gives_the_message_of_git() {
+    let (_home, git, first, second) = two_clones();
+    common::commit_change(&git, &first, "from first\n");
+    common::commit_change(&git, &second, "from second\n");
+    git.push(&first).unwrap();
+    let with_progress = git.clone().with_progress(std::sync::Arc::new(|_| {}));
+
+    let error = with_progress.push(&second).unwrap_err();
+
+    assert!(error.to_string().contains("rejected"), "{error}");
+}

@@ -112,13 +112,10 @@ impl Git {
             return Err(invalid(url));
         }
         let parent = destination.parent().unwrap_or(Path::new("."));
-        let args = [
-            "clone".as_ref(),
-            "--".as_ref(),
-            url.as_ref(),
-            destination.as_os_str(),
-        ];
-        self.run(parent, args).map(|_| ())
+        let mut args: Vec<&std::ffi::OsStr> = vec!["clone".as_ref()];
+        args.extend(self.progress_flag().map(std::ffi::OsStr::new));
+        args.extend(["--".as_ref(), url.as_ref(), destination.as_os_str()]);
+        self.run_remote(parent, args).map(|_| ())
     }
 
     /// Reads the branch, the upstream counts, and the changed files.
@@ -128,6 +125,9 @@ impl Git {
     /// Returns an error if `root` is not a repository.
     pub fn status(&self, root: &Path) -> Result<StatusReport, GitError> {
         let args = [
+            // The status must not write the index. A write would start the file
+            // watcher of the application, which reads the status again.
+            "--no-optional-locks",
             "status",
             "--porcelain=v2",
             "--branch",
@@ -350,13 +350,27 @@ impl Git {
         }
     }
 
+    /// Git writes progress lines only to a terminal, unless this flag is set.
+    fn progress_flag(&self) -> Option<&'static str> {
+        self.has_progress().then_some("--progress")
+    }
+
+    /// Runs a remote operation and returns the text that Git wrote.
+    fn remote(&self, root: &Path, command: &[&str]) -> Result<String, GitError> {
+        let (name, rest) = command.split_first().unwrap_or((&"", &[]));
+        let args = std::iter::once(*name)
+            .chain(self.progress_flag())
+            .chain(rest.iter().copied());
+        Ok(self.run_remote(root, args)?.message())
+    }
+
     /// Gets the new commits of the remote. Returns the text that Git wrote.
     ///
     /// # Errors
     ///
     /// Returns an error if Git fails, for example because a credential is missing.
     pub fn fetch(&self, root: &Path) -> Result<String, GitError> {
-        Ok(self.run(root, ["fetch", "--prune"])?.message())
+        self.remote(root, &["fetch", "--prune"])
     }
 
     /// Gets the new commits of the upstream branch and merges them. The merge is a
@@ -366,9 +380,7 @@ impl Git {
     ///
     /// Returns an error if Git fails. A merge conflict is such a failure.
     pub fn pull(&self, root: &Path) -> Result<String, GitError> {
-        Ok(self
-            .run(root, ["pull", "--no-rebase", "--no-edit"])?
-            .message())
+        self.remote(root, &["pull", "--no-rebase", "--no-edit"])
     }
 
     /// Sends the commits of the current branch to the remote. A branch without an
@@ -379,12 +391,11 @@ impl Git {
     /// Returns an error if Git fails, for example because the remote has new commits.
     pub fn push(&self, root: &Path) -> Result<String, GitError> {
         let status = self.status(root)?;
-        let output = match (&status.upstream, &status.branch) {
+        match (&status.upstream, &status.branch) {
             (None, Some(branch)) => {
-                self.run(root, ["push", "--set-upstream", "origin", branch.as_str()])?
+                self.remote(root, &["push", "--set-upstream", "origin", branch.as_str()])
             }
-            _ => self.run(root, ["push"])?,
-        };
-        Ok(output.message())
+            _ => self.remote(root, &["push"]),
+        }
     }
 }
