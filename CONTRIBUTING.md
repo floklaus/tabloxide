@@ -6,7 +6,7 @@ Do not report a security problem in an issue or in a pull request. Refer to [SEC
 
 ## 1. Before you start
 
-- For a problem, write an issue first. [Troubleshooting, section 8](docs/user/troubleshooting.md#8-report-a-problem) lists the data that an issue must contain.
+- For a problem, write an issue first. [Troubleshooting, section 8](docs/user/troubleshooting.md#9-report-a-problem) lists the data that an issue must contain.
 - For a new function, write an issue first and wait for an answer. `docs/Implementation Plan.md` sets the scope and the sequence of the work. A change outside that scope can get a refusal.
 - For a small correction, for example a spelling error, a pull request without an issue is sufficient.
 
@@ -27,7 +27,7 @@ Use pnpm for all Node.js operations. Do not use npm or yarn, because the reposit
 
 - **No business logic in `src-tauri`.** This crate contains the Tauri commands and the application wiring only. Put logic into a crate in `crates/`.
 - **No Tauri in `crates/`.** These crates must build and run their tests without a window.
-- **No engine-specific type in `crates/core`.** The `DbAdapter` trait is the only database interface for the other parts. Put PostgreSQL code into `crates/adapter-postgres`.
+- **No engine-specific type in `crates/core`.** The `DbAdapter` trait is the only database interface for the other parts. Put the code for an engine into its adapter crate, for example `crates/adapter-postgres` or `crates/adapter-duckdb`.
 - **One folder for each feature in `ui/src`.** For example, `connections`, `results`, `git`.
 - **Generated bindings.** Do not edit `ui/src/bindings.ts`. After you change a command or a command type, run `pnpm bindings` and commit the result.
 

@@ -166,7 +166,9 @@ A release has two installers. Use one of them. Do not install the two.
 1. Tabloxide shows the welcome screen. Select **Open folder…** and select the folder that contains your SQL files. This folder is the workspace.
    * To get a workspace from a Git server, select **Clone a repository…**.
 2. In the **Connections** list, select **New**.
-3. Enter the connection data. Select **Test connection**, then **Save**.
+3. Select the database engine and enter the connection data. Select **Test connection**, then **Save**.
+   * A PostgreSQL connection needs a server.
+   * A DuckDB connection needs only a database file. Tabloxide contains DuckDB, thus no other installation is necessary.
 4. Write a statement in the editor. Press `Ctrl+Enter` to run it. On macOS, press `Cmd+Enter`.
 
 Tabloxide writes the connection definitions into the file `tabloxide.toml` in the workspace folder. This file contains no password, thus you can commit it.

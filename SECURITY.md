@@ -41,7 +41,8 @@ These are examples of a vulnerability:
 These are not a vulnerability of Tabloxide:
 
 - **A statement that you run changes or reads data.** Tabloxide sends your SQL to the database with the rights of the database user.
-- **A read-only connection permits a write.** This setting is a protection against mistakes. A statement can set the session back to read-write. For a real restriction, use a database user that has only read permissions.
+- **A read-only PostgreSQL connection permits a write.** For PostgreSQL, this setting is a protection against mistakes. A statement can set the session back to read-write. For a real restriction, use a database user that has only read permissions.
+- **A DuckDB statement that you run reads or writes a file, or loads an extension.** DuckDB has these functions. Tabloxide asks before a statement that writes files or loads an extension. Do not run a script that you do not know against a DuckDB connection.
 - **A person with access to your user account reads your passwords.** The credential store of the operating system protects the passwords with your account.
 - **The TLS modes `prefer` and `require` do not check the server certificate.** These modes have the same meaning as in PostgreSQL. Use `verify-full` to check the certificate.
 - **A Git hook or a Git configuration of a repository runs a program.** Tabloxide uses the `git` executable of the system, which runs the hooks of a repository. Open only a repository that you trust.

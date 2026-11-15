@@ -151,7 +151,7 @@ A variable in a file is plain text on the disk. Use the credential store when it
 
 **Solution:** edit the connection, enter the password, and save.
 
-## 4. Database connections
+## 4. PostgreSQL connections
 
 The connection test shows a short instruction and, below it, the message of the server or the driver.
 
@@ -180,7 +180,7 @@ The TLS modes have the same names and the same meanings as the `sslmode` values 
 * If the server does not support TLS, `require` and `verify-full` fail. Use `prefer` or `disable`, or enable TLS on the server.
 * If `verify-full` fails, the certificate does not match the host name in the connection, or its issuer is not trusted.
 
-### The connection closes during work
+### The PostgreSQL connection closes during work
 
 **Symptom:** a statement fails with the message "The connection to the server closed."
 
@@ -196,7 +196,50 @@ The TLS modes have the same names and the same meanings as the `sslmode` values 
 
 **Solution:** this behaviour is correct. To change data, use a connection without the read-only setting.
 
-## 5. Query history
+## 5. DuckDB connections
+
+### A different program has the database file open
+
+**Symptom:** the connection fails with the message "A different program has the database file open."
+
+**Cause:** DuckDB locks a database file. While one program has the file open for a write, no other program can open it, also not for a read. Many programs can open one file at the same time if each of them opens it read-only.
+
+**Solution:** use one of these methods.
+
+* Close the other program, for example the DuckDB command line or a notebook.
+* Set the read-only setting on this connection, and open the file read-only in the other program.
+
+### A statement cannot find a file
+
+**Symptom:** a statement such as `SELECT * FROM 'data.csv'` fails, and the message says that the file does not exist.
+
+**Cause:** a relative file name starts at the workspace folder, not at the folder of the SQL file.
+
+**Solution:** write the path from the workspace folder, for example `'exports/data.csv'`, or use an absolute path.
+
+### Tabloxide asks before a statement runs
+
+**Symptom:** a dialog asks for confirmation before `COPY ... TO`, `EXPORT DATABASE`, `INSTALL`, or `LOAD`.
+
+**Cause:** these statements write files on your disk, or they load program code into the application.
+
+**Solution:** read the statement. Continue only if you know what the statement does.
+
+### An extension does not load
+
+**Symptom:** a statement fails with a message that an extension is not installed.
+
+**Cause:** Tabloxide does not let DuckDB install an extension from the network automatically.
+
+**Solution:** run `INSTALL <name>` one time, then `LOAD <name>`. The installation needs an internet connection.
+
+### A statement on a read-only DuckDB connection fails
+
+**Cause:** the connection has the read-only setting. For DuckDB, a statement cannot change this mode.
+
+**Solution:** this behaviour is correct. To change data, use a connection without the read-only setting.
+
+## 6. Query history
 
 ### The history shows "Not recorded"
 
@@ -206,7 +249,7 @@ The TLS modes have the same names and the same meanings as the `sslmode` values 
 
 **Solution:** none is necessary. Keep such statements in a file outside the repository if you need them again.
 
-## 6. Git
+## 7. Git
 
 ### Git is not installed
 
@@ -262,7 +305,7 @@ ssh-add ~/.ssh/id_ed25519
 
 **Solution:** disable Git for that workspace in the Git panel. The setting applies to one workspace on one computer.
 
-## 7. Reset the local state
+## 8. Reset the local state
 
 If the application shows the message "The local state database failed", or if it stops at each start, the local state can be defective.
 
@@ -273,7 +316,7 @@ If the application shows the message "The local state database failed", or if it
 
 This procedure removes the query history, the preferences, and the open tabs. It does not change your workspaces, your connections, or your passwords.
 
-## 8. Report a problem
+## 9. Report a problem
 
 Tabloxide does not write a log file. Thus a report must contain the data that follows:
 
@@ -282,7 +325,7 @@ Tabloxide does not write a log file. Thus a report must contain the data that fo
 * The type of installer (for example `.deb`, AppImage, `.msi`).
 * The exact text of the error message.
 * The steps that cause the problem.
-* For a database problem: the version of the database server.
+* For a database problem: the database engine. For PostgreSQL, also the version of the server.
 * For a Git problem: the output of `git --version`.
 
 Before you send a report, remove passwords, tokens, host names, and private data from the text.
