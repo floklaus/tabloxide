@@ -31,6 +31,13 @@ The installers have no code signature. macOS and Windows show a warning for an a
 
 To use the Git functions, install Git and make sure that `git` is in the `PATH`. A passphrase prompt for an SSH key needs OpenSSH 8.4 or later. On Linux, the credential store needs a Secret Service, for example GNOME Keyring or KWallet.
 
+## Documentation
+
+- [Install Tabloxide](docs/user/install.md): the procedures for Linux, macOS, and Windows, the update, the removal, and the data locations.
+- [Troubleshooting](docs/user/troubleshooting.md): known problems and their solutions.
+- [Contribute to Tabloxide](CONTRIBUTING.md): the rules and the checks for a change.
+- [Security policy](SECURITY.md): how to report a vulnerability.
+
 ## Keyboard shortcuts
 
 | Keys                                              | Function                                            |
@@ -110,7 +117,7 @@ cargo test -p tabloxide-adapter-postgres -- --ignored
 | `crates/workspace`        | Project configuration, local state, history, secret references     |
 | `src-tauri`               | Tauri commands and application wiring                              |
 | `ui`                      | React application                                                  |
-| `docs`                    | Feature backlog and implementation plan                            |
+| `docs`                    | Feature backlog, implementation plan, and user documentation       |
 
 ## Release
 
