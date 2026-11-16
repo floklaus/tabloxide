@@ -5,6 +5,8 @@ import {
   useDefaultLayout,
 } from 'react-resizable-panels'
 import { useEffect, useState } from 'react'
+import { AssistantPanel } from '../assistant/AssistantPanel'
+import { useAssistantStore } from '../assistant/assistantStore'
 import { ConnectionList } from '../connections/ConnectionList'
 import { FileTree } from '../files/FileTree'
 import { GitPanel } from '../git/GitPanel'
@@ -35,9 +37,33 @@ const SIDEBAR_VIEWS: { id: SidebarView; label: string }[] = [
 
 const MAIN_LAYOUT_ID = 'tabloxide.layout.main'
 const WORK_LAYOUT_ID = 'tabloxide.layout.work'
+/** The pane library keeps one layout for each set of panes. */
+const MAIN_PANES = ['sidebar', 'work']
+const ASSISTANT_PANES = [...MAIN_PANES, 'assistant']
+const ASSISTANT_OPEN_KEY = 'tabloxide.assistant.open'
+
+function loadShowsAssistant(): boolean {
+  try {
+    return localStorage.getItem(ASSISTANT_OPEN_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
+
+function storeShowsAssistant(shows: boolean): void {
+  try {
+    localStorage.setItem(ASSISTANT_OPEN_KEY, String(shows))
+  } catch {
+    // Without the storage, the panel is closed at the next start.
+  }
+}
 
 export function AppShell() {
-  const mainLayout = useDefaultLayout({ id: MAIN_LAYOUT_ID })
+  const [showsAssistant, setShowsAssistant] = useState(loadShowsAssistant)
+  const mainLayout = useDefaultLayout({
+    id: MAIN_LAYOUT_ID,
+    panelIds: showsAssistant ? ASSISTANT_PANES : MAIN_PANES,
+  })
   const workLayout = useDefaultLayout({ id: WORK_LAYOUT_ID })
   const workspaceName = useWorkspaceStore((state) => state.workspace?.name)
   const error = useWorkspaceStore((state) => state.error)
@@ -47,6 +73,10 @@ export function AppShell() {
   const setTabsError = useTabsStore((state) => state.setError)
   const [showsPreferences, setShowsPreferences] = useState(false)
   const [sidebarView, setSidebarView] = useState<SidebarView>('files')
+  const toggleAssistant = () => {
+    storeShowsAssistant(!showsAssistant)
+    setShowsAssistant(!showsAssistant)
+  }
 
   // The tabs and the sessions belong to the workspace. They start and end with this screen.
   useEffect(() => {
@@ -63,6 +93,7 @@ export function AppShell() {
       resetQueryStores()
       useSchemaStore.getState().reset()
       useGitStore.getState().reset()
+      useAssistantStore.getState().reset()
       useResultsViewStore.getState().setView('results')
     }
   }, [])
@@ -75,6 +106,15 @@ export function AppShell() {
           <span className="title-bar__workspace">{workspaceName}</span>
         )}
         <span className="title-bar__spacer" />
+        <button
+          type="button"
+          className="button button--small"
+          aria-pressed={showsAssistant}
+          title="Show or hide the AI assistant"
+          onClick={toggleAssistant}
+        >
+          Assistant
+        </button>
         <button
           type="button"
           className="button button--small"
@@ -173,6 +213,17 @@ export function AppShell() {
             </Panel>
           </Group>
         </Panel>
+        {showsAssistant && (
+          <>
+            <Separator
+              className="separator"
+              aria-label="Resize the assistant"
+            />
+            <Panel id="assistant" defaultSize="28%" minSize="15%">
+              <AssistantPanel />
+            </Panel>
+          </>
+        )}
       </Group>
 
       <StatusBar />

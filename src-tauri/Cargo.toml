@@ -18,6 +18,7 @@ specta = "=2.0.0-rc.28"
 specta-typescript = "0.0.15"
 tabloxide-adapter-duckdb = { version = "0.1.0", path = "../crates/adapter-duckdb" }
 tabloxide-adapter-postgres = { version = "0.1.0", path = "../crates/adapter-postgres" }
+tabloxide-assistant = { version = "0.1.0", path = "../crates/assistant", features = ["specta"] }
 tabloxide-core = { version = "0.1.0", path = "../crates/core", features = ["specta"] }
 tabloxide-git = { version = "0.1.0", path = "../crates/git", features = ["specta"] }
 tabloxide-workspace = { version = "0.1.0", path = "../crates/workspace", features = ["specta"] }
@@ -25,11 +26,12 @@ tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 tauri-plugin-window-state = "2"
 tauri-specta = { version = "=2.0.0-rc.29", features = ["derive", "typescript"] }
-tokio = { version = "1", features = ["fs", "io-util"] }
+tokio = { version = "1", features = ["fs", "io-util", "macros", "sync"] }
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
 [dev-dependencies]
+async-trait = "0.1"
 tabloxide-core = { version = "0.1.0", path = "../crates/core", features = ["specta", "testing"] }
 tokio = { version = "1", features = ["macros", "rt"] }

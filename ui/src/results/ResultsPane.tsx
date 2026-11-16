@@ -91,6 +91,8 @@ function RowsStatus(props: { statement: StatementReport; index: number }) {
     text += ` loaded. The row limit of ${numberFormat.format(MAX_LOADED_ROWS)} stopped the fetch.`
   } else if (!outcome.is_complete && stopReason === 'export') {
     text += ' loaded. The export closed this result.'
+  } else if (!outcome.is_complete && stopReason === 'assistant') {
+    text += ' loaded. The assistant used the session and closed this result.'
   } else if (!outcome.is_complete) {
     text += ' loaded. The fetch stopped before the end.'
   } else if (total !== null && total > loaded) {

@@ -203,6 +203,7 @@ This procedure does not delete your data. The next section tells you where the d
 | Connection definitions without passwords | `tabloxide.toml` in the workspace folder |
 | Query history, preferences, open tabs, list of recent workspaces | The application data folder |
 | Database passwords | The credential store of the operating system |
+| API key of the AI assistant | The credential store of the operating system |
 
 The application data folder has these paths:
 

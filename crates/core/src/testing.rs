@@ -146,17 +146,29 @@ impl Session for ScriptedSession {
     }
 
     async fn schemas(&mut self) -> Result<Vec<SchemaInfo>, QueryError> {
-        Ok(vec![SchemaInfo {
-            name: "public".to_owned(),
-            is_system: false,
-        }])
+        Ok(vec![
+            SchemaInfo {
+                name: "public".to_owned(),
+                is_system: false,
+            },
+            SchemaInfo {
+                name: "pg_catalog".to_owned(),
+                is_system: true,
+            },
+        ])
     }
 
     async fn relations(&mut self, schema: &str) -> Result<Vec<RelationInfo>, QueryError> {
-        Ok(vec![RelationInfo {
-            name: format!("{schema}_table"),
-            kind: RelationKind::Table,
-        }])
+        Ok(vec![
+            RelationInfo {
+                name: format!("{schema}_table"),
+                kind: RelationKind::Table,
+            },
+            RelationInfo {
+                name: format!("{schema}_view"),
+                kind: RelationKind::View,
+            },
+        ])
     }
 
     async fn relation_detail(

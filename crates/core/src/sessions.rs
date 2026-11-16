@@ -232,6 +232,36 @@ impl QuerySession {
         output.statements.into_iter().next()
     }
 
+    /// Closes the open result, runs `statement`, and returns a maximum of `max_rows` rows.
+    /// The result does not stay open, and the query history does not record the statement.
+    ///
+    /// # Errors
+    ///
+    /// Returns the error of the database.
+    pub async fn read_rows(
+        &self,
+        statement: &str,
+        max_rows: usize,
+    ) -> Result<Vec<Row>, QueryError> {
+        let mut inner = self.inner.lock().await;
+        inner.close_open_result().await;
+        let mut stream = inner.session.execute(statement).await?;
+        let mut rows: Vec<Row> = Vec::new();
+        let result = loop {
+            match stream.next_page(max_rows.saturating_sub(rows.len())).await {
+                Ok(page) => {
+                    rows.extend(page.rows);
+                    if page.end.is_some() || rows.len() >= max_rows {
+                        break Ok(());
+                    }
+                }
+                Err(error) => break Err(error),
+            }
+        };
+        stream.close().await;
+        result.map(|()| rows)
+    }
+
     /// Closes the open result. The connection closes when the session drops.
     pub async fn close(&self) {
         self.inner.lock().await.close_open_result().await;
@@ -378,6 +408,34 @@ mod tests {
                 ..
             }
         ));
+    }
+
+    #[tokio::test]
+    async fn read_rows_returns_the_rows_and_leaves_no_open_result() {
+        let (session, probe) = session(vec![Scripted::Rows(100), Scripted::Rows(40)]);
+        let open = run(&session, "select 1").await.open_result.unwrap();
+
+        let rows = session.read_rows("explain select 2", 25).await.unwrap();
+
+        assert_eq!(rows.len(), 25);
+        assert_eq!(rows[0], vec![Some("1".to_owned())]);
+        assert_eq!(session.fetch(open, 10).await, None);
+        assert_eq!(
+            probe.executed.lock().unwrap().last().unwrap(),
+            "explain select 2"
+        );
+    }
+
+    #[tokio::test]
+    async fn read_rows_returns_the_error_of_the_statement() {
+        let (session, _) = session(vec![Scripted::Error {
+            message: "syntax error".to_owned(),
+            position: None,
+        }]);
+
+        let error = session.read_rows("explain selec", 25).await.unwrap_err();
+
+        assert_eq!(error.message, "syntax error");
     }
 
     #[tokio::test]

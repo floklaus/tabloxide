@@ -79,6 +79,42 @@ impl Guardrails {
     }
 }
 
+/// The model that answers the requests of the AI assistant.
+/// The text form of each value is the model identifier of the Claude API.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+pub enum AssistantModel {
+    #[default]
+    #[serde(rename = "claude-opus-5-5")]
+    Opus,
+    #[serde(rename = "claude-sonnet-5-5")]
+    Sonnet,
+    #[serde(rename = "claude-haiku-5-5")]
+    Haiku,
+    #[serde(rename = "claude-fable-5-2")]
+    Fable,
+}
+
+impl AssistantModel {
+    /// Returns the model identifier of the Claude API.
+    #[must_use]
+    pub fn id(self) -> &'static str {
+        match self {
+            Self::Opus => "claude-opus-5-5",
+            Self::Sonnet => "claude-sonnet-5-5",
+            Self::Haiku => "claude-haiku-5-5",
+            Self::Fable => "claude-fable-5-2",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(default)]
+pub struct AssistantPreferences {
+    pub model: AssistantModel,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(default)]
@@ -88,6 +124,9 @@ pub struct Preferences {
     pub history_retention_days: u32,
     /// When the application asks before a run. Each environment has its own rule.
     pub guardrails: Guardrails,
+    /// The settings of the AI assistant. The API key is not here. It is in the
+    /// credential store of the operating system.
+    pub assistant: AssistantPreferences,
 }
 
 impl Default for Preferences {
@@ -96,6 +135,7 @@ impl Default for Preferences {
             editor: EditorPreferences::default(),
             history_retention_days: DEFAULT_HISTORY_RETENTION_DAYS,
             guardrails: Guardrails::default(),
+            assistant: AssistantPreferences::default(),
         }
     }
 }
@@ -144,6 +184,7 @@ mod tests {
                 staging: ConfirmRule::Always,
                 production: ConfirmRule::Risky,
             },
+            assistant: AssistantPreferences::default(),
         };
 
         let normalized = preferences.normalized();
@@ -192,6 +233,32 @@ mod tests {
 
         assert_eq!(preferences.guardrails.production, ConfirmRule::Never);
         assert_eq!(preferences.guardrails.development, ConfirmRule::Risky);
+    }
+
+    #[test]
+    fn the_text_form_of_a_model_is_its_identifier() {
+        let preferences: Preferences =
+            serde_json::from_str(r#"{"assistant": {"model": "claude-sonnet-5-5"}}"#).unwrap();
+
+        assert_eq!(preferences.assistant.model, AssistantModel::Sonnet);
+        for model in [
+            AssistantModel::Opus,
+            AssistantModel::Sonnet,
+            AssistantModel::Haiku,
+            AssistantModel::Fable,
+        ] {
+            assert_eq!(
+                serde_json::to_string(&model).unwrap(),
+                format!("\"{}\"", model.id())
+            );
+        }
+    }
+
+    #[test]
+    fn preferences_without_assistant_settings_get_the_default_model() {
+        let preferences: Preferences = serde_json::from_str("{}").unwrap();
+
+        assert_eq!(preferences.assistant.model, AssistantModel::Opus);
     }
 
     #[test]

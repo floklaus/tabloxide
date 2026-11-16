@@ -162,6 +162,29 @@ export const commands = {
 	uiStateLoad: (options?: InvokeOptions) => typedError<UiState_Serialize, CommandError>(__TAURI_INVOKE("ui_state_load", undefined, options)),
 	/**  Stores the open tabs of the workspace. */
 	uiStateSave: (uiState: UiState_Deserialize, options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("ui_state_save", { uiState }, options)),
+	/**  Tells if the application has an API key for the AI service. */
+	assistantStatus: (options?: InvokeOptions) => typedError<AssistantStatus, CommandError>(__TAURI_INVOKE("assistant_status", undefined, options)),
+	/**  Stores the API key in the credential store of the operating system. */
+	assistantKeySet: (key: string, options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("assistant_key_set", { key }, options)),
+	/**  Removes the API key from the credential store. */
+	assistantKeyDelete: (options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("assistant_key_delete", undefined, options)),
+	/**
+	 *  Sends a conversation to the AI service. The answer text comes on `on_event`.
+	 * 
+	 *  The request has the instructions of the application, the structure of the database
+	 *  of the session, and the messages. It has no rows and no connection settings.
+	 */
+	assistantAsk: (request: AskRequest_Deserialize, onEvent: Channel<AssistantEvent>, options?: InvokeOptions) => typedError<AskResult, CommandError>(__TAURI_INVOKE("assistant_ask", { request, onEvent }, options)),
+	/**  Stops a request that is in progress. The request then returns `cancelled`. */
+	assistantCancel: (id: number, options?: InvokeOptions) => __TAURI_INVOKE<void>("assistant_cancel", { id }, options),
+	/**
+	 *  Reads the execution plan of the one statement in `sql`.
+	 * 
+	 *  Without `analyze`, the database does not run the statement. With `analyze`, the
+	 *  database runs it. Thus `analyze` is permitted only for a statement that reads data.
+	 *  The query history does not record the plan read. This closes the open result.
+	 */
+	assistantExplain: (sessionId: number, sql: string, analyze: boolean, options?: InvokeOptions) => typedError<ExplainResult_Serialize, CommandError>(__TAURI_INVOKE("assistant_explain", { sessionId, sql, analyze }, options)),
 };
 
 /* Types */
@@ -169,6 +192,99 @@ export const commands = {
 export type AppInfo = {
 	name: string,
 	version: string,
+};
+
+/**  A request of the user to the assistant. */
+export type AskRequest = AskRequest_Serialize | AskRequest_Deserialize;
+
+/**  A request of the user to the assistant. */
+export type AskRequest_Deserialize = {
+	id: number,
+	/**  The session of the editor tab. The request gets the schema of its database. */
+	session_id?: number | null,
+	task: Task,
+	/**  The conversation. The last message is the new request of the user. */
+	messages: ChatMessage[],
+	/**  `true` reads the schema again. `false` uses the schema of the last request. */
+	refresh_schema: boolean,
+};
+
+/**  A request of the user to the assistant. */
+export type AskRequest_Serialize = {
+	id: number,
+	/**  The session of the editor tab. The request gets the schema of its database. */
+	session_id: number | null,
+	task: Task,
+	/**  The conversation. The last message is the new request of the user. */
+	messages: ChatMessage[],
+	/**  `true` reads the schema again. `false` uses the schema of the last request. */
+	refresh_schema: boolean,
+};
+
+/**  Result of a request. A failure of the AI service is a normal result, not a command error. */
+export type AskResult = 
+/**
+ *  `text` is the complete answer. The UI uses it in place of the parts that it
+ *  collected, because the last parts can arrive after this result.
+ */
+{ status: "done"; outcome: ChatOutcome; text: string } | { status: "failed"; error: AssistantError } | 
+/**  The user stopped the request. `text` is the part of the answer that came. */
+{ status: "cancelled"; text: string };
+
+/**  A failed request. `message` is for the user. It never contains the API key. */
+export type AssistantError = {
+	kind: AssistantErrorKind,
+	message: string,
+};
+
+/**  Category of a failure. The UI uses it to select the instruction for the user. */
+export type AssistantErrorKind = 
+/**  The credential store has no API key. */
+"missing-key" | 
+/**  The AI service rejected the API key, or the key has no permission. */
+"authentication" | 
+/**  The account has no credit. */
+"billing" | 
+/**  The account sent too many requests or tokens. */
+"rate-limit" | 
+/**  The AI service has too much load, or it has an internal error. */
+"unavailable" | 
+/**  The application did not get a connection, or the connection closed. */
+"network" | 
+/**  The AI service did not accept the request. */
+"invalid-request" | "other";
+
+/**  A message from a request to the UI while the request is in progress. */
+export type AssistantEvent = 
+/**  The application reads the schema from the database. */
+{ type: "reading-schema" } | 
+/**
+ *  The schema that goes to the AI service: the number of tables and views, and
+ *  the number of those for which the request has the columns.
+ */
+{ type: "schema"; relations: number; detailed: number } | 
+/**  The next part of the answer text. */
+{ type: "text"; text: string };
+
+/**
+ *  The model that answers the requests of the AI assistant.
+ *  The text form of each value is the model identifier of the Claude API.
+ */
+export type AssistantModel = "claude-opus-5-5" | "claude-sonnet-5-5" | "claude-haiku-5-5" | "claude-fable-5-2";
+
+export type AssistantPreferences = AssistantPreferences_Serialize | AssistantPreferences_Deserialize;
+
+export type AssistantPreferences_Deserialize = {
+	model?: AssistantModel,
+};
+
+export type AssistantPreferences_Serialize = {
+	model: AssistantModel,
+};
+
+export type AssistantStatus = {
+	/**  `true` if the credential store has an API key. */
+	has_key: boolean,
 };
 
 /**  The result of a request to delete a branch. */
@@ -182,6 +298,21 @@ export type BranchInfo = {
 };
 
 export type ChangeKind = "added" | "modified" | "deleted" | "renamed" | "copied" | "type-changed";
+
+/**  One message of the conversation. */
+export type ChatMessage = {
+	role: Role,
+	text: string,
+};
+
+/**  Data about an answer that ended. */
+export type ChatOutcome = {
+	stop: StopKind,
+	/**  The model that wrote the answer. */
+	model: string,
+	input_tokens: number,
+	output_tokens: number,
+};
 
 /**  One column of a result. */
 export type Column = Column_Serialize | Column_Deserialize;
@@ -446,6 +577,26 @@ export type Engine =
 /**  Environment marker. The UI shows it before the user runs SQL. */
 export type Environment = "development" | "staging" | "production";
 
+/**  Why the application does not read a plan. */
+export type ExplainRejection = "no-statement" | "many-statements" | "already-explain" | "not-explainable" | "analyze-changes-data";
+
+/**  Result of a plan read. A statement that fails is a normal result, not a command error. */
+export type ExplainResult = ExplainResult_Serialize | ExplainResult_Deserialize;
+
+/**  Result of a plan read. A statement that fails is a normal result, not a command error. */
+export type ExplainResult_Deserialize = { status: "plan"; 
+/**  The statement that the database ran. */
+statement: string; plan: string; 
+/**  `true` if the plan has more rows than the application reads. */
+is_truncated: boolean } | { status: "rejected"; reason: ExplainRejection; message: string } | { status: "failed"; error: QueryError_Deserialize };
+
+/**  Result of a plan read. A statement that fails is a normal result, not a command error. */
+export type ExplainResult_Serialize = { status: "plan"; 
+/**  The statement that the database ran. */
+statement: string; plan: string; 
+/**  `true` if the plan has more rows than the application reads. */
+is_truncated: boolean } | { status: "rejected"; reason: ExplainRejection; message: string } | { status: "failed"; error: QueryError_Serialize };
+
 /**  Result of a CSV export. A failed statement is a normal result, not a command error. */
 export type ExportResult = ExportResult_Serialize | ExportResult_Deserialize;
 
@@ -671,6 +822,11 @@ export type Preferences_Deserialize = {
 	history_retention_days?: number,
 	/**  When the application asks before a run. Each environment has its own rule. */
 	guardrails?: Guardrails_Deserialize,
+	/**
+	 *  The settings of the AI assistant. The API key is not here. It is in the
+	 *  credential store of the operating system.
+	 */
+	assistant?: AssistantPreferences_Deserialize,
 };
 
 export type Preferences_Serialize = {
@@ -679,6 +835,11 @@ export type Preferences_Serialize = {
 	history_retention_days: number,
 	/**  When the application asks before a run. Each environment has its own rule. */
 	guardrails: Guardrails_Serialize,
+	/**
+	 *  The settings of the AI assistant. The API key is not here. It is in the
+	 *  credential store of the operating system.
+	 */
+	assistant: AssistantPreferences_Serialize,
 };
 
 /**  A query failure. */
@@ -759,6 +920,8 @@ export type Risk = "drop" | "truncate" | "alter" |
 "write-file" | 
 /**  `INSTALL` and `LOAD` add program code to the database engine. */
 "load-extension";
+
+export type Role = "user" | "assistant";
 
 /**
  *  The report of one run. `open_result` identifies the result of the last statement,
@@ -888,6 +1051,15 @@ export type StatusReport_Serialize = {
 	files: FileStatus_Serialize[],
 };
 
+/**  Why the answer ended. */
+export type StopKind = 
+/**  The answer is complete. */
+"complete" | 
+/**  The answer got to the maximum length. It is not complete. */
+"truncated" | 
+/**  The AI service declined the request. */
+"refused";
+
 /**  One open editor tab. */
 export type TabState = TabState_Serialize | TabState_Deserialize;
 
@@ -912,6 +1084,13 @@ export type TabState_Serialize = {
 	content: string | null,
 	connection_id: ConnectionId | null,
 };
+
+/**  The type of work that the user asks for. */
+export type Task = 
+/**  Write or change SQL. */
+"sql" | 
+/**  Analyze an execution plan. */
+"plan";
 
 /**  A range in the script, in UTF-16 code units. */
 export type TextRange = {

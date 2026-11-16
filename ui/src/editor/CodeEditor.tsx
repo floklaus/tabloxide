@@ -33,6 +33,8 @@ export type CodeEditorHandle = {
   getTarget: () => RunTarget
   /** Moves the cursor to `offset` and gives the focus to the editor. */
   focusAt: (offset: number) => void
+  /** Replaces the selection with `text` and gives the focus to the editor. */
+  insertText: (text: string) => void
 }
 
 export type CodeEditorProps = {
@@ -175,6 +177,16 @@ export function CodeEditor(props: CodeEditorProps) {
       if (!view) return
       const position = Math.min(offset, view.state.doc.length)
       view.dispatch({ selection: { anchor: position }, scrollIntoView: true })
+      view.focus()
+    },
+    insertText: (text) => {
+      const view = viewRef.current
+      if (!view) return
+      view.dispatch({
+        ...view.state.replaceSelection(text),
+        scrollIntoView: true,
+        userEvent: 'input.paste',
+      })
       view.focus()
     },
   }))

@@ -45,6 +45,13 @@ This will be the first release.
 - A dialog asks for a user name, a password, or a passphrase when Git or SSH needs one.
 - The application updates the file tree, the open tabs, and the Git status after a different program changed files.
 
+### AI assistant
+
+- A side panel writes SQL for the schema of the connected database. Each SQL block of an answer has a button that inserts it into the editor. The application does not run it.
+- The panel reads the execution plan of the statement at the cursor with `EXPLAIN`, and asks for an analysis with suggestions. On request, it uses `EXPLAIN ANALYZE` for a statement that reads data.
+- The assistant uses the Claude API of Anthropic with your API key. The key is in the credential store of the operating system. The preferences select the model.
+- A request sends the structure of the database, the conversation, and the plan text. It sends no rows, no passwords, and no connection settings.
+
 ### Safety
 
 - The application can ask before a run. The preferences have one rule for each environment: never, before a destructive statement, or before each run.

@@ -21,6 +21,7 @@ Phase 1 of `docs/Implementation Plan.md` (milestones M0 to M6) is complete in co
 - **Branches:** Create, switch, rename, and delete.
 - **Commit history:** The commits of the current branch, with the files and the diff of each commit.
 - **Merge conflicts:** A side-by-side view for each file with a conflict. You edit the result, or you copy blocks from the incoming version. You can abort the merge.
+- **AI assistant:** A side panel that writes SQL for the schema of the connected database. It also analyzes the execution plan of a statement. It uses the Claude API of Anthropic with your API key. Refer to [AI assistant](docs/user/assistant.md).
 - **Safety:** Confirmation before a run. The preferences have one rule for each environment (development, staging, production): never, before a destructive statement, or before each run. Read-only connections.
 
 ## Install
@@ -34,6 +35,7 @@ To use the Git functions, install Git and make sure that `git` is in the `PATH`.
 ## Documentation
 
 - [Install Tabloxide](docs/user/install.md): the procedures for Linux, macOS, and Windows, the update, the removal, and the data locations.
+- [AI assistant](docs/user/assistant.md): the setup, the data that a request sends, and the procedures.
 - [Troubleshooting](docs/user/troubleshooting.md): known problems and their solutions.
 - [Contribute to Tabloxide](CONTRIBUTING.md): the rules and the checks for a change.
 - [Security policy](SECURITY.md): how to report a vulnerability.
@@ -52,6 +54,7 @@ To use the Git functions, install Git and make sure that `git` is in the `PATH`.
 | `Left`, `Right`, `Home`, `End` on an editor tab        | Move to a different editor tab.                                       |
 | `Delete` on an editor tab                              | Closes the editor tab.                                                |
 | Arrow keys, `Home`, `End` in the file tree             | Move between the files. `Right` opens a folder, and `Left` closes it. |
+| `Enter` in the request field of the assistant          | Sends the request. `Shift+Enter` adds a line.                         |
 | `Escape`, then `Tab` in the editor                     | Moves the focus out of the editor.                                    |
 | `Escape`                                               | Closes a dialog.                                                      |
 
@@ -64,6 +67,9 @@ On macOS, use `Cmd` in place of `Ctrl`.
 - A Git message that the application shows has no user and no password in its URLs.
 - The application sends your answer to a credential prompt of Git only to Git. It does not store the answer and does not write it to a log. To store a credential, configure a credential helper or an SSH agent for Git.
 - The file tree and the editor read and write files only in the workspace folder.
+- The AI assistant sends data to Anthropic only when you send a request or select "Analyze plan". A request has the structure of the database, the conversation, and the plan text. It has no rows, no passwords, and no connection settings. [AI assistant](docs/user/assistant.md) gives the full list.
+- The API key of the AI assistant is in the credential store of the operating system. It is not in a file, in the preferences, or in an error message.
+- The application never runs SQL that the AI assistant wrote. You insert it into the editor and run it.
 - A DuckDB statement can read and write files on your disk, and it can install and load extensions. Do not run a script that you do not know against a DuckDB connection.
   - The application asks before `COPY ... TO`, `EXPORT DATABASE`, `INSTALL`, and `LOAD`, unless the rule of the environment in the preferences is "Never".
   - DuckDB does not install an extension from the network automatically. You must use `INSTALL`.
@@ -120,6 +126,7 @@ cargo test -p tabloxide-adapter-postgres -- --ignored
 | `crates/adapter-duckdb`   | DuckDB adapter                                                     |
 | `crates/git`              | Wrapper for the system `git` executable                            |
 | `crates/workspace`        | Project configuration, local state, history, secret references     |
+| `crates/assistant`        | AI assistant: schema text, request text, client for the Claude API |
 | `src-tauri`               | Tauri commands and application wiring                              |
 | `ui`                      | React application                                                  |
 | `docs`                    | Feature backlog, implementation plan, and user documentation       |

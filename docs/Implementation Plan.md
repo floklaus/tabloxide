@@ -318,6 +318,17 @@ Not measured: the build on macOS and on Windows, and the build time on the CI ma
 
 Set the sequence of these items from user feedback after the public release.
 
+Status on 2026-11-16: the product owner added an AI assistant to this phase, and it is complete in code. It writes SQL for the schema of the connected database, and it analyzes the plan of a statement that it reads with `EXPLAIN`. Thus the item "Explain-plan view" has a first part: the plan as text with an analysis. A graphic view of the plan is not started.
+
+Decisions of the product owner for the assistant:
+
+* The AI service is the Claude API of Anthropic, with the API key of the user. The code calls the service through the interface `ChatProvider` of `crates/assistant`, so that a second service needs only a second implementation.
+* A request sends the structure of the database, the conversation, and the plan text. It sends no rows.
+* The plan comes from `EXPLAIN`. `EXPLAIN ANALYZE` is on request, and only for a statement that reads data.
+* The assistant is a side panel. The application never runs the SQL of an answer.
+
+Not done: a test against the real service. The tests use a local test server and a test provider.
+
 ## 7. Tests
 
 | Level | Tool | Scope |

@@ -5,7 +5,9 @@ mod credentials;
 mod error;
 mod state;
 
-use commands::{app, connections, files, git, local, queries, schema, sessions, workspace};
+use commands::{
+    app, assistant, connections, files, git, local, queries, schema, sessions, workspace,
+};
 use tauri_specta::{Builder, ErrorHandlingMode, collect_commands};
 
 /// Builds the typed command set. The TypeScript bindings come from this builder.
@@ -70,6 +72,12 @@ fn specta_builder() -> Builder<tauri::Wry> {
             local::preferences_save,
             local::ui_state_load,
             local::ui_state_save,
+            assistant::assistant_status,
+            assistant::assistant_key_set,
+            assistant::assistant_key_delete,
+            assistant::assistant_ask,
+            assistant::assistant_cancel,
+            assistant::assistant_explain,
         ])
 }
 

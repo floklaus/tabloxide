@@ -24,6 +24,13 @@ export function CodeEditor(props: CodeEditorProps) {
       inputRef.current?.focus()
       inputRef.current?.setSelectionRange(offset, offset)
     },
+    insertText: (text) => {
+      const input = inputRef.current
+      if (!input) return
+      const { selectionStart: from, selectionEnd: to } = input
+      onChange(value.slice(0, from) + text + value.slice(to))
+      input.focus()
+    },
   }))
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {

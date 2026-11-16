@@ -9,6 +9,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   editor: { font_size: 14, tab_width: 2, line_numbers: true, word_wrap: false },
   history_retention_days: 90,
   guardrails: { development: 'risky', staging: 'risky', production: 'always' },
+  assistant: { model: 'claude-opus-5-5' },
 }
 
 export const LIMITS = {

@@ -21,21 +21,54 @@ pub enum SecretError {
     NotInStore,
 }
 
-/// Storage for connection passwords. The key is the connection identifier.
+/// Returns the name of the store entry that holds the password of a connection.
+fn connection_entry(id: &ConnectionId) -> String {
+    format!("connection:{id}")
+}
+
+/// Storage for secrets. An entry name identifies each secret.
+///
+/// The password of a connection has an entry name that comes from the connection
+/// identifier. A different part of the application can keep a secret, for example
+/// an API key, under its own entry name.
 pub trait SecretStore: Send + Sync {
     /// # Errors
     /// Returns an error if the store is not available.
-    fn get(&self, id: &ConnectionId) -> Result<Option<Secret>, SecretError>;
+    fn get_entry(&self, entry: &str) -> Result<Option<Secret>, SecretError>;
 
     /// # Errors
     /// Returns an error if the store is not available.
-    fn set(&self, id: &ConnectionId, secret: &Secret) -> Result<(), SecretError>;
+    fn set_entry(&self, entry: &str, secret: &Secret) -> Result<(), SecretError>;
 
-    /// Removes the password. It is not an error if the store has no password for `id`.
+    /// Removes the secret. It is not an error if the store has no secret for `entry`.
     ///
     /// # Errors
     /// Returns an error if the store is not available.
-    fn delete(&self, id: &ConnectionId) -> Result<(), SecretError>;
+    fn delete_entry(&self, entry: &str) -> Result<(), SecretError>;
+
+    /// Returns the password of a connection.
+    ///
+    /// # Errors
+    /// Returns an error if the store is not available.
+    fn get(&self, id: &ConnectionId) -> Result<Option<Secret>, SecretError> {
+        self.get_entry(&connection_entry(id))
+    }
+
+    /// Stores the password of a connection.
+    ///
+    /// # Errors
+    /// Returns an error if the store is not available.
+    fn set(&self, id: &ConnectionId, secret: &Secret) -> Result<(), SecretError> {
+        self.set_entry(&connection_entry(id), secret)
+    }
+
+    /// Removes the password of a connection. It is not an error if the store has none.
+    ///
+    /// # Errors
+    /// Returns an error if the store is not available.
+    fn delete(&self, id: &ConnectionId) -> Result<(), SecretError> {
+        self.delete_entry(&connection_entry(id))
+    }
 }
 
 /// Keychain on macOS, Credential Manager on Windows, Secret Service on Linux.
@@ -48,27 +81,27 @@ fn unavailable(error: &keyring::Error) -> SecretError {
     SecretError::StoreUnavailable(error.to_string())
 }
 
-fn entry(id: &ConnectionId) -> Result<keyring::Entry, SecretError> {
-    keyring::Entry::new(KEYRING_SERVICE, &format!("connection:{id}")).map_err(|e| unavailable(&e))
+fn entry(name: &str) -> Result<keyring::Entry, SecretError> {
+    keyring::Entry::new(KEYRING_SERVICE, name).map_err(|e| unavailable(&e))
 }
 
 impl SecretStore for KeyringStore {
-    fn get(&self, id: &ConnectionId) -> Result<Option<Secret>, SecretError> {
-        match entry(id)?.get_password() {
+    fn get_entry(&self, name: &str) -> Result<Option<Secret>, SecretError> {
+        match entry(name)?.get_password() {
             Ok(password) => Ok(Some(Secret::new(password))),
             Err(keyring::Error::NoEntry) => Ok(None),
             Err(error) => Err(unavailable(&error)),
         }
     }
 
-    fn set(&self, id: &ConnectionId, secret: &Secret) -> Result<(), SecretError> {
-        entry(id)?
+    fn set_entry(&self, name: &str, secret: &Secret) -> Result<(), SecretError> {
+        entry(name)?
             .set_password(secret.expose())
             .map_err(|e| unavailable(&e))
     }
 
-    fn delete(&self, id: &ConnectionId) -> Result<(), SecretError> {
-        match entry(id)?.delete_credential() {
+    fn delete_entry(&self, name: &str) -> Result<(), SecretError> {
+        match entry(name)?.delete_credential() {
             Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
             Err(error) => Err(unavailable(&error)),
         }
@@ -78,11 +111,11 @@ impl SecretStore for KeyringStore {
 /// Store that keeps passwords in memory. Use it in tests.
 #[derive(Debug, Default)]
 pub struct MemoryStore {
-    secrets: Mutex<HashMap<ConnectionId, Secret>>,
+    secrets: Mutex<HashMap<String, Secret>>,
 }
 
 impl MemoryStore {
-    fn lock(&self) -> std::sync::MutexGuard<'_, HashMap<ConnectionId, Secret>> {
+    fn lock(&self) -> std::sync::MutexGuard<'_, HashMap<String, Secret>> {
         self.secrets
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -90,17 +123,17 @@ impl MemoryStore {
 }
 
 impl SecretStore for MemoryStore {
-    fn get(&self, id: &ConnectionId) -> Result<Option<Secret>, SecretError> {
-        Ok(self.lock().get(id).cloned())
+    fn get_entry(&self, entry: &str) -> Result<Option<Secret>, SecretError> {
+        Ok(self.lock().get(entry).cloned())
     }
 
-    fn set(&self, id: &ConnectionId, secret: &Secret) -> Result<(), SecretError> {
-        self.lock().insert(id.clone(), secret.clone());
+    fn set_entry(&self, entry: &str, secret: &Secret) -> Result<(), SecretError> {
+        self.lock().insert(entry.to_owned(), secret.clone());
         Ok(())
     }
 
-    fn delete(&self, id: &ConnectionId) -> Result<(), SecretError> {
-        self.lock().remove(id);
+    fn delete_entry(&self, entry: &str) -> Result<(), SecretError> {
+        self.lock().remove(entry);
         Ok(())
     }
 }
@@ -135,6 +168,25 @@ mod tests {
 
     fn no_env(_: &str) -> Option<String> {
         None
+    }
+
+    #[test]
+    fn an_entry_with_its_own_name_is_separate_from_the_connection_passwords() {
+        let store = MemoryStore::default();
+        let id = ConnectionId::from("a");
+        store.set(&id, &Secret::new("pw")).unwrap();
+
+        store
+            .set_entry("assistant:test", &Secret::new("key"))
+            .unwrap();
+        store.delete(&id).unwrap();
+
+        assert_eq!(store.get(&id).unwrap(), None);
+        assert_eq!(
+            store.get_entry("assistant:test").unwrap().unwrap().expose(),
+            "key"
+        );
+        assert_eq!(store.get_entry("connection:a").unwrap(), None);
     }
 
     #[test]

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { RunTarget } from '../bindings'
 import { CodeEditor, type CodeEditorHandle } from '../editor/CodeEditor'
+import { setActiveEditor } from '../editor/editorBridge'
 import { usePreferencesStore } from '../preferences/preferencesStore'
 import { TabBar } from '../tabs/TabBar'
 import { isDirty, useTabsStore } from '../tabs/tabsStore'
@@ -28,6 +29,11 @@ export function QueryEditor() {
   const connectState = useQuery((state) => state.connectState)
   const runState = useQuery((state) => state.runState)
   const jumpTo = useQuery((state) => state.jumpTo)
+
+  useEffect(() => {
+    setActiveEditor(editorRef)
+    return () => setActiveEditor(null)
+  }, [])
 
   useEffect(() => {
     if (jumpTo === null) return

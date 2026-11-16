@@ -46,6 +46,7 @@ describe('PreferencesDialog', () => {
         staging: 'risky' as const,
         production: 'always' as const,
       },
+      assistant: { model: 'claude-opus-5-5' as const },
     }
     preferencesSave.mockResolvedValue({ status: 'ok', data: changed })
     render(<PreferencesDialog onClose={onClose} />)
@@ -106,5 +107,40 @@ describe('PreferencesDialog', () => {
 
     expect(preferencesSave).not.toHaveBeenCalled()
     expect(onClose).toHaveBeenCalled()
+  })
+
+  test('stores the model of the assistant', async () => {
+    const user = userEvent.setup()
+    preferencesSave.mockResolvedValue({
+      status: 'ok',
+      data: DEFAULT_PREFERENCES,
+    })
+    render(<PreferencesDialog onClose={() => {}} />)
+
+    await user.selectOptions(
+      screen.getByLabelText('Model'),
+      'claude-sonnet-5-5',
+    )
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(preferencesSave).toHaveBeenCalledWith({
+      ...DEFAULT_PREFERENCES,
+      assistant: { model: 'claude-sonnet-5-5' },
+    })
+  })
+
+  test('the Enter key in the API key field stores the key and does not close the dialog', async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    render(<PreferencesDialog onClose={onClose} />)
+
+    await user.type(
+      screen.getByLabelText('API key of Anthropic'),
+      'sk-test{Enter}',
+    )
+
+    expect(commands.assistantKeySet).toHaveBeenCalledWith('sk-test')
+    expect(preferencesSave).not.toHaveBeenCalled()
+    expect(onClose).not.toHaveBeenCalled()
   })
 })

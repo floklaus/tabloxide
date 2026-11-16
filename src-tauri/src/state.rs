@@ -8,9 +8,11 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use tabloxide_adapter_duckdb::DuckDbAdapter;
 use tabloxide_adapter_postgres::PostgresAdapter;
+use tabloxide_assistant::{AnthropicProvider, ChatProvider, SchemaContext};
 use tabloxide_core::{ConnectionId, DbAdapter, Engine, QuerySession};
 use tabloxide_git::AskpassServer;
 use tabloxide_workspace::{KeyringStore, LocalState, SecretStore, Workspace, WorkspaceWatcher};
+use tokio::sync::Notify;
 
 /// Identifier of an open database session.
 pub type SessionId = u32;
@@ -21,6 +23,7 @@ pub struct SessionEntry {
     pub session: Arc<QuerySession>,
     pub connection_id: ConnectionId,
     pub connection_name: String,
+    pub engine: Engine,
 }
 
 pub struct AppState {
@@ -37,6 +40,12 @@ pub struct AppState {
     /// The server for the credential prompts of Git. The first remote operation starts it.
     askpass: Mutex<Option<Arc<AskpassServer>>>,
     credentials: Arc<CredentialRequests>,
+    /// The AI service of the assistant.
+    assistant: Arc<dyn ChatProvider>,
+    /// The schema that the assistant read for each session.
+    assistant_schemas: Mutex<HashMap<SessionId, Arc<SchemaContext>>>,
+    /// The requests to the AI service that are in progress. A notification cancels one.
+    asks: Mutex<HashMap<u32, Arc<Notify>>>,
 }
 
 impl Default for AppState {
@@ -52,6 +61,9 @@ impl Default for AppState {
             watcher: Mutex::new(None),
             askpass: Mutex::new(None),
             credentials: Arc::default(),
+            assistant: Arc::new(AnthropicProvider::default()),
+            assistant_schemas: Mutex::new(HashMap::new()),
+            asks: Mutex::new(HashMap::new()),
         }
     }
 }
@@ -106,7 +118,56 @@ impl AppState {
     }
 
     pub fn remove_session(&self, id: SessionId) -> Option<Arc<QuerySession>> {
-        self.lock_sessions().remove(&id).map(|entry| entry.session)
+        // The session goes first. Then a schema read that ends now does not add an entry.
+        let session = self.lock_sessions().remove(&id).map(|entry| entry.session);
+        self.lock_schemas().remove(&id);
+        session
+    }
+
+    pub fn assistant(&self) -> Arc<dyn ChatProvider> {
+        Arc::clone(&self.assistant)
+    }
+
+    fn lock_schemas(&self) -> MutexGuard<'_, HashMap<SessionId, Arc<SchemaContext>>> {
+        self.assistant_schemas
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+    }
+
+    /// Returns the schema that the assistant read for a session.
+    pub fn assistant_schema(&self, id: SessionId) -> Option<Arc<SchemaContext>> {
+        self.lock_schemas().get(&id).cloned()
+    }
+
+    /// Keeps the schema for the next requests of a session. A session that closed
+    /// during the schema read gets no entry, because no code would remove it.
+    pub fn set_assistant_schema(&self, id: SessionId, schema: Arc<SchemaContext>) {
+        let sessions = self.lock_sessions();
+        if sessions.contains_key(&id) {
+            self.lock_schemas().insert(id, schema);
+        }
+    }
+
+    fn lock_asks(&self) -> MutexGuard<'_, HashMap<u32, Arc<Notify>>> {
+        self.asks.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    /// Records a request to the AI service. A notification on the result cancels it.
+    pub fn start_ask(&self, id: u32) -> Arc<Notify> {
+        let cancel = Arc::new(Notify::new());
+        self.lock_asks().insert(id, Arc::clone(&cancel));
+        cancel
+    }
+
+    pub fn end_ask(&self, id: u32) {
+        self.lock_asks().remove(&id);
+    }
+
+    /// Cancels a request to the AI service, if it is in progress.
+    pub fn cancel_ask(&self, id: u32) {
+        if let Some(cancel) = self.lock_asks().get(&id) {
+            cancel.notify_one();
+        }
     }
 
     /// Returns the local state database. The first call opens it in `state_dir`.
@@ -146,10 +207,13 @@ impl AppState {
 
     /// Removes all sessions and returns them, so that the caller can close them.
     pub fn take_sessions(&self) -> Vec<Arc<QuerySession>> {
-        self.lock_sessions()
+        let sessions = self
+            .lock_sessions()
             .drain()
             .map(|(_, entry)| entry.session)
-            .collect()
+            .collect();
+        self.lock_schemas().clear();
+        sessions
     }
 }
 

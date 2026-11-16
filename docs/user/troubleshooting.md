@@ -333,3 +333,61 @@ Tabloxide does not write a log file. Thus a report must contain the data that fo
 Before you send a report, remove passwords, tokens, host names, and private data from the text.
 
 Do not report a security problem in public. Refer to the `SECURITY.md` file of the repository.
+
+## 10. AI assistant
+
+For the setup and the procedures, refer to [AI assistant](assistant.md).
+
+### "No API key is stored"
+
+**Solution:** enter the API key in the assistant panel or in the preferences, group **AI assistant**.
+
+### "Check the API key in the preferences"
+
+**Cause:** the service rejected the key, or the key has no permission for the model.
+
+**Solution:** make a new key in the console of Anthropic, and enter it in the preferences.
+
+### "Check the credit of the account of the API key"
+
+**Solution:** add credit to the account in the console of Anthropic.
+
+### "Wait a minute, then send the request again"
+
+**Cause:** the account sent more requests or more text than its limit permits.
+
+**Solution:** wait, then send the request again. If this occurs frequently, select a different model in the preferences, or ask Anthropic for a higher limit.
+
+### "The request to the AI service failed"
+
+**Cause:** the computer has no connection to `api.anthropic.com`.
+
+**Solution:** check the network connection. If your network uses a proxy, set the proxy in the operating system or in the variable `HTTPS_PROXY`, then start Tabloxide again.
+
+### "The AI service declined this request"
+
+**Cause:** a safety control of the service stopped the request.
+
+**Solution:** change the text of the request. If the request was correct, select a different model in the preferences.
+
+### "The conversation is too long for one request"
+
+**Solution:** select **New conversation**.
+
+### The assistant uses a table or a column that does not exist
+
+**Cause:** the structure of the database changed after the first request, or the request has only the name of the table.
+
+**Solution:** select **Read the schema again**, then send the request again. If the database has more than 200 tables and views, put the columns of the table into your request.
+
+### "EXPLAIN ANALYZE runs the statement"
+
+**Cause:** **Measure the times** is set, and the statement does not only read data.
+
+**Solution:** clear **Measure the times**. Then Tabloxide uses `EXPLAIN`, which does not run the statement.
+
+### "The application makes a plan only for a statement that starts with SELECT…"
+
+**Cause:** the statement at the cursor is not a statement for which the database makes a plan, or it starts with `EXPLAIN`, `ANALYZE`, or a parenthesis.
+
+**Solution:** put the cursor in a `SELECT`, `INSERT`, `UPDATE`, `DELETE`, or `MERGE` statement. Remove `EXPLAIN` and its options from the start of the statement. Tabloxide adds `EXPLAIN`.

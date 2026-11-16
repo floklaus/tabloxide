@@ -38,6 +38,25 @@ pub fn is_pageable(statement: &str) -> bool {
     is(first, "with") && !words.any(|token| DATA_CHANGE_WORDS.iter().any(|w| is(token, w)))
 }
 
+/// Returns the first keyword of `statement` in lower case. Comments before it do not count.
+/// Returns `None` if the statement does not start with a word, for example if it
+/// starts with a parenthesis.
+#[must_use]
+pub fn first_keyword(statement: &str) -> Option<String> {
+    let tokens = tokenize(statement);
+    let first = tokens.iter().find(|t| t.kind != TokenKind::Comment)?;
+    (first.kind == TokenKind::Word).then(|| statement[first.start..first.end].to_ascii_lowercase())
+}
+
+/// Returns `true` if `statement` has the word `word` outside of comments, strings,
+/// and quoted identifiers. The comparison ignores ASCII case.
+#[must_use]
+pub fn has_word(statement: &str, word: &str) -> bool {
+    tokenize(statement)
+        .iter()
+        .any(|token| token.is_word(statement, word))
+}
+
 /// Why a statement needs a confirmation before it runs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
@@ -125,6 +144,23 @@ pub fn can_contain_password(statement: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn first_keyword_ignores_comments_and_needs_a_word() {
+        assert_eq!(
+            first_keyword("-- c\n/* d */ Select 1").as_deref(),
+            Some("select")
+        );
+        assert_eq!(first_keyword("(analyze) delete from t"), None);
+        assert_eq!(first_keyword("  "), None);
+    }
+
+    #[test]
+    fn has_word_ignores_strings_and_comments() {
+        assert!(has_word("select * INTO copy from t", "into"));
+        assert!(!has_word("select 'into' from t -- into", "into"));
+        assert!(!has_word("select intox from t", "into"));
+    }
 
     #[test]
     fn classifies_statements() {

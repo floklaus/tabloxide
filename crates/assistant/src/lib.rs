@@ -1,0 +1,28 @@
+//! The AI assistant: it writes SQL for a database schema and analyzes execution plans.
+//!
+//! - [`collect_schema`] reads the structure of a database. [`SchemaContext::render`]
+//!   makes the text that goes to the AI service. The text has no rows.
+//! - [`chat_request`] makes a request from the conversation and the schema.
+//! - [`ChatProvider`] is the interface to an AI service. [`AnthropicProvider`]
+//!   calls the Claude API.
+//! - [`explain_statement`] makes the statement that reads an execution plan.
+
+mod anthropic;
+mod context;
+mod error;
+mod explain;
+mod prompt;
+mod provider;
+mod sse;
+
+pub use anthropic::AnthropicProvider;
+pub use context::{
+    MAX_DETAILED_RELATIONS, RelationContext, SchemaContext, SchemaGroup, collect_schema,
+};
+pub use error::{AssistantError, AssistantErrorKind};
+pub use explain::{ExplainRejection, explain_statement, plan_text};
+pub use prompt::{Database, MAX_CONVERSATION_CHARS, chat_request};
+pub use provider::{
+    ChatMessage, ChatOutcome, ChatProvider, ChatRequest, Effort, Role, StopKind, SystemPart, Task,
+    TextSink,
+};

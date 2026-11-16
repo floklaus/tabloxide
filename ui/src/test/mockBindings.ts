@@ -79,6 +79,7 @@ export function createBindingsMock() {
             staging: 'risky',
             production: 'always',
           },
+          assistant: { model: 'claude-opus-5-5' },
         },
       }),
       preferencesSave: vi.fn(),
@@ -87,6 +88,16 @@ export function createBindingsMock() {
         data: { tabs: [], active_tab: null },
       }),
       uiStateSave: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
+      assistantStatus: vi
+        .fn()
+        .mockResolvedValue({ status: 'ok', data: { has_key: true } }),
+      assistantKeySet: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
+      assistantKeyDelete: vi
+        .fn()
+        .mockResolvedValue({ status: 'ok', data: null }),
+      assistantAsk: vi.fn(),
+      assistantCancel: vi.fn().mockResolvedValue(undefined),
+      assistantExplain: vi.fn(),
     },
   }
 }

@@ -57,4 +57,35 @@ describe('AppShell', () => {
     ).toBeInTheDocument()
     expect(document.documentElement.dataset.theme).toBe('light')
   })
+
+  test('shows and hides the assistant panel, and keeps the selection', async () => {
+    appInfo.mockResolvedValue({ name: 'Tabloxide', version: '0.1.0' })
+    const user = userEvent.setup()
+    const { unmount } = render(<AppShell />)
+    const toggle = screen.getByRole('button', { name: 'Assistant' })
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.queryByRole('region', { name: 'Assistant' })).toBeNull()
+
+    const editor = screen.getByRole('region', { name: 'Editor' })
+
+    await user.click(toggle)
+
+    // A new editor element would lose the undo history and the cursor of each tab.
+    expect(screen.getByRole('region', { name: 'Editor' })).toBe(editor)
+
+    expect(screen.getByRole('button', { name: 'Assistant' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(
+      screen.getByRole('region', { name: 'Assistant' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Editor' })).toBeInTheDocument()
+
+    unmount()
+    render(<AppShell />)
+    expect(
+      screen.getByRole('region', { name: 'Assistant' }),
+    ).toBeInTheDocument()
+  })
 })
