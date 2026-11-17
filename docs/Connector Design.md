@@ -115,8 +115,8 @@ Limits that the design does not remove:
 
 | Stage | Content                                                                                                                                                      | Needs from the product owner                  | Status      |
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------- | ----------- |
-| 1     | The protocol file, the generated code, and its tests.                                                                                                        | Nothing                                       | In work     |
-| 2     | The SDK and the connector host. The DuckDB connector runs from the development folder. The adapter tests of DuckDB pass through the connector.               | Nothing                                       | Not started |
+| 1     | The protocol file, the generated code, and its tests.                                                                                                        | Nothing                                       | Complete    |
+| 2     | The SDK and the connector host. The DuckDB connector runs from the development folder. The adapter tests of DuckDB pass through the connector.               | Nothing                                       | Next        |
 | 3     | A measurement: the installer size and the speed of a large result, with DuckDB built in and as a connector. The result decides if the design continues.      | Nothing                                       | Not started |
 | 4     | The core without DuckDB. `Engine` as a name. The connection form and the preferences for connectors.                                                         | Nothing                                       | Not started |
 | 5     | The index file, the download, the checksum, the signature, and the install from a file.                                                                      | A signature key and a place for the downloads | Not started |

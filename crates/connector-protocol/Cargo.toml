@@ -1,0 +1,23 @@
+[package]
+name = "tabloxide-connector-protocol"
+description = "The gRPC contract between Tabloxide and a database connector"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+prost = "0.14.6"
+tonic = { version = "0.14.9", default-features = false, features = ["codegen", "transport"] }
+tonic-prost = "0.14.9"
+
+[build-dependencies]
+protox = "0.10.0"
+tonic-prost-build = "0.14.9"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }
+tokio-stream = { version = "0.1", features = ["net"] }
+tonic = { version = "0.14.9", default-features = false, features = ["router"] }
+
+[lints]
+workspace = true

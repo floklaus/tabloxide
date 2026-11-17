@@ -1,0 +1,364 @@
+// The contract between Tabloxide and a database connector.
+//
+// A connector is a separate program. Tabloxide starts it, and the connector serves
+// this gRPC service on the loopback address. `docs/Connector Design.md` gives the
+// rules for the start, the token, and the stop of a connector.
+//
+// Version rules: a new field or a new operation is a minor change, and the package
+// name stays the same. A change that an older program cannot read needs a new
+// package (`v2`).
+syntax = "proto3";
+
+package tabloxide.connector.v1;
+
+service Connector {
+  // Tells what the connector is and what it can do. It needs no database.
+  rpc Describe(DescribeRequest) returns (DescribeResponse);
+
+  // Opens a connection, reads the server version, and closes the connection.
+  rpc TestConnection(TestConnectionRequest) returns (ConnectResponse);
+
+  // Opens a session. One session runs one statement at a time.
+  rpc OpenSession(OpenSessionRequest) returns (ConnectResponse);
+
+  // Closes a session. This cancels its active statement.
+  rpc CloseSession(SessionRequest) returns (Empty);
+
+  // Runs one statement. The stream has the start of the result, then the pages of
+  // rows, in sequence. The last page has `end`. When the client stops the stream
+  // before the end, the connector cancels the statement.
+  //
+  // The connector reads rows from the database only as fast as the client reads the
+  // stream. It does not keep the full result in memory.
+  rpc Execute(ExecuteRequest) returns (stream ExecuteEvent);
+
+  // Cancels the active statement of a session. The `Execute` stream of that
+  // statement then ends with an error of the kind CANCELLED.
+  rpc Cancel(SessionRequest) returns (StatusResponse);
+
+  // Lists the schemas of the database. User schemas are first.
+  rpc ListSchemas(SessionRequest) returns (ListSchemasResponse);
+
+  // Lists the tables and the views of one schema, in alphabetical sequence.
+  rpc ListRelations(ListRelationsRequest) returns (ListRelationsResponse);
+
+  // Reads the columns, the indexes, and the constraints of one table or view.
+  rpc DescribeRelation(DescribeRelationRequest) returns (DescribeRelationResponse);
+
+  // Returns a statement that reads a maximum of `limit` rows of a table or view.
+  // The statement has the identifiers in the quotes of the engine.
+  rpc SampleStatement(SampleStatementRequest) returns (SampleStatementResponse);
+}
+
+message Empty {}
+
+// ---------- Describe ----------
+
+message DescribeRequest {}
+
+message DescribeResponse {
+  // Identifier of the engine in connection profiles, for example `duckdb`.
+  // Lower case letters, digits, and `-`.
+  string engine = 1;
+  // Name of the engine for the user, for example `DuckDB`.
+  string display_name = 2;
+  // Version of the connector program.
+  string connector_version = 3;
+  // The minor version of this protocol that the connector implements.
+  uint32 protocol_minor = 4;
+  Capabilities capabilities = 5;
+}
+
+// Functions that the engine supports. The UI hides a function that is not supported.
+message Capabilities {
+  // `Cancel` stops a statement.
+  bool cancel = 1;
+  // A connection can use a Unix socket.
+  bool unix_socket = 2;
+  // The database is a file on the machine of the user, not a server.
+  bool file_database = 3;
+}
+
+// ---------- Connection ----------
+
+enum TlsMode {
+  TLS_MODE_UNSPECIFIED = 0;
+  TLS_MODE_DISABLE = 1;
+  TLS_MODE_PREFER = 2;
+  TLS_MODE_REQUIRE = 3;
+  TLS_MODE_VERIFY_FULL = 4;
+}
+
+// The settings of one connection. They have no password.
+message ConnectionProfile {
+  // Identifier of the connection in the workspace. It is stable.
+  string id = 1;
+  string host = 2;
+  uint32 port = 3;
+  // The database name. For a file engine, the path of the database file.
+  string database = 4;
+  string user = 5;
+  TlsMode tls_mode = 6;
+  // Directory of the Unix socket. With a value, the connector ignores `host`.
+  optional string socket_path = 7;
+  uint32 connect_timeout_secs = 8;
+  // Maximum time for one statement. Without a value, there is no limit.
+  optional uint32 query_timeout_secs = 9;
+  // The session refuses statements that change data or the structure.
+  bool read_only = 10;
+  // More connection parameters of the database driver.
+  map<string, string> params = 11;
+}
+
+message TestConnectionRequest {
+  ConnectionProfile profile = 1;
+  // The password or the token. The connector must not write it to a log or a file.
+  optional string password = 2;
+  // The folder of the workspace. A file engine uses it as the start of a relative path.
+  string workspace_root = 3;
+}
+
+message OpenSessionRequest {
+  ConnectionProfile profile = 1;
+  // The password or the token. The connector must not write it to a log or a file.
+  optional string password = 2;
+  // The folder of the workspace. A file engine uses it as the start of a relative path.
+  string workspace_root = 3;
+}
+
+message ServerInfo {
+  // The version text of the database server or the database library.
+  string version = 1;
+}
+
+// The answer to `TestConnection` and `OpenSession`.
+message ConnectResponse {
+  oneof result {
+    Connected connected = 1;
+    ConnectError error = 2;
+  }
+}
+
+message Connected {
+  ServerInfo server = 1;
+  // Identifier of the session. `TestConnection` gives no value.
+  optional uint64 session_id = 2;
+}
+
+enum ConnectErrorKind {
+  CONNECT_ERROR_KIND_UNSPECIFIED = 0;
+  CONNECT_ERROR_KIND_AUTHENTICATION = 1;
+  CONNECT_ERROR_KIND_MISSING_SECRET = 2;
+  CONNECT_ERROR_KIND_DATABASE_NOT_FOUND = 3;
+  CONNECT_ERROR_KIND_TLS = 4;
+  CONNECT_ERROR_KIND_UNREACHABLE = 5;
+  CONNECT_ERROR_KIND_TIMEOUT = 6;
+  CONNECT_ERROR_KIND_INVALID_CONFIGURATION = 7;
+  CONNECT_ERROR_KIND_OTHER = 8;
+}
+
+// A connection failure. `detail` is the message of the driver or the server.
+// It must not contain the password.
+message ConnectError {
+  ConnectErrorKind kind = 1;
+  string detail = 2;
+}
+
+message SessionRequest {
+  uint64 session_id = 1;
+}
+
+// ---------- Statements ----------
+
+message ExecuteRequest {
+  uint64 session_id = 1;
+  // The text of one statement.
+  string statement = 2;
+  // The largest number of rows in one page.
+  uint32 page_rows = 3;
+}
+
+message ExecuteEvent {
+  oneof event {
+    // The first event of a statement that started.
+    ResultStart start = 1;
+    // Rows. The last page has `end`.
+    Page page = 2;
+    // The statement failed. This is the last event.
+    QueryError error = 3;
+  }
+}
+
+message ResultStart {
+  // `false` for a statement that returns no rows. Then `columns` is empty.
+  bool has_rows = 1;
+  repeated Column columns = 2;
+}
+
+// General category of a column type. The grid uses it for the alignment and the sort.
+enum ColumnKind {
+  COLUMN_KIND_UNSPECIFIED = 0;
+  COLUMN_KIND_NUMBER = 1;
+  COLUMN_KIND_BOOLEAN = 2;
+  COLUMN_KIND_TEMPORAL = 3;
+  COLUMN_KIND_JSON = 4;
+  COLUMN_KIND_TEXT = 5;
+  COLUMN_KIND_OTHER = 6;
+}
+
+message Column {
+  string name = 1;
+  // Type name of the database engine.
+  optional string type_name = 2;
+  ColumnKind kind = 3;
+}
+
+message Page {
+  repeated Row rows = 1;
+  // Has a value when the statement is complete.
+  optional Completion end = 2;
+}
+
+message Completion {
+  // Number of rows that the statement returned or changed.
+  uint64 affected_rows = 1;
+}
+
+message Row {
+  repeated Cell cells = 1;
+}
+
+// One value. A cell without a value is NULL.
+message Cell {
+  oneof value {
+    // The value in the text form of the database engine.
+    string text = 1;
+  }
+}
+
+enum QueryErrorKind {
+  QUERY_ERROR_KIND_UNSPECIFIED = 0;
+  // The database rejected the statement.
+  QUERY_ERROR_KIND_DATABASE = 1;
+  // The user cancelled the statement.
+  QUERY_ERROR_KIND_CANCELLED = 2;
+  // The statement did not answer in the query timeout of the connection.
+  QUERY_ERROR_KIND_TIMEOUT = 3;
+  // The connection to the server closed.
+  QUERY_ERROR_KIND_CONNECTION_LOST = 4;
+  QUERY_ERROR_KIND_OTHER = 5;
+}
+
+message QueryError {
+  QueryErrorKind kind = 1;
+  string message = 2;
+  optional string detail = 3;
+  optional string hint = 4;
+  // Error code of the database engine, for example SQLSTATE.
+  optional string code = 5;
+  // Position of the error in the statement text, in characters. The first character is 1.
+  optional uint32 position = 6;
+}
+
+// The answer to an operation that returns no data.
+message StatusResponse {
+  // Has a value if the operation failed.
+  optional QueryError error = 1;
+}
+
+// ---------- Catalog ----------
+
+message SchemaInfo {
+  string name = 1;
+  // `true` for a schema of the database engine itself.
+  bool is_system = 2;
+}
+
+message ListSchemasResponse {
+  repeated SchemaInfo schemas = 1;
+  optional QueryError error = 2;
+}
+
+message ListRelationsRequest {
+  uint64 session_id = 1;
+  string schema = 2;
+}
+
+enum RelationKind {
+  RELATION_KIND_UNSPECIFIED = 0;
+  RELATION_KIND_TABLE = 1;
+  RELATION_KIND_VIEW = 2;
+  RELATION_KIND_MATERIALIZED_VIEW = 3;
+  RELATION_KIND_FOREIGN_TABLE = 4;
+}
+
+message RelationInfo {
+  string name = 1;
+  RelationKind kind = 2;
+}
+
+message ListRelationsResponse {
+  repeated RelationInfo relations = 1;
+  optional QueryError error = 2;
+}
+
+message DescribeRelationRequest {
+  uint64 session_id = 1;
+  string schema = 2;
+  string relation = 3;
+}
+
+message ColumnInfo {
+  string name = 1;
+  string data_type = 2;
+  bool is_nullable = 3;
+  // The default expression of the column.
+  optional string default = 4;
+  bool is_primary_key = 5;
+}
+
+message IndexInfo {
+  string name = 1;
+  // The statement that makes the index.
+  string definition = 2;
+  bool is_unique = 3;
+  bool is_primary = 4;
+}
+
+enum ConstraintKind {
+  CONSTRAINT_KIND_UNSPECIFIED = 0;
+  CONSTRAINT_KIND_PRIMARY_KEY = 1;
+  CONSTRAINT_KIND_FOREIGN_KEY = 2;
+  CONSTRAINT_KIND_UNIQUE = 3;
+  CONSTRAINT_KIND_CHECK = 4;
+  CONSTRAINT_KIND_EXCLUSION = 5;
+  CONSTRAINT_KIND_OTHER = 6;
+}
+
+message ConstraintInfo {
+  string name = 1;
+  ConstraintKind kind = 2;
+  string definition = 3;
+}
+
+message RelationDetail {
+  repeated ColumnInfo columns = 1;
+  repeated IndexInfo indexes = 2;
+  repeated ConstraintInfo constraints = 3;
+}
+
+message DescribeRelationResponse {
+  RelationDetail detail = 1;
+  optional QueryError error = 2;
+}
+
+message SampleStatementRequest {
+  uint64 session_id = 1;
+  string schema = 2;
+  string relation = 3;
+  uint32 limit = 4;
+}
+
+message SampleStatementResponse {
+  string statement = 1;
+}
