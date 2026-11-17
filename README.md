@@ -36,6 +36,7 @@ To use the Git functions, install Git and make sure that `git` is in the `PATH`.
 
 - [Install Tabloxide](docs/user/install.md): the procedures for Linux, macOS, and Windows, the update, the removal, and the data locations.
 - [AI assistant](docs/user/assistant.md): the setup, the data that a request sends, and the procedures.
+- [Connector design](docs/Connector%20Design.md): how a separate program connects Tabloxide to a database engine.
 - [Backlog for more kinds of databases](docs/Database%20Kinds%20Backlog.md): the work to support relational, graph, time-series, document, and vector databases.
 - [Troubleshooting](docs/user/troubleshooting.md): known problems and their solutions.
 - [Contribute to Tabloxide](CONTRIBUTING.md): the rules and the checks for a change.

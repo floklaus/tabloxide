@@ -4,6 +4,8 @@ This backlog lists the work to support five kinds of databases in Tabloxide: rel
 
 Status on 2026-11-16: this is a list of work, not a plan. No item is started. Section 9 lists the decisions that the product owner must make before a plan is possible.
 
+Status on 2026-11-16, later: the product owner decided that an engine other than PostgreSQL is a connector, which is a separate program that Tabloxide downloads on demand. `Connector Design.md` gives the design and its stages. This answers decision 10 of section 9. Each adapter item of this backlog (for example R1, G3, D4, V5) is thus a connector, and the items F1 and F15 are part of the connector work.
+
 ## 1. How to read this backlog
 
 Each item has an identifier, a priority, and a size.
