@@ -76,6 +76,32 @@ pub fn explain_statement(sql: &str, analyze: bool) -> Result<String, ExplainReje
     Ok(format!("EXPLAIN ANALYZE {statement}"))
 }
 
+/// Returns the statement that reads the plan of the one statement in `sql` as JSON.
+/// PostgreSQL and DuckDB accept the same options. The checks are the same as for
+/// [`explain_statement`].
+///
+/// # Errors
+///
+/// Returns the reason if [`explain_statement`] rejects `sql`.
+pub fn explain_json_statement(sql: &str, analyze: bool) -> Result<String, ExplainRejection> {
+    let text = explain_statement(sql, analyze)?;
+    let (prefix, options) = if analyze {
+        ("EXPLAIN ANALYZE ", "EXPLAIN (ANALYZE, FORMAT JSON) ")
+    } else {
+        ("EXPLAIN ", "EXPLAIN (FORMAT JSON) ")
+    };
+    // `explain_statement` always starts its text with the prefix.
+    let statement = text.strip_prefix(prefix).unwrap_or(&text);
+    Ok(format!("{options}{statement}"))
+}
+
+/// Returns the JSON text of a plan from the rows of an `EXPLAIN (FORMAT JSON)` result.
+/// PostgreSQL gives one cell. DuckDB gives a name and the plan, and the plan is last.
+#[must_use]
+pub fn plan_json(rows: &[Row]) -> Option<String> {
+    rows.first()?.iter().rev().flatten().next().cloned()
+}
+
 /// Returns the text of a plan from the rows of an `EXPLAIN` result.
 /// Each cell that has a value becomes one or more lines.
 #[must_use]
@@ -130,6 +156,38 @@ mod tests {
                 "{sql}"
             );
         }
+    }
+
+    #[test]
+    fn asks_for_the_plan_as_json() {
+        assert_eq!(
+            explain_json_statement("select * from t;", false).unwrap(),
+            "EXPLAIN (FORMAT JSON) select * from t"
+        );
+        assert_eq!(
+            explain_json_statement("select * from t", true).unwrap(),
+            "EXPLAIN (ANALYZE, FORMAT JSON) select * from t"
+        );
+        assert_eq!(
+            explain_json_statement("delete from t", true),
+            Err(ExplainRejection::AnalyzeChangesData)
+        );
+    }
+
+    #[test]
+    fn reads_the_json_of_the_two_engines() {
+        let postgres = vec![vec![Some("[{\"Plan\": {}}]".to_owned())]];
+        let duckdb = vec![vec![
+            Some("physical_plan".to_owned()),
+            Some("[{\"name\": \"SEQ_SCAN\"}]".to_owned()),
+        ]];
+
+        assert_eq!(plan_json(&postgres).as_deref(), Some("[{\"Plan\": {}}]"));
+        assert_eq!(
+            plan_json(&duckdb).as_deref(),
+            Some("[{\"name\": \"SEQ_SCAN\"}]")
+        );
+        assert_eq!(plan_json(&[]), None);
     }
 
     #[test]

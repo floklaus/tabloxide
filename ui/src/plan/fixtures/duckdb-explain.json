@@ -1,0 +1,107 @@
+[
+  {
+    "name": "PROJECTION",
+    "children": [
+      {
+        "name": "ORDER_BY",
+        "children": [
+          {
+            "name": "PROJECTION",
+            "children": [
+              {
+                "name": "PROJECTION",
+                "children": [
+                  {
+                    "name": "PERFECT_HASH_GROUP_BY",
+                    "children": [
+                      {
+                        "name": "PROJECTION",
+                        "children": [
+                          {
+                            "name": "PROJECTION",
+                            "children": [
+                              {
+                                "name": "HASH_JOIN",
+                                "children": [
+                                  {
+                                    "name": "FILTER",
+                                    "children": [
+                                      {
+                                        "name": "SEQ_SCAN",
+                                        "children": [],
+                                        "extra_info": {
+                                          "Table": "memory.main.t",
+                                          "Type": "Sequential Scan",
+                                          "Projections": ["id", "g"],
+                                          "Filters": "(id > 5)",
+                                          "Estimated Cardinality": "2000"
+                                        }
+                                      }
+                                    ],
+                                    "extra_info": {
+                                      "Expression": "(id <= 99)",
+                                      "Estimated Cardinality": "2000"
+                                    }
+                                  },
+                                  {
+                                    "name": "SEQ_SCAN",
+                                    "children": [],
+                                    "extra_info": {
+                                      "Table": "memory.main.u",
+                                      "Type": "Sequential Scan",
+                                      "Projections": "id",
+                                      "Filters": "(id > 5)",
+                                      "Estimated Cardinality": "20"
+                                    }
+                                  }
+                                ],
+                                "extra_info": {
+                                  "Join Type": "INNER",
+                                  "Conditions": "id = id",
+                                  "Estimated Cardinality": "4"
+                                }
+                              }
+                            ],
+                            "extra_info": {
+                              "Projections": ["CAST(#0 AS TINYINT)", "#1"],
+                              "Estimated Cardinality": "4"
+                            }
+                          }
+                        ],
+                        "extra_info": {
+                          "Projections": "g",
+                          "Estimated Cardinality": "4"
+                        }
+                      }
+                    ],
+                    "extra_info": {
+                      "Groups": "#0",
+                      "Aggregates": "count_star()",
+                      "Estimated Cardinality": "3"
+                    }
+                  }
+                ],
+                "extra_info": {
+                  "Projections": ["CAST(#0 AS BIGINT)", "#1"],
+                  "Estimated Cardinality": "3"
+                }
+              }
+            ],
+            "extra_info": {
+              "Projections": ["CAST(#0 AS TINYINT)", "#1"],
+              "Estimated Cardinality": "3"
+            }
+          }
+        ],
+        "extra_info": {
+          "Order By": "g ASC",
+          "Estimated Cardinality": "3"
+        }
+      }
+    ],
+    "extra_info": {
+      "Projections": ["CAST(#0 AS BIGINT)", "#1"],
+      "Estimated Cardinality": "3"
+    }
+  }
+]

@@ -1330,6 +1330,103 @@ body {
   white-space: nowrap;
 }
 
+.plan {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-height: 0;
+  overflow: auto;
+}
+
+.plan__statement {
+  max-height: 6rem;
+  margin: 0;
+  padding: 0.4rem;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+.plan__tree,
+.plan__children {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan__children {
+  margin-left: 1rem;
+  padding-left: 0.5rem;
+  border-left: 1px solid var(--color-border);
+}
+
+.plan__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.15rem 0;
+  cursor: pointer;
+}
+
+.plan__operation {
+  font-weight: 600;
+}
+
+.plan__target,
+.plan__numbers {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.plan__target {
+  font-family: var(--font-mono);
+}
+
+.plan__bar {
+  display: inline-block;
+  width: 5rem;
+  height: 0.4rem;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--color-border);
+}
+
+.plan__bar span {
+  display: block;
+  height: 100%;
+  background: var(--color-focus);
+}
+
+.plan__step--hot > details > .plan__summary .plan__bar span {
+  background: var(--color-danger);
+}
+
+.plan__details {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.1rem 0.75rem;
+  margin: 0.1rem 0 0.3rem 1.25rem;
+  font-size: 0.8rem;
+}
+
+.plan__details div {
+  display: contents;
+}
+
+.plan__details dt {
+  color: var(--color-text-muted);
+}
+
+.plan__details dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
 .snippet__preview {
   max-height: 12rem;
   margin: 0.5rem 0;

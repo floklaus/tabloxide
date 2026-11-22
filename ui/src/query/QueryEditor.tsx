@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { RunTarget } from '../bindings'
 import { combineSources } from '../completion/combine'
 import { completeSql } from '../completion/sqlCompletion'
+import { usePlanStore } from '../plan/planStore'
 import { SaveSnippetDialog } from '../snippets/SaveSnippetDialog'
 import { completeSnippets } from '../snippets/snippets'
 import { CodeEditor, type CodeEditorHandle } from '../editor/CodeEditor'
@@ -99,6 +100,24 @@ export function QueryEditor() {
           <span className="query__server">Connects at the first run</span>
         )}
         <span className="title-bar__spacer" />
+        <button
+          type="button"
+          className="button button--small"
+          disabled={!active || runState !== 'idle'}
+          title="Show the plan of the statement at the cursor. The statement does not run."
+          onClick={() => void usePlanStore.getState().read(false)}
+        >
+          Explain
+        </button>
+        <button
+          type="button"
+          className="button button--small"
+          disabled={!active || runState !== 'idle'}
+          title="Run the statement at the cursor and show the measured plan. Only for a statement that reads data."
+          onClick={() => void usePlanStore.getState().read(true)}
+        >
+          Explain analyze
+        </button>
         <button
           type="button"
           className="button button--small"

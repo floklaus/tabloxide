@@ -6,6 +6,7 @@ pub mod connections;
 pub mod files;
 pub mod git;
 pub mod local;
+pub mod plan;
 pub mod queries;
 pub mod schema;
 pub mod sessions;

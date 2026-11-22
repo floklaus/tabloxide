@@ -17,6 +17,14 @@ export const commands = {
 	 *  application again. The UI asks the user first, because unsaved text is lost.
 	 */
 	updateInstall: (options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("update_install", undefined, options)),
+	/**
+	 *  Reads the execution plan of the one statement in `sql` as JSON.
+	 * 
+	 *  Without `analyze`, the database does not run the statement. With `analyze`, the
+	 *  database runs it. Thus `analyze` is permitted only for a statement that reads data.
+	 *  The query history does not record the plan read. This closes the open result.
+	 */
+	planRead: (sessionId: number, sql: string, analyze: boolean, options?: InvokeOptions) => typedError<PlanRead_Serialize, CommandError>(__TAURI_INVOKE("plan_read", { sessionId, sql, analyze }, options)),
 	/**  Opens the folder `path` as the workspace and adds it to the recent list. */
 	workspaceOpen: (path: string, options?: InvokeOptions) => typedError<WorkspaceSnapshot_Serialize, CommandError>(__TAURI_INVOKE("workspace_open", { path }, options)),
 	/**  Returns the open workspace, or `null` if no workspace is open. */
@@ -823,6 +831,27 @@ total_rows: number | null } |
 { type: "command"; affected_rows: number } | 
 /**  The statement failed. `location` is the error position in the script. */
 { type: "failed"; error: QueryError_Serialize; location: Location | null };
+
+/**  Result of a plan read. A statement that fails is a normal result, not a command error. */
+export type PlanRead = PlanRead_Serialize | PlanRead_Deserialize;
+
+/**  Result of a plan read. A statement that fails is a normal result, not a command error. */
+export type PlanRead_Deserialize = { status: "plan"; 
+/**  The statement that the database ran. */
+statement: string; 
+/**  The plan in the JSON form of the database engine. */
+json: string; 
+/**  `true` if the database ran the statement and measured it. */
+is_analyzed: boolean } | { status: "rejected"; reason: ExplainRejection; message: string } | { status: "failed"; error: QueryError_Deserialize };
+
+/**  Result of a plan read. A statement that fails is a normal result, not a command error. */
+export type PlanRead_Serialize = { status: "plan"; 
+/**  The statement that the database ran. */
+statement: string; 
+/**  The plan in the JSON form of the database engine. */
+json: string; 
+/**  `true` if the database ran the statement and measured it. */
+is_analyzed: boolean } | { status: "rejected"; reason: ExplainRejection; message: string } | { status: "failed"; error: QueryError_Serialize };
 
 export type Preferences = Preferences_Serialize | Preferences_Deserialize;
 

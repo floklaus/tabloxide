@@ -20,7 +20,9 @@ pub use context::{
     MAX_DETAILED_RELATIONS, RelationContext, SchemaContext, SchemaGroup, collect_schema,
 };
 pub use error::{AssistantError, AssistantErrorKind};
-pub use explain::{ExplainRejection, explain_statement, plan_text};
+pub use explain::{
+    ExplainRejection, explain_json_statement, explain_statement, plan_json, plan_text,
+};
 pub use prompt::{Database, MAX_CONVERSATION_CHARS, chat_request};
 pub use provider::{
     ChatMessage, ChatOutcome, ChatProvider, ChatRequest, Effort, Role, StopKind, SystemPart, Task,

@@ -1,4 +1,5 @@
 import { DiffView } from '../git/DiffView'
+import { PlanView } from '../plan/PlanView'
 import { HistoryPanel } from '../history/HistoryPanel'
 import {
   activeQueryStore,
@@ -93,6 +94,8 @@ function RowsStatus(props: { statement: StatementReport; index: number }) {
     text += ' loaded. The export closed this result.'
   } else if (!outcome.is_complete && stopReason === 'assistant') {
     text += ' loaded. The assistant used the session and closed this result.'
+  } else if (!outcome.is_complete && stopReason === 'plan') {
+    text += ' loaded. The plan read used the session and closed this result.'
   } else if (!outcome.is_complete) {
     text += ' loaded. The fetch stopped before the end.'
   } else if (total !== null && total > loaded) {
@@ -236,6 +239,7 @@ export function ResultsPane() {
     { id: 'results', label: 'Results' },
     { id: 'history', label: 'History' },
     { id: 'table', label: 'Table' },
+    { id: 'plan', label: 'Plan' },
     { id: 'diff', label: 'Diff' },
   ]
 
@@ -258,6 +262,7 @@ export function ResultsPane() {
       {view === 'results' && <Results />}
       {view === 'history' && <HistoryPanel onRun={() => setView('results')} />}
       {view === 'table' && <TableDetail />}
+      {view === 'plan' && <PlanView />}
       {view === 'diff' && <DiffView />}
     </section>
   )

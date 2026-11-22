@@ -6,7 +6,8 @@ mod error;
 mod state;
 
 use commands::{
-    app, assistant, connections, files, git, local, queries, schema, sessions, updates, workspace,
+    app, assistant, connections, files, git, local, plan, queries, schema, sessions, updates,
+    workspace,
 };
 use tauri_specta::{Builder, ErrorHandlingMode, collect_commands};
 
@@ -18,6 +19,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
             app::app_info,
             updates::update_check,
             updates::update_install,
+            plan::plan_read,
             workspace::workspace_open,
             workspace::workspace_current,
             workspace::workspace_close,

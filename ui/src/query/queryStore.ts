@@ -29,7 +29,7 @@ export type ConnectState =
 export type RunState = 'idle' | 'running' | 'cancelling'
 
 /** Why the application stopped the fetch of a result before its end. */
-export type StopReason = 'user' | 'row-limit' | 'export' | 'assistant'
+export type StopReason = 'user' | 'row-limit' | 'export' | 'assistant' | 'plan'
 
 type OpenResult = { resultId: number; index: number }
 

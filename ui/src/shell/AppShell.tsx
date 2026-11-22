@@ -11,6 +11,7 @@ import { ConnectionList } from '../connections/ConnectionList'
 import { FileTree } from '../files/FileTree'
 import { resetCatalogs } from '../completion/catalogCache'
 import { GitPanel } from '../git/GitPanel'
+import { usePlanStore } from '../plan/planStore'
 import { invalidateSnippets } from '../snippets/snippets'
 import { useGitStore } from '../git/gitStore'
 import { startWorkspaceWatch } from '../workspace/watch'
@@ -95,6 +96,7 @@ export function AppShell() {
       resetQueryStores()
       resetCatalogs()
       invalidateSnippets()
+      usePlanStore.getState().reset()
       useSchemaStore.getState().reset()
       useGitStore.getState().reset()
       useAssistantStore.getState().reset()

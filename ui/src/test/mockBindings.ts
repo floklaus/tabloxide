@@ -88,6 +88,7 @@ export function createBindingsMock() {
         status: 'ok',
         data: { status: 'not-configured' },
       }),
+      planRead: vi.fn(),
       updateInstall: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
       uiStateLoad: vi.fn().mockResolvedValue({
         status: 'ok',

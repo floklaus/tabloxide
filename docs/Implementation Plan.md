@@ -356,6 +356,14 @@ Status of M14 on 2026-11-22: M14 is complete in code.
 * Six built-in snippets are available. A snippet of the workspace replaces a built-in snippet with the same name.
 * The completion list joins the snippets, the catalog, and the keywords.
 
+Status of M15 on 2026-11-22: M15 is complete in code.
+
+* The command `plan_read` reads the plan with `EXPLAIN (FORMAT JSON)` or `EXPLAIN (ANALYZE, FORMAT JSON)`. It uses the checks of the assistant: one statement, and `ANALYZE` only for a statement that reads data.
+* The UI reads the JSON of each engine into one tree. The tests use real plans of PostgreSQL 17 and DuckDB 2.0.
+* After `ANALYZE`, the share of a step is its time without its child steps. Without `ANALYZE`, the share of a PostgreSQL step is its cost without its child steps. DuckDB gives no cost, so its estimated plan has no shares.
+* The view marks the three steps with the largest share, and each step whose actual rows are 10 times more or fewer than the estimate.
+* Like the assistant, the plan read uses the session of the tab and closes its open result. The results pane tells the user why the result ended.
+
 Status on 2026-11-16: the product owner added an AI assistant to this phase, and it is complete in code. It writes SQL for the schema of the connected database, and it analyzes the plan of a statement that it reads with `EXPLAIN`. Thus the item "Explain-plan view" has a first part: the plan as text with an analysis. A graphic view of the plan is not started.
 
 Decisions of the product owner for the assistant:
