@@ -57,6 +57,7 @@ To use the Git functions, install Git and make sure that `git` is in the `PATH`.
 | `Ctrl+F`                                               | Opens the search in the editor.                                           |
 | `Ctrl+Space`                                           | Opens the completion list in the editor.                                  |
 | `Shift+Alt+F`                                          | Formats the selection, or all text of the tab.                            |
+| `F1`                                                   | Shows all keyboard shortcuts, with a search.                              |
 | `Ctrl+K`                                               | Opens the command palette. Type `>` for commands, `@` for schema objects. |
 | `Ctrl+T`                                               | Opens a new query tab.                                                    |
 | `Ctrl+O`                                               | Opens a file of the workspace.                                            |

@@ -10,6 +10,8 @@ type ModalProps = {
   title: string
   onClose: () => void
   children: ReactNode
+  /** A wide dialog has space for two columns of content. */
+  isWide?: boolean
 }
 
 const FOCUSABLE = [
@@ -47,7 +49,12 @@ function keepFocusInside(event: KeyboardEvent, panel: HTMLElement) {
  * A modal dialog. The Escape key closes it. Focus moves into it when it opens,
  * and the Tab key does not move the focus out of it.
  */
-export function Modal({ title, onClose, children }: ModalProps) {
+export function Modal({
+  title,
+  onClose,
+  children,
+  isWide = false,
+}: ModalProps) {
   const titleId = useId()
   const panelRef = useRef<HTMLDivElement>(null)
 
@@ -74,7 +81,7 @@ export function Modal({ title, onClose, children }: ModalProps) {
     >
       <div
         ref={panelRef}
-        className="modal"
+        className={isWide ? 'modal modal--wide' : 'modal'}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

@@ -16,7 +16,7 @@ export type Panels = {
   statusBar: boolean
 }
 
-export type Dialog = 'preferences' | 'clone' | 'palette'
+export type Dialog = 'preferences' | 'clone' | 'palette' | 'shortcuts'
 
 /** The connection that the connection form edits. */
 export type ConnectionEditing = { profile: ConnectionProfile; isNew: boolean }

@@ -413,4 +413,23 @@ describe('shortcuts', () => {
 
     expect(useTabsStore.getState().tabs.length).toBe(before + 1)
   })
+
+  test('F1 and Help › Keyboard shortcuts open the list of the shortcuts', async () => {
+    const user = renderShell()
+
+    await user.keyboard('{F1}')
+    expect(
+      screen.getByRole('dialog', { name: 'Keyboard shortcuts' }),
+    ).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).toBeNull()
+
+    const menu = await openMenu(user, 'Help')
+    await user.click(
+      within(menu).getByRole('menuitem', { name: /Keyboard shortcuts/ }),
+    )
+    expect(
+      screen.getByRole('dialog', { name: 'Keyboard shortcuts' }),
+    ).toBeInTheDocument()
+  })
 })

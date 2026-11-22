@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Engine, RecentWorkspaceInfo } from '../bindings'
 import { relativeTime } from '../lib/relativeTime'
 import { Icon, Logo } from '../shell/icons'
+import { ShortcutsDialog } from '../help/ShortcutsDialog'
 import { ThemeToggle } from '../theme/ThemeToggle'
 import { CloneDialog } from './CloneDialog'
 import { useWorkspaceStore } from './workspaceStore'
@@ -29,10 +30,16 @@ export function WelcomeScreen() {
   const openFolder = useWorkspaceStore((state) => state.openFolder)
   const openPath = useWorkspaceStore((state) => state.openPath)
   const [showsClone, setShowsClone] = useState(false)
+  const [showsShortcuts, setShowsShortcuts] = useState(false)
 
-  // Ctrl+O opens a folder, as in the File menu of a workspace.
+  // Ctrl+O opens a folder, as in the File menu of a workspace. F1 shows the shortcuts.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'F1' && !event.defaultPrevented) {
+        event.preventDefault()
+        setShowsShortcuts(true)
+        return
+      }
       const isModifier = event.ctrlKey || event.metaKey
       if (
         isModifier &&
@@ -51,8 +58,19 @@ export function WelcomeScreen() {
   return (
     <main className="welcome">
       <div className="welcome__theme">
+        <button
+          type="button"
+          className="button button--small"
+          aria-keyshortcuts="F1"
+          onClick={() => setShowsShortcuts(true)}
+        >
+          Keyboard shortcuts
+        </button>
         <ThemeToggle />
       </div>
+      {showsShortcuts && (
+        <ShortcutsDialog onClose={() => setShowsShortcuts(false)} />
+      )}
       <div className="welcome__intro">
         <h1 className="welcome__title">
           <Logo size={44} />

@@ -104,6 +104,23 @@ describe('WelcomeScreen', () => {
     )
   })
 
+  test('F1 and the button show the keyboard shortcuts', async () => {
+    render(<WelcomeScreen />)
+
+    await userEvent.keyboard('{F1}')
+    expect(
+      screen.getByRole('dialog', { name: 'Keyboard shortcuts' }),
+    ).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Keyboard shortcuts' }),
+    )
+
+    expect(
+      screen.getByRole('dialog', { name: 'Keyboard shortcuts' }),
+    ).toBeInTheDocument()
+  })
+
   test('shows the error message of a failed open', () => {
     useWorkspaceStore.setState({ error: 'Not a directory.' })
 

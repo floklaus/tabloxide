@@ -21,7 +21,7 @@ export type Command = {
   id: string
   label: string
   /** The menu of the command. The palette shows it as the group. */
-  group: 'File' | 'Connections' | 'Git' | 'View' | 'Query'
+  group: 'File' | 'Connections' | 'Git' | 'View' | 'Query' | 'Help'
   /** The key combination, for example `Ctrl+Shift+N`. `Ctrl` is `Cmd` on macOS. */
   shortcut?: string
   /** `false` if the command cannot run now. */
@@ -368,6 +368,15 @@ export function buildCommands(): Command[] {
       isEnabled: () =>
         useGitStore.getState().overview?.state === 'no-repository',
       run: () => useGitStore.getState().init(),
+    },
+    // Help
+    {
+      id: 'help.shortcuts',
+      label: 'Keyboard shortcuts',
+      group: 'Help',
+      shortcut: 'F1',
+      isEnabled: always,
+      run: () => shell().openDialog('shortcuts'),
     },
     // View
     {

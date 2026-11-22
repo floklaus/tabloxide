@@ -303,6 +303,8 @@ body {
   position: absolute;
   top: 0.5rem;
   right: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
 }
 
 .welcome__intro {
@@ -574,6 +576,10 @@ body {
   border: 1px solid var(--color-border);
   border-radius: 6px;
   background: var(--color-bg);
+}
+
+.modal--wide {
+  width: min(100%, 56rem);
 }
 
 .modal__title {
@@ -2191,4 +2197,66 @@ body {
 .palette__empty {
   padding: 0.75rem 0.5rem;
   color: var(--color-text-muted);
+}
+
+/* ---------- Keyboard shortcuts ---------- */
+
+.shortcuts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: 1rem 1.5rem;
+  max-height: 60vh;
+  margin: 0.75rem 0;
+  overflow: auto;
+}
+
+.shortcuts__table {
+  align-self: start;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.shortcuts__table caption {
+  padding-bottom: 0.25rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+.shortcuts__table td {
+  padding: 0.25rem 0.5rem 0.25rem 0;
+  border-top: 1px solid var(--color-border);
+  vertical-align: top;
+}
+
+.shortcuts__table td:first-child {
+  width: 45%;
+}
+
+.shortcuts__keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.4rem;
+}
+
+.shortcuts__combination {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  white-space: nowrap;
+}
+
+.shortcuts__or {
+  margin-right: 0.25rem;
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.shortcuts kbd {
+  padding: 0 0.3rem;
+  border: 1px solid var(--color-control-border);
+  border-radius: 4px;
+  background: var(--color-surface);
+  font-family: var(--font-mono);
+  font-size: 11px;
 }

@@ -20,6 +20,7 @@ import { useResultsViewStore } from '../results/resultsViewStore'
 import { useSchemaStore } from '../schema/schemaStore'
 import { invalidateSnippets } from '../snippets/snippets'
 import { persistTabs, useTabsStore } from '../tabs/tabsStore'
+import { ShortcutsDialog } from '../help/ShortcutsDialog'
 import { CloneDialog } from '../workspace/CloneDialog'
 import { startWorkspaceWatch } from '../workspace/watch'
 import { useWorkspaceStore } from '../workspace/workspaceStore'
@@ -78,6 +79,7 @@ function Dialogs() {
       {dialog === 'preferences' && <PreferencesDialog onClose={close} />}
       {dialog === 'clone' && <CloneDialog onClose={close} />}
       {dialog === 'palette' && <CommandPalette />}
+      {dialog === 'shortcuts' && <ShortcutsDialog onClose={close} />}
       <ConnectionEditor />
     </>
   )

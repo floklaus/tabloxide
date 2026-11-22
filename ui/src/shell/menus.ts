@@ -262,5 +262,9 @@ export function buildMenus(): Menu[] {
         item('view.palette'),
       ]),
     },
+    {
+      label: 'Help',
+      items: [item('help.shortcuts')],
+    },
   ]
 }
