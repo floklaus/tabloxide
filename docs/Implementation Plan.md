@@ -364,6 +364,20 @@ Status of M15 on 2026-11-22: M15 is complete in code.
 * The view marks the three steps with the largest share, and each step whose actual rows are 10 times more or fewer than the estimate.
 * Like the assistant, the plan read uses the session of the tab and closes its open result. The results pane tells the user why the result ended.
 
+Status of the new navigation on 2026-11-22: the product owner asked for the UI of the design canvas in `.design/imported/`. The first part is complete in code.
+
+* Done:
+  * The menu bar, the command palette, the tool strips, and the status bar.
+  * The title bar widgets for the project, the connection, and the branch.
+  * The View menu with the panels, the results position, the zoom, and full screen.
+  * The themes neon and high contrast.
+* One command list feeds the menus, the palette, and the shortcuts. A menu item shows only a function that exists.
+* Not done: the layout editor with drag and drop and the custom layouts, and the density setting.
+* Not done: the assistant in its own tab, and the screens for other kinds of databases.
+* Not done because the function does not exist: Save as, Import, SSH tunnels, and certificates.
+* Also not done for the same reason: stash, the Git history of one file, and remote branches in the branch menu.
+* The design gives `Ctrl+K` to the command palette and to Commit. The palette has `Ctrl+K`. Commit has no shortcut.
+
 Status on 2026-11-16: the product owner added an AI assistant to this phase, and it is complete in code. It writes SQL for the schema of the connected database, and it analyzes the plan of a statement that it reads with `EXPLAIN`. Thus the item "Explain-plan view" has a first part: the plan as text with an analysis. A graphic view of the plan is not started.
 
 Decisions of the product owner for the assistant:

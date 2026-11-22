@@ -62,6 +62,8 @@ export type CodeEditorProps = {
   onChange: (value: string) => void
   onRun: (target: RunTarget) => void
   onSave: () => void
+  /** Receives the line and the column of the cursor, from 1, after each move. */
+  onCursorChange?: (cursor: { line: number; column: number }) => void
   /** The database engine whose SQL syntax the formatter uses. */
   engine?: Engine
   /** Receives the message when the formatter cannot read the SQL. */
@@ -80,6 +82,7 @@ type Callbacks = Pick<
   | 'completionSource'
   | 'engine'
   | 'onFormatError'
+  | 'onCursorChange'
 >
 
 /** The selection, or all text if there is no selection. */
@@ -182,6 +185,14 @@ function makeState(
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
           callbacks.current.onChange(update.state.doc.toString())
+        }
+        if (update.docChanged || update.selectionSet) {
+          const head = update.state.selection.main.head
+          const line = update.state.doc.lineAt(head)
+          callbacks.current.onCursorChange?.({
+            line: line.number,
+            column: head - line.from + 1,
+          })
         }
       }),
       EditorView.contentAttributes.of({ 'aria-label': 'SQL' }),

@@ -32,9 +32,11 @@ describe('theme', () => {
     expect(document.documentElement.dataset.theme).toBeUndefined()
   })
 
-  test('cycles system, light, dark, system', () => {
+  test('cycles through all themes and starts again', () => {
     expect(nextTheme('system')).toBe('light')
     expect(nextTheme('light')).toBe('dark')
-    expect(nextTheme('dark')).toBe('system')
+    expect(nextTheme('dark')).toBe('neon')
+    expect(nextTheme('neon')).toBe('high-contrast')
+    expect(nextTheme('high-contrast')).toBe('system')
   })
 })

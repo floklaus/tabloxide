@@ -34,9 +34,16 @@ const systemDark = {
   ...light,
   ...tokensOf(":root:not([data-theme='light'])"),
 }
+const neon = { ...light, ...tokensOf(":root[data-theme='neon']") }
+const highContrast = {
+  ...light,
+  ...tokensOf(":root[data-theme='high-contrast']"),
+}
 const themes = [
   ['light', light],
   ['dark', dark],
+  ['neon', neon],
+  ['high contrast', highContrast],
 ] as const
 
 function toRgb(hex: string): Rgb {

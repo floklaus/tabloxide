@@ -9,6 +9,8 @@ Phase 1 of `docs/Implementation Plan.md` (milestones M0 to M6) is complete in co
 - **Database engines:** PostgreSQL servers and DuckDB database files. A connection selects its engine.
 - **DuckDB:** A DuckDB connection opens a database file, or a database in memory with the file name `:memory:`. A statement can read the CSV, Parquet, and JSON files of the workspace folder directly, for example `SELECT * FROM 'data.csv'`.
 
+- **Navigation:** The title bar has a menu bar with the menus File, Connections, Git, and View. It also has widgets for the project, the connection of the tab, and the Git branch, and a command palette (`Ctrl+K`). The tool strip on the left selects the sidebar view: files, connections, schema, Git, or history. The tool strip on the right shows the assistant.
+- **View:** The View menu shows or hides each panel and puts the results below or beside the editor. It also selects a layout, a zoom, and a theme: system, light, dark, neon, or high contrast.
 - **Workspace:** A workspace is a folder with your SQL files. The file `tabloxide.toml` in that folder holds the connection definitions without secrets.
 - **Connections:** Add, edit, duplicate, delete, and test connections. A password is in the credential store of the operating system, or it comes from an environment variable.
 - **Editor:** SQL editor with tabs for files and for buffers without a file. Each tab has its own database session.
@@ -47,23 +49,39 @@ To use the Git functions, install Git and make sure that `git` is in the `PATH`.
 
 ## Keyboard shortcuts
 
-| Keys                                                   | Function                                                              |
-| ------------------------------------------------------ | --------------------------------------------------------------------- |
-| `Ctrl+Enter`                                           | Runs the selection, or the statement at the cursor.                   |
-| `Ctrl+Shift+Enter`                                     | Runs all statements of the tab.                                       |
-| `Ctrl+S`                                               | Saves the file of the tab.                                            |
-| `Ctrl+F`                                               | Opens the search in the editor.                                       |
-| `Ctrl+Space`                                           | Opens the completion list in the editor.                              |
-| `Shift+Alt+F`                                          | Formats the selection, or all text of the tab.                        |
-| Arrow keys, `Home`, `End`, `Page Up`, `Page Down`      | Move the selected cell in the result grid.                            |
-| `Ctrl+C` in the result grid                            | Copies the selected cell.                                             |
-| `Alt+Shift+Left`, `Alt+Shift+Right` in the result grid | Change the width of the column of the selected cell.                  |
-| `Left`, `Right`, `Home`, `End` on an editor tab        | Move to a different editor tab.                                       |
-| `Delete` on an editor tab                              | Closes the editor tab.                                                |
-| Arrow keys, `Home`, `End` in the file tree             | Move between the files. `Right` opens a folder, and `Left` closes it. |
-| `Enter` in the request field of the assistant          | Sends the request. `Shift+Enter` adds a line.                         |
-| `Escape`, then `Tab` in the editor                     | Moves the focus out of the editor.                                    |
-| `Escape`                                               | Closes a dialog.                                                      |
+| Keys                                                   | Function                                                                  |
+| ------------------------------------------------------ | ------------------------------------------------------------------------- |
+| `Ctrl+Enter`                                           | Runs the selection, or the statement at the cursor.                       |
+| `Ctrl+Shift+Enter`                                     | Runs all statements of the tab.                                           |
+| `Ctrl+S`                                               | Saves the file of the tab.                                                |
+| `Ctrl+F`                                               | Opens the search in the editor.                                           |
+| `Ctrl+Space`                                           | Opens the completion list in the editor.                                  |
+| `Shift+Alt+F`                                          | Formats the selection, or all text of the tab.                            |
+| `Ctrl+K`                                               | Opens the command palette. Type `>` for commands, `@` for schema objects. |
+| `Ctrl+T`                                               | Opens a new query tab.                                                    |
+| `Ctrl+O`                                               | Opens a file of the workspace.                                            |
+| `Ctrl+Alt+S`                                           | Saves all files.                                                          |
+| `Ctrl+B`                                               | Shows or hides the sidebar.                                               |
+| `Ctrl+J`                                               | Shows or hides the assistant.                                             |
+| `Ctrl+R`                                               | Shows or hides the results.                                               |
+| `Ctrl+,`                                               | Opens the preferences.                                                    |
+| `Ctrl+Shift+N`                                         | Opens the form for a new connection.                                      |
+| `F5`                                                   | Reads the schema of the connection again.                                 |
+| `Ctrl+Shift+K`                                         | Pushes the commits of the current branch.                                 |
+| `Ctrl+D`                                               | Shows the Git changes.                                                    |
+| `Ctrl++`, `Ctrl+-`, `Ctrl+0`                           | Zoom in, zoom out, and reset the zoom.                                    |
+| `F11`                                                  | Full screen.                                                              |
+| `Ctrl+Q`                                               | Quits the application.                                                    |
+| Arrow keys, `Home`, `End`, `Escape` in a menu          | Move between the items and the menus. `Right` opens a submenu.            |
+| Arrow keys, `Home`, `End`, `Page Up`, `Page Down`      | Move the selected cell in the result grid.                                |
+| `Ctrl+C` in the result grid                            | Copies the selected cell.                                                 |
+| `Alt+Shift+Left`, `Alt+Shift+Right` in the result grid | Change the width of the column of the selected cell.                      |
+| `Left`, `Right`, `Home`, `End` on an editor tab        | Move to a different editor tab.                                           |
+| `Delete` on an editor tab                              | Closes the editor tab.                                                    |
+| Arrow keys, `Home`, `End` in the file tree             | Move between the files. `Right` opens a folder, and `Left` closes it.     |
+| `Enter` in the request field of the assistant          | Sends the request. `Shift+Enter` adds a line.                             |
+| `Escape`, then `Tab` in the editor                     | Moves the focus out of the editor.                                        |
+| `Escape`                                               | Closes a dialog.                                                          |
 
 On macOS, use `Cmd` in place of `Ctrl`.
 

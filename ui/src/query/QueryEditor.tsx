@@ -3,6 +3,7 @@ import type { RunTarget } from '../bindings'
 import { combineSources } from '../completion/combine'
 import { completeSql } from '../completion/sqlCompletion'
 import { usePlanStore } from '../plan/planStore'
+import { useShellStore } from '../shell/shellStore'
 import { SaveSnippetDialog } from '../snippets/SaveSnippetDialog'
 import { completeSnippets } from '../snippets/snippets'
 import { CodeEditor, type CodeEditorHandle } from '../editor/CodeEditor'
@@ -36,6 +37,7 @@ export function QueryEditor() {
   const jumpTo = useQuery((state) => state.jumpTo)
   const [formatError, setFormatError] = useState<string | null>(null)
   const [snippetText, setSnippetText] = useState<string | null>(null)
+  const setCursor = useShellStore((state) => state.setCursor)
 
   useEffect(() => {
     setActiveEditor(editorRef)
@@ -212,6 +214,7 @@ export function QueryEditor() {
         onSave={() => void saveTab(tab.id)}
         engine={active?.engine ?? 'postgres'}
         onFormatError={setFormatError}
+        onCursorChange={setCursor}
         completionSource={combineSources(
           (context) => completeSql(context, tab.connectionId),
           completeSnippets,

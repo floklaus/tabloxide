@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { commands } from '../bindings'
 import { makeProfile, makeWorkspace } from '../test/fixtures'
 import { useWorkspaceStore } from '../workspace/workspaceStore'
+import { ConnectionEditor } from '../shell/ConnectionEditor'
+import { resetShellStore } from '../shell/shellStore'
 import { ConnectionList } from './ConnectionList'
 import { useConnectionStore } from './connectionStore'
 
@@ -21,12 +23,18 @@ const production = makeProfile({
 
 function renderList(connections = [makeProfile(), production]) {
   useWorkspaceStore.setState({ workspace: makeWorkspace(connections) })
-  render(<ConnectionList />)
+  render(
+    <>
+      <ConnectionList />
+      <ConnectionEditor />
+    </>,
+  )
   return userEvent.setup()
 }
 
 describe('ConnectionList', () => {
   beforeEach(() => {
+    resetShellStore()
     useWorkspaceStore.setState(initialWorkspaceState, true)
     useConnectionStore.setState({ tests: {} })
   })

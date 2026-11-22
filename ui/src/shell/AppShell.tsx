@@ -4,87 +4,150 @@ import {
   Separator,
   useDefaultLayout,
 } from 'react-resizable-panels'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { AssistantPanel } from '../assistant/AssistantPanel'
 import { useAssistantStore } from '../assistant/assistantStore'
-import { ConnectionList } from '../connections/ConnectionList'
-import { FileTree } from '../files/FileTree'
 import { resetCatalogs } from '../completion/catalogCache'
-import { GitPanel } from '../git/GitPanel'
-import { usePlanStore } from '../plan/planStore'
-import { invalidateSnippets } from '../snippets/snippets'
 import { useGitStore } from '../git/gitStore'
-import { startWorkspaceWatch } from '../workspace/watch'
+import { usePlanStore } from '../plan/planStore'
 import { PreferencesDialog } from '../preferences/PreferencesDialog'
 import { usePreferencesStore } from '../preferences/preferencesStore'
+import { QueryEditor } from '../query/QueryEditor'
 import { resetQueryStores } from '../query/queryStore'
 import { RunConfirmDialog } from '../query/RunConfirmDialog'
-import { useResultsViewStore } from '../results/resultsViewStore'
-import { SchemaTree } from '../schema/SchemaTree'
-import { useSchemaStore } from '../schema/schemaStore'
-import { persistTabs, useTabsStore } from '../tabs/tabsStore'
-import { QueryEditor } from '../query/QueryEditor'
 import { ResultsPane } from '../results/ResultsPane'
-import { ThemeToggle } from '../theme/ThemeToggle'
+import { useResultsViewStore } from '../results/resultsViewStore'
+import { useSchemaStore } from '../schema/schemaStore'
+import { invalidateSnippets } from '../snippets/snippets'
+import { persistTabs, useTabsStore } from '../tabs/tabsStore'
+import { CloneDialog } from '../workspace/CloneDialog'
+import { startWorkspaceWatch } from '../workspace/watch'
 import { useWorkspaceStore } from '../workspace/workspaceStore'
+import { buildCommands } from './commands'
+import { ConnectionEditor } from './ConnectionEditor'
+import { Icon, Logo } from './icons'
+import { MenuBar } from './menu/MenuBar'
+import { buildMenus } from './menus'
+import { CommandPalette } from './palette/CommandPalette'
+import { applyZoom, useShellStore } from './shellStore'
+import { handleShortcut } from './shortcuts'
+import { Sidebar } from './Sidebar'
 import { StatusBar } from './StatusBar'
-
-type SidebarView = 'files' | 'connections' | 'schema' | 'git'
-
-const SIDEBAR_VIEWS: { id: SidebarView; label: string }[] = [
-  { id: 'files', label: 'Files' },
-  { id: 'connections', label: 'Connections' },
-  { id: 'schema', label: 'Schema' },
-  { id: 'git', label: 'Git' },
-]
+import { BranchWidget, ConnectionWidget, ProjectWidget } from './TitleWidgets'
+import { LeftToolStrip, RightToolStrip } from './ToolStrip'
 
 const MAIN_LAYOUT_ID = 'tabloxide.layout.main'
 const WORK_LAYOUT_ID = 'tabloxide.layout.work'
-/** The pane library keeps one layout for each set of panes. */
-const MAIN_PANES = ['sidebar', 'work']
-const ASSISTANT_PANES = [...MAIN_PANES, 'assistant']
-const ASSISTANT_OPEN_KEY = 'tabloxide.assistant.open'
 
-function loadShowsAssistant(): boolean {
-  try {
-    return localStorage.getItem(ASSISTANT_OPEN_KEY) === 'true'
-  } catch {
-    return false
-  }
-}
-
-function storeShowsAssistant(shows: boolean): void {
-  try {
-    localStorage.setItem(ASSISTANT_OPEN_KEY, String(shows))
-  } catch {
-    // Without the storage, the panel is closed at the next start.
-  }
-}
-
-export function AppShell() {
-  const [showsAssistant, setShowsAssistant] = useState(loadShowsAssistant)
-  const mainLayout = useDefaultLayout({
-    id: MAIN_LAYOUT_ID,
-    panelIds: showsAssistant ? ASSISTANT_PANES : MAIN_PANES,
-  })
-  const workLayout = useDefaultLayout({ id: WORK_LAYOUT_ID })
-  const workspaceName = useWorkspaceStore((state) => state.workspace?.name)
+/** The messages of the workspace and of the tabs. */
+function Banners() {
   const error = useWorkspaceStore((state) => state.error)
   const setError = useWorkspaceStore((state) => state.setError)
-  const close = useWorkspaceStore((state) => state.close)
   const tabsError = useTabsStore((state) => state.error)
   const setTabsError = useTabsStore((state) => state.setError)
-  const [showsPreferences, setShowsPreferences] = useState(false)
-  const [sidebarView, setSidebarView] = useState<SidebarView>('files')
-  const toggleAssistant = () => {
-    storeShowsAssistant(!showsAssistant)
-    setShowsAssistant(!showsAssistant)
-  }
+  return (
+    <>
+      {[
+        { text: error, dismiss: () => setError(null) },
+        { text: tabsError, dismiss: () => setTabsError(null) },
+      ]
+        .filter((banner) => banner.text)
+        .map((banner) => (
+          <div key={banner.text} className="banner" role="alert">
+            <span>{banner.text}</span>
+            <button
+              type="button"
+              className="link-button"
+              onClick={banner.dismiss}
+            >
+              Dismiss
+            </button>
+          </div>
+        ))}
+    </>
+  )
+}
 
-  // The tabs and the sessions belong to the workspace. They start and end with this screen.
+/** The dialogs that the menus, the palette, and the shortcuts open. */
+function Dialogs() {
+  const dialog = useShellStore((state) => state.dialog)
+  const close = useShellStore((state) => state.closeDialog)
+  return (
+    <>
+      <RunConfirmDialog />
+      {dialog === 'preferences' && <PreferencesDialog onClose={close} />}
+      {dialog === 'clone' && <CloneDialog onClose={close} />}
+      {dialog === 'palette' && <CommandPalette />}
+      <ConnectionEditor />
+    </>
+  )
+}
+
+function TitleBar() {
+  const openDialog = useShellStore((state) => state.openDialog)
+  return (
+    <header className="title-bar">
+      <Logo />
+      <MenuBar buildMenus={buildMenus} />
+      <span className="title-bar__divider" aria-hidden="true" />
+      <ProjectWidget />
+      <ConnectionWidget />
+      <BranchWidget />
+      <span className="title-bar__spacer" />
+      <button
+        type="button"
+        className="palette-button"
+        aria-keyshortcuts="Control+K"
+        onClick={() => openDialog('palette')}
+      >
+        <Icon name="search" size={16} />
+        <span className="palette-button__text">Search or run a command</span>
+        <kbd className="palette-button__key">Ctrl+K</kbd>
+      </button>
+    </header>
+  )
+}
+
+/** The editor and the results, below or beside each other. */
+function Work() {
+  const position = useShellStore((state) => state.resultsPosition)
+  const showsResults = useShellStore((state) => state.panels.results)
+  const layout = useDefaultLayout({
+    id: `${WORK_LAYOUT_ID}.${position}`,
+    panelIds: showsResults ? ['editor', 'results'] : ['editor'],
+  })
+  return (
+    <Group
+      key={position}
+      orientation={position === 'below' ? 'vertical' : 'horizontal'}
+      defaultLayout={layout.defaultLayout}
+      onLayoutChanged={layout.onLayoutChanged}
+    >
+      <Panel id="editor" defaultSize="60%" minSize="15%">
+        <QueryEditor />
+      </Panel>
+      {showsResults && (
+        <>
+          <Separator
+            className="separator"
+            aria-label="Resize the editor and the results"
+          />
+          <Panel id="results" minSize="15%">
+            <ResultsPane />
+          </Panel>
+        </>
+      )}
+    </Group>
+  )
+}
+
+/** Loads the data of the workspace, and resets it when the workspace closes. */
+function useWorkspaceLifetime() {
   useEffect(() => {
     void usePreferencesStore.getState().load()
     void useTabsStore.getState().load()
+    // The branch widget of the title bar needs the Git state.
+    void useGitStore.getState().refresh()
     const stopPersist = persistTabs()
     // Without the watch, the application shows external changes only after a refresh.
     void startWorkspaceWatch().then((message) => {
@@ -101,138 +164,74 @@ export function AppShell() {
       useGitStore.getState().reset()
       useAssistantStore.getState().reset()
       useResultsViewStore.getState().setView('results')
+      useShellStore.getState().closeDialog()
+      useShellStore.getState().editConnection(null)
     }
   }, [])
 
+  useEffect(() => {
+    applyZoom(useShellStore.getState().zoom)
+    const onKeyDown = (event: KeyboardEvent) =>
+      handleShortcut(event, buildCommands())
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
+}
+
+export function AppShell() {
+  const panels = useShellStore((state) => state.panels)
+  const mainLayout = useDefaultLayout({
+    id: MAIN_LAYOUT_ID,
+    panelIds: [
+      ...(panels.sidebar ? ['sidebar'] : []),
+      'work',
+      ...(panels.assistant ? ['assistant'] : []),
+    ],
+  })
+  useWorkspaceLifetime()
+
   return (
     <div className="app-shell">
-      <header className="title-bar">
-        <span className="title-bar__name">Tabloxide</span>
-        {workspaceName && (
-          <span className="title-bar__workspace">{workspaceName}</span>
-        )}
-        <span className="title-bar__spacer" />
-        <button
-          type="button"
-          className="button button--small"
-          aria-pressed={showsAssistant}
-          title="Show or hide the AI assistant"
-          onClick={toggleAssistant}
+      <TitleBar />
+      <Banners />
+      <Dialogs />
+      <div className="app-shell__body">
+        <LeftToolStrip />
+        <Group
+          className="app-shell__panes"
+          orientation="horizontal"
+          defaultLayout={mainLayout.defaultLayout}
+          onLayoutChanged={mainLayout.onLayoutChanged}
         >
-          Assistant
-        </button>
-        <button
-          type="button"
-          className="button button--small"
-          onClick={() => void close()}
-        >
-          Close workspace
-        </button>
-        <button
-          type="button"
-          className="button button--small"
-          onClick={() => setShowsPreferences(true)}
-        >
-          Preferences
-        </button>
-        <ThemeToggle />
-      </header>
-
-      {error && (
-        <div className="banner" role="alert">
-          <span>{error}</span>
-          <button
-            type="button"
-            className="link-button"
-            onClick={() => setError(null)}
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
-
-      {tabsError && (
-        <div className="banner" role="alert">
-          <span>{tabsError}</span>
-          <button
-            type="button"
-            className="link-button"
-            onClick={() => setTabsError(null)}
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
-      <RunConfirmDialog />
-      {showsPreferences && (
-        <PreferencesDialog onClose={() => setShowsPreferences(false)} />
-      )}
-
-      <Group
-        className="app-shell__panes"
-        orientation="horizontal"
-        defaultLayout={mainLayout.defaultLayout}
-        onLayoutChanged={mainLayout.onLayoutChanged}
-      >
-        <Panel id="sidebar" defaultSize="20%" minSize="12%" collapsible>
-          <nav className="pane" aria-label="Sidebar">
-            <div
-              className="results__views"
-              role="tablist"
-              aria-label="Sidebar views"
-            >
-              {SIDEBAR_VIEWS.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  role="tab"
-                  className="results__view"
-                  aria-selected={sidebarView === item.id}
-                  onClick={() => setSidebarView(item.id)}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-            {sidebarView === 'files' && <FileTree />}
-            {sidebarView === 'connections' && <ConnectionList />}
-            {sidebarView === 'schema' && <SchemaTree />}
-            {sidebarView === 'git' && <GitPanel />}
-          </nav>
-        </Panel>
-        <Separator className="separator" aria-label="Resize the sidebar" />
-        <Panel id="work" minSize="30%">
-          <Group
-            orientation="vertical"
-            defaultLayout={workLayout.defaultLayout}
-            onLayoutChanged={workLayout.onLayoutChanged}
-          >
-            <Panel id="editor" defaultSize="60%" minSize="15%">
-              <QueryEditor />
-            </Panel>
-            <Separator
-              className="separator"
-              aria-label="Resize the editor and the results"
-            />
-            <Panel id="results" minSize="15%">
-              <ResultsPane />
-            </Panel>
-          </Group>
-        </Panel>
-        {showsAssistant && (
-          <>
-            <Separator
-              className="separator"
-              aria-label="Resize the assistant"
-            />
-            <Panel id="assistant" defaultSize="28%" minSize="15%">
-              <AssistantPanel />
-            </Panel>
-          </>
-        )}
-      </Group>
-
-      <StatusBar />
+          {panels.sidebar && (
+            <>
+              <Panel id="sidebar" defaultSize="20%" minSize="12%">
+                <Sidebar />
+              </Panel>
+              <Separator
+                className="separator"
+                aria-label="Resize the sidebar"
+              />
+            </>
+          )}
+          <Panel id="work" minSize="30%">
+            <Work />
+          </Panel>
+          {panels.assistant && (
+            <>
+              <Separator
+                className="separator"
+                aria-label="Resize the assistant"
+              />
+              <Panel id="assistant" defaultSize="28%" minSize="15%">
+                <AssistantPanel />
+              </Panel>
+            </>
+          )}
+        </Group>
+        <RightToolStrip />
+      </div>
+      {panels.statusBar && <StatusBar />}
     </div>
   )
 }

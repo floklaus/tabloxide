@@ -62,11 +62,22 @@ This will be the first release.
 - A destructive statement is `DROP`, `TRUNCATE`, `ALTER`, and `DELETE` or `UPDATE` without `WHERE`. For DuckDB, it is also a statement that writes files or loads an extension.
 - The application connects again after the server closed a connection.
 
+### Navigation
+
+- A menu bar with the menus File, Connections, Git, and View.
+- The title bar shows the project, the connection of the active tab, and the Git branch. Each of them opens a menu to switch the project, the connection, or the branch.
+- The command palette (`Ctrl+K`) finds commands, files, schema objects, and settings.
+- Tool strips on the two sides open the sidebar views and the assistant.
+- The View menu shows or hides the sidebar, the assistant, the results, and the status bar. It puts the results below or beside the editor, and it has the layouts Standard and Simple.
+- The status bar shows the connection, the server version, and the cursor position.
+- Two new themes: neon and high contrast.
+
 ### Keyboard and accessibility
 
 - All primary functions operate with the keyboard. `README.md` lists the keys.
 - The editor tabs, the file tree, the result grid, and the dialogs use the keyboard patterns of ARIA.
-- The text colours of the light and the dark theme have a contrast of 4.5:1 or more.
+- The text colours of all themes have a contrast of 4.5:1 or more.
+- The menus use the ARIA menu pattern, and the command palette uses the combobox pattern.
 
 ### Updates
 

@@ -1,11 +1,5 @@
-import { nextTheme, type Theme } from './theme'
+import { nextTheme, THEME_LABELS } from './theme'
 import { useThemeStore } from './themeStore'
-
-const THEME_LABELS: Record<Theme, string> = {
-  system: 'System',
-  light: 'Light',
-  dark: 'Dark',
-}
 
 export function ThemeToggle() {
   const theme = useThemeStore((state) => state.theme)

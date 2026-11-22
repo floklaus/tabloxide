@@ -1,4 +1,19 @@
-export const THEMES = ['system', 'light', 'dark'] as const
+export const THEMES = [
+  'system',
+  'light',
+  'dark',
+  'neon',
+  'high-contrast',
+] as const
+
+/** The name of each theme for the user. */
+export const THEME_LABELS: Record<Theme, string> = {
+  system: 'System',
+  light: 'Light',
+  dark: 'Dark',
+  neon: 'Neon',
+  'high-contrast': 'High contrast',
+}
 
 export type Theme = (typeof THEMES)[number]
 
@@ -39,7 +54,7 @@ export function applyTheme(theme: Theme): void {
   root.dataset.theme = theme
 }
 
-/** Returns the theme that follows `theme` in the sequence system, light, dark. */
+/** Returns the theme that follows `theme` in the sequence of `THEMES`. */
 export function nextTheme(theme: Theme): Theme {
   const index = THEMES.indexOf(theme)
   return THEMES[(index + 1) % THEMES.length]
