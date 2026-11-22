@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Screen structure for a document database</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit}
+</style>
+</helmet>
+<div style="width: 1200px; height: 760px; display: flex; flex-direction: column; background: #eceef2; color: #1b1f27; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.4; color-scheme: light; accent-color: #2563eb">
+
+<header style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: {{d.bar}}">
+<span style="display: flex; align-items: center; gap: 8px; padding-right: 4px"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"><rect x="2.75" y="2.75" width="18.5" height="18.5" rx="3.5" fill="#ffffff" stroke="#1b1f27" stroke-width="1.5"></rect><path d="M2.75 6.25a3.5 3.5 0 0 1 3.5-3.5h11.5a3.5 3.5 0 0 1 3.5 3.5V8.5H2.75z" fill="#1b1f27"></path><path d="M2.75 14.5h18.5M9 8.5v12.75M15 8.5v12.75" stroke="#1b1f27" stroke-width="1.5" fill="none"></path><rect x="9.75" y="9.25" width="4.5" height="4.5" fill="#b45309"></rect></svg><span style="font-weight: 700; color: #1b1f27">Tabl<span style="color: #b45309">oxide</span></span></span>
+<nav aria-label="Menu bar" style="display: flex; align-items: center; gap: 2px"><button type="button" aria-haspopup="menu" aria-expanded="false" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 0; background: none; color: #1b1f27">File</button><button type="button" aria-haspopup="menu" aria-expanded="false" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 0; background: none; color: #1b1f27">Connections</button><button type="button" aria-haspopup="menu" aria-expanded="false" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 0; background: none; color: #1b1f27">Git</button><button type="button" aria-haspopup="menu" aria-expanded="false" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 0; background: none; color: #1b1f27">View</button></nav>
+<span aria-hidden="true" style="width: 1px; height: 20px; background: #d5d9e0"></span>
+<button type="button" aria-haspopup="menu" aria-label="Project: shop-documents" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 0; background: none; color: #1b1f27; font-weight: 600">shop-documents<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-haspopup="menu" aria-label="Connection: Shop documents, development" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 0; background: none; color: #1b1f27"><span aria-hidden="true" style="width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; background: #15803d"></span>Shop documents<span style="padding: 0 8px; border-radius: 999px; background: #eef8f1; color: #15803d; font-size: 12px; font-weight: 600">development</span><span style="color: #5b6472; font-size: 12px">MongoDB 8.0</span><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-haspopup="menu" aria-label="Git branch: main" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 0; background: none; color: #1b1f27"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M6 3v12 M6 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M18 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M18 9c0 5-12 2-12 6" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>main<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<span style="flex-grow: 1"></span>
+<button type="button" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; min-width: 200px; border: 1px solid #d5d9e0; background: #ffffff; color: #5b6472"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M20 20l-4-4" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg><span style="flex-grow: 1; text-align: left">Search or run a command</span><span style="font-size: 12px">Ctrl+K</span></button>
+</header>
+
+<div style="flex-grow: 1; min-height: 0; display: flex; gap: {{d.gap}}; padding: 0 {{d.gap}}">
+
+<nav aria-label="Left tool strip" style="display: flex; flex-direction: column; gap: 4px">
+<button type="button" aria-label="Files" title="Files" aria-pressed="false" style="width: {{d.strip}}; height: {{d.strip}}; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: none"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z M14 3v4h4" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-label="Connections" title="Connections" aria-pressed="false" style="width: {{d.strip}}; height: {{d.strip}}; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: none"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3z M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6 M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-label="Catalog" title="Catalog" aria-pressed="true" style="width: {{d.strip}}; height: {{d.strip}}; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: #ffffff"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z M14 3v4h4 M10 12h5 M10 16h5" stroke="#b45309" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-label="Git" title="Git" aria-pressed="false" style="width: {{d.strip}}; height: {{d.strip}}; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: none"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M6 3v12 M6 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M18 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M18 9c0 5-12 2-12 6" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<span style="flex-grow: 1"></span>
+<button type="button" aria-label="History" title="History" aria-pressed="false" style="width: {{d.strip}}; height: {{d.strip}}; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: none"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5 M12 7v5l3 2" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+</nav>
+
+<section aria-label="Catalog" style="background: #ffffff; border-radius: 10px; border: 1px solid #e1e4ea; min-width: 0; min-height: 0; display: flex; flex-direction: column; width: 250px; flex-shrink: 0; padding: {{d.pad}}; gap: 8px; overflow: hidden">
+<div style="display: flex; align-items: center; gap: 4px">
+<h2 style="margin: 0; font-size: 14px; font-weight: 600; color: #1b1f27">Catalog</h2>
+<span style="flex-grow: 1"></span>
+<button type="button" aria-label="Read the catalog again" title="Read the catalog again" style="width: {{d.ctl}}; height: {{d.ctl}}; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: none"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7 M20 4v7h-7" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button><button type="button" aria-label="Filter the catalog" title="Filter the catalog" style="width: {{d.ctl}}; height: {{d.ctl}}; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: none"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M4 5h16l-6 8v6l-4-2v-4z" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+</div>
+<div role="tree" aria-label="Catalog" style="display: flex; flex-direction: column; gap: 1px; font-size: 13px">
+<div role="treeitem" style="padding: {{d.tree}}; padding-left: 8px; border-radius: 6px; display: flex; gap: 8px; font-weight: 600"><span>Database: shop</span></div>
+<div role="treeitem" style="padding: {{d.tree}}; padding-left: 24px; border-radius: 6px; display: flex; gap: 8px; font-weight: 600"><span>Collections</span></div>
+<div role="treeitem" aria-selected="true" style="padding: {{d.tree}}; padding-left: 40px; border-radius: 6px; display: flex; gap: 8px; background: #f1f3f6; font-weight: 600"><span>orders</span><span style="color: #5b6472">12 840 docs</span></div>
+<div role="treeitem" style="padding: {{d.tree}}; padding-left: 56px; border-radius: 6px; display: flex; gap: 8px; color: #5b6472"><span>Fields from a sample of 100</span></div>
+<div role="treeitem" style="padding: {{d.tree}}; padding-left: 72px; border-radius: 6px; display: flex; gap: 8px; color: #5b6472"><span>_id</span><span style="color: #5b6472">objectId</span></div>
+<div role="treeitem" style="padding: {{d.tree}}; padding-left: 72px; border-radius: 6px; display: flex; gap: 8px; color: #5b6472"><span>customer</span><span style="color: #5b6472">object</span></div>
+<div role="treeitem" style="padding: {{d.tree}}; padding-left: 72px; border-radius: 6px; display: flex; gap: 8px; color: #5b6472"><span>lines</span><span style="color: #5b6472">array</span></div>
+<div role="treeitem" style="padding: {{d.tree}}; padding-left: 72px; border-radius: 6px; display: flex; gap: 8px; color: #5b6472"><span>status</span><span style="color: #5b6472">string</span></div>
+<div role="treeitem" style="padding: {{d.tree}}; padding-left: 56px; border-radius: 6px; display: flex; gap: 8px; color: #5b6472"><span>Indexes: status_1</span></div>
+<div role="treeitem" style="padding: {{d.tree}}; padding-left: 56px; border-radius: 6px; display: flex; gap: 8px; color: #5b6472"><span>Validation rule</span></div>
+<div role="treeitem" style="padding: {{d.tree}}; padding-left: 40px; border-radius: 6px; display: flex; gap: 8px"><span>customers</span></div>
+<div role="treeitem" style="padding: {{d.tree}}; padding-left: 40px; border-radius: 6px; display: flex; gap: 8px"><span>products</span></div>
+</div>
+</section>
+
+<main style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: {{d.gap}}">
+<section aria-label="Editor" style="background: #ffffff; border-radius: 10px; border: 1px solid #e1e4ea; min-width: 0; min-height: 0; display: flex; flex-direction: column; height: 250px; flex-shrink: 0">
+<div role="tablist" aria-label="Open files" style="display: flex; align-items: flex-end; gap: 2px; padding: 4px 8px 0; background: #f4f5f7; border-radius: 10px 10px 0 0; border-bottom: 1px solid #e1e4ea">
+<button type="button" role="tab" aria-selected="true" style="height: {{d.ctl}}; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: #ffffff; color: #1b1f27; font-size: 13px; font-weight: 600; white-space: nowrap">open-orders.mongodb.json</button><button type="button" aria-label="New tab" title="New tab" style="width: {{d.ctl}}; height: {{d.ctl}}; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: none; align-self: center"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M12 5v14 M5 12h14" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+</div>
+<div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: {{d.pad}} {{d.pad}} 8px">
+<button type="button" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 1px solid #2563eb; background: #2563eb; color: #ffffff; font-weight: 600"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z" stroke="#ffffff" stroke-width="1.75" fill="#ffffff" stroke-linecap="round" stroke-linejoin="round"></path></svg>Run<span style="font-weight: 400; font-size: 12px">Ctrl+Enter</span></button>
+<div role="group" aria-label="Editor mode" style="display: inline-flex; border: 1px solid #d5d9e0; border-radius: 6px; overflow: hidden">
+<button type="button" aria-pressed="true" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 0; background: none; color: #1b1f27; border-radius: 0; font-size: 12px; font-weight: 600; background: #f1f3f6">Command</button>
+<button type="button" aria-pressed="false" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 0; background: none; color: #1b1f27; border-radius: 0; font-size: 12px">Filter builder</button>
+</div>
+<span style="flex-grow: 1"></span>
+
+<span style="padding: 0 8px; border-radius: 6px; background: #f1f3f6; color: #5b6472; font-size: 12px; font-weight: 600">Command document</span>
+<button type="button" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 1px solid #d5d9e0; background: #ffffff; color: #1b1f27">Save</button>
+</div>
+<div style="flex-grow: 1; min-height: 100px; margin: 0 {{d.pad}} {{d.pad}}; display: flex; border-radius: 8px; background: #fafbfc; border: 1px solid #e1e4ea; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 14px; line-height: 1.6; overflow: hidden">
+<div aria-hidden="true" style="padding: 8px 12px; color: #5b6472; text-align: right">1<br>2<br>3<br>4<br>5</div>
+<div style="flex-grow: 1; padding: 8px 4px; white-space: pre; color: #1b1f27">{
+  <span style="color: #6d28d9">"find"</span>: <span style="color: #0f766e">"orders"</span>,
+  <span style="color: #6d28d9">"filter"</span>: { <span style="color: #6d28d9">"status"</span>: <span style="color: #0f766e">"open"</span> },
+  <span style="color: #6d28d9">"limit"</span>: <span style="color: #ad5009">50</span>
+}</div>
+</div>
+</section>
+
+<section aria-label="Results" style="background: #ffffff; border-radius: 10px; border: 1px solid #e1e4ea; min-width: 0; min-height: 0; display: flex; flex-direction: column; flex-grow: 1">
+<div role="tablist" aria-label="Result views" style="display: flex; align-items: flex-end; gap: 2px; padding: 4px 8px 0; background: #f4f5f7; border-radius: 10px 10px 0 0; border-bottom: 1px solid #e1e4ea">
+<button type="button" role="tab" aria-selected="true" style="height: {{d.ctl}}; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: #ffffff; color: #1b1f27; font-size: 13px; font-weight: 600; white-space: nowrap">Documents</button>
+<button type="button" role="tab" aria-selected="false" style="height: {{d.ctl}}; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: none; color: #5b6472; font-size: 13px; white-space: nowrap">Table</button>
+<button type="button" role="tab" aria-selected="false" style="height: {{d.ctl}}; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: none; color: #5b6472; font-size: 13px; white-space: nowrap">Schema</button>
+<button type="button" role="tab" aria-selected="false" style="height: {{d.ctl}}; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: none; color: #5b6472; font-size: 13px; white-space: nowrap">History</button><span style="align-self: center; margin-left: auto; padding-right: 4px; color: #5b6472; font-size: 12px">50 documents loaded</span>
+</div>
+<div style="flex-grow: 1; min-height: 0; display: flex; gap: {{d.pad}}; padding: {{d.pad}}">
+<div style="width: 260px; flex-shrink: 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px">
+<button type="button" aria-pressed="true" style="padding: 8px 10px; border: 1px solid #b45309; border-radius: 8px; background: #f1f3f6; color: #1b1f27; text-align: left; display: flex; flex-direction: column; gap: 2px"><span style="font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 12px">6741…a1f0</span><span style="color: #5b6472; font-size: 12px">open · 3 lines · 136.40</span></button>
+<button type="button" aria-pressed="false" style="padding: 8px 10px; border: 1px solid transparent; border-radius: 8px; background: none; color: #1b1f27; text-align: left; display: flex; flex-direction: column; gap: 2px"><span style="font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 12px">6741…a1f4</span><span style="color: #5b6472; font-size: 12px">open · 1 line · 19.90</span></button>
+<button type="button" aria-pressed="false" style="padding: 8px 10px; border: 1px solid transparent; border-radius: 8px; background: none; color: #1b1f27; text-align: left; display: flex; flex-direction: column; gap: 2px"><span style="font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 12px">6741…a20b</span><span style="color: #5b6472; font-size: 12px">open · 2 lines · 58.00</span></button>
+<button type="button" aria-pressed="false" style="padding: 8px 10px; border: 1px solid transparent; border-radius: 8px; background: none; color: #1b1f27; text-align: left; display: flex; flex-direction: column; gap: 2px"><span style="font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 12px">6741…a21c</span><span style="color: #5b6472; font-size: 12px">open · 5 lines · 212.75</span></button>
+<button type="button" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 0; background: none; color: #1b1f27; font-size: 12px; color: #2563eb">Load 50 more</button>
+</div>
+<div style="flex-grow: 1; min-width: 0; padding: {{d.pad}}; border-radius: 8px; border: 1px solid #e1e4ea; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: center; gap: 8px">
+<div style="flex-grow: 1; display: flex; align-items: center; gap: 8px; height: {{d.ctl}}; padding: 0 10px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M20 20l-4-4" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg><input type="search" aria-label="Search in the document" placeholder="Search in the document" style="flex-grow: 1; border: 0; background: none; color: #1b1f27; outline-offset: 4px"></div>
+<button type="button" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 1px solid #d5d9e0; background: #ffffff; color: #1b1f27; font-size: 12px">Edit</button>
+<button type="button" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 1px solid #d5d9e0; background: #ffffff; color: #1b1f27; font-size: 12px">Copy as JSON</button>
+</div>
+<div style="flex-grow: 1; padding: 8px 12px; border-radius: 8px; background: #fafbfc; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 13px; line-height: 1.7; white-space: pre; overflow: auto">▾ <span style="color: #6d28d9">_id</span>: 6741c0e2b7f3a94d2c11a1f0
+▾ <span style="color: #6d28d9">customer</span>: <span style="color: #5b6472">object · 2 fields</span>
+    <span style="color: #6d28d9">name</span>: <span style="color: #0f766e">"Ada Lovelace"</span>
+    <span style="color: #6d28d9">city</span>: <span style="color: #0f766e">"London"</span>
+▸ <span style="color: #6d28d9">lines</span>: <span style="color: #5b6472">array · 3 items</span>
+  <span style="color: #6d28d9">status</span>: <span style="color: #0f766e">"open"</span>
+  <span style="color: #6d28d9">total</span>: <span style="color: #ad5009">136.40</span></div>
+</div>
+</div>
+</section>
+</main>
+
+<nav aria-label="Right tool strip" style="display: flex; flex-direction: column; gap: 4px">
+<button type="button" aria-label="Assistant" title="Assistant" aria-pressed="false" style="width: {{d.strip}}; height: {{d.strip}}; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: none"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+</nav>
+
+</div>
+
+<footer style="display: flex; align-items: center; gap: 16px; padding: 4px 16px; color: #5b6472; font-size: 12px">
+<span>Shop documents · MongoDB 8.0</span><span>Ln 3, Col 30</span>
+<span style="flex-grow: 1"></span>
+<span>Tabloxide 0.1.0</span>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"density":{"editor":"enum","default":"comfortable","options":["comfortable","compact"]},"$preview":{"width":1200,"height":760}}'>
+class Component extends DCLogic {
+renderVals() {
+const compact = this.props.density === 'compact';
+return {
+d: compact
+? { ctl: '28px', strip: '32px', gap: '4px', pad: '8px', bar: '4px 8px', cell: '4px 8px', tree: '2px 8px' }
+: { ctl: '32px', strip: '36px', gap: '8px', pad: '12px', bar: '8px 12px', cell: '8px 12px', tree: '4px 8px' }
+};
+}
+}
+</script>
+</body>
+</html>

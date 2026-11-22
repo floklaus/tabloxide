@@ -1,0 +1,211 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-11-16T08:10:00Z"
+  },
+  "title": "Tabloxide UI",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1400,
+      "h": 850,
+      "title": "Application with assistant",
+      "expand": "fill"
+    },
+    "AssistantPlan.dc.html": {
+      "x": 1480,
+      "y": 0,
+      "w": 440,
+      "h": 850,
+      "title": "Assistant: plan analysis"
+    },
+    "AssistantSetup.dc.html": {
+      "x": 2000,
+      "y": 0,
+      "w": 440,
+      "h": 460,
+      "title": "Assistant: no API key"
+    },
+    "AnalyzeConfirm.dc.html": {
+      "x": 2000,
+      "y": 580,
+      "w": 480,
+      "h": 280,
+      "title": "Confirm EXPLAIN ANALYZE"
+    },
+    "Preferences.dc.html": {
+      "x": 2560,
+      "y": 0,
+      "w": 820,
+      "h": 1000,
+      "title": "Preferences"
+    },
+    "Welcome.dc.html": {
+      "x": 3460,
+      "y": 0,
+      "w": 1100,
+      "h": 700,
+      "title": "Start page"
+    },
+    "Logo.dc.html": {
+      "x": 0,
+      "y": 970,
+      "w": 1400,
+      "h": 520,
+      "title": "Logo options"
+    },
+    "KindGraph.dc.html": {
+      "x": 0,
+      "y": 1900,
+      "w": 1200,
+      "h": 760,
+      "title": "Graph database"
+    },
+    "KindTimeSeries.dc.html": {
+      "x": 1280,
+      "y": 1900,
+      "w": 1200,
+      "h": 760,
+      "title": "Time-series database"
+    },
+    "KindDocument.dc.html": {
+      "x": 2560,
+      "y": 1900,
+      "w": 1200,
+      "h": 760,
+      "title": "Document database"
+    },
+    "KindVector.dc.html": {
+      "x": 3840,
+      "y": 1900,
+      "w": 1200,
+      "h": 760,
+      "title": "Vector database"
+    },
+    "Menus.dc.html": {
+      "x": 0,
+      "y": 3180,
+      "w": 1600,
+      "h": 760,
+      "title": "Menu bar: File, Connections, Git, View"
+    },
+    "LayoutEditor.dc.html": {
+      "x": 1680,
+      "y": 3180,
+      "w": 1200,
+      "h": 760,
+      "title": "View › Layout › Edit layout…"
+    },
+    "MainDark.dc.html": {
+      "x": 0,
+      "y": 4460,
+      "w": 1400,
+      "h": 850,
+      "title": "Main: Dark theme",
+      "expand": "fill"
+    },
+    "MainNeon.dc.html": {
+      "x": 1480,
+      "y": 4460,
+      "w": 1400,
+      "h": 850,
+      "title": "Main: Neon theme",
+      "expand": "fill"
+    },
+    "MainHighContrast.dc.html": {
+      "x": 2960,
+      "y": 4460,
+      "w": 1400,
+      "h": 850,
+      "title": "Main: High contrast theme",
+      "expand": "fill"
+    },
+    "AssistantTab.dc.html": {
+      "x": 0,
+      "y": 5830,
+      "w": 1400,
+      "h": 850,
+      "title": "Assistant session in its own tab",
+      "expand": "fill"
+    },
+    "CommandPalette.dc.html": {
+      "x": 1480,
+      "y": 5830,
+      "w": 1000,
+      "h": 660,
+      "title": "Command palette (Ctrl+K)"
+    },
+    "TitleWidgets.dc.html": {
+      "x": 2560,
+      "y": 5830,
+      "w": 1200,
+      "h": 620,
+      "title": "Title bar widgets: project, connection, branch"
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "AssistantPlan.dc.html",
+    "AssistantSetup.dc.html",
+    "AnalyzeConfirm.dc.html",
+    "Preferences.dc.html",
+    "Welcome.dc.html",
+    "Logo.dc.html",
+    "KindGraph.dc.html",
+    "KindTimeSeries.dc.html",
+    "KindDocument.dc.html",
+    "KindVector.dc.html",
+    "Menus.dc.html",
+    "LayoutEditor.dc.html",
+    "MainDark.dc.html",
+    "MainNeon.dc.html",
+    "MainHighContrast.dc.html",
+    "AssistantTab.dc.html",
+    "CommandPalette.dc.html",
+    "TitleWidgets.dc.html"
+  ],
+  "notes": {
+    "title": {
+      "x": 0,
+      "y": -300,
+      "text": "Tabloxide: current UI",
+      "kind": "title1",
+      "maxW": 4560
+    },
+    "kinds": {
+      "x": 0,
+      "y": 1620,
+      "text": "Screen structure for each kind of database (proposal)",
+      "kind": "title1",
+      "maxW": 5040
+    },
+    "menus": {
+      "x": 0,
+      "y": 2900,
+      "text": "Menu bar and layout editor (proposal)",
+      "kind": "title1",
+      "maxW": 2880
+    },
+    "themes": {
+      "x": 0,
+      "y": 4180,
+      "text": "Main in the other themes",
+      "kind": "title1",
+      "maxW": 4360
+    },
+    "screens": {
+      "x": 0,
+      "y": 5550,
+      "text": "New screens: assistant tab, command palette, title bar widgets",
+      "kind": "title1",
+      "maxW": 3760
+    }
+  },
+  "designSystems": []
+}

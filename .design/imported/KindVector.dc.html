@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Screen structure for a vector database</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit}
+</style>
+</helmet>
+<div style="width: 1200px; height: 760px; display: flex; flex-direction: column; background: #eceef2; color: #1b1f27; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.4; color-scheme: light; accent-color: #2563eb">
+
+<header style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: {{d.bar}}">
+<span style="display: flex; align-items: center; gap: 8px; padding-right: 4px"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"><rect x="2.75" y="2.75" width="18.5" height="18.5" rx="3.5" fill="#ffffff" stroke="#1b1f27" stroke-width="1.5"></rect><path d="M2.75 6.25a3.5 3.5 0 0 1 3.5-3.5h11.5a3.5 3.5 0 0 1 3.5 3.5V8.5H2.75z" fill="#1b1f27"></path><path d="M2.75 14.5h18.5M9 8.5v12.75M15 8.5v12.75" stroke="#1b1f27" stroke-width="1.5" fill="none"></path><rect x="9.75" y="9.25" width="4.5" height="4.5" fill="#b45309"></rect></svg><span style="font-weight: 700; color: #1b1f27">Tabl<span style="color: #b45309">oxide</span></span></span>
+<nav aria-label="Menu bar" style="display: flex; align-items: center; gap: 2px"><button type="button" aria-haspopup="menu" aria-expanded="false" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 0; background: none; color: #1b1f27">File</button><button type="button" aria-haspopup="menu" aria-expanded="false" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 0; background: none; color: #1b1f27">Connections</button><button type="button" aria-haspopup="menu" aria-expanded="false" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 0; background: none; color: #1b1f27">Git</button><button type="button" aria-haspopup="menu" aria-expanded="false" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 0; background: none; color: #1b1f27">View</button></nav>
+<span aria-hidden="true" style="width: 1px; height: 20px; background: #d5d9e0"></span>
+<button type="button" aria-haspopup="menu" aria-label="Project: search-lab" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 0; background: none; color: #1b1f27; font-weight: 600">search-lab<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-haspopup="menu" aria-label="Connection: Search lab, development" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 0; background: none; color: #1b1f27"><span aria-hidden="true" style="width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; background: #15803d"></span>Search lab<span style="padding: 0 8px; border-radius: 999px; background: #eef8f1; color: #15803d; font-size: 12px; font-weight: 600">development</span><span style="color: #5b6472; font-size: 12px">Qdrant 1.12</span><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-haspopup="menu" aria-label="Git branch: main" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 0; background: none; color: #1b1f27"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M6 3v12 M6 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M18 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M18 9c0 5-12 2-12 6" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>main<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<span style="flex-grow: 1"></span>
+<button type="button" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; min-width: 200px; border: 1px solid #d5d9e0; background: #ffffff; color: #5b6472"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M20 20l-4-4" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg><span style="flex-grow: 1; text-align: left">Search or run a command</span><span style="font-size: 12px">Ctrl+K</span></button>
+</header>
+
+<div style="flex-grow: 1; min-height: 0; display: flex; gap: {{d.gap}}; padding: 0 {{d.gap}}">
+
+<nav aria-label="Left tool strip" style="display: flex; flex-direction: column; gap: 4px">
+<button type="button" aria-label="Files" title="Files" aria-pressed="false" style="width: {{d.strip}}; height: {{d.strip}}; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: none"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z M14 3v4h4" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-label="Connections" title="Connections" aria-pressed="false" style="width: {{d.strip}}; height: {{d.strip}}; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: none"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3z M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6 M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-label="Catalog" title="Catalog" aria-pressed="true" style="width: {{d.strip}}; height: {{d.strip}}; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: #ffffff"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M4 20L20 4 M20 4h-6 M20 4v6 M4 20l6-14 M4 20l14-6" stroke="#b45309" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-label="Git" title="Git" aria-pressed="false" style="width: {{d.strip}}; height: {{d.strip}}; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: none"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M6 3v12 M6 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M18 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M18 9c0 5-12 2-12 6" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<span style="flex-grow: 1"></span>
+<button type="button" aria-label="History" title="History" aria-pressed="false" style="width: {{d.strip}}; height: {{d.strip}}; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: none"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5 M12 7v5l3 2" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+</nav>
+
+<section aria-label="Catalog" style="background: #ffffff; border-radius: 10px; border: 1px solid #e1e4ea; min-width: 0; min-height: 0; display: flex; flex-direction: column; width: 250px; flex-shrink: 0; padding: {{d.pad}}; gap: 8px; overflow: hidden">
+<div style="display: flex; align-items: center; gap: 4px">
+<h2 style="margin: 0; font-size: 14px; font-weight: 600; color: #1b1f27">Catalog</h2>
+<span style="flex-grow: 1"></span>
+<button type="button" aria-label="Read the catalog again" title="Read the catalog again" style="width: {{d.ctl}}; height: {{d.ctl}}; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: none"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7 M20 4v7h-7" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button><button type="button" aria-label="Filter the catalog" title="Filter the catalog" style="width: {{d.ctl}}; height: {{d.ctl}}; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: none"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M4 5h16l-6 8v6l-4-2v-4z" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+</div>
+<div role="tree" aria-label="Catalog" style="display: flex; flex-direction: column; gap: 1px; font-size: 13px">
+<div role="treeitem" style="padding: {{d.tree}}; padding-left: 8px; border-radius: 6px; display: flex; gap: 8px; font-weight: 600"><span>Collections</span></div>
+<div role="treeitem" aria-selected="true" style="padding: {{d.tree}}; padding-left: 24px; border-radius: 6px; display: flex; gap: 8px; background: #f1f3f6; font-weight: 600"><span>articles</span><span style="color: #5b6472">48 210 items</span></div>
+<div role="treeitem" style="padding: {{d.tree}}; padding-left: 40px; border-radius: 6px; display: flex; gap: 8px; color: #5b6472"><span>Vector</span><span style="color: #5b6472">1536 dimensions</span></div>
+<div role="treeitem" style="padding: {{d.tree}}; padding-left: 40px; border-radius: 6px; display: flex; gap: 8px; color: #5b6472"><span>Distance</span><span style="color: #5b6472">cosine</span></div>
+<div role="treeitem" style="padding: {{d.tree}}; padding-left: 40px; border-radius: 6px; display: flex; gap: 8px; color: #5b6472"><span>Index</span><span style="color: #5b6472">HNSW · m 16 · ef 64</span></div>
+<div role="treeitem" style="padding: {{d.tree}}; padding-left: 40px; border-radius: 6px; display: flex; gap: 8px; color: #5b6472"><span>Payload fields</span></div>
+<div role="treeitem" style="padding: {{d.tree}}; padding-left: 56px; border-radius: 6px; display: flex; gap: 8px; color: #5b6472"><span>title</span><span style="color: #5b6472">text</span></div>
+<div role="treeitem" style="padding: {{d.tree}}; padding-left: 56px; border-radius: 6px; display: flex; gap: 8px; color: #5b6472"><span>language</span><span style="color: #5b6472">keyword</span></div>
+<div role="treeitem" style="padding: {{d.tree}}; padding-left: 56px; border-radius: 6px; display: flex; gap: 8px; color: #5b6472"><span>published</span><span style="color: #5b6472">datetime</span></div>
+<div role="treeitem" style="padding: {{d.tree}}; padding-left: 24px; border-radius: 6px; display: flex; gap: 8px"><span>images</span></div>
+<div role="treeitem" style="padding: {{d.tree}}; padding-left: 24px; border-radius: 6px; display: flex; gap: 8px"><span>support_tickets</span></div>
+</div>
+</section>
+
+<main style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: {{d.gap}}">
+<section aria-label="Search" style="background: #ffffff; border-radius: 10px; border: 1px solid #e1e4ea; min-width: 0; min-height: 0; display: flex; flex-direction: column; height: 290px; flex-shrink: 0">
+<div role="tablist" aria-label="Open searches" style="display: flex; align-items: flex-end; gap: 2px; padding: 4px 8px 0; background: #f4f5f7; border-radius: 10px 10px 0 0; border-bottom: 1px solid #e1e4ea">
+<button type="button" role="tab" aria-selected="true" style="height: {{d.ctl}}; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: #ffffff; color: #1b1f27; font-size: 13px; font-weight: 600; white-space: nowrap">Search 1</button><button type="button" aria-label="New tab" title="New tab" style="width: {{d.ctl}}; height: {{d.ctl}}; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: none; align-self: center"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M12 5v14 M5 12h14" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+</div>
+<div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: {{d.pad}} {{d.pad}} 8px">
+<button type="button" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 1px solid #2563eb; background: #2563eb; color: #ffffff; font-weight: 600"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M20 20l-4-4" stroke="#ffffff" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>Search<span style="font-weight: 400; font-size: 12px">Ctrl+Enter</span></button>
+<span style="flex-grow: 1"></span>
+<div role="group" aria-label="Editor mode" style="display: inline-flex; border: 1px solid #d5d9e0; border-radius: 6px; overflow: hidden">
+<button type="button" aria-pressed="true" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 0; background: none; color: #1b1f27; border-radius: 0; font-size: 12px; font-weight: 600; background: #f1f3f6">Form</button>
+<button type="button" aria-pressed="false" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 0; background: none; color: #1b1f27; border-radius: 0; font-size: 12px">Request</button>
+</div>
+<button type="button" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 1px solid #d5d9e0; background: #ffffff; color: #1b1f27">Save</button>
+</div>
+<div style="flex-grow: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; padding: 0 {{d.pad}} {{d.pad}}">
+<label style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; font-weight: 600">Collection</span>
+<select style="height: {{d.ctl}}; padding: 0 10px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27"><option>articles</option></select></label>
+<label style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; font-weight: 600">Number of results</span>
+<input type="number" value="10" style="height: {{d.ctl}}; padding: 0 10px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27"></label>
+<label style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; font-weight: 600">Find the items nearest to</span>
+<select style="height: {{d.ctl}}; padding: 0 10px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27"><option>The vector of an item</option><option>A pasted vector</option><option>Text, embedded by the collection model</option></select></label>
+<label style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; font-weight: 600">Item identifier</span>
+<input type="text" value="article-20417" style="height: {{d.ctl}}; padding: 0 10px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27"></label>
+<label style="grid-column: span 2; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; font-weight: 600">Filter on the payload</span>
+<input type="text" value="language = &quot;en&quot; and published &gt;= 2026-01-01" style="height: {{d.ctl}}; padding: 0 10px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 13px"></label>
+</div>
+</section>
+
+<section aria-label="Results" style="background: #ffffff; border-radius: 10px; border: 1px solid #e1e4ea; min-width: 0; min-height: 0; display: flex; flex-direction: column; flex-grow: 1">
+<div role="tablist" aria-label="Result views" style="display: flex; align-items: flex-end; gap: 2px; padding: 4px 8px 0; background: #f4f5f7; border-radius: 10px 10px 0 0; border-bottom: 1px solid #e1e4ea">
+<button type="button" role="tab" aria-selected="true" style="height: {{d.ctl}}; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: #ffffff; color: #1b1f27; font-size: 13px; font-weight: 600; white-space: nowrap">Results</button>
+<button type="button" role="tab" aria-selected="false" style="height: {{d.ctl}}; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: none; color: #5b6472; font-size: 13px; white-space: nowrap">Map</button>
+<button type="button" role="tab" aria-selected="false" style="height: {{d.ctl}}; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: none; color: #5b6472; font-size: 13px; white-space: nowrap">History</button><span style="align-self: center; margin-left: auto; padding-right: 4px; color: #5b6472; font-size: 12px">10 items, sorted by score</span>
+</div>
+<div style="flex-grow: 1; min-height: 0; display: flex; gap: {{d.pad}}; padding: 0 {{d.pad}} {{d.pad}}">
+<div style="flex-grow: 1; min-width: 0; overflow: auto">
+<table style="border-collapse: collapse; font-size: 13px; width: 100%; font-variant-numeric: tabular-nums">
+<thead><tr><th style="padding: {{d.cell}}; border-bottom: 1px solid #d5d9e0; font-weight: 600; color: #5b6472; font-size: 12px; position: sticky; top: 0; background: #ffffff; text-align: left">Score</th><th style="padding: {{d.cell}}; border-bottom: 1px solid #d5d9e0; font-weight: 600; color: #5b6472; font-size: 12px; position: sticky; top: 0; background: #ffffff; text-align: left">Identifier</th><th style="padding: {{d.cell}}; border-bottom: 1px solid #d5d9e0; font-weight: 600; color: #5b6472; font-size: 12px; position: sticky; top: 0; background: #ffffff; text-align: left">title</th><th style="padding: {{d.cell}}; border-bottom: 1px solid #d5d9e0; font-weight: 600; color: #5b6472; font-size: 12px; position: sticky; top: 0; background: #ffffff; text-align: left">language</th></tr></thead>
+<tbody>
+<tr style="background: #f1f3f6"><td style="padding: {{d.cell}}; border-bottom: 1px solid #e1e4ea; text-align: left"><span style="display: inline-flex; align-items: center; gap: 8px"><span aria-hidden="true" style="width: 60px; height: 6px; border-radius: 3px; background: #f1f3f6; overflow: hidden; display: inline-flex"><span style="width: 56px; background: #2563eb"></span></span>0.94</span></td><td style="padding: {{d.cell}}; border-bottom: 1px solid #e1e4ea; text-align: left">article-20391</td><td style="padding: {{d.cell}}; border-bottom: 1px solid #e1e4ea; text-align: left">Indexes for range queries</td><td style="padding: {{d.cell}}; border-bottom: 1px solid #e1e4ea; text-align: left">en</td></tr>
+<tr><td style="padding: {{d.cell}}; border-bottom: 1px solid #e1e4ea; text-align: left"><span style="display: inline-flex; align-items: center; gap: 8px"><span aria-hidden="true" style="width: 60px; height: 6px; border-radius: 3px; background: #f1f3f6; overflow: hidden; display: inline-flex"><span style="width: 54px; background: #2563eb"></span></span>0.91</span></td><td style="padding: {{d.cell}}; border-bottom: 1px solid #e1e4ea; text-align: left">article-18822</td><td style="padding: {{d.cell}}; border-bottom: 1px solid #e1e4ea; text-align: left">How a query planner uses statistics</td><td style="padding: {{d.cell}}; border-bottom: 1px solid #e1e4ea; text-align: left">en</td></tr>
+<tr><td style="padding: {{d.cell}}; border-bottom: 1px solid #e1e4ea; text-align: left"><span style="display: inline-flex; align-items: center; gap: 8px"><span aria-hidden="true" style="width: 60px; height: 6px; border-radius: 3px; background: #f1f3f6; overflow: hidden; display: inline-flex"><span style="width: 52px; background: #2563eb"></span></span>0.87</span></td><td style="padding: {{d.cell}}; border-bottom: 1px solid #e1e4ea; text-align: left">article-20104</td><td style="padding: {{d.cell}}; border-bottom: 1px solid #e1e4ea; text-align: left">Partial indexes in practice</td><td style="padding: {{d.cell}}; border-bottom: 1px solid #e1e4ea; text-align: left">en</td></tr>
+<tr><td style="padding: {{d.cell}}; border-bottom: 1px solid #e1e4ea; text-align: left"><span style="display: inline-flex; align-items: center; gap: 8px"><span aria-hidden="true" style="width: 60px; height: 6px; border-radius: 3px; background: #f1f3f6; overflow: hidden; display: inline-flex"><span style="width: 50px; background: #2563eb"></span></span>0.83</span></td><td style="padding: {{d.cell}}; border-bottom: 1px solid #e1e4ea; text-align: left">article-17650</td><td style="padding: {{d.cell}}; border-bottom: 1px solid #e1e4ea; text-align: left">Sort steps and memory limits</td><td style="padding: {{d.cell}}; border-bottom: 1px solid #e1e4ea; text-align: left">en</td></tr>
+</tbody>
+</table>
+</div>
+<aside aria-label="Selected item" style="width: 230px; flex-shrink: 0; margin-top: 8px; padding: {{d.pad}}; border-radius: 8px; border: 1px solid #e1e4ea; display: flex; flex-direction: column; gap: 8px; font-size: 13px">
+<span style="font-weight: 600">article-20391</span>
+<div style="display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 6px 8px">
+<span style="color: #5b6472">title</span><span>Indexes for range queries</span>
+<span style="color: #5b6472">language</span><span>en</span>
+<span style="color: #5b6472">published</span><span>2026-03-02</span>
+<span style="color: #5b6472">vector</span><span style="font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 12px; color: #5b6472">0.012, -0.044, 0.103, …</span>
+</div>
+<button type="button" style="height: {{d.ctl}}; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 1px solid #d5d9e0; background: #ffffff; color: #1b1f27; font-size: 12px; align-self: flex-start">Search from this item</button>
+</aside>
+</div>
+</section>
+</main>
+
+<nav aria-label="Right tool strip" style="display: flex; flex-direction: column; gap: 4px">
+<button type="button" aria-label="Assistant" title="Assistant" aria-pressed="false" style="width: {{d.strip}}; height: {{d.strip}}; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: none"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+</nav>
+
+</div>
+
+<footer style="display: flex; align-items: center; gap: 16px; padding: 4px 16px; color: #5b6472; font-size: 12px">
+<span>Search lab · Qdrant 1.12</span><span>Cosine distance</span>
+<span style="flex-grow: 1"></span>
+<span>Tabloxide 0.1.0</span>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"density":{"editor":"enum","default":"comfortable","options":["comfortable","compact"]},"$preview":{"width":1200,"height":760}}'>
+class Component extends DCLogic {
+renderVals() {
+const compact = this.props.density === 'compact';
+return {
+d: compact
+? { ctl: '28px', strip: '32px', gap: '4px', pad: '8px', bar: '4px 8px', cell: '4px 8px', tree: '2px 8px' }
+: { ctl: '32px', strip: '36px', gap: '8px', pad: '12px', bar: '8px 12px', cell: '8px 12px', tree: '4px 8px' }
+};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Layout editor</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+button,input,select{font:inherit}
+</style>
+</helmet>
+<div style="width: 1200px; height: 760px; padding: 24px; background: rgba(27, 31, 39, 0.35); font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; display: flex; align-items: center; justify-content: center">
+<div role="dialog" aria-label="Edit layout" style="width: 100%; height: 100%; padding: 24px; border-radius: 14px; background: #ffffff; color: #1b1f27; box-shadow: 0 12px 32px rgba(27, 31, 39, 0.18); display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; align-items: baseline; gap: 12px">
+<h2 style="margin: 0; font-size: 16px">Edit layout</h2>
+<span style="color: #5b6472; font-size: 12px">Drag a panel to a slot. Drag a divider to change a size.</span>
+</div>
+
+<div style="flex-grow: 1; min-height: 0; display: grid; grid-template-columns: 220px minmax(0, 1fr) 240px; gap: 20px">
+
+<fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px">
+<legend style="padding: 0 0 8px; font-weight: 600">Layouts</legend>
+<label style="display: flex; align-items: flex-start; gap: 8px; padding: 10px; border: 1px solid #d5d9e0; border-radius: 10px"><input type="radio" name="layout" style="margin: 2px 0 0"><span style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600">Simple</span><span style="color: #5b6472; font-size: 12px">Editor and results only</span></span></label>
+<label style="display: flex; align-items: flex-start; gap: 8px; padding: 10px; border: 1px solid #d5d9e0; border-radius: 10px"><input type="radio" name="layout" style="margin: 2px 0 0"><span style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600">Standard</span><span style="color: #5b6472; font-size: 12px">Sidebar, editor, results, assistant</span></span></label>
+<label style="display: flex; align-items: flex-start; gap: 8px; padding: 10px; border: 2px solid #2563eb; border-radius: 10px"><input type="radio" name="layout" checked style="margin: 2px 0 0"><span style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600">Review</span><span style="color: #5b6472; font-size: 12px">Custom: results beside the editor</span></span></label>
+<label style="display: flex; align-items: flex-start; gap: 8px; padding: 10px; border: 1px solid #d5d9e0; border-radius: 10px"><input type="radio" name="layout" style="margin: 2px 0 0"><span style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600">Wide results</span><span style="color: #5b6472; font-size: 12px">Custom: results take the full width</span></span></label>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; padding-top: 4px">
+<button type="button" style="height: 28px; padding: 0 10px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px">New layout</button>
+<button type="button" style="height: 28px; padding: 0 10px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px">Duplicate</button>
+<button type="button" style="height: 28px; padding: 0 10px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px">Rename</button>
+<button type="button" style="padding: 4px 10px; border: 0; background: none; color: #b91c1c; font-size: 12px">Delete</button>
+</div>
+<p style="margin: 0; color: #5b6472; font-size: 12px">Simple and Standard cannot be changed. Duplicate one to start a custom layout.</p>
+</fieldset>
+
+<section aria-label="Preview of the window" style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: center; gap: 8px">
+<span style="font-weight: 600">Review</span>
+<span style="color: #5b6472; font-size: 12px">Preview of the window</span>
+</div>
+<div style="flex-grow: 1; min-height: 0; display: flex; flex-direction: column; border: 1px solid #e1e4ea; border-radius: 10px; overflow: hidden; background: #eceef2">
+<div aria-hidden="true" style="height: 24px; display: flex; align-items: center; gap: 6px; padding: 0 8px; background: #eceef2; color: #5b6472; font-size: 11px">Title bar, menu bar and widgets</div>
+<div style="flex-grow: 1; min-height: 0; padding: 6px; display: grid; grid-template-columns: 22% 6px minmax(0, 1fr) 6px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 0">
+<button type="button" aria-label="Move the Sidebar panel" style="grid-column: 1; padding: 10px; border: 1px solid #7f8898; border-radius: 8px; background: #ffffff; color: #1b1f27; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left"><span style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24"><path d="M9 5h.01M15 5h.01M9 12h.01M15 12h.01M9 19h.01M15 19h.01" stroke="#5b6472" stroke-width="3" stroke-linecap="round"></path></svg>Sidebar</span><span style="color: #5b6472; font-size: 11px">Files, Connections, Schema, Git</span></button>
+<span aria-hidden="true" style="grid-column: 2; align-self: center; justify-self: center; width: 3px; height: 32px; border-radius: 2px; background: #7f8898"></span>
+<div style="grid-column: 3; display: grid; grid-template-rows: minmax(0, 3fr) 6px minmax(0, 2fr)">
+<button type="button" aria-label="Move the Editor panel" style="grid-row: 1; padding: 10px; border: 1px solid #7f8898; border-radius: 8px; background: #ffffff; color: #1b1f27; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left"><span style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24"><path d="M9 5h.01M15 5h.01M9 12h.01M15 12h.01M9 19h.01M15 19h.01" stroke="#5b6472" stroke-width="3" stroke-linecap="round"></path></svg>Editor</span><span style="color: #5b6472; font-size: 11px">Always shown</span></button>
+<span aria-hidden="true" style="grid-row: 2; align-self: center; justify-self: center; width: 32px; height: 3px; border-radius: 2px; background: #7f8898"></span>
+<button type="button" aria-label="Move the Assistant panel" style="grid-row: 3; padding: 10px; border: 2px solid #2563eb; border-radius: 8px; background: #eaf1fe; color: #1b1f27; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left"><span style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24"><path d="M9 5h.01M15 5h.01M9 12h.01M15 12h.01M9 19h.01M15 19h.01" stroke="#5b6472" stroke-width="3" stroke-linecap="round"></path></svg>Assistant</span><span style="color: #5b6472; font-size: 11px">Moved here from the right</span></button>
+</div>
+<span aria-hidden="true" style="grid-column: 4; align-self: center; justify-self: center; width: 3px; height: 32px; border-radius: 2px; background: #7f8898"></span>
+<button type="button" aria-label="Move the Results panel" style="grid-column: 5; padding: 10px; border: 1px solid #7f8898; border-radius: 8px; background: #ffffff; color: #1b1f27; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left"><span style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24"><path d="M9 5h.01M15 5h.01M9 12h.01M15 12h.01M9 19h.01M15 19h.01" stroke="#5b6472" stroke-width="3" stroke-linecap="round"></path></svg>Results</span><span style="color: #5b6472; font-size: 11px">Beside the editor</span></button>
+</div>
+<div aria-hidden="true" style="height: 20px; padding: 0 8px; display: flex; align-items: center; background: #eceef2; border-top: 1px dashed #7f8898; color: #5b6472; font-size: 11px">Status bar (hidden in this layout)</div>
+</div>
+<p style="margin: 0; color: #5b6472; font-size: 12px">Slots: left, right, above or below a panel, or as a tab in a panel.</p>
+</section>
+
+<div style="display: flex; flex-direction: column; gap: 14px">
+<fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 6px">
+<legend style="padding: 0 0 6px; font-weight: 600">Panels</legend>
+<label style="display: flex; align-items: center; gap: 8px"><input type="checkbox" checked><span>Sidebar</span></label>
+<label style="display: flex; align-items: center; gap: 8px; opacity: 0.6"><input type="checkbox" checked disabled><span>Editor</span></label>
+<label style="display: flex; align-items: center; gap: 8px"><input type="checkbox" checked><span>Results</span></label>
+<label style="display: flex; align-items: center; gap: 8px"><input type="checkbox" checked><span>Assistant</span></label>
+<label style="display: flex; align-items: center; gap: 8px"><input type="checkbox"><span>Status bar</span></label>
+</fieldset>
+<label style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 12px; font-weight: 600">Results position</span>
+<select style="height: 32px; padding: 0 10px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27"><option>Beside the editor</option><option>Below the editor</option><option>Tab in the editor</option></select></label>
+<fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 6px">
+<legend style="padding: 0 0 6px; font-size: 12px; font-weight: 600">Sidebar side</legend>
+<div style="display: flex; gap: 16px">
+<label style="display: flex; align-items: center; gap: 6px"><input type="radio" name="side" checked><span>Left</span></label>
+<label style="display: flex; align-items: center; gap: 6px"><input type="radio" name="side"><span>Right</span></label>
+</div>
+</fieldset>
+<label style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 12px; font-weight: 600">Sidebar width (pixels)</span>
+<input type="number" value="280" style="height: 32px; padding: 0 10px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27">
+<span style="color: #5b6472; font-size: 12px">160 to 480</span></label>
+<label style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 12px; font-weight: 600">Editor height (percent)</span>
+<input type="number" value="60" style="height: 32px; padding: 0 10px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27">
+<span style="color: #5b6472; font-size: 12px">20 to 80</span></label>
+</div>
+
+</div>
+
+<div style="display: flex; align-items: center; gap: 8px">
+<button type="button" style="height: 32px; padding: 0 12px; border: 0; background: none; color: #2563eb">Reset to Standard</button>
+<span style="flex-grow: 1"></span>
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27">Cancel</button>
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27">Apply</button>
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #2563eb; border-radius: 6px; background: #2563eb; color: #ffffff; font-weight: 600">Save layout</button>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":760}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

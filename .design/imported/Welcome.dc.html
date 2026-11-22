@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tabloxide start page</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit}
+</style>
+</helmet>
+<main style="width: 1100px; height: 700px; padding: 56px 24px 24px; background: #eceef2; color: #1b1f27; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.4; display: flex; flex-direction: column; align-items: center; gap: 24px">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+<div style="display: flex; align-items: center; gap: 12px"><svg aria-hidden="true" width="44" height="44" viewBox="0 0 24 24"><rect x="2.75" y="2.75" width="18.5" height="18.5" rx="3.5" fill="#ffffff" stroke="#1b1f27" stroke-width="1.5"></rect><path d="M2.75 6.25a3.5 3.5 0 0 1 3.5-3.5h11.5a3.5 3.5 0 0 1 3.5 3.5V8.5H2.75z" fill="#1b1f27"></path><path d="M2.75 14.5h18.5M9 8.5v12.75M15 8.5v12.75" stroke="#1b1f27" stroke-width="1.5" fill="none"></path><rect x="9.75" y="9.25" width="4.5" height="4.5" fill="#b45309"></rect></svg><h1 style="margin: 0; font-size: 32px"><span style="font-weight: 700; color: #1b1f27">Tabl<span style="color: #b45309">oxide</span></span></h1></div>
+<p style="max-width: 460px; margin: 0; color: #5b6472; text-align: center">A workspace is a folder that contains your SQL files and the connection definitions. Open a folder first. Then you can add connections, write SQL, and see the schema.</p>
+</div>
+<div style="width: 640px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+<button type="button" style="padding: 16px; border: 2px solid #2563eb; border-radius: 12px; background: #ffffff; color: #1b1f27; text-align: left; display: flex; flex-direction: column; gap: 8px"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z M14 3v4h4" stroke="#2563eb" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg><span style="font-weight: 600">Open folder…</span><span style="color: #5b6472; font-size: 12px">Ctrl+O</span></button>
+<button type="button" style="padding: 16px; border: 1px solid #e1e4ea; border-radius: 12px; background: #ffffff; color: #1b1f27; text-align: left; display: flex; flex-direction: column; gap: 8px"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24"><path d="M6 3v12 M6 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M18 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M18 9c0 5-12 2-12 6" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg><span style="font-weight: 600">Clone a repository…</span><span style="color: #5b6472; font-size: 12px">From a Git address</span></button>
+<button type="button" style="padding: 16px; border: 1px solid #e1e4ea; border-radius: 12px; background: #ffffff; color: #1b1f27; text-align: left; display: flex; flex-direction: column; gap: 8px"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24"><path d="M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3z M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6 M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg><span style="font-weight: 600">New connection…</span><span style="color: #5b6472; font-size: 12px">Without a workspace</span></button>
+</div>
+<section aria-label="Recent workspaces" style="width: 640px; padding: 12px; border-radius: 12px; background: #ffffff; border: 1px solid #e1e4ea; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: center; padding: 0 4px 4px"><h2 style="margin: 0; font-size: 14px; font-weight: 600">Recent workspaces</h2><span style="flex-grow: 1"></span><span style="color: #5b6472; font-size: 12px">Ctrl+K to search</span></div>
+<button type="button" style="padding: 10px 12px; border: 0; border-radius: 8px; background: none; color: #1b1f27; text-align: left; display: flex; align-items: center; gap: 12px"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z M14 3v4h4" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg><span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600">sql-project</span><span style="color: #5b6472; font-size: 12px">/home/ada/work/sql-project</span></span><span style="color: #5b6472; font-size: 12px">PostgreSQL · 2 hours ago</span></button>
+<button type="button" style="padding: 10px 12px; border: 0; border-radius: 8px; background: none; color: #1b1f27; text-align: left; display: flex; align-items: center; gap: 12px"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z M14 3v4h4" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg><span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600">shop-reports</span><span style="color: #5b6472; font-size: 12px">/home/ada/work/shop-reports</span></span><span style="color: #5b6472; font-size: 12px">PostgreSQL · yesterday</span></button>
+<button type="button" style="padding: 10px 12px; border: 0; border-radius: 8px; background: none; color: #1b1f27; text-align: left; display: flex; align-items: center; gap: 12px"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z M14 3v4h4" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg><span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600">metrics-lab</span><span style="color: #5b6472; font-size: 12px">/home/ada/lab/metrics-lab</span></span><span style="color: #5b6472; font-size: 12px">TimescaleDB · last week</span></button>
+<button type="button" style="padding: 10px 12px; border: 0; border-radius: 8px; background: none; color: #1b1f27; text-align: left; display: flex; align-items: center; gap: 12px"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z M14 3v4h4" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg><span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600">graph-project</span><span style="color: #5b6472; font-size: 12px">/home/ada/lab/graph-project</span></span><span style="color: #5b6472; font-size: 12px">Neo4j · last week</span></button>
+</section>
+</main>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1100,"height":700}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
