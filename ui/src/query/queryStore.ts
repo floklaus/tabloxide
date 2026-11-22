@@ -9,6 +9,7 @@ import {
   type RunTarget,
   type StatementReport_Serialize,
 } from '../bindings'
+import { invalidateCatalog } from '../completion/catalogCache'
 import { toMessage } from '../lib/errors'
 import { useTabsStore } from '../tabs/tabsStore'
 
@@ -213,6 +214,11 @@ export const createQueryStore = (): QueryStore =>
             notice:
               statements.length === 0 ? 'There is no statement to run.' : null,
           })
+          // A statement without rows can change the schema. The completion then
+          // reads the catalog again.
+          if (statements.some((s) => s.outcome.type === 'command')) {
+            invalidateCatalog(session.connectionId)
+          }
           const lastOutcome = statements.at(-1)?.outcome
           dropLostSession(
             lastOutcome?.type === 'failed' ? lastOutcome.error : null,

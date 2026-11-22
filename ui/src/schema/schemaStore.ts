@@ -6,6 +6,7 @@ import {
   type SchemaInfo,
   type StatementReport_Serialize,
 } from '../bindings'
+import { invalidateCatalog } from '../completion/catalogCache'
 import { toMessage } from '../lib/errors'
 import { useResultsViewStore } from '../results/resultsViewStore'
 import {
@@ -165,6 +166,8 @@ export const useSchemaStore = create<SchemaState>((set, get) => {
     refresh: async () => {
       const { session, expanded, selected } = get()
       if (!session) return
+      // The user expects the completion to know the same structure as the tree.
+      invalidateCatalog(session.connectionId)
       set({ relations: {}, details: {} })
       const reads: Promise<void>[] = [loadSchemas(session.id)]
       for (const key of expanded) {

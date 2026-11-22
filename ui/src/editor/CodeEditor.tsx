@@ -1,4 +1,11 @@
-import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete'
+import {
+  autocompletion,
+  closeBrackets,
+  closeBracketsKeymap,
+  completionKeymap,
+  type CompletionContext,
+  type CompletionResult,
+} from '@codemirror/autocomplete'
 import {
   defaultKeymap,
   history,
@@ -46,9 +53,16 @@ export type CodeEditorProps = {
   onChange: (value: string) => void
   onRun: (target: RunTarget) => void
   onSave: () => void
+  /** Gives completion options for the database of the tab. The keywords come from SQL. */
+  completionSource?: (
+    context: CompletionContext,
+  ) => Promise<CompletionResult | null>
 }
 
-type Callbacks = Pick<CodeEditorProps, 'onChange' | 'onRun' | 'onSave'>
+type Callbacks = Pick<
+  CodeEditorProps,
+  'onChange' | 'onRun' | 'onSave' | 'completionSource'
+>
 
 function targetOf(state: EditorState): RunTarget {
   const { from, to } = state.selection.main
@@ -90,6 +104,12 @@ function makeState(
       highlightActiveLine(),
       highlightSelectionMatches(),
       sql({ dialect: PostgreSQL }),
+      // The completion of the database joins the keyword completion of the language.
+      PostgreSQL.language.data.of({
+        autocomplete: (context: CompletionContext) =>
+          callbacks.current.completionSource?.(context) ?? null,
+      }),
+      autocompletion({ icons: false }),
       syntaxHighlighting(classHighlighter),
       preferenceExtensions(preferences),
       keymap.of([
@@ -104,6 +124,7 @@ function makeState(
           },
         },
         ...closeBracketsKeymap,
+        ...completionKeymap,
         ...defaultKeymap,
         ...historyKeymap,
         ...searchKeymap,

@@ -20,6 +20,7 @@ This will be the first release.
 ### Editor and results
 
 - SQL editor with tabs for files and for text without a file. Each tab has its own database session.
+- The editor completes keywords, and the schemas, tables, views, and columns of the connected database. `Ctrl+Space` opens the list.
 - You can run the statement at the cursor, the selection, or all statements of a tab. You can cancel a run.
 - The result grid reads the rows in pages. It renders only the visible rows and the visible columns.
 - The grid has sort, column resize, column visibility, and copy of a cell or a row.

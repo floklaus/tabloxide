@@ -330,6 +330,25 @@ Not measured: the build on macOS and on Windows, and the build time on the CI ma
 
 Set the sequence of these items from user feedback after the public release.
 
+Status on 2026-11-22: no user feedback exists yet. Thus the sequence below starts with the items that need no decision of the product owner. The item "More engines" is the connector design in `Connector Design.md`. It has its own stages and is not in this table.
+
+| Milestone | Content | Necessary from the product owner |
+|---|---|---|
+| M13 — Completion | Completion of schemas, tables, views, and columns from a cache of the catalog | Nothing |
+| M14 — Formatting and snippets | A command that formats SQL. Snippets that the workspace stores. | Nothing |
+| M15 — Plan view | A tree view of the execution plan of PostgreSQL and DuckDB, with the costliest steps marked | Nothing |
+| M16 — Schema diff and migrations | A comparison of the structure of two connections. A migration script from the differences. | The format of the migration files, or the migration tool of the team |
+| M17 — Data editing | A change of cells in the result grid, with explicit transaction controls | The rules for a production connection, and if a table without a primary key can change |
+| M18 — Git hosting | Pull requests and the review state of the hosted Git service | The providers (GitHub, GitLab, or a different one) |
+
+Status of M13 on 2026-11-22: M13 is complete in code.
+
+* Each connection has its own catalog session for the completion. Thus a read of the catalog never closes an open result of a query tab.
+* The cache reads the schemas and the tables at the first completion. It reads the columns of a table only when the completion needs them.
+* The cache reads the catalog again after a statement without rows, after a refresh of the schema browser, and after a change of the connection.
+* After an alias and a dot, the list offers the columns of that table. Without a qualifier, the list starts with the columns of the tables of the statement.
+* The statement reader of the completion is in the UI. It does not use the statement splitter of `core`, because the completion needs an answer without a call to the backend.
+
 Status on 2026-11-16: the product owner added an AI assistant to this phase, and it is complete in code. It writes SQL for the schema of the connected database, and it analyzes the plan of a statement that it reads with `EXPLAIN`. Thus the item "Explain-plan view" has a first part: the plan as text with an analysis. A graphic view of the plan is not started.
 
 Decisions of the product owner for the assistant:

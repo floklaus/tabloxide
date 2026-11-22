@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { RunTarget } from '../bindings'
+import { completeSql } from '../completion/sqlCompletion'
 import { CodeEditor, type CodeEditorHandle } from '../editor/CodeEditor'
 import { setActiveEditor } from '../editor/editorBridge'
 import { usePreferencesStore } from '../preferences/preferencesStore'
@@ -142,6 +143,7 @@ export function QueryEditor() {
         onChange={(value) => setContent(tab.id, value)}
         onRun={run}
         onSave={() => void saveTab(tab.id)}
+        completionSource={(context) => completeSql(context, tab.connectionId)}
       />
     </section>
   )

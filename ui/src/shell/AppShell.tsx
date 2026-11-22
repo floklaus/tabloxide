@@ -9,6 +9,7 @@ import { AssistantPanel } from '../assistant/AssistantPanel'
 import { useAssistantStore } from '../assistant/assistantStore'
 import { ConnectionList } from '../connections/ConnectionList'
 import { FileTree } from '../files/FileTree'
+import { resetCatalogs } from '../completion/catalogCache'
 import { GitPanel } from '../git/GitPanel'
 import { useGitStore } from '../git/gitStore'
 import { startWorkspaceWatch } from '../workspace/watch'
@@ -91,6 +92,7 @@ export function AppShell() {
       stopPersist()
       useTabsStore.getState().reset()
       resetQueryStores()
+      resetCatalogs()
       useSchemaStore.getState().reset()
       useGitStore.getState().reset()
       useAssistantStore.getState().reset()

@@ -1,3 +1,9 @@
+import {
+  acceptCompletion,
+  completionStatus,
+  currentCompletions,
+  startCompletion,
+} from '@codemirror/autocomplete'
 import { EditorView } from '@codemirror/view'
 import { render } from '@testing-library/react'
 import { createRef } from 'react'
@@ -5,6 +11,7 @@ import { describe, expect, test, vi } from 'vitest'
 import {
   CodeEditor,
   type CodeEditorHandle,
+  type CodeEditorProps,
   type EditorPreferences,
 } from './CodeEditor'
 
@@ -15,7 +22,13 @@ const preferences: EditorPreferences = {
   word_wrap: false,
 }
 
-function setup(initial: { tabId?: string; value?: string } = {}) {
+function setup(
+  initial: {
+    tabId?: string
+    value?: string
+    completionSource?: CodeEditorProps['completionSource']
+  } = {},
+) {
   const ref = createRef<CodeEditorHandle>()
   const handlers = { onChange: vi.fn(), onRun: vi.fn(), onSave: vi.fn() }
   const props = {
@@ -23,6 +36,7 @@ function setup(initial: { tabId?: string; value?: string } = {}) {
     tabId: initial.tabId ?? 't1',
     value: initial.value ?? 'select 1;\nselect 2',
     preferences,
+    completionSource: initial.completionSource,
     ...handlers,
   }
   const { container, rerender } = render(<CodeEditor {...props} />)
@@ -94,6 +108,31 @@ describe('CodeEditor', () => {
 
     update({ tabId: 't1', value: 'select 1;\nselect 2' })
     expect(view().state.selection.main.head).toBe(5)
+  })
+
+  test('joins the completion of the database and the keywords of SQL', async () => {
+    const completionSource = vi.fn(async (context: { pos: number }) => ({
+      from: context.pos - 2,
+      options: [{ label: 'item_name', type: 'property' }],
+    }))
+    const { view } = setup({ value: 'select it', completionSource })
+
+    view().dispatch({ selection: { anchor: 9 } })
+    startCompletion(view())
+    await vi.waitFor(() =>
+      expect(completionStatus(view().state)).toBe('active'),
+    )
+    const labels = currentCompletions(view().state).map(
+      (option) => option.label,
+    )
+    // The editor accepts a completion only after a short delay after the list opened.
+    await vi.waitFor(() => {
+      acceptCompletion(view())
+      expect(view().state.doc.toString()).toBe('select item_name')
+    })
+
+    expect(labels).toContain('item_name')
+    expect(completionSource).toHaveBeenCalled()
   })
 
   test('applies the preferences', () => {

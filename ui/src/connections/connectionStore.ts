@@ -1,3 +1,4 @@
+import { invalidateCatalog } from '../completion/catalogCache'
 import { create } from 'zustand'
 import { commands, type CommandError, type ConnectError } from '../bindings'
 import { toMessage } from '../lib/errors'
@@ -84,8 +85,11 @@ export const useConnectionStore = create<ConnectionState>((set) => ({
     const error = await applyChange(() =>
       commands.connectionSave(profile, password),
     )
-    // The settings changed, so the last test result is not valid.
-    if (!error) set((state) => ({ tests: withoutKey(state.tests, profile.id) }))
+    // The settings changed, so the last test result and the catalog are not valid.
+    if (!error) {
+      set((state) => ({ tests: withoutKey(state.tests, profile.id) }))
+      invalidateCatalog(profile.id)
+    }
     return error
   },
 
@@ -96,6 +100,7 @@ export const useConnectionStore = create<ConnectionState>((set) => ({
       return
     }
     set((state) => ({ tests: withoutKey(state.tests, id) }))
+    invalidateCatalog(id)
   },
 
   duplicate: async (id) => {
