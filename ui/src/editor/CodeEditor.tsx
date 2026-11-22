@@ -31,7 +31,12 @@ import {
 } from '@codemirror/view'
 import { classHighlighter } from '@lezer/highlight'
 import { useEffect, useImperativeHandle, useRef, type Ref } from 'react'
-import type { EditorPreferences_Serialize, RunTarget } from '../bindings'
+import type {
+  EditorPreferences_Serialize,
+  Engine,
+  RunTarget,
+} from '../bindings'
+import { formatSql } from './formatSql'
 
 export type EditorPreferences = EditorPreferences_Serialize
 
@@ -42,6 +47,10 @@ export type CodeEditorHandle = {
   focusAt: (offset: number) => void
   /** Replaces the selection with `text` and gives the focus to the editor. */
   insertText: (text: string) => void
+  /** Formats the selection, or all text if there is no selection. */
+  format: () => void
+  /** The selection, or all text if there is no selection. */
+  getSelectedText: () => string
 }
 
 export type CodeEditorProps = {
@@ -53,6 +62,10 @@ export type CodeEditorProps = {
   onChange: (value: string) => void
   onRun: (target: RunTarget) => void
   onSave: () => void
+  /** The database engine whose SQL syntax the formatter uses. */
+  engine?: Engine
+  /** Receives the message when the formatter cannot read the SQL. */
+  onFormatError?: (message: string) => void
   /** Gives completion options for the database of the tab. The keywords come from SQL. */
   completionSource?: (
     context: CompletionContext,
@@ -61,8 +74,40 @@ export type CodeEditorProps = {
 
 type Callbacks = Pick<
   CodeEditorProps,
-  'onChange' | 'onRun' | 'onSave' | 'completionSource'
+  | 'onChange'
+  | 'onRun'
+  | 'onSave'
+  | 'completionSource'
+  | 'engine'
+  | 'onFormatError'
 >
+
+/** The selection, or all text if there is no selection. */
+function selectedRange(state: EditorState): { from: number; to: number } {
+  const { from, to } = state.selection.main
+  return from === to ? { from: 0, to: state.doc.length } : { from, to }
+}
+
+/** Formats the selection, or all text. One undo step restores the text. */
+function formatIn(view: EditorView, callbacks: Callbacks): boolean {
+  const { from, to } = selectedRange(view.state)
+  const result = formatSql(
+    view.state.sliceDoc(from, to),
+    callbacks.engine ?? 'postgres',
+    view.state.tabSize,
+  )
+  if (!result.ok) {
+    callbacks.onFormatError?.(result.message)
+    return true
+  }
+  view.dispatch({
+    changes: { from, to, insert: result.text },
+    selection: { anchor: from, head: from + result.text.length },
+    scrollIntoView: true,
+    userEvent: 'input.format',
+  })
+  return true
+}
 
 function targetOf(state: EditorState): RunTarget {
   const { from, to } = state.selection.main
@@ -115,6 +160,10 @@ function makeState(
       keymap.of([
         { key: 'Mod-Enter', run: run(targetOf) },
         { key: 'Shift-Mod-Enter', run: run(() => ({ type: 'all' })) },
+        {
+          key: 'Shift-Alt-f',
+          run: (view) => formatIn(view, callbacks.current),
+        },
         {
           key: 'Mod-s',
           preventDefault: true,
@@ -199,6 +248,18 @@ export function CodeEditor(props: CodeEditorProps) {
       const position = Math.min(offset, view.state.doc.length)
       view.dispatch({ selection: { anchor: position }, scrollIntoView: true })
       view.focus()
+    },
+    format: () => {
+      const view = viewRef.current
+      if (!view) return
+      formatIn(view, callbacks.current)
+      view.focus()
+    },
+    getSelectedText: () => {
+      const view = viewRef.current
+      if (!view) return ''
+      const { from, to } = selectedRange(view.state)
+      return view.state.sliceDoc(from, to)
     },
     insertText: (text) => {
       const view = viewRef.current

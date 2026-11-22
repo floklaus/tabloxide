@@ -1,6 +1,9 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { RunTarget } from '../bindings'
+import { combineSources } from '../completion/combine'
 import { completeSql } from '../completion/sqlCompletion'
+import { SaveSnippetDialog } from '../snippets/SaveSnippetDialog'
+import { completeSnippets } from '../snippets/snippets'
 import { CodeEditor, type CodeEditorHandle } from '../editor/CodeEditor'
 import { setActiveEditor } from '../editor/editorBridge'
 import { usePreferencesStore } from '../preferences/preferencesStore'
@@ -30,6 +33,8 @@ export function QueryEditor() {
   const connectState = useQuery((state) => state.connectState)
   const runState = useQuery((state) => state.runState)
   const jumpTo = useQuery((state) => state.jumpTo)
+  const [formatError, setFormatError] = useState<string | null>(null)
+  const [snippetText, setSnippetText] = useState<string | null>(null)
 
   useEffect(() => {
     setActiveEditor(editorRef)
@@ -84,12 +89,37 @@ export function QueryEditor() {
         {active?.read_only && <span className="badge">read-only</span>}
         {isConnecting && <span role="status">Connecting…</span>}
         {session && (
-          <span className="query__server">PostgreSQL {session.version}</span>
+          <span className="query__server">
+            {active?.engine === 'duckdb'
+              ? session.version
+              : `PostgreSQL ${session.version}`}
+          </span>
         )}
         {active && !session && !isConnecting && (
           <span className="query__server">Connects at the first run</span>
         )}
         <span className="title-bar__spacer" />
+        <button
+          type="button"
+          className="button button--small"
+          title="Format the selection, or all text (Shift+Alt+F)"
+          onClick={() => {
+            setFormatError(null)
+            editorRef.current?.format()
+          }}
+        >
+          Format
+        </button>
+        <button
+          type="button"
+          className="button button--small"
+          title="Save the selection, or all text, as a snippet"
+          onClick={() =>
+            setSnippetText(editorRef.current?.getSelectedText() ?? tab.content)
+          }
+        >
+          Save as snippet
+        </button>
         <button
           type="button"
           className="button button--small"
@@ -135,6 +165,24 @@ export function QueryEditor() {
           )}
         </div>
       )}
+      {formatError && (
+        <div className="message message--error" role="alert">
+          <p className="message__detail">{formatError}</p>
+          <button
+            type="button"
+            className="link-button"
+            onClick={() => setFormatError(null)}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+      {snippetText !== null && (
+        <SaveSnippetDialog
+          template={snippetText}
+          onClose={() => setSnippetText(null)}
+        />
+      )}
       <CodeEditor
         ref={editorRef}
         tabId={tab.id}
@@ -143,7 +191,12 @@ export function QueryEditor() {
         onChange={(value) => setContent(tab.id, value)}
         onRun={run}
         onSave={() => void saveTab(tab.id)}
-        completionSource={(context) => completeSql(context, tab.connectionId)}
+        engine={active?.engine ?? 'postgres'}
+        onFormatError={setFormatError}
+        completionSource={combineSources(
+          (context) => completeSql(context, tab.connectionId),
+          completeSnippets,
+        )}
       />
     </section>
   )

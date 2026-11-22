@@ -349,6 +349,13 @@ Status of M13 on 2026-11-22: M13 is complete in code.
 * After an alias and a dot, the list offers the columns of that table. Without a qualifier, the list starts with the columns of the tables of the statement.
 * The statement reader of the completion is in the UI. It does not use the statement splitter of `core`, because the completion needs an answer without a call to the backend.
 
+Status of M14 on 2026-11-22: M14 is complete in code.
+
+* The formatter is the library `sql-formatter` 15.9.0. It knows the dialects of PostgreSQL and DuckDB. The keywords keep the case that the user typed.
+* A snippet is a file in `.tabloxide/snippets/` of the workspace. The first line can be a comment with the description. `${name}` marks a field.
+* Six built-in snippets are available. A snippet of the workspace replaces a built-in snippet with the same name.
+* The completion list joins the snippets, the catalog, and the keywords.
+
 Status on 2026-11-16: the product owner added an AI assistant to this phase, and it is complete in code. It writes SQL for the schema of the connected database, and it analyzes the plan of a statement that it reads with `EXPLAIN`. Thus the item "Explain-plan view" has a first part: the plan as text with an analysis. A graphic view of the plan is not started.
 
 Decisions of the product owner for the assistant:

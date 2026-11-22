@@ -24,6 +24,12 @@ export function CodeEditor(props: CodeEditorProps) {
       inputRef.current?.focus()
       inputRef.current?.setSelectionRange(offset, offset)
     },
+    format: () => {},
+    getSelectedText: () => {
+      const input = inputRef.current
+      if (!input || input.selectionStart === input.selectionEnd) return value
+      return value.slice(input.selectionStart, input.selectionEnd)
+    },
     insertText: (text) => {
       const input = inputRef.current
       if (!input) return

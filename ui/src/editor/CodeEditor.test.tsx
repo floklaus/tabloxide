@@ -4,6 +4,7 @@ import {
   currentCompletions,
   startCompletion,
 } from '@codemirror/autocomplete'
+import { undo } from '@codemirror/commands'
 import { EditorView } from '@codemirror/view'
 import { render } from '@testing-library/react'
 import { createRef } from 'react'
@@ -27,6 +28,7 @@ function setup(
     tabId?: string
     value?: string
     completionSource?: CodeEditorProps['completionSource']
+    onFormatError?: CodeEditorProps['onFormatError']
   } = {},
 ) {
   const ref = createRef<CodeEditorHandle>()
@@ -37,6 +39,7 @@ function setup(
     value: initial.value ?? 'select 1;\nselect 2',
     preferences,
     completionSource: initial.completionSource,
+    onFormatError: initial.onFormatError,
     ...handlers,
   }
   const { container, rerender } = render(<CodeEditor {...props} />)
@@ -133,6 +136,37 @@ describe('CodeEditor', () => {
 
     expect(labels).toContain('item_name')
     expect(completionSource).toHaveBeenCalled()
+  })
+
+  test('formats all text, or only the selection, in one undo step', () => {
+    const { view, ref } = setup({
+      value: 'select a,b from t;\nselect c from u',
+    })
+
+    view().dispatch({ selection: { anchor: 19, head: 34 } })
+    ref.current?.format()
+    expect(view().state.doc.toString()).toBe(
+      'select a,b from t;\nselect\n  c\nfrom\n  u',
+    )
+
+    undo(view())
+    view().dispatch({ selection: { anchor: 0 } })
+    ref.current?.format()
+    expect(view().state.doc.toString()).toBe(
+      'select\n  a,\n  b\nfrom\n  t;\n\nselect\n  c\nfrom\n  u',
+    )
+  })
+
+  test('reports SQL that the formatter cannot read and keeps the text', () => {
+    const onFormatError = vi.fn()
+    const { view, ref } = setup({ value: "select 'open", onFormatError })
+
+    ref.current?.format()
+
+    expect(onFormatError).toHaveBeenCalledWith(
+      expect.stringMatching(/^The formatter cannot read/),
+    )
+    expect(view().state.doc.toString()).toBe("select 'open")
   })
 
   test('applies the preferences', () => {

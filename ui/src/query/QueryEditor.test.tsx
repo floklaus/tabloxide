@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { commands } from '../bindings'
@@ -286,5 +286,54 @@ describe('QueryEditor', () => {
 
     await user.click(screen.getByRole('button', { name: /update t set/ }))
     expect(screen.getByText(/3 rows affected/)).toBeInTheDocument()
+  })
+
+  test('saves the text of the tab as a snippet of the workspace', async () => {
+    useTabsStore.setState({
+      tabs: [{ ...tab, content: 'select * from item' }],
+    })
+    fileWrite.mockResolvedValue(ok(null))
+    const user = renderEditor()
+
+    await user.click(screen.getByRole('button', { name: 'Save as snippet' }))
+    const dialog = screen.getByRole('dialog', { name: 'Save as snippet' })
+    expect(dialog).toHaveTextContent('select * from item')
+    await user.type(screen.getByLabelText('Name'), 'all items')
+    await user.type(screen.getByLabelText('Description'), 'Every item')
+    await user.click(within(dialog).getByRole('button', { name: 'Save' }))
+
+    expect(fileWrite).toHaveBeenCalledWith(
+      '.tabloxide/snippets/all items.sql',
+      '-- Every item\nselect * from item\n',
+    )
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  test('shows the version of DuckDB without the name PostgreSQL', async () => {
+    const duck = makeProfile({
+      id: 'id-3',
+      name: 'Duck',
+      engine: 'duckdb',
+      database: ':memory:',
+    })
+    useWorkspaceStore.setState({ workspace: makeWorkspace([duck]) })
+    render(<QueryEditor />)
+    const user = userEvent.setup()
+    sessionOpen.mockResolvedValue(
+      ok({
+        status: 'connected',
+        session: {
+          id: 9,
+          connection_id: 'id-3',
+          database: ':memory:',
+          server: { version: 'DuckDB v2.0.0' },
+        },
+      }),
+    )
+
+    await user.selectOptions(screen.getByRole('combobox'), 'Duck')
+
+    expect(await screen.findByText('DuckDB v2.0.0')).toBeInTheDocument()
+    expect(screen.queryByText(/PostgreSQL/)).not.toBeInTheDocument()
   })
 })

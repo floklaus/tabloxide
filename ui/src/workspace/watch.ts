@@ -3,6 +3,7 @@ import { create } from 'zustand'
 import { commands } from '../bindings'
 import { useGitStore } from '../git/gitStore'
 import { toMessage } from '../lib/errors'
+import { invalidateSnippets } from '../snippets/snippets'
 import { useTabsStore } from '../tabs/tabsStore'
 
 type ChangeState = {
@@ -19,6 +20,8 @@ export const useWorkspaceChangeStore = create<ChangeState>(() => ({
 export function onWorkspaceChange(): void {
   useWorkspaceChangeStore.setState((state) => ({ count: state.count + 1 }))
   void useTabsStore.getState().reloadFromDisk()
+  // A snippet file can be new or changed.
+  invalidateSnippets()
   void useGitStore.getState().refreshAfterExternalChange()
 }
 

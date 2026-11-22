@@ -1330,6 +1330,17 @@ body {
   white-space: nowrap;
 }
 
+.snippet__preview {
+  max-height: 12rem;
+  margin: 0.5rem 0;
+  padding: 0.5rem;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
 .update-notice {
   position: fixed;
   right: 1rem;
