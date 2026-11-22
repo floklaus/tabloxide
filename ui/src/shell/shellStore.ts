@@ -1,37 +1,38 @@
 import { create } from 'zustand'
 import type { ConnectionProfile } from '../connections/formModel'
+import {
+  BUILT_IN_LAYOUTS,
+  normalizeSettings,
+  sameSettings,
+  STANDARD_SETTINGS,
+  type LayoutSettings,
+  type Panels,
+  type ResultsPosition,
+  type SavedLayout,
+} from './layout/layoutModel'
+
+export type { Panels, ResultsPosition } from './layout/layoutModel'
 
 export type SidebarView = 'files' | 'connections' | 'schema' | 'git' | 'history'
-
-/** Where the results pane is: below the editor, or beside it. */
-export type ResultsPosition = 'below' | 'beside'
-
-/** A built-in layout. `custom` means that the user changed a panel after the selection. */
-export type LayoutName = 'standard' | 'simple' | 'custom'
 
 /** The size of the controls and the space around them. */
 export type Density = 'comfortable' | 'compact'
 
-export type Panels = {
-  sidebar: boolean
-  assistant: boolean
-  results: boolean
-  statusBar: boolean
-}
-
-export type Dialog = 'preferences' | 'clone' | 'palette' | 'shortcuts'
+export type Dialog =
+  'preferences' | 'clone' | 'palette' | 'shortcuts' | 'layout'
 
 /** The connection that the connection form edits. */
 export type ConnectionEditing = { profile: ConnectionProfile; isNew: boolean }
 
 export const ZOOM_STEPS = [0.8, 0.9, 1, 1.1, 1.25, 1.5] as const
 
-type Persisted = {
+type Persisted = LayoutSettings & {
   density: Density
   sidebarView: SidebarView
-  panels: Panels
-  resultsPosition: ResultsPosition
-  layout: LayoutName
+  /** The layout that the window shows. `null` after a change that no layout has. */
+  layoutId: string | null
+  /** The layouts of the user. The built-in layouts are not here. */
+  customLayouts: SavedLayout[]
   zoom: number
 }
 
@@ -48,7 +49,13 @@ type ShellState = Persisted & {
   togglePanel: (panel: keyof Panels) => void
   setResultsPosition: (position: ResultsPosition) => void
   setDensity: (density: Density) => void
-  applyLayout: (layout: Exclude<LayoutName, 'custom'>) => void
+  /** Shows the layout with the identifier `id`. An unknown identifier changes nothing. */
+  applyLayout: (id: string) => void
+  /** Shows the settings. The layout identifier is the layout with the same settings. */
+  applySettings: (settings: LayoutSettings) => void
+  /** Adds a custom layout, or replaces the custom layout with the same identifier. */
+  saveLayout: (layout: SavedLayout) => void
+  deleteLayout: (id: string) => void
   zoomIn: () => void
   zoomOut: () => void
   resetZoom: () => void
@@ -60,18 +67,67 @@ type ShellState = Persisted & {
 
 const STORAGE_KEY = 'tabloxide.shell'
 
-const LAYOUTS: Record<Exclude<LayoutName, 'custom'>, Panels> = {
-  standard: { sidebar: true, assistant: false, results: true, statusBar: true },
-  simple: { sidebar: false, assistant: false, results: true, statusBar: false },
-}
-
 const DEFAULTS: Persisted = {
+  ...STANDARD_SETTINGS,
   density: 'comfortable',
   sidebarView: 'files',
-  panels: LAYOUTS.standard,
-  resultsPosition: 'below',
-  layout: 'standard',
+  layoutId: 'standard',
+  customLayouts: [],
   zoom: 1,
+}
+
+/** Returns the layout settings of the state. */
+export function settingsOf(state: LayoutSettings): LayoutSettings {
+  const {
+    panels,
+    resultsPosition,
+    assistantPlacement,
+    sidebarSide,
+    sidebarWidth,
+    editorSize,
+  } = state
+  return {
+    panels,
+    resultsPosition,
+    assistantPlacement,
+    sidebarSide,
+    sidebarWidth,
+    editorSize,
+  }
+}
+
+/** Returns the built-in layouts and the custom layouts. */
+export function allLayouts(customLayouts: SavedLayout[]): SavedLayout[] {
+  return [...BUILT_IN_LAYOUTS, ...customLayouts]
+}
+
+/** Returns the identifier of the first layout with the same settings, or `null`. */
+function matchingLayout(
+  settings: LayoutSettings,
+  customLayouts: SavedLayout[],
+): string | null {
+  return (
+    allLayouts(customLayouts).find((layout) =>
+      sameSettings(layout.settings, settings),
+    )?.id ?? null
+  )
+}
+
+type Stored = Partial<Persisted> & { layout?: string }
+
+function readCustomLayouts(value: unknown): SavedLayout[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .filter(
+      (item): item is SavedLayout =>
+        typeof item?.id === 'string' && typeof item?.name === 'string',
+    )
+    .map((item) => ({
+      id: item.id,
+      name: item.name,
+      settings: normalizeSettings(item.settings),
+      isBuiltIn: false,
+    }))
 }
 
 /** Reads the stored layout. A missing or damaged value gives the defaults. */
@@ -79,12 +135,26 @@ function load(): Persisted {
   try {
     const stored = JSON.parse(
       localStorage.getItem(STORAGE_KEY) ?? '{}',
-    ) as Partial<Persisted>
+    ) as Stored
+    const customLayouts = readCustomLayouts(stored.customLayouts)
+    const settings = normalizeSettings(stored)
+    // An earlier version stored the name of a built-in layout in `layout`.
+    const layoutId =
+      stored.layoutId !== undefined
+        ? stored.layoutId
+        : stored.layout === 'standard' || stored.layout === 'simple'
+          ? stored.layout
+          : null
+    const isKnown = allLayouts(customLayouts).some(
+      (layout) => layout.id === layoutId,
+    )
     return {
       ...DEFAULTS,
-      ...stored,
+      ...settings,
+      sidebarView: stored.sidebarView ?? DEFAULTS.sidebarView,
       density: stored.density === 'compact' ? 'compact' : 'comfortable',
-      panels: { ...DEFAULTS.panels, ...stored.panels },
+      customLayouts,
+      layoutId: isKnown ? layoutId : null,
       zoom: ZOOM_STEPS.includes(stored.zoom as (typeof ZOOM_STEPS)[number])
         ? (stored.zoom as number)
         : 1,
@@ -96,19 +166,15 @@ function load(): Persisted {
 
 function save(state: Persisted): void {
   try {
-    const { density, sidebarView, panels, resultsPosition, layout, zoom } =
-      state
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        density,
-        sidebarView,
-        panels,
-        resultsPosition,
-        layout,
-        zoom,
-      }),
-    )
+    const persisted: Persisted = {
+      ...settingsOf(state),
+      density: state.density,
+      sidebarView: state.sidebarView,
+      layoutId: state.layoutId,
+      customLayouts: state.customLayouts,
+      zoom: state.zoom,
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted))
   } catch {
     // Without the storage, the layout starts with the defaults at the next start.
   }
@@ -141,8 +207,16 @@ export const useShellStore = create<ShellState>((set, get) => {
     set(patch)
     save({ ...get(), ...patch })
   }
+  /** Changes the layout settings. The layout identifier follows the new settings. */
+  const changeSettings = (patch: Partial<LayoutSettings>) => {
+    const settings = normalizeSettings({ ...settingsOf(get()), ...patch })
+    change({
+      ...settings,
+      layoutId: matchingLayout(settings, get().customLayouts),
+    })
+  }
   const setPanel = (panel: keyof Panels, value: boolean) =>
-    change({ panels: { ...get().panels, [panel]: value }, layout: 'custom' })
+    changeSettings({ panels: { ...get().panels, [panel]: value } })
 
   return {
     ...load(),
@@ -160,12 +234,36 @@ export const useShellStore = create<ShellState>((set, get) => {
       else get().showSidebar(view)
     },
     togglePanel: (panel) => setPanel(panel, !get().panels[panel]),
-    setResultsPosition: (resultsPosition) => change({ resultsPosition }),
+    setResultsPosition: (resultsPosition) =>
+      changeSettings({ resultsPosition }),
     setDensity: (density) => {
       change({ density })
       applyDensity(density)
     },
-    applyLayout: (layout) => change({ layout, panels: LAYOUTS[layout] }),
+    applyLayout: (id) => {
+      const layout = allLayouts(get().customLayouts).find(
+        (item) => item.id === id,
+      )
+      if (layout) change({ ...layout.settings, layoutId: layout.id })
+    },
+    applySettings: (settings) => changeSettings(settings),
+    saveLayout: (layout) => {
+      if (layout.isBuiltIn) return
+      const stored = { ...layout, settings: normalizeSettings(layout.settings) }
+      const others = get().customLayouts.filter((item) => item.id !== layout.id)
+      const customLayouts = [...others, stored]
+      change({
+        customLayouts,
+        layoutId: matchingLayout(settingsOf(get()), customLayouts),
+      })
+    },
+    deleteLayout: (id) => {
+      const customLayouts = get().customLayouts.filter((item) => item.id !== id)
+      change({
+        customLayouts,
+        layoutId: matchingLayout(settingsOf(get()), customLayouts),
+      })
+    },
     zoomIn: () => {
       const zoom = nextZoom(get().zoom, 1)
       change({ zoom })

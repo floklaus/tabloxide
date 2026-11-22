@@ -433,6 +433,27 @@ export function buildCommands(): Command[] {
       run: () => shell().applyLayout('simple'),
     },
     {
+      id: 'view.layout-edit',
+      label: 'Edit layout…',
+      group: 'View',
+      isEnabled: always,
+      run: () => shell().openDialog('layout'),
+    },
+    ...shell().customLayouts.map((layout): Command => ({
+      id: `view.layout-${layout.id}`,
+      label: `Layout: ${layout.name}`,
+      group: 'View',
+      isEnabled: always,
+      run: () => shell().applyLayout(layout.id),
+    })),
+    {
+      id: 'view.results-tab',
+      label: 'Results as a tab in the editor',
+      group: 'View',
+      isEnabled: always,
+      run: () => shell().setResultsPosition('tab'),
+    },
+    {
       id: 'view.results-below',
       label: 'Results below the editor',
       group: 'View',

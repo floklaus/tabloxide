@@ -11,6 +11,7 @@ Phase 1 of `docs/Implementation Plan.md` (milestones M0 to M6) is complete in co
 
 - **Navigation:** The title bar has a menu bar with the menus File, Connections, Git, and View. It also has widgets for the project, the connection of the tab, and the Git branch, and a command palette (`Ctrl+K`). The tool strip on the left selects the sidebar view: files, connections, schema, Git, or history. The tool strip on the right shows the assistant.
 - **View:** The View menu shows or hides each panel and puts the results below or beside the editor. It also selects a layout, a density (comfortable or compact), a zoom, and a theme: system, light, dark, neon, or high contrast. The preferences have the same settings for the theme, the density, and the layout.
+- **Layouts:** View › Layout › Edit layout opens the layout editor. A custom layout sets the visible panels, the side of the sidebar, and two sizes. It also sets the place of the results (below, beside, or a tab in the editor) and of the assistant. Drag a panel to a slot in the preview, or move it with the menu of its handle.
 - **Workspace:** A workspace is a folder with your SQL files. The file `tabloxide.toml` in that folder holds the connection definitions without secrets.
 - **Connections:** Add, edit, duplicate, delete, and test connections. A password is in the credential store of the operating system, or it comes from an environment variable.
 - **Editor:** SQL editor with tabs for files and for buffers without a file. Each tab has its own database session.

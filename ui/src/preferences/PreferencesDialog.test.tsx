@@ -169,7 +169,7 @@ describe('PreferencesDialog', () => {
 
     expect(document.documentElement.dataset.theme).toBe('neon')
     expect(document.documentElement.dataset.density).toBe('compact')
-    expect(useShellStore.getState().layout).toBe('simple')
+    expect(useShellStore.getState().layoutId).toBe('simple')
     expect(useShellStore.getState().panels.sidebar).toBe(false)
   })
 

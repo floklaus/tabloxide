@@ -1,7 +1,8 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { commands } from '../bindings'
+import { activeQueryStore } from '../query/queryStore'
 import { useTabsStore } from '../tabs/tabsStore'
 import { makeProfile, makeWorkspace } from '../test/fixtures'
 import { useThemeStore } from '../theme/themeStore'
@@ -444,6 +445,90 @@ describe('shortcuts', () => {
     )
     expect(
       screen.getByRole('dialog', { name: 'Keyboard shortcuts' }),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('layouts', () => {
+  test('the results can be a tab in the editor, and the user switches between the tabs', async () => {
+    useShellStore.getState().setResultsPosition('tab')
+    const user = renderShell()
+
+    const tabs = screen.getByRole('tablist', { name: 'Editor or results' })
+    expect(
+      within(tabs).getByRole('tab', { name: 'SQL editor' }),
+    ).toHaveAttribute('aria-selected', 'true')
+    await user.click(within(tabs).getByRole('tab', { name: 'Results' }))
+
+    expect(screen.getByRole('region', { name: 'Results' })).toBeVisible()
+    expect(
+      screen.getByRole('region', { name: 'Editor', hidden: true }),
+    ).not.toBeVisible()
+  })
+
+  test('in the tab mode, a new result opens the results tab', async () => {
+    useShellStore.getState().setResultsPosition('tab')
+    renderShell()
+    await waitFor(() => expect(useTabsStore.getState().isLoaded).toBe(true))
+    const tabs = screen.getByRole('tablist', { name: 'Editor or results' })
+
+    act(() =>
+      activeQueryStore().setState({
+        statements: [
+          {
+            range: { from: 0, to: 8 },
+            elapsed_ms: 1,
+            outcome: { type: 'command', affected_rows: 1 },
+          },
+        ],
+      }),
+    )
+
+    expect(within(tabs).getByRole('tab', { name: 'Results' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+  })
+
+  test('the sidebar can be on the right and the assistant below the editor', () => {
+    useShellStore.getState().applySettings({
+      ...useShellStore.getState(),
+      sidebarSide: 'right',
+      assistantPlacement: 'below-editor',
+      panels: {
+        sidebar: true,
+        assistant: true,
+        results: true,
+        statusBar: true,
+      },
+    })
+
+    renderShell()
+
+    const sidebar = screen.getByRole('navigation', { name: /^Sidebar/ })
+    const editor = screen.getByRole('region', { name: 'Editor' })
+    const assistant = screen.getByRole('region', { name: 'Assistant' })
+    // The sidebar is after the editor in the document, thus on the right.
+    expect(
+      editor.compareDocumentPosition(sidebar) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    // The assistant is in the column of the editor.
+    expect(editor.closest('[data-group]')?.contains(assistant)).toBe(true)
+  })
+
+  test('View › Layout › Edit layout opens the layout editor', async () => {
+    const user = renderShell()
+
+    const menu = await openMenu(user, 'View')
+    within(menu)
+      .getByRole('menuitem', { name: /^Layout/ })
+      .focus()
+    await user.keyboard('{ArrowRight}')
+    await user.click(screen.getByRole('menuitem', { name: /Edit layout/ }))
+
+    expect(
+      screen.getByRole('dialog', { name: 'Edit layout' }),
     ).toBeInTheDocument()
   })
 })

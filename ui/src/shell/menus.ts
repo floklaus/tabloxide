@@ -12,6 +12,12 @@ import {
   type Command,
 } from './commands'
 import { tidy, type Menu, type MenuItem } from './menu/menuModel'
+import {
+  BUILT_IN_LAYOUTS,
+  describeSettings,
+  type SavedLayout,
+} from './layout/layoutModel'
+import { saveCurrentLayout } from './layout/layoutActions'
 import { useShellStore } from './shellStore'
 
 const ENVIRONMENTS: { value: Environment; label: string }[] = [
@@ -95,6 +101,40 @@ function environmentItems(): MenuItem[] {
         .getState()
         .save({ ...profile, environment: value }, null),
   }))
+}
+
+/** The layouts as radio items, and the layout actions. */
+export function layoutItems(): MenuItem[] {
+  const shell = useShellStore.getState()
+  const radio = (layout: SavedLayout): MenuItem => ({
+    kind: 'radio',
+    label: layout.name,
+    detail: describeSettings(layout.settings),
+    checked: shell.layoutId === layout.id,
+    run: () => shell.applyLayout(layout.id),
+  })
+  return tidy([
+    { kind: 'heading', label: 'Built in' },
+    ...BUILT_IN_LAYOUTS.map(radio),
+    separator,
+    ...(shell.customLayouts.length > 0
+      ? [
+          { kind: 'heading', label: 'Custom' } as MenuItem,
+          ...shell.customLayouts.map(radio),
+        ]
+      : []),
+    separator,
+    {
+      kind: 'action',
+      label: 'Edit layout…',
+      run: () => shell.openDialog('layout'),
+    },
+    {
+      kind: 'action',
+      label: 'Save current layout as…',
+      run: () => saveCurrentLayout(),
+    },
+  ])
 }
 
 /** Returns the menus of the menu bar with the current state of each item. */
@@ -196,27 +236,7 @@ export function buildMenus(): Menu[] {
     {
       label: 'View',
       items: tidy([
-        {
-          kind: 'submenu',
-          label: 'Layout',
-          items: [
-            { kind: 'heading', label: 'Built in' },
-            {
-              kind: 'radio',
-              label: 'Standard',
-              detail: 'Sidebar, editor, and results',
-              checked: shell.layout === 'standard',
-              run: () => shell.applyLayout('standard'),
-            },
-            {
-              kind: 'radio',
-              label: 'Simple',
-              detail: 'Editor and results only',
-              checked: shell.layout === 'simple',
-              run: () => shell.applyLayout('simple'),
-            },
-          ],
-        },
+        { kind: 'submenu', label: 'Layout', items: layoutItems() },
         separator,
         { kind: 'heading', label: 'Panels' },
         check('Sidebar', 'sidebar', 'view.sidebar'),
@@ -257,6 +277,12 @@ export function buildMenus(): Menu[] {
               label: 'Beside the editor',
               checked: shell.resultsPosition === 'beside',
               run: () => shell.setResultsPosition('beside'),
+            },
+            {
+              kind: 'radio',
+              label: 'Tab in the editor',
+              checked: shell.resultsPosition === 'tab',
+              run: () => shell.setResultsPosition('tab'),
             },
           ],
         },

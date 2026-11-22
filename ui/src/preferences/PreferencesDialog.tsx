@@ -4,7 +4,7 @@ import { UpdateSettings } from '../updates/UpdateSettings'
 import { useAssistantStore } from '../assistant/assistantStore'
 import type { AssistantModel, ConfirmRule, Environment } from '../bindings'
 import { Modal } from '../connections/Modal'
-import { useShellStore } from '../shell/shellStore'
+import { allLayouts, useShellStore } from '../shell/shellStore'
 import { useThemeStore } from '../theme/themeStore'
 import { AppearanceSettings, type Appearance } from './AppearanceSettings'
 import {
@@ -20,7 +20,7 @@ function applyAppearance(appearance: Appearance): void {
   useThemeStore.getState().setTheme(appearance.theme)
   const shell = useShellStore.getState()
   shell.setDensity(appearance.density)
-  if (appearance.layout !== 'custom' && appearance.layout !== shell.layout) {
+  if (appearance.layout !== null && appearance.layout !== shell.layoutId) {
     shell.applyLayout(appearance.layout)
   }
 }
@@ -77,7 +77,7 @@ export function PreferencesDialog({ onClose }: Props) {
   const [appearance, setAppearance] = useState<Appearance>(() => ({
     theme: useThemeStore.getState().theme,
     density: useShellStore.getState().density,
-    layout: useShellStore.getState().layout,
+    layout: useShellStore.getState().layoutId,
   }))
   const setEditor = (change: Partial<Preferences['editor']>) =>
     setDraft({ ...draft, editor: { ...draft.editor, ...change } })
@@ -96,7 +96,11 @@ export function PreferencesDialog({ onClose }: Props) {
   return (
     <Modal title="Preferences" onClose={onClose} isWide hasCloseButton>
       <form className="preferences" onSubmit={(event) => void submit(event)}>
-        <AppearanceSettings value={appearance} onChange={setAppearance} />
+        <AppearanceSettings
+          value={appearance}
+          layouts={allLayouts(useShellStore.getState().customLayouts)}
+          onChange={setAppearance}
+        />
         <fieldset className="form__group">
           <legend>Editor</legend>
           <div className="form__grid form__grid--three">

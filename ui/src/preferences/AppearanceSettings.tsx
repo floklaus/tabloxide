@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
-import type { Density, LayoutName } from '../shell/shellStore'
+import type { SavedLayout } from '../shell/layout/layoutModel'
+import type { Density } from '../shell/shellStore'
 import { THEME_LABELS, THEMES, type Theme } from '../theme/theme'
 
 /** The colours of the small preview of each theme. They do not follow the current theme. */
@@ -67,15 +68,21 @@ const DENSITIES: { value: Density; label: string }[] = [
   { value: 'compact', label: 'Compact' },
 ]
 
-export type Appearance = { theme: Theme; density: Density; layout: LayoutName }
+/** `layout` is `null` if the window shows settings that no layout has. */
+export type Appearance = {
+  theme: Theme
+  density: Density
+  layout: string | null
+}
 
 type Props = {
   value: Appearance
+  layouts: SavedLayout[]
   onChange: (value: Appearance) => void
 }
 
 /** The theme, the density, and the layout of the window. */
-export function AppearanceSettings({ value, onChange }: Props) {
+export function AppearanceSettings({ value, layouts, onChange }: Props) {
   return (
     <fieldset className="form__group">
       <legend>Appearance</legend>
@@ -139,21 +146,24 @@ export function AppearanceSettings({ value, onChange }: Props) {
           <select
             id="appearance-layout"
             aria-describedby="appearance-layout-hint"
-            value={value.layout}
+            value={value.layout ?? ''}
             onChange={(event) =>
-              onChange({ ...value, layout: event.target.value as LayoutName })
+              onChange({ ...value, layout: event.target.value || null })
             }
           >
-            <option value="standard">Standard</option>
-            <option value="simple">Simple</option>
-            {value.layout === 'custom' && (
-              <option value="custom" disabled>
-                Custom
+            {value.layout === null && (
+              <option value="" disabled>
+                Changed, not saved
               </option>
             )}
+            {layouts.map((layout) => (
+              <option key={layout.id} value={layout.id}>
+                {layout.name}
+              </option>
+            ))}
           </select>
           <span id="appearance-layout-hint" className="field__hint">
-            Show or hide each panel in View › Panels.
+            Edit layouts in View › Layout › Edit layout.
           </span>
         </div>
       </div>

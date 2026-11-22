@@ -2847,3 +2847,244 @@ body {
   padding-top: 0.2rem;
   padding-bottom: 0.2rem;
 }
+
+/* ---------- Results as a tab in the editor ---------- */
+
+.work-tabs {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.work-tabs__list {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0 0.25rem;
+}
+
+.work-tabs__list .results__view[aria-selected='true'] {
+  border-color: var(--color-border);
+  background: var(--color-bg);
+}
+
+.work-tabs__panel {
+  flex: 1;
+  min-height: 0;
+}
+
+.work-tabs__panel[hidden] {
+  display: none;
+}
+
+/* ---------- Layout editor ---------- */
+
+.modal--wide:has(.layout-editor) {
+  width: min(100%, 75rem);
+}
+
+.layout-editor__intro {
+  margin: -0.5rem 0 0.75rem;
+}
+
+.layout-editor {
+  display: grid;
+  grid-template-columns: 14rem minmax(0, 1fr) 15rem;
+  gap: 1.25rem;
+}
+
+@media (max-width: 60rem) {
+  .layout-editor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.layout-editor__title {
+  margin: 0 0 0.5rem;
+  padding: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.layout-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.layout-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.layout-card input {
+  margin-top: 0.2rem;
+}
+
+.layout-card--selected {
+  border: 2px solid var(--color-focus);
+  padding: calc(0.6rem - 1px) calc(0.75rem - 1px);
+}
+
+.layout-card__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.layout-card__name {
+  font-weight: 600;
+}
+
+.layout-card__detail {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.layout-editor__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0.5rem;
+}
+
+.layout-editor__pending {
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+}
+
+.layout-editor__pending p {
+  margin: 0;
+}
+
+.layout-editor__settings {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.layout-editor__settings:disabled {
+  opacity: 0.6;
+}
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  height: 26rem;
+  padding: 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-page);
+}
+
+.preview__bar {
+  padding: 0.15rem 0.3rem;
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.preview__bar--hidden {
+  border-top: 1px dashed var(--color-control-border);
+}
+
+.preview__body {
+  position: relative;
+  display: flex;
+  flex: 1;
+  gap: 0.4rem;
+  min-height: 0;
+}
+
+.preview__column {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.preview__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+  min-height: 0;
+  padding: 0.4rem 0.5rem;
+  overflow: hidden;
+  border: 1px solid var(--color-control-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+}
+
+.preview__panel[draggable='true'] {
+  cursor: grab;
+}
+
+.preview__head {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.preview__handle.title-widget {
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  justify-content: center;
+  color: var(--color-text-muted);
+}
+
+.preview__handle .icon path {
+  stroke-width: 3;
+}
+
+.preview__handle-space {
+  width: 0.25rem;
+}
+
+.preview__name {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.preview__text {
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.preview__slots {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-page) 85%, transparent);
+}
+
+.preview__slots-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.preview__slot {
+  width: min(100%, 18rem);
+  padding: 0.75rem;
+  border: 2px dashed var(--color-focus);
+  border-radius: 8px;
+  background: var(--color-bg);
+  text-align: center;
+}

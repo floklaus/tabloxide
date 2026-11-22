@@ -372,7 +372,8 @@ Status of the new navigation on 2026-11-22: the product owner asked for the UI o
   * The View menu with the panels, the results position, the zoom, and full screen.
   * The themes neon and high contrast.
 * One command list feeds the menus, the palette, and the shortcuts. A menu item shows only a function that exists.
-* Not done: the layout editor with drag and drop and the custom layouts, and the density setting.
+* Done later on 2026-11-22: the layout editor, the custom layouts, and the compact density.
+* Not done in the layout editor: a drag of the dividers in the preview. The two size fields do the same work.
 * Not done: the assistant in its own tab, and the screens for other kinds of databases.
 * Not done because the function does not exist: Save as, Import, SSH tunnels, and certificates.
 * Also not done for the same reason: stash, the Git history of one file, and remote branches in the branch menu.

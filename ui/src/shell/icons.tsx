@@ -16,6 +16,7 @@ const PATHS = {
   external: 'M14 4h6v6 M20 4l-9 9 M18 14v6H4V6h6',
   plus: 'M12 5v14 M5 12h14',
   close: 'M6 6l12 12 M18 6L6 18',
+  grip: 'M9 6h.01 M15 6h.01 M9 12h.01 M15 12h.01 M9 18h.01 M15 18h.01',
 } as const
 
 export type IconName = keyof typeof PATHS

@@ -74,6 +74,7 @@ This will be the first release.
 - Two new themes: neon and high contrast.
 - A compact density makes the controls and the rows of the result grid smaller.
 - The preferences show the themes as cards with a preview, and have the density and the layout.
+- The layout editor makes, changes, renames, and deletes custom layouts. The results can be below the editor, beside it, or a tab in the editor. The assistant can be below the editor. The sidebar can be on the right.
 
 ### Keyboard and accessibility
 
