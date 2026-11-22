@@ -1,8 +1,10 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { commands } from '../bindings'
 import { PreferencesDialog } from './PreferencesDialog'
+import { resetShellStore, useShellStore } from '../shell/shellStore'
+import { useThemeStore } from '../theme/themeStore'
 import { DEFAULT_PREFERENCES, usePreferencesStore } from './preferencesStore'
 
 vi.mock('../bindings', async () =>
@@ -14,6 +16,8 @@ const preferencesSave = vi.mocked(commands.preferencesSave)
 describe('PreferencesDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetShellStore()
+    useThemeStore.getState().setTheme('light')
     usePreferencesStore.setState({
       preferences: DEFAULT_PREFERENCES,
       error: null,
@@ -143,5 +147,42 @@ describe('PreferencesDialog', () => {
     expect(commands.assistantKeySet).toHaveBeenCalledWith('sk-test')
     expect(preferencesSave).not.toHaveBeenCalled()
     expect(onClose).not.toHaveBeenCalled()
+  })
+
+  test('applies the theme, the density, and the layout on Save', async () => {
+    const user = userEvent.setup()
+    preferencesSave.mockResolvedValue({
+      status: 'ok',
+      data: DEFAULT_PREFERENCES,
+    })
+    render(<PreferencesDialog onClose={() => {}} />)
+
+    // The focus starts on the selected theme.
+    expect(screen.getByRole('radio', { name: 'Light' })).toHaveFocus()
+    await user.click(screen.getByRole('radio', { name: 'Neon' }))
+    const density = screen.getByRole('radiogroup', { name: 'Density' })
+    await user.click(within(density).getByRole('radio', { name: 'Compact' }))
+    await user.selectOptions(screen.getByLabelText('Layout'), 'simple')
+    // Nothing changes before Save.
+    expect(document.documentElement.dataset.theme).toBe('light')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(document.documentElement.dataset.theme).toBe('neon')
+    expect(document.documentElement.dataset.density).toBe('compact')
+    expect(useShellStore.getState().layout).toBe('simple')
+    expect(useShellStore.getState().panels.sidebar).toBe(false)
+  })
+
+  test('the close button and Cancel do not apply the appearance', async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    render(<PreferencesDialog onClose={onClose} />)
+
+    await user.click(screen.getByRole('radio', { name: 'Dark' }))
+    await user.click(screen.getByRole('button', { name: 'Close the dialog' }))
+
+    expect(onClose).toHaveBeenCalled()
+    expect(document.documentElement.dataset.theme).toBe('light')
+    expect(preferencesSave).not.toHaveBeenCalled()
   })
 })

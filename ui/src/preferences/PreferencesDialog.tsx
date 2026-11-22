@@ -4,6 +4,9 @@ import { UpdateSettings } from '../updates/UpdateSettings'
 import { useAssistantStore } from '../assistant/assistantStore'
 import type { AssistantModel, ConfirmRule, Environment } from '../bindings'
 import { Modal } from '../connections/Modal'
+import { useShellStore } from '../shell/shellStore'
+import { useThemeStore } from '../theme/themeStore'
+import { AppearanceSettings, type Appearance } from './AppearanceSettings'
 import {
   LIMITS,
   usePreferencesStore,
@@ -11,6 +14,16 @@ import {
 } from './preferencesStore'
 
 type Props = { onClose: () => void }
+
+/** Applies the theme, the density, and the layout. Each of them is stored on this machine. */
+function applyAppearance(appearance: Appearance): void {
+  useThemeStore.getState().setTheme(appearance.theme)
+  const shell = useShellStore.getState()
+  shell.setDensity(appearance.density)
+  if (appearance.layout !== 'custom' && appearance.layout !== shell.layout) {
+    shell.applyLayout(appearance.layout)
+  }
+}
 
 type NumberFieldProps = {
   label: string
@@ -61,6 +74,11 @@ export function PreferencesDialog({ onClose }: Props) {
   const stored = usePreferencesStore((state) => state.preferences)
   const save = usePreferencesStore((state) => state.save)
   const [draft, setDraft] = useState<Preferences>(stored)
+  const [appearance, setAppearance] = useState<Appearance>(() => ({
+    theme: useThemeStore.getState().theme,
+    density: useShellStore.getState().density,
+    layout: useShellStore.getState().layout,
+  }))
   const setEditor = (change: Partial<Preferences['editor']>) =>
     setDraft({ ...draft, editor: { ...draft.editor, ...change } })
 
@@ -71,61 +89,68 @@ export function PreferencesDialog({ onClose }: Props) {
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     await save(draft)
+    applyAppearance(appearance)
     onClose()
   }
 
   return (
-    <Modal title="Preferences" onClose={onClose}>
-      <form onSubmit={(event) => void submit(event)}>
-        <div className="form__grid">
-          <NumberField
-            label="Font size (pixels)"
-            value={draft.editor.font_size}
-            limits={LIMITS.fontSize}
-            onChange={(font_size) => setEditor({ font_size })}
-          />
-          <NumberField
-            label="Tab width (spaces)"
-            value={draft.editor.tab_width}
-            limits={LIMITS.tabWidth}
-            onChange={(tab_width) => setEditor({ tab_width })}
-          />
-          <label className="field field--check">
-            <input
-              type="checkbox"
-              checked={draft.editor.line_numbers}
-              onChange={(event) =>
-                setEditor({ line_numbers: event.target.checked })
+    <Modal title="Preferences" onClose={onClose} isWide hasCloseButton>
+      <form className="preferences" onSubmit={(event) => void submit(event)}>
+        <AppearanceSettings value={appearance} onChange={setAppearance} />
+        <fieldset className="form__group">
+          <legend>Editor</legend>
+          <div className="form__grid form__grid--three">
+            <NumberField
+              label="Font size (pixels)"
+              value={draft.editor.font_size}
+              limits={LIMITS.fontSize}
+              onChange={(font_size) => setEditor({ font_size })}
+            />
+            <NumberField
+              label="Tab width (spaces)"
+              value={draft.editor.tab_width}
+              limits={LIMITS.tabWidth}
+              onChange={(tab_width) => setEditor({ tab_width })}
+            />
+            <NumberField
+              label="Keep the query history (days)"
+              value={draft.history_retention_days}
+              limits={LIMITS.historyRetentionDays}
+              onChange={(history_retention_days) =>
+                setDraft({ ...draft, history_retention_days })
               }
             />
-            <span>Show line numbers</span>
-          </label>
-          <label className="field field--check">
-            <input
-              type="checkbox"
-              checked={draft.editor.word_wrap}
-              onChange={(event) =>
-                setEditor({ word_wrap: event.target.checked })
-              }
-            />
-            <span>Wrap long lines</span>
-          </label>
-          <NumberField
-            label="Keep the query history (days)"
-            value={draft.history_retention_days}
-            limits={LIMITS.historyRetentionDays}
-            onChange={(history_retention_days) =>
-              setDraft({ ...draft, history_retention_days })
-            }
-          />
-        </div>
+          </div>
+          <div className="form__checks">
+            <label className="field field--check">
+              <input
+                type="checkbox"
+                checked={draft.editor.line_numbers}
+                onChange={(event) =>
+                  setEditor({ line_numbers: event.target.checked })
+                }
+              />
+              <span>Show line numbers</span>
+            </label>
+            <label className="field field--check">
+              <input
+                type="checkbox"
+                checked={draft.editor.word_wrap}
+                onChange={(event) =>
+                  setEditor({ word_wrap: event.target.checked })
+                }
+              />
+              <span>Wrap long lines</span>
+            </label>
+          </div>
+        </fieldset>
         <fieldset className="form__group">
           <legend>Ask before a run</legend>
           <p className="field__hint">
             A destructive statement removes or changes data or structure, writes
             files, or loads an extension.
           </p>
-          <div className="form__grid">
+          <div className="form__grid form__grid--three">
             {ENVIRONMENTS.map((environment) => (
               <label key={environment.value} className="field">
                 <span className="field__label">{environment.label}</span>
@@ -157,7 +182,7 @@ export function PreferencesDialog({ onClose }: Props) {
             The assistant sends each request to the Claude API of Anthropic. The
             account of the API key pays for the requests.
           </p>
-          <div className="form__grid">
+          <div className="form__grid form__grid--two">
             <label className="field">
               <span className="field__label">Model</span>
               <select

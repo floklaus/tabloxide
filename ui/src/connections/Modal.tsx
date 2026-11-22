@@ -1,3 +1,4 @@
+import { Icon } from '../shell/icons'
 import {
   useEffect,
   useId,
@@ -12,6 +13,8 @@ type ModalProps = {
   children: ReactNode
   /** A wide dialog has space for two columns of content. */
   isWide?: boolean
+  /** Shows a close button (×) in the header. The Escape key closes each dialog. */
+  hasCloseButton?: boolean
 }
 
 const FOCUSABLE = [
@@ -54,6 +57,7 @@ export function Modal({
   onClose,
   children,
   isWide = false,
+  hasCloseButton = false,
 }: ModalProps) {
   const titleId = useId()
   const panelRef = useRef<HTMLDivElement>(null)
@@ -62,7 +66,8 @@ export function Modal({
     const previous = document.activeElement
     const panel = panelRef.current
     const firstField = panel?.querySelector<HTMLElement>(
-      'input, select, textarea, button',
+      // In a radio group, the focus goes to the selected option.
+      'input:not([type="radio"]), input[type="radio"]:checked, select, textarea, button:not(.modal__close)',
     )
     ;(firstField ?? panel)?.focus()
     return () => {
@@ -95,9 +100,22 @@ export function Modal({
           }
         }}
       >
-        <h2 id={titleId} className="modal__title">
-          {title}
-        </h2>
+        <div className="modal__header">
+          <h2 id={titleId} className="modal__title">
+            {title}
+          </h2>
+          {hasCloseButton && (
+            <button
+              type="button"
+              className="icon-link modal__close"
+              aria-label="Close the dialog"
+              title="Close (Escape)"
+              onClick={onClose}
+            >
+              <Icon name="close" size={16} />
+            </button>
+          )}
+        </div>
         {children}
       </div>
     </div>

@@ -226,6 +226,24 @@ export function buildMenus(): Menu[] {
         separator,
         {
           kind: 'submenu',
+          label: 'Density',
+          items: [
+            {
+              kind: 'radio',
+              label: 'Comfortable',
+              checked: shell.density === 'comfortable',
+              run: () => shell.setDensity('comfortable'),
+            },
+            {
+              kind: 'radio',
+              label: 'Compact',
+              checked: shell.density === 'compact',
+              run: () => shell.setDensity('compact'),
+            },
+          ],
+        },
+        {
+          kind: 'submenu',
           label: 'Results position',
           items: [
             {

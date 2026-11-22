@@ -30,7 +30,7 @@ import { Icon, Logo } from './icons'
 import { MenuBar } from './menu/MenuBar'
 import { buildMenus } from './menus'
 import { CommandPalette } from './palette/CommandPalette'
-import { applyZoom, useShellStore } from './shellStore'
+import { applyDensity, applyZoom, useShellStore } from './shellStore'
 import { handleShortcut } from './shortcuts'
 import { Sidebar } from './Sidebar'
 import { StatusBar } from './StatusBar'
@@ -173,6 +173,7 @@ function useWorkspaceLifetime() {
 
   useEffect(() => {
     applyZoom(useShellStore.getState().zoom)
+    applyDensity(useShellStore.getState().density)
     const onKeyDown = (event: KeyboardEvent) =>
       handleShortcut(event, buildCommands())
     window.addEventListener('keydown', onKeyDown)

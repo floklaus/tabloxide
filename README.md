@@ -10,7 +10,7 @@ Phase 1 of `docs/Implementation Plan.md` (milestones M0 to M6) is complete in co
 - **DuckDB:** A DuckDB connection opens a database file, or a database in memory with the file name `:memory:`. A statement can read the CSV, Parquet, and JSON files of the workspace folder directly, for example `SELECT * FROM 'data.csv'`.
 
 - **Navigation:** The title bar has a menu bar with the menus File, Connections, Git, and View. It also has widgets for the project, the connection of the tab, and the Git branch, and a command palette (`Ctrl+K`). The tool strip on the left selects the sidebar view: files, connections, schema, Git, or history. The tool strip on the right shows the assistant.
-- **View:** The View menu shows or hides each panel and puts the results below or beside the editor. It also selects a layout, a zoom, and a theme: system, light, dark, neon, or high contrast.
+- **View:** The View menu shows or hides each panel and puts the results below or beside the editor. It also selects a layout, a density (comfortable or compact), a zoom, and a theme: system, light, dark, neon, or high contrast. The preferences have the same settings for the theme, the density, and the layout.
 - **Workspace:** A workspace is a folder with your SQL files. The file `tabloxide.toml` in that folder holds the connection definitions without secrets.
 - **Connections:** Add, edit, duplicate, delete, and test connections. A password is in the credential store of the operating system, or it comes from an environment variable.
 - **Editor:** SQL editor with tabs for files and for buffers without a file. Each tab has its own database session.

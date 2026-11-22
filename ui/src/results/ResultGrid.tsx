@@ -1,4 +1,5 @@
 import { useVirtualizer } from '@tanstack/react-virtual'
+import { useShellStore } from '../shell/shellStore'
 import {
   useEffect,
   useId,
@@ -18,7 +19,8 @@ import {
   type SortState,
 } from './gridModel'
 
-const ROW_HEIGHT = 35
+/** The height of a row in pixels for each density. The style sheet has the same values. */
+const ROW_HEIGHTS = { comfortable: 35, compact: 29 } as const
 const OVERSCAN_ROWS = 12
 const DEFAULT_COLUMN_WIDTH = 160
 const MIN_COLUMN_WIDTH = 48
@@ -94,6 +96,7 @@ export function ResultGrid({ columns, rows, hasMore, onNeedMore }: Props) {
   const [widths, setWidths] = useState<Record<number, number>>({})
   const [hidden, setHidden] = useState<ReadonlySet<number>>(new Set())
   const [selected, setSelected] = useState<CellPosition | null>(null)
+  const rowHeight = ROW_HEIGHTS[useShellStore((state) => state.density)]
 
   const order = useMemo(
     () => sortedIndexes(rows, columns, sort),
@@ -116,9 +119,11 @@ export function ResultGrid({ columns, rows, hasMore, onNeedMore }: Props) {
   const virtualizer = useVirtualizer({
     count: order.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => ROW_HEIGHT,
+    estimateSize: () => rowHeight,
     overscan: OVERSCAN_ROWS,
   })
+  // A change of the density changes the height of each row.
+  useEffect(() => virtualizer.measure(), [rowHeight, virtualizer])
   const items = virtualizer.getVirtualItems()
 
   // A result can have hundreds of columns. The grid renders only the columns near
@@ -349,7 +354,7 @@ export function ResultGrid({ columns, rows, hasMore, onNeedMore }: Props) {
                 aria-rowindex={item.index + 2}
                 style={{
                   gridTemplateColumns: template,
-                  height: ROW_HEIGHT,
+                  height: rowHeight,
                   transform: `translateY(${item.start}px)`,
                 }}
               >

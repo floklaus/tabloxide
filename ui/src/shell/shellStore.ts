@@ -9,6 +9,9 @@ export type ResultsPosition = 'below' | 'beside'
 /** A built-in layout. `custom` means that the user changed a panel after the selection. */
 export type LayoutName = 'standard' | 'simple' | 'custom'
 
+/** The size of the controls and the space around them. */
+export type Density = 'comfortable' | 'compact'
+
 export type Panels = {
   sidebar: boolean
   assistant: boolean
@@ -24,6 +27,7 @@ export type ConnectionEditing = { profile: ConnectionProfile; isNew: boolean }
 export const ZOOM_STEPS = [0.8, 0.9, 1, 1.1, 1.25, 1.5] as const
 
 type Persisted = {
+  density: Density
   sidebarView: SidebarView
   panels: Panels
   resultsPosition: ResultsPosition
@@ -43,6 +47,7 @@ type ShellState = Persisted & {
   toggleSidebarView: (view: SidebarView) => void
   togglePanel: (panel: keyof Panels) => void
   setResultsPosition: (position: ResultsPosition) => void
+  setDensity: (density: Density) => void
   applyLayout: (layout: Exclude<LayoutName, 'custom'>) => void
   zoomIn: () => void
   zoomOut: () => void
@@ -61,6 +66,7 @@ const LAYOUTS: Record<Exclude<LayoutName, 'custom'>, Panels> = {
 }
 
 const DEFAULTS: Persisted = {
+  density: 'comfortable',
   sidebarView: 'files',
   panels: LAYOUTS.standard,
   resultsPosition: 'below',
@@ -77,6 +83,7 @@ function load(): Persisted {
     return {
       ...DEFAULTS,
       ...stored,
+      density: stored.density === 'compact' ? 'compact' : 'comfortable',
       panels: { ...DEFAULTS.panels, ...stored.panels },
       zoom: ZOOM_STEPS.includes(stored.zoom as (typeof ZOOM_STEPS)[number])
         ? (stored.zoom as number)
@@ -89,14 +96,29 @@ function load(): Persisted {
 
 function save(state: Persisted): void {
   try {
-    const { sidebarView, panels, resultsPosition, layout, zoom } = state
+    const { density, sidebarView, panels, resultsPosition, layout, zoom } =
+      state
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ sidebarView, panels, resultsPosition, layout, zoom }),
+      JSON.stringify({
+        density,
+        sidebarView,
+        panels,
+        resultsPosition,
+        layout,
+        zoom,
+      }),
     )
   } catch {
     // Without the storage, the layout starts with the defaults at the next start.
   }
+}
+
+/** Sets the density on the document. The style sheet reads it. */
+export function applyDensity(density: Density): void {
+  if (density === 'compact')
+    document.documentElement.dataset.density = 'compact'
+  else delete document.documentElement.dataset.density
 }
 
 /** Sets the zoom of the whole window. */
@@ -139,6 +161,10 @@ export const useShellStore = create<ShellState>((set, get) => {
     },
     togglePanel: (panel) => setPanel(panel, !get().panels[panel]),
     setResultsPosition: (resultsPosition) => change({ resultsPosition }),
+    setDensity: (density) => {
+      change({ density })
+      applyDensity(density)
+    },
     applyLayout: (layout) => change({ layout, panels: LAYOUTS[layout] }),
     zoomIn: () => {
       const zoom = nextZoom(get().zoom, 1)
@@ -163,6 +189,7 @@ export const useShellStore = create<ShellState>((set, get) => {
 
 /** Sets the store to its defaults. For tests. */
 export function resetShellStore(): void {
+  applyDensity('comfortable')
   useShellStore.setState({
     ...DEFAULTS,
     dialog: null,

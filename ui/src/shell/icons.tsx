@@ -15,6 +15,7 @@ const PATHS = {
   refresh: 'M20 11a8 8 0 1 0-2.3 5.7 M20 4v7h-7',
   external: 'M14 4h6v6 M20 4l-9 9 M18 14v6H4V6h6',
   plus: 'M12 5v14 M5 12h14',
+  close: 'M6 6l12 12 M18 6L6 18',
 } as const
 
 export type IconName = keyof typeof PATHS

@@ -175,6 +175,20 @@ describe('menu bar', () => {
     expect(screen.queryByRole('menu')).toBeNull()
   })
 
+  test('View › Density › Compact makes the window compact', async () => {
+    const user = renderShell()
+
+    const menu = await openMenu(user, 'View')
+    within(menu)
+      .getByRole('menuitem', { name: /Density/ })
+      .focus()
+    await user.keyboard('{ArrowRight}')
+    await user.click(screen.getByRole('menuitemradio', { name: 'Compact' }))
+
+    expect(document.documentElement.dataset.density).toBe('compact')
+    expect(useShellStore.getState().density).toBe('compact')
+  })
+
   test('Escape closes the menu and returns the focus to its button', async () => {
     const user = renderShell()
 

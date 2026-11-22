@@ -2627,3 +2627,223 @@ body {
 .schema .history__search {
   flex: none;
 }
+
+/* ---------- Preferences ---------- */
+
+.field--check input {
+  width: auto;
+  flex: none;
+  margin: 0;
+}
+
+.form__grid--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.form__grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 40rem) {
+  .form__grid--three,
+  .form__grid--two {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.form__checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 2rem;
+}
+
+.form__checks .field--check {
+  margin-bottom: 0.25rem;
+}
+
+.preferences .form__group legend {
+  margin-bottom: 0.15rem;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.preferences .form__group:first-child {
+  margin-top: 0;
+}
+
+.preferences .form__group > .field__hint {
+  margin: 0 0 0.5rem;
+}
+
+.modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.modal--wide {
+  border-radius: 16px;
+  padding: 1.5rem;
+}
+
+.modal--wide .modal__title {
+  font-size: 18px;
+}
+
+.theme-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.theme-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-bg);
+  cursor: pointer;
+}
+
+.theme-card--selected {
+  border: 2px solid var(--color-focus);
+  padding: calc(0.5rem - 1px);
+}
+
+.theme-card:has(input:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.theme-card__preview {
+  display: flex;
+  height: 3.25rem;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+}
+
+.theme-card__part {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0 0.6rem;
+}
+
+.theme-card__aa {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.theme-card__bars {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.theme-card__bars span {
+  width: 1.1rem;
+  height: 0.25rem;
+  border-radius: 2px;
+}
+
+.theme-card__name {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.theme-card__name input {
+  margin: 0;
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+}
+
+.segmented__option {
+  padding: 0.35rem 0.8rem;
+  border-radius: 6px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.segmented__option--selected {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
+}
+
+.segmented__option:has(input:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
+
+/* ---------- Compact density ---------- */
+
+:root[data-density='compact'] .title-bar {
+  padding: 0.25rem 0.5rem;
+}
+
+:root[data-density='compact'] .menu-bar__button,
+:root[data-density='compact'] .title-widget,
+:root[data-density='compact'] .palette-button {
+  height: 1.75rem;
+}
+
+:root[data-density='compact'] .tool-strip__button {
+  width: 2rem;
+  height: 2rem;
+}
+
+:root[data-density='compact'] .button {
+  padding: 0.25rem 0.7rem;
+}
+
+:root[data-density='compact'] .pane,
+:root[data-density='compact'] .query > .query__bar {
+  padding: 0.5rem;
+}
+
+:root[data-density='compact'] .app-shell__body .pane.query,
+:root[data-density='compact'] .app-shell__body .pane.results {
+  padding: 0;
+}
+
+:root[data-density='compact'] .query > .code-editor {
+  margin: 0 0.5rem 0.5rem;
+}
+
+:root[data-density='compact'] .results__content {
+  padding: 0.35rem 0.5rem;
+}
+
+:root[data-density='compact'] .tabs__title {
+  padding: 0.3rem 0.2rem 0.3rem 0.7rem;
+}
+
+:root[data-density='compact'] .results__view {
+  padding: 0.3rem 0.7rem;
+}
+
+:root[data-density='compact'] .grid__cell,
+:root[data-density='compact'] .grid__sort {
+  line-height: 28px;
+}
+
+:root[data-density='compact'] .menu__item {
+  padding-top: 0.2rem;
+  padding-bottom: 0.2rem;
+}

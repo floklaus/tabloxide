@@ -72,6 +72,8 @@ This will be the first release.
 - The View menu shows or hides the sidebar, the assistant, the results, and the status bar. It puts the results below or beside the editor, and it has the layouts Standard and Simple.
 - The status bar shows the connection, the server version, and the cursor position.
 - Two new themes: neon and high contrast.
+- A compact density makes the controls and the rows of the result grid smaller.
+- The preferences show the themes as cards with a preview, and have the density and the layout.
 
 ### Keyboard and accessibility
 
