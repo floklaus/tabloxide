@@ -121,18 +121,19 @@ cargo test -p tabloxide-adapter-postgres -- --ignored
 
 ## Repository layout
 
-| Path                        | Contents                                                           |
-| --------------------------- | ------------------------------------------------------------------ |
-| `crates/core`               | Domain types, adapter interface, statement splitter, script runner |
-| `crates/adapter-postgres`   | PostgreSQL adapter                                                 |
-| `crates/adapter-duckdb`     | DuckDB adapter                                                     |
-| `crates/git`                | Wrapper for the system `git` executable                            |
-| `crates/workspace`          | Project configuration, local state, history, secret references     |
-| `crates/assistant`          | AI assistant: schema text, request text, client for the Claude API |
-| `crates/connector-protocol` | The gRPC contract between Tabloxide and a database connector       |
-| `src-tauri`                 | Tauri commands and application wiring                              |
-| `ui`                        | React application                                                  |
-| `docs`                      | Feature backlog, implementation plan, and user documentation       |
+| Path                        | Contents                                                              |
+| --------------------------- | --------------------------------------------------------------------- |
+| `crates/core`               | Domain types, adapter interface, statement splitter, script runner    |
+| `crates/adapter-postgres`   | PostgreSQL adapter                                                    |
+| `crates/adapter-duckdb`     | DuckDB adapter                                                        |
+| `crates/git`                | Wrapper for the system `git` executable                               |
+| `crates/workspace`          | Project configuration, local state, history, secret references        |
+| `crates/assistant`          | AI assistant: schema text, request text, client for the Claude API    |
+| `crates/connector-protocol` | The gRPC contract between Tabloxide and a database connector          |
+| `crates/connector-host`     | Signature check of connectors; later the start of connector processes |
+| `src-tauri`                 | Tauri commands and application wiring                                 |
+| `ui`                        | React application                                                     |
+| `docs`                      | Feature backlog, implementation plan, and user documentation          |
 
 ## Release
 

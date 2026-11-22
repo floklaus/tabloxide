@@ -124,7 +124,7 @@ Limits that the design does not remove:
 
 ## 9. Open points
 
-- **The signature key.** The project needs a key pair for connectors, and a rule for who has the private key.
+- **The signature key.** The key pair exists. The public key is in `crates/connector-host/keys/`, and the product owner keeps the private key. A rule for a second person with access to the key is open.
 - **The place for the downloads.** The repository has no remote yet. The index file and the connectors need a public address, for example the releases of the repository.
 - **The measurement of stage 3.** A local file engine through a loopback connection is slower than in the process. If the difference is not acceptable for DuckDB, DuckDB can stay built in, and the design applies to the new engines only.
 - **The workspace folder.** A DuckDB connection uses a path relative to the workspace. The connector gets the workspace folder in `OpenSession`. A connector from a different source then knows a path of the user.

@@ -1,0 +1,13 @@
+[package]
+name = "tabloxide-connector-host"
+description = "Finds, checks, and starts the database connectors of Tabloxide"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+minisign-verify = "0.3.0"
+thiserror = "2.0.21"
+
+[lints]
+workspace = true
