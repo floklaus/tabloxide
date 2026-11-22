@@ -1,7 +1,8 @@
-import { render, screen } from '@testing-library/react'
+import { open } from '@tauri-apps/plugin-dialog'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { commands } from '../bindings'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { commands, type RecentWorkspaceInfo } from '../bindings'
 import { makeWorkspace } from '../test/fixtures'
 import { WelcomeScreen } from './WelcomeScreen'
 import { useWorkspaceStore } from './workspaceStore'
@@ -12,16 +13,50 @@ vi.mock('../bindings', async () =>
 vi.mock('@tauri-apps/plugin-dialog', () => ({ open: vi.fn() }))
 
 const initialState = useWorkspaceStore.getState()
+const NOW = 1_800_000_000
+
+function recent(
+  overrides: Partial<RecentWorkspaceInfo> = {},
+): RecentWorkspaceInfo {
+  return {
+    path: '/work/sql-project',
+    name: 'sql-project',
+    opened_at: NOW - 2 * 3600,
+    engines: ['postgres'],
+    exists: true,
+    ...overrides,
+  }
+}
 
 describe('WelcomeScreen', () => {
   beforeEach(() => {
+    vi.clearAllMocks()
     useWorkspaceStore.setState(initialState, true)
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(NOW * 1000)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  test('shows the logo, the text, and the two actions', () => {
+    render(<WelcomeScreen />)
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'Tabloxide',
+    )
+    expect(
+      screen.getByRole('button', { name: /Open folder…/ }),
+    ).toHaveTextContent('Ctrl+O')
+    expect(
+      screen.getByRole('button', { name: /Clone a repository…/ }),
+    ).toHaveTextContent('From a Git address')
+    expect(screen.queryByText('Recent workspaces')).not.toBeInTheDocument()
   })
 
   test('opens a recent workspace when the user clicks it', async () => {
-    useWorkspaceStore.setState({
-      recent: [{ path: '/work/sql-project', name: 'sql-project' }],
-    })
+    useWorkspaceStore.setState({ recent: [recent()] })
     vi.mocked(commands.workspaceOpen).mockResolvedValue({
       status: 'ok',
       data: makeWorkspace(),
@@ -33,13 +68,40 @@ describe('WelcomeScreen', () => {
     expect(commands.workspaceOpen).toHaveBeenCalledWith('/work/sql-project')
   })
 
-  test('shows no recent section when the list is empty', () => {
+  test('shows the engines and the time of the last open of each workspace', () => {
+    useWorkspaceStore.setState({
+      recent: [
+        recent(),
+        recent({
+          path: '/lab/mixed',
+          name: 'mixed',
+          engines: ['postgres', 'duckdb'],
+          opened_at: NOW - 8 * 24 * 3600,
+        }),
+        recent({ path: '/lab/old', name: 'old', engines: [], opened_at: null }),
+        recent({ path: '/lab/gone', name: 'gone', exists: false }),
+      ],
+    })
+
     render(<WelcomeScreen />)
 
-    expect(screen.queryByText('Recent workspaces')).not.toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Open folder…' }),
-    ).toBeInTheDocument()
+    const list = screen.getByRole('region', { name: 'Recent workspaces' })
+    const items = within(list).getAllByRole('button')
+    expect(items[0]).toHaveTextContent('PostgreSQL · 2 hours ago')
+    expect(items[1]).toHaveTextContent('PostgreSQL, DuckDB · last week')
+    expect(items[2]).toHaveTextContent(/old\/lab\/old$/)
+    expect(items[3]).toHaveTextContent('The folder does not exist')
+  })
+
+  test('Ctrl+O opens the folder dialog', async () => {
+    vi.mocked(open).mockResolvedValue(null)
+    render(<WelcomeScreen />)
+
+    await userEvent.keyboard('{Control>}o{/Control}')
+
+    expect(open).toHaveBeenCalledWith(
+      expect.objectContaining({ directory: true }),
+    )
   })
 
   test('shows the error message of a failed open', () => {

@@ -36,10 +36,10 @@ export function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
 }
 
 /** The logo: a table with one cell in the accent colour. */
-export function Logo() {
+export function Logo({ size = 20 }: { size?: number }) {
   return (
-    <span className="logo">
-      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24">
+    <span className={`logo ${size > 24 ? 'logo--large' : ''}`.trim()}>
+      <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24">
         <rect
           x="2.75"
           y="2.75"

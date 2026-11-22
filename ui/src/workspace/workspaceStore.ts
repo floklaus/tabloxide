@@ -2,7 +2,7 @@ import { open } from '@tauri-apps/plugin-dialog'
 import { create } from 'zustand'
 import {
   commands,
-  type RecentWorkspace,
+  type RecentWorkspaceInfo as RecentWorkspace,
   type WorkspaceSnapshot_Serialize,
 } from '../bindings'
 import { toMessage } from '../lib/errors'

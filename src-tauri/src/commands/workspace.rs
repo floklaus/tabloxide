@@ -1,10 +1,11 @@
+use crate::commands::local::now_secs;
 use crate::error::CommandError;
 use crate::state::{AppState, blocking};
 use serde::Serialize;
 use specta::Type;
 use std::path::PathBuf;
 use tabloxide_core::ConnectionProfile;
-use tabloxide_workspace::{RecentWorkspace, RecentWorkspaces, Workspace, WorkspaceWatcher};
+use tabloxide_workspace::{RecentWorkspaceInfo, RecentWorkspaces, Workspace, WorkspaceWatcher};
 use tauri::ipc::Channel;
 use tauri::{AppHandle, Manager, State};
 
@@ -57,7 +58,7 @@ pub async fn workspace_open(
     let workspace = blocking(move || {
         let workspace = Workspace::open(&PathBuf::from(path))?;
         RecentWorkspaces::load(&state_dir)
-            .with_opened(workspace.root())
+            .with_opened(workspace.root(), now_secs())
             .save(&state_dir)?;
         Ok(workspace)
     })
@@ -122,7 +123,15 @@ pub async fn workspace_watch(
 /// Returns the recent workspaces. The most recent workspace is first.
 #[tauri::command]
 #[specta::specta]
-pub async fn workspace_recent(app: AppHandle) -> Result<Vec<RecentWorkspace>, CommandError> {
+pub async fn workspace_recent(app: AppHandle) -> Result<Vec<RecentWorkspaceInfo>, CommandError> {
     let state_dir = state_dir(&app)?;
-    blocking(move || Ok(RecentWorkspaces::load(&state_dir).entries().to_vec())).await
+    blocking(move || {
+        let recent = RecentWorkspaces::load(&state_dir);
+        Ok(recent
+            .entries()
+            .iter()
+            .map(RecentWorkspaceInfo::read)
+            .collect())
+    })
+    .await
 }

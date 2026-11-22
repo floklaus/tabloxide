@@ -32,7 +32,7 @@ export const commands = {
 	/**  Closes the workspace. */
 	workspaceClose: (options?: InvokeOptions) => __TAURI_INVOKE<void>("workspace_close", undefined, options),
 	/**  Returns the recent workspaces. The most recent workspace is first. */
-	workspaceRecent: (options?: InvokeOptions) => typedError<RecentWorkspace[], CommandError>(__TAURI_INVOKE("workspace_recent", undefined, options)),
+	workspaceRecent: (options?: InvokeOptions) => typedError<RecentWorkspaceInfo_Serialize[], CommandError>(__TAURI_INVOKE("workspace_recent", undefined, options)),
 	/**
 	 *  Starts to watch the workspace folder. Sends a message on `on_change` after a
 	 *  different program changed files. One message covers all changes of a short time.
@@ -923,9 +923,29 @@ export type QueryError_Serialize = {
 	position: number | null,
 };
 
-export type RecentWorkspace = {
+/**  A recent workspace with the data that the start screen shows. */
+export type RecentWorkspaceInfo = RecentWorkspaceInfo_Serialize | RecentWorkspaceInfo_Deserialize;
+
+/**  A recent workspace with the data that the start screen shows. */
+export type RecentWorkspaceInfo_Deserialize = {
 	path: string,
 	name: string,
+	opened_at?: number | null,
+	/**  The engines of the connections of the workspace, each one time. */
+	engines: Engine[],
+	/**  `false` if the folder does not exist any more. */
+	exists: boolean,
+};
+
+/**  A recent workspace with the data that the start screen shows. */
+export type RecentWorkspaceInfo_Serialize = {
+	path: string,
+	name: string,
+	opened_at: number | null,
+	/**  The engines of the connections of the workspace, each one time. */
+	engines: Engine[],
+	/**  `false` if the folder does not exist any more. */
+	exists: boolean,
 };
 
 /**  The structure of one table or view. */

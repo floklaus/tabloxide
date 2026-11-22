@@ -30,7 +30,7 @@ pub use local_state::{LocalState, MAX_HISTORY_RESULTS, TabState, UiState};
 pub use preferences::{
     AssistantModel, AssistantPreferences, ConfirmRule, EditorPreferences, Guardrails, Preferences,
 };
-pub use recent::{MAX_RECENT_WORKSPACES, RecentWorkspace, RecentWorkspaces};
+pub use recent::{MAX_RECENT_WORKSPACES, RecentWorkspace, RecentWorkspaceInfo, RecentWorkspaces};
 pub use secrets::{KeyringStore, MemoryStore, SecretError, SecretStore, resolve_secret};
 pub use watch::{QUIET_TIME, WorkspaceWatcher, is_relevant};
 pub use workspace::Workspace;

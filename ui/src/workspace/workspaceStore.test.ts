@@ -24,7 +24,9 @@ describe('workspaceStore', () => {
   })
 
   test('init gets the open workspace and the recent list', async () => {
-    const recent = [{ path: '/work/a', name: 'a' }]
+    const recent = [
+      { path: '/work/a', name: 'a', opened_at: 1, engines: [], exists: true },
+    ]
     vi.mocked(commands.workspaceCurrent).mockResolvedValue(makeWorkspace())
     vi.mocked(commands.workspaceRecent).mockResolvedValue({
       status: 'ok',

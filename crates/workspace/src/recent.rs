@@ -1,9 +1,11 @@
 //! List of recent workspaces. This is machine-specific state. It is not in the repository.
 
+use crate::config::WorkspaceConfig;
 use crate::error::WorkspaceError;
 use serde::{Deserialize, Serialize};
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use tabloxide_core::Engine;
 
 pub const MAX_RECENT_WORKSPACES: usize = 10;
 
@@ -14,6 +16,49 @@ const RECENT_FILE_NAME: &str = "recent-workspaces.json";
 pub struct RecentWorkspace {
     pub path: String,
     pub name: String,
+    /// The time of the last open, in seconds since 1970. An entry of an earlier
+    /// version has no time.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "specta", specta(type = Option<f64>))]
+    pub opened_at: Option<i64>,
+}
+
+/// A recent workspace with the data that the start screen shows.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+pub struct RecentWorkspaceInfo {
+    pub path: String,
+    pub name: String,
+    #[cfg_attr(feature = "specta", specta(type = Option<f64>))]
+    pub opened_at: Option<i64>,
+    /// The engines of the connections of the workspace, each one time.
+    pub engines: Vec<Engine>,
+    /// `false` if the folder does not exist any more.
+    pub exists: bool,
+}
+
+impl RecentWorkspaceInfo {
+    /// Reads the engines from the `tabloxide.toml` of the workspace. A folder that
+    /// does not exist, or a file that is not valid, gives no engines.
+    #[must_use]
+    pub fn read(entry: &RecentWorkspace) -> Self {
+        let root = Path::new(&entry.path);
+        let mut engines: Vec<Engine> = Vec::new();
+        if let Ok(config) = WorkspaceConfig::load(root) {
+            for profile in config.connections() {
+                if !engines.contains(&profile.engine) {
+                    engines.push(profile.engine);
+                }
+            }
+        }
+        Self {
+            path: entry.path.clone(),
+            name: entry.name.clone(),
+            opened_at: entry.opened_at,
+            engines,
+            exists: root.is_dir(),
+        }
+    }
 }
 
 /// Recent workspaces. The most recent workspace is first.
@@ -70,12 +115,14 @@ impl RecentWorkspaces {
         &self.entries
     }
 
-    /// Returns a list that has `path` first. The list has no duplicates and a maximum length.
+    /// Returns a list that has `path` first, opened at `opened_at` (seconds since 1970).
+    /// The list has no duplicates and a maximum length.
     #[must_use]
-    pub fn with_opened(&self, path: &Path) -> Self {
+    pub fn with_opened(&self, path: &Path, opened_at: i64) -> Self {
         let opened = RecentWorkspace {
             path: path.display().to_string(),
             name: display_name(path),
+            opened_at: Some(opened_at),
         };
         let others = self
             .entries
@@ -102,18 +149,20 @@ mod tests {
     #[test]
     fn with_opened_puts_the_workspace_first_without_duplicates() {
         let recent = RecentWorkspaces::default()
-            .with_opened(Path::new("/work/a"))
-            .with_opened(Path::new("/work/b"))
-            .with_opened(Path::new("/work/a"));
+            .with_opened(Path::new("/work/a"), 1)
+            .with_opened(Path::new("/work/b"), 2)
+            .with_opened(Path::new("/work/a"), 3);
 
         assert_eq!(paths(&recent), ["/work/a", "/work/b"]);
         assert_eq!(recent.entries()[0].name, "a");
+        assert_eq!(recent.entries()[0].opened_at, Some(3));
+        assert_eq!(recent.entries()[1].opened_at, Some(2));
     }
 
     #[test]
     fn with_opened_keeps_the_maximum_number_of_entries() {
         let recent = (0..MAX_RECENT_WORKSPACES + 3).fold(RecentWorkspaces::default(), |acc, i| {
-            acc.with_opened(Path::new(&format!("/work/{i}")))
+            acc.with_opened(Path::new(&format!("/work/{i}")), 0)
         });
 
         assert_eq!(recent.entries().len(), MAX_RECENT_WORKSPACES);
@@ -124,7 +173,7 @@ mod tests {
     fn save_then_load_returns_the_same_list() {
         let dir = tempfile::tempdir().unwrap();
         let state_dir = dir.path().join("nested").join("state");
-        let recent = RecentWorkspaces::default().with_opened(Path::new("/work/a"));
+        let recent = RecentWorkspaces::default().with_opened(Path::new("/work/a"), 7);
 
         recent.save(&state_dir).unwrap();
 
@@ -144,5 +193,66 @@ mod tests {
             RecentWorkspaces::load(dir.path()),
             RecentWorkspaces::default()
         );
+    }
+
+    #[test]
+    fn reads_an_entry_of_an_earlier_version_without_a_time() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join(RECENT_FILE_NAME),
+            r#"{"entries":[{"path":"/work/a","name":"a"}]}"#,
+        )
+        .unwrap();
+
+        let recent = RecentWorkspaces::load(dir.path());
+
+        assert_eq!(recent.entries()[0].opened_at, None);
+    }
+
+    #[test]
+    fn the_info_has_each_engine_one_time_and_tells_if_the_folder_exists() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("tabloxide.toml"),
+            r#"
+[[connections]]
+id = "1"
+name = "a"
+database = "x"
+user = "u"
+
+[[connections]]
+id = "2"
+name = "b"
+engine = "duckdb"
+database = "data.duckdb"
+
+[[connections]]
+id = "3"
+name = "c"
+database = "y"
+user = "u"
+"#,
+        )
+        .unwrap();
+        let entry = RecentWorkspace {
+            path: dir.path().display().to_string(),
+            name: "w".to_owned(),
+            opened_at: Some(5),
+        };
+        let gone = RecentWorkspace {
+            path: dir.path().join("deleted").display().to_string(),
+            name: "gone".to_owned(),
+            opened_at: None,
+        };
+
+        let info = RecentWorkspaceInfo::read(&entry);
+        let missing = RecentWorkspaceInfo::read(&gone);
+
+        assert_eq!(info.engines, vec![Engine::Postgres, Engine::Duckdb]);
+        assert!(info.exists);
+        assert_eq!(info.opened_at, Some(5));
+        assert!(missing.engines.is_empty());
+        assert!(!missing.exists);
     }
 }
