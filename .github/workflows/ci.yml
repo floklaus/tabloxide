@@ -65,6 +65,9 @@ jobs:
       - name: Test the UI
         run: pnpm --dir ui test
 
+      - name: Test the release scripts
+        run: node --test scripts/*.test.mjs
+
       - name: Build the UI
         run: pnpm --dir ui build
 

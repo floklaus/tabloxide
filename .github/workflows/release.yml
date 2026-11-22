@@ -3,6 +3,16 @@ name: Release
 # A tag such as v0.1.0 builds the installers for the three platforms and makes a
 # draft release with the installers, their SHA-256 checksums, and the release notes.
 # The release notes are the section of the version in CHANGELOG.md.
+#
+# Each of these parts is active only when the repository has its secrets.
+# Without them, the workflow makes installers without a signature and without updates.
+# docs/release.md tells how to make the keys and the certificates.
+#
+#   Update files:   TAURI_SIGNING_PRIVATE_KEY, TAURI_SIGNING_PRIVATE_KEY_PASSWORD
+#                   and the repository variable TAURI_UPDATER_PUBKEY
+#   macOS:          APPLE_CERTIFICATE, APPLE_CERTIFICATE_PASSWORD,
+#                   APPLE_SIGNING_IDENTITY, APPLE_ID, APPLE_PASSWORD, APPLE_TEAM_ID
+#   Windows:        WINDOWS_CERTIFICATE, WINDOWS_CERTIFICATE_PASSWORD
 on:
   push:
     tags: ['v*']
@@ -43,8 +53,95 @@ jobs:
       - name: Install Node dependencies
         run: pnpm install --frozen-lockfile
 
+      # The updater settings go into the build only with the signing key. Without the
+      # key, the build cannot sign the update files, and the application has no updater.
+      - name: Prepare the update files
+        shell: bash
+        env:
+          SIGNING_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          PUBKEY: ${{ vars.TAURI_UPDATER_PUBKEY }}
+          ENDPOINT: https://github.com/${{ github.repository }}/releases/latest/download/latest.json
+        run: |
+          if [ -z "$SIGNING_KEY" ] || [ -z "$PUBKEY" ]; then
+            echo "No updater signing key or public key. The release has no update files."
+            echo '{}' > updater-config.json
+            exit 0
+          fi
+          {
+            echo "TAURI_SIGNING_PRIVATE_KEY<<END_OF_KEY"
+            echo "$SIGNING_KEY"
+            echo "END_OF_KEY"
+            echo "TAURI_SIGNING_PRIVATE_KEY_PASSWORD=$SIGNING_KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
+          jq -n --arg pubkey "$PUBKEY" --arg endpoint "$ENDPOINT" '{
+            bundle: { createUpdaterArtifacts: true },
+            plugins: { updater: { pubkey: $pubkey, endpoints: [$endpoint] } }
+          }' > updater-config.json
+
+      # Tauri signs and notarises the application when these variables have values.
+      - name: Prepare the macOS signature
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -z "$APPLE_CERTIFICATE" ]; then
+            echo "No Apple certificate. The macOS application has no signature."
+            exit 0
+          fi
+          for name in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY \
+                      APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
+            value="${!name}"
+            if [ -z "$value" ]; then
+              echo "The secret $name is missing." >&2
+              exit 1
+            fi
+            {
+              echo "$name<<END_OF_VALUE"
+              echo "$value"
+              echo "END_OF_VALUE"
+            } >> "$GITHUB_ENV"
+          done
+
+      # The certificate goes into the certificate store of the runner. Tauri signs the
+      # installers and the executable with the thumbprint of the certificate.
+      - name: Prepare the Windows signature
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          if (-not $env:WINDOWS_CERTIFICATE) {
+            Write-Output "No Windows certificate. The installers have no signature."
+            '{}' | Set-Content windows-config.json
+            exit 0
+          }
+          $path = Join-Path $env:RUNNER_TEMP 'certificate.pfx'
+          [IO.File]::WriteAllBytes($path, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE))
+          $password = ConvertTo-SecureString $env:WINDOWS_CERTIFICATE_PASSWORD -AsPlainText -Force
+          $certificate = Import-PfxCertificate -FilePath $path -CertStoreLocation Cert:\CurrentUser\My -Password $password
+          Remove-Item $path
+          @{ bundle = @{ windows = @{
+            certificateThumbprint = $certificate.Thumbprint
+            digestAlgorithm = 'sha256'
+            timestampUrl = 'http://timestamp.digicert.com'
+          } } } | ConvertTo-Json -Depth 4 | Set-Content windows-config.json
+
       - name: Build the application
-        run: pnpm tauri build
+        shell: bash
+        run: |
+          args=(--config updater-config.json)
+          if [ -f windows-config.json ]; then
+            args+=(--config windows-config.json)
+          fi
+          pnpm tauri build "${args[@]}"
 
       - name: Collect the installers
         shell: bash
@@ -52,8 +149,19 @@ jobs:
           mkdir installers
           find target/release/bundle -type f \
             \( -name '*.deb' -o -name '*.rpm' -o -name '*.AppImage' \
-               -o -name '*.dmg' -o -name '*.msi' -o -name '*-setup.exe' \) \
+               -o -name '*.dmg' -o -name '*.msi' -o -name '*-setup.exe' \
+               -o -name '*.app.tar.gz' -o -name '*.sig' \) \
             -exec cp {} installers/ \;
+          # The macOS update file has no version and no architecture in its name.
+          # The update manifest needs the architecture.
+          for file in installers/*.app.tar.gz; do
+            [ -e "$file" ] || continue
+            arch="$(uname -m | sed 's/arm64/aarch64/')"
+            version="${GITHUB_REF_NAME#v}"
+            target="installers/Tabloxide_${version}_${arch}.app.tar.gz"
+            mv "$file" "$target"
+            if [ -e "$file.sig" ]; then mv "$file.sig" "$target.sig"; fi
+          done
           ls -l installers
           test -n "$(ls -A installers)"
 
@@ -92,6 +200,26 @@ jobs:
           path: installers
           pattern: installers-*
           merge-multiple: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      # The application reads this file to find a newer version.
+      - name: Write the update manifest
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          if ! ls installers/*.sig > /dev/null 2>&1; then
+            echo "The release has no signed update files. It has no update manifest."
+            exit 0
+          fi
+          node scripts/updater-manifest.mjs \
+            --dir installers \
+            --version "$TAG" \
+            --base-url "https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG" \
+            --notes-file release-notes.md > installers/latest.json
+          cat installers/latest.json
 
       - name: Write the checksums
         working-directory: installers

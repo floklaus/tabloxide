@@ -6,7 +6,7 @@ mod error;
 mod state;
 
 use commands::{
-    app, assistant, connections, files, git, local, queries, schema, sessions, workspace,
+    app, assistant, connections, files, git, local, queries, schema, sessions, updates, workspace,
 };
 use tauri_specta::{Builder, ErrorHandlingMode, collect_commands};
 
@@ -16,6 +16,8 @@ fn specta_builder() -> Builder<tauri::Wry> {
         .error_handling(ErrorHandlingMode::Result)
         .commands(collect_commands![
             app::app_info,
+            updates::update_check,
+            updates::update_install,
             workspace::workspace_open,
             workspace::workspace_current,
             workspace::workspace_close,
@@ -93,17 +95,23 @@ pub fn run() {
         std::process::exit(exit_code);
     }
     let builder = specta_builder();
-
-    tauri::Builder::default()
+    let context = tauri::generate_context!();
+    let mut app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_window_state::Builder::default().build())
-        .manage(state::AppState::default())
+        .plugin(tauri_plugin_window_state::Builder::default().build());
+    // The updater plugin stops the start if its settings are missing. Only a release
+    // build with the signing key has them. Refer to `commands::updates`.
+    if updates::is_configured(context.config()) {
+        app = app.plugin(tauri_plugin_updater::Builder::new().build());
+    }
+
+    app.manage(state::AppState::default())
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {
             builder.mount_events(app);
             Ok(())
         })
-        .run(tauri::generate_context!())
+        .run(context)
         .expect("the Tauri runtime must start");
 }
 

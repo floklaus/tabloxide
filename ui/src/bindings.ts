@@ -7,6 +7,16 @@ import type { InvokeOptions } from "@tauri-apps/api/core";
 export const commands = {
 	/**  Returns the name and the version of the application. */
 	appInfo: (options?: InvokeOptions) => __TAURI_INVOKE<AppInfo>("app_info", undefined, options),
+	/**
+	 *  Asks the update server if a newer version is available.
+	 *  The request contains no data of the user. It contains only the address of the update file.
+	 */
+	updateCheck: (options?: InvokeOptions) => typedError<UpdateCheck_Serialize, CommandError>(__TAURI_INVOKE("update_check", undefined, options)),
+	/**
+	 *  Downloads the newest version, checks its signature, installs it, and starts the
+	 *  application again. The UI asks the user first, because unsaved text is lost.
+	 */
+	updateInstall: (options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("update_install", undefined, options)),
 	/**  Opens the folder `path` as the workspace and adds it to the recent list. */
 	workspaceOpen: (path: string, options?: InvokeOptions) => typedError<WorkspaceSnapshot_Serialize, CommandError>(__TAURI_INVOKE("workspace_open", { path }, options)),
 	/**  Returns the open workspace, or `null` if no workspace is open. */
@@ -827,6 +837,8 @@ export type Preferences_Deserialize = {
 	 *  credential store of the operating system.
 	 */
 	assistant?: AssistantPreferences_Deserialize,
+	/**  `true` if the application asks the update server for a newer version at the start. */
+	check_for_updates?: boolean,
 };
 
 export type Preferences_Serialize = {
@@ -840,6 +852,8 @@ export type Preferences_Serialize = {
 	 *  credential store of the operating system.
 	 */
 	assistant: AssistantPreferences_Serialize,
+	/**  `true` if the application asks the update server for a newer version at the start. */
+	check_for_updates: boolean,
 };
 
 /**  A query failure. */
@@ -1123,6 +1137,31 @@ export type UiState_Serialize = {
 	tabs: TabState_Serialize[],
 	active_tab: string | null,
 };
+
+/**  The result of a check for updates. */
+export type UpdateCheck = UpdateCheck_Serialize | UpdateCheck_Deserialize;
+
+/**  The result of a check for updates. */
+export type UpdateCheck_Deserialize = 
+/**  This build cannot update itself. It has no updater configuration. */
+{ status: "not-configured" } | 
+/**  No newer version is available. */
+{ status: "up-to-date" } | 
+/**  A newer version is available. */
+{ status: "available"; version: string; current_version: string; 
+/**  The release notes of the new version. */
+notes?: string | null };
+
+/**  The result of a check for updates. */
+export type UpdateCheck_Serialize = 
+/**  This build cannot update itself. It has no updater configuration. */
+{ status: "not-configured" } | 
+/**  No newer version is available. */
+{ status: "up-to-date" } | 
+/**  A newer version is available. */
+{ status: "available"; version: string; current_version: string; 
+/**  The release notes of the new version. */
+notes: string | null };
 
 /**  One problem in a connection profile. `field` is the name of the profile field. */
 export type ValidationIssue = {

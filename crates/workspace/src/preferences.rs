@@ -127,6 +127,8 @@ pub struct Preferences {
     /// The settings of the AI assistant. The API key is not here. It is in the
     /// credential store of the operating system.
     pub assistant: AssistantPreferences,
+    /// `true` if the application asks the update server for a newer version at the start.
+    pub check_for_updates: bool,
 }
 
 impl Default for Preferences {
@@ -136,6 +138,7 @@ impl Default for Preferences {
             history_retention_days: DEFAULT_HISTORY_RETENTION_DAYS,
             guardrails: Guardrails::default(),
             assistant: AssistantPreferences::default(),
+            check_for_updates: true,
         }
     }
 }
@@ -185,6 +188,7 @@ mod tests {
                 production: ConfirmRule::Risky,
             },
             assistant: AssistantPreferences::default(),
+            check_for_updates: false,
         };
 
         let normalized = preferences.normalized();
@@ -195,6 +199,7 @@ mod tests {
         assert!(normalized.editor.word_wrap);
         assert_eq!(normalized.history_retention_days, 1);
         assert_eq!(normalized.guardrails, preferences.guardrails);
+        assert!(!normalized.check_for_updates);
     }
 
     #[test]
@@ -209,6 +214,8 @@ mod tests {
             DEFAULT_HISTORY_RETENTION_DAYS
         );
         assert_eq!(preferences.guardrails, Guardrails::default());
+        // Preferences of an earlier version check for updates.
+        assert!(preferences.check_for_updates);
     }
 
     #[test]

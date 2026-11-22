@@ -9,4 +9,5 @@ pub mod local;
 pub mod queries;
 pub mod schema;
 pub mod sessions;
+pub mod updates;
 pub mod workspace;

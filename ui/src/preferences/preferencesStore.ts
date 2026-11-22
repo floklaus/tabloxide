@@ -10,6 +10,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   history_retention_days: 90,
   guardrails: { development: 'risky', staging: 'risky', production: 'always' },
   assistant: { model: 'claude-opus-5-5' },
+  check_for_updates: true,
 }
 
 export const LIMITS = {

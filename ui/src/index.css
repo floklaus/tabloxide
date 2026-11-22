@@ -1330,6 +1330,30 @@ body {
   white-space: nowrap;
 }
 
+.update-notice {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 20;
+  max-width: 24rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.2);
+}
+
+.update-notice__title {
+  margin: 0 0 0.25rem;
+  font-weight: 600;
+}
+
+.update-notice__notes {
+  max-height: 10rem;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
 .git__output {
   font-family: var(--font-mono);
   font-size: 0.8rem;

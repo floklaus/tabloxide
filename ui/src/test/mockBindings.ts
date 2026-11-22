@@ -80,9 +80,15 @@ export function createBindingsMock() {
             production: 'always',
           },
           assistant: { model: 'claude-opus-5-5' },
+          check_for_updates: true,
         },
       }),
       preferencesSave: vi.fn(),
+      updateCheck: vi.fn().mockResolvedValue({
+        status: 'ok',
+        data: { status: 'not-configured' },
+      }),
+      updateInstall: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
       uiStateLoad: vi.fn().mockResolvedValue({
         status: 'ok',
         data: { tabs: [], active_tab: null },

@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { ApiKeyField } from '../assistant/ApiKeyField'
+import { UpdateSettings } from '../updates/UpdateSettings'
 import { useAssistantStore } from '../assistant/assistantStore'
 import type { AssistantModel, ConfirmRule, Environment } from '../bindings'
 import { Modal } from '../connections/Modal'
@@ -178,6 +179,12 @@ export function PreferencesDialog({ onClose }: Props) {
             <ApiKeyField />
           </div>
         </fieldset>
+        <UpdateSettings
+          isEnabled={draft.check_for_updates}
+          onChange={(isEnabled) =>
+            setDraft({ ...draft, check_for_updates: isEnabled })
+          }
+        />
         <div className="modal__actions">
           <button type="button" className="button" onClick={onClose}>
             Cancel
