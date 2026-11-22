@@ -242,6 +242,18 @@ Status of M10 on 2026-11-15: M10 is complete in code.
 * The result grid renders only the visible columns.
 * Alt+Shift+Left and Alt+Shift+Right change the width of the column of the selected cell.
 
+Status of M11 on 2026-11-22: M11 is complete in code, but not tested. A test needs a remote repository, the keys, and the certificates. `docs/release.md` tells the product owner how to add them.
+
+* The release notes are in `CHANGELOG.md`. The release workflow copies the section of the version into the release.
+* The application has an updater. It checks for a newer version at the start. The user can install the version, defer it until the next start, or disable the check in the preferences.
+  * The application starts the updater only when the build has the updater settings. The repository has no updater settings. The release workflow adds them only when the repository has the signing key. Thus a development build has no updater, and it does not send a request.
+  * The UI calls two commands of the application. It cannot call the commands of the updater plugin directly.
+* The release workflow signs the update files and writes `latest.json` when the repository has the updater key.
+* The release workflow signs and notarises the macOS application when the repository has the Apple certificate. It signs the Windows installers when the repository has a `.pfx` certificate.
+* Not done:
+  * A sign step for a certificate in a hardware module or a cloud service.
+  * Updates for the `.deb` and `.rpm` packages, if the bundler makes no signature for them. Such an installation can then receive the AppImage as its update. This is not tested.
+
 Status of M12 on 2026-11-15:
 
 * The user documentation is complete: `docs/user/install.md`, `docs/user/troubleshooting.md`, `CONTRIBUTING.md`, and `SECURITY.md`.

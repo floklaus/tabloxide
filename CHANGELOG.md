@@ -64,9 +64,15 @@ This will be the first release.
 - The editor tabs, the file tree, the result grid, and the dialogs use the keyboard patterns of ARIA.
 - The text colours of the light and the dark theme have a contrast of 4.5:1 or more.
 
+### Updates
+
+- A release build can update itself. At the start, it asks the release page for a newer version. You can install the new version or select **Later**.
+- The preferences can disable the check. **Check now** in the preferences checks immediately.
+- The application installs an update only if the signature of the update file is correct.
+
 ### Known limits
 
-- The installers have no code signature. macOS and Windows show a warning. `docs/user/install.md` gives the procedure.
-- The application does not update itself.
+- The installers have no code signature until the project has its certificates. macOS and Windows show a warning. `docs/user/install.md` gives the procedure.
+- The application can update itself only when the release has update files. A release without the updater key has no update files.
 - The macOS installer is for Apple silicon only.
 - A person did not test the application with a screen reader.

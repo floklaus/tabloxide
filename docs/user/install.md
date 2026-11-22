@@ -175,7 +175,15 @@ Tabloxide writes the connection definitions into the file `tabloxide.toml` in th
 
 ## 7. Update
 
-Tabloxide does not update itself. To update, download the installer of the new release and install it with the procedure for your operating system.
+A release build with update files updates itself:
+
+1. At the start, Tabloxide asks the release page for a newer version. The request contains no data of your workspace.
+2. When a newer version is available, a notice shows its version and its release notes.
+3. Save your files. Then select **Install and restart**. To install it at a later time, select **Later**. The notice then shows again at the next start.
+
+Tabloxide installs an update only if the signature of the update file is correct. To disable the check at the start, clear **Check for a newer version when the application starts** in **Preferences**. **Check now** in the preferences checks immediately.
+
+A build without update files tells you this in the preferences. Then update manually: download the installer of the new release and install it with the procedure for your operating system.
 
 * **Linux packages, macOS, Windows:** the new version replaces the old version.
 * **AppImage:** delete the old file and use the new file.
