@@ -10,3 +10,4 @@ src-tauri/icons/
 ui/src/bindings.ts
 .agents/
 skills-lock.json
+.design/
