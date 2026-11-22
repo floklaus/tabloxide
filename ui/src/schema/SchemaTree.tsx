@@ -1,7 +1,7 @@
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useEffect, useMemo, useRef } from 'react'
 import { Icon } from '../shell/icons'
-import { useTabsStore } from '../tabs/tabsStore'
+import { sqlTabOf, useTabsStore } from '../tabs/tabsStore'
 import { useSchemaStore } from './schemaStore'
 import { buildRows, kindLabel, type TreeRow } from './treeModel'
 
@@ -94,8 +94,7 @@ export function SchemaTree() {
   const scrollRef = useRef<HTMLDivElement>(null)
   // The schema browser shows the connection of the active tab.
   const connectionId = useTabsStore(
-    (state) =>
-      state.tabs.find((tab) => tab.id === state.activeId)?.connectionId ?? null,
+    (state) => sqlTabOf(state)?.connectionId ?? null,
   )
   const session = useSchemaStore((state) => state.session)
   const isConnecting = useSchemaStore((state) => state.isConnecting)

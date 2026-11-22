@@ -55,6 +55,9 @@ This will be the first release.
 - The panel reads the execution plan of the statement at the cursor with `EXPLAIN`, and asks for an analysis with suggestions. On request, it uses `EXPLAIN ANALYZE` for a statement that reads data.
 - The assistant uses the Claude API of Anthropic with your API key. The key is in the credential store of the operating system. The preferences select the model.
 - A request sends the structure of the database, the conversation, and the plan text. It sends no rows, no passwords, and no connection settings.
+- Each conversation is a session. Two or more sessions can run at the same time. The sidebar view **Assistant sessions** lists them with their state: running, waiting for you, or done.
+- A session can open in its own editor tab. The tab shows the steps of the last request, the conversation, the SQL of the last answer, and the context of the request. The SQL goes into a new tab, or into the last SQL tab. The application does not run it.
+- The status bar shows the number of sessions that run.
 
 ### Safety
 

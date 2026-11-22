@@ -17,7 +17,7 @@ import { useTabsStore } from '../tabs/tabsStore'
 import { makeProfile, makeWorkspace } from '../test/fixtures'
 import { useWorkspaceStore } from '../workspace/workspaceStore'
 import { AssistantPanel } from './AssistantPanel'
-import { planRequest, useAssistantStore } from './assistantStore'
+import { activeSession, planRequest, useAssistantStore } from './assistantStore'
 
 vi.mock('../bindings', async () =>
   (await import('../test/mockBindings')).createBindingsMock(),
@@ -210,9 +210,7 @@ describe('AssistantPanel', () => {
     expect(screen.getByText('SELECT count(*)')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
     await ask.finish(done('SELECT count(*)'))
-    await waitFor(() =>
-      expect(useAssistantStore.getState().status).toBe('idle'),
-    )
+    await waitFor(() => expect(activeSession().getState().status).toBe('idle'))
   })
 
   test('inserts a code block of the answer into the editor', async () => {
@@ -244,7 +242,7 @@ describe('AssistantPanel', () => {
     expect(screen.getByRole('textbox', { name: 'Request' })).toHaveValue(
       'Count the items',
     )
-    expect(useAssistantStore.getState().messages).toEqual([])
+    expect(activeSession().getState().messages).toEqual([])
   })
 
   test('the stop button cancels the request and keeps the partial answer', async () => {
@@ -310,7 +308,7 @@ describe('AssistantPanel', () => {
     await sendRequest(user, 'Second')
 
     expect(assistantAsk.mock.calls[1][0].refresh_schema).toBe(true)
-    expect(useAssistantStore.getState().refreshesSchema).toBe(false)
+    expect(activeSession().getState().refreshesSchema).toBe(false)
   })
 
   test('reads the plan of the statement and asks for its analysis', async () => {
@@ -426,7 +424,9 @@ describe('AssistantPanel', () => {
     await user.click(screen.getByRole('button', { name: 'New conversation' }))
 
     expect(screen.queryByText('First answer')).toBeNull()
-    expect(useAssistantStore.getState().messages).toEqual([])
+    expect(activeSession().getState().messages).toEqual([])
+    // The first conversation stays in the session list.
+    expect(useAssistantStore.getState().sessions).toHaveLength(2)
   })
 
   test('uses the complete text of the result, also when text parts are late', async () => {
@@ -441,7 +441,7 @@ describe('AssistantPanel', () => {
     expect(
       await screen.findByText('SELECT count(*) FROM item'),
     ).toBeInTheDocument()
-    expect(useAssistantStore.getState().messages[1].text).toBe(
+    expect(activeSession().getState().messages[1].text).toBe(
       'SELECT count(*) FROM item',
     )
   })
@@ -521,6 +521,7 @@ describe('AssistantPanel', () => {
     const ask = pendingAsk()
     await sendRequest(user, 'Old question')
 
+    const session = activeSession()
     act(() => useAssistantStore.getState().reset())
     expect(assistantCancel).toHaveBeenCalledWith(expect.any(Number))
     await ask.send({ type: 'text', text: 'late text' })
@@ -531,7 +532,7 @@ describe('AssistantPanel', () => {
       }),
     )
 
-    const state = useAssistantStore.getState()
+    const state = session.getState()
     expect(state.messages).toEqual([])
     expect(state.answer).toBe('')
     expect(state.error).toBeNull()

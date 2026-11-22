@@ -1,3 +1,4 @@
+import { SessionsPanel } from '../assistant/SessionsPanel'
 import { ConnectionList } from '../connections/ConnectionList'
 import { FileTree } from '../files/FileTree'
 import { GitPanel } from '../git/GitPanel'
@@ -12,6 +13,7 @@ const LABELS = {
   schema: 'Schema',
   git: 'Git',
   history: 'History',
+  sessions: 'Assistant sessions',
 } as const
 
 /** The view of the sidebar that the left tool strip selects. */
@@ -23,6 +25,7 @@ export function Sidebar() {
       {view === 'connections' && <ConnectionList />}
       {view === 'schema' && <SchemaTree />}
       {view === 'git' && <GitPanel />}
+      {view === 'sessions' && <SessionsPanel />}
       {view === 'history' && (
         <HistoryPanel
           onRun={() => useResultsViewStore.getState().setView('results')}

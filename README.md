@@ -9,7 +9,7 @@ Phase 1 of `docs/Implementation Plan.md` (milestones M0 to M6) is complete in co
 - **Database engines:** PostgreSQL servers and DuckDB database files. A connection selects its engine.
 - **DuckDB:** A DuckDB connection opens a database file, or a database in memory with the file name `:memory:`. A statement can read the CSV, Parquet, and JSON files of the workspace folder directly, for example `SELECT * FROM 'data.csv'`.
 
-- **Navigation:** The title bar has a menu bar with the menus File, Connections, Git, and View. It also has widgets for the project, the connection of the tab, and the Git branch, and a command palette (`Ctrl+K`). The tool strip on the left selects the sidebar view: files, connections, schema, Git, or history. The tool strip on the right shows the assistant.
+- **Navigation:** The title bar has a menu bar with the menus File, Connections, Git, and View. It also has widgets for the project, the connection of the tab, and the Git branch, and a command palette (`Ctrl+K`). The tool strip on the left selects the sidebar view: files, connections, schema, Git, history, or assistant sessions. The tool strip on the right shows the assistant.
 - **View:** The View menu shows or hides each panel and puts the results below or beside the editor. It also selects a layout, a density (comfortable or compact), a zoom, and a theme: system, light, dark, neon, or high contrast. The preferences have the same settings for the theme, the density, and the layout.
 - **Layouts:** View › Layout › Edit layout opens the layout editor. A custom layout sets the visible panels, the side of the sidebar, and two sizes. It also sets the place of the results (below, beside, or a tab in the editor) and of the assistant. Drag a panel to a slot in the preview, or move it with the menu of its handle.
 - **Workspace:** A workspace is a folder with your SQL files. The file `tabloxide.toml` in that folder holds the connection definitions without secrets.
@@ -27,7 +27,7 @@ Phase 1 of `docs/Implementation Plan.md` (milestones M0 to M6) is complete in co
 - **Branches:** Create, switch, rename, and delete.
 - **Commit history:** The commits of the current branch, with the files and the diff of each commit.
 - **Merge conflicts:** A side-by-side view for each file with a conflict. You edit the result, or you copy blocks from the incoming version. You can abort the merge.
-- **AI assistant:** A side panel that writes SQL for the schema of the connected database. It also analyzes the execution plan of a statement. It uses the Claude API of Anthropic with your API key. Refer to [AI assistant](docs/user/assistant.md).
+- **AI assistant:** A side panel that writes SQL for the schema of the connected database. It also analyzes the execution plan of a statement. Each conversation is a session, and a session can open in its own editor tab. It uses the Claude API of Anthropic with your API key. Refer to [AI assistant](docs/user/assistant.md).
 - **Safety:** Confirmation before a run. The preferences have one rule for each environment (development, staging, production): never, before a destructive statement, or before each run. Read-only connections.
 
 ## Install

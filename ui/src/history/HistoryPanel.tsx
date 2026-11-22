@@ -3,7 +3,7 @@ import { commands, type HistoryEntry_Serialize } from '../bindings'
 import { ConfirmDialog } from '../connections/ConfirmDialog'
 import { toMessage } from '../lib/errors'
 import { requestRun } from '../query/runConfirm'
-import { useTabsStore } from '../tabs/tabsStore'
+import { sqlTabForTools, useTabsStore } from '../tabs/tabsStore'
 
 export type HistoryEntry = HistoryEntry_Serialize
 
@@ -64,8 +64,7 @@ export function HistoryPanel({ onRun }: Props) {
     setConnection(id, entry.connection_id)
   }
   const runAgain = (entry: HistoryEntry) => {
-    const tabs = useTabsStore.getState()
-    const tab = tabs.tabs.find((item) => item.id === tabs.activeId)
+    const tab = sqlTabForTools()
     if (tab && !tab.connectionId) setConnection(tab.id, entry.connection_id)
     void requestRun(entry.sql, { type: 'all' })
     onRun()

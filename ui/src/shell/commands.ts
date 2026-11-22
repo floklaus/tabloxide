@@ -10,7 +10,7 @@ import { usePlanStore } from '../plan/planStore'
 import { activeQueryStore } from '../query/queryStore'
 import { requestRun } from '../query/runConfirm'
 import { useSchemaStore } from '../schema/schemaStore'
-import { isDirty, useTabsStore } from '../tabs/tabsStore'
+import { isDirty, sqlTabForTools, useTabsStore } from '../tabs/tabsStore'
 import { useThemeStore } from '../theme/themeStore'
 import { THEME_LABELS, THEMES } from '../theme/theme'
 import { useWorkspaceStore } from '../workspace/workspaceStore'
@@ -31,9 +31,9 @@ export type Command = {
 
 const shell = () => useShellStore.getState()
 
+/** The SQL tab of the commands. While an assistant tab is active, it is the last SQL tab. */
 function activeTab() {
-  const { tabs, activeId } = useTabsStore.getState()
-  return tabs.find((tab) => tab.id === activeId)
+  return sqlTabForTools()
 }
 
 /** The connection of the active tab. */

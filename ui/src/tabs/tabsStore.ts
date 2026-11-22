@@ -13,11 +13,22 @@ export type Tab = {
   savedContent: string | null
   /** The connection that the tab uses. The tab connects at the first run. */
   connectionId: string | null
+  /** The assistant session that the tab shows. Only an assistant tab has it. */
+  assistantSessionId?: string
+}
+
+export function isAssistantTab(tab: Tab | undefined): boolean {
+  return tab?.assistantSessionId !== undefined
 }
 
 type TabsState = {
   tabs: Tab[]
   activeId: string | null
+  /**
+   * The SQL tab that the editor, the results, and the tools use. It is the active
+   * tab, or the last active SQL tab while an assistant tab is active.
+   */
+  sqlId: string | null
   isLoaded: boolean
   error: string | null
   /** Restores the tabs of the last session. Always leaves a minimum of one tab. */
@@ -25,6 +36,8 @@ type TabsState = {
   newTab: (content?: string) => string
   openFile: (path: string) => Promise<void>
   activate: (id: string) => void
+  /** Shows the assistant session in its tab. Opens the tab if necessary. */
+  openAssistantTab: (sessionId: string) => void
   setContent: (id: string, content: string) => void
   setConnection: (id: string, connectionId: string | null) => void
   /** Saves a tab. A buffer without a file gets a file from the save dialog. */
@@ -40,6 +53,7 @@ type TabsState = {
 }
 
 export function isDirty(tab: Tab): boolean {
+  if (isAssistantTab(tab)) return false
   return tab.path === null
     ? tab.content !== ''
     : tab.content !== tab.savedContent
@@ -56,7 +70,9 @@ function fileName(path: string): string {
 }
 
 function nextTitle(tabs: Tab[]): string {
-  const used = new Set(tabs.map((tab) => tab.title))
+  const used = new Set(
+    tabs.filter((tab) => !isAssistantTab(tab)).map((tab) => tab.title),
+  )
   let number = 1
   while (used.has(`Query ${number}`)) number += 1
   return `Query ${number}`
@@ -73,14 +89,18 @@ function makeTab(tabs: Tab[], content = ''): Tab {
   }
 }
 
-/** Converts the tabs to the form that the backend stores. */
+/**
+ * Converts the tabs to the form that the backend stores. The assistant tabs are not
+ * stored, because their sessions are only in memory.
+ */
 export function toUiState(
   tabs: Tab[],
   activeId: string | null,
 ): UiState_Serialize {
+  const sqlTabs = tabs.filter((tab) => !isAssistantTab(tab))
   return {
-    active_tab: activeId,
-    tabs: tabs.map((tab) => ({
+    active_tab: sqlTabs.some((tab) => tab.id === activeId) ? activeId : null,
+    tabs: sqlTabs.map((tab) => ({
       id: tab.id,
       title: tab.title,
       path: tab.path,
@@ -121,8 +141,15 @@ async function restoreTab(stored: StoredTab): Promise<Tab | null> {
 const INITIAL = {
   tabs: [] as Tab[],
   activeId: null as string | null,
+  sqlId: null as string | null,
   isLoaded: false,
   error: null as string | null,
+}
+
+/** The state change that makes the tab `id` active. */
+function activation(tabs: Tab[], id: string, sqlId: string | null) {
+  const tab = tabs.find((item) => item.id === id)
+  return { activeId: id, sqlId: tab && !isAssistantTab(tab) ? id : sqlId }
 }
 
 export const useTabsStore = create<TabsState>((set, get) => {
@@ -169,19 +196,19 @@ export const useTabsStore = create<TabsState>((set, get) => {
       }
       const tabs = restored.length > 0 ? restored : [makeTab([])]
       const active = tabs.find((tab) => tab.id === activeId) ?? tabs[0]
-      set({ tabs, activeId: active.id, isLoaded: true })
+      set({ tabs, activeId: active.id, sqlId: active.id, isLoaded: true })
     },
 
     newTab: (content = '') => {
       const tab = makeTab(get().tabs, content)
-      set({ tabs: [...get().tabs, tab], activeId: tab.id })
+      set({ tabs: [...get().tabs, tab], activeId: tab.id, sqlId: tab.id })
       return tab.id
     },
 
     openFile: async (path) => {
       const open = get().tabs.find((tab) => tab.path === path)
       if (open) {
-        set({ activeId: open.id })
+        set({ activeId: open.id, sqlId: open.id })
         return
       }
       try {
@@ -197,13 +224,41 @@ export const useTabsStore = create<TabsState>((set, get) => {
           content: file.data,
           savedContent: file.data,
         }
-        set({ tabs: [...get().tabs, tab], activeId: tab.id, error: null })
+        set({
+          tabs: [...get().tabs, tab],
+          activeId: tab.id,
+          sqlId: tab.id,
+          error: null,
+        })
       } catch (error) {
         set({ error: toMessage(error) })
       }
     },
 
-    activate: (id) => set({ activeId: id }),
+    activate: (id) => {
+      const { tabs, sqlId } = get()
+      if (tabs.some((tab) => tab.id === id)) set(activation(tabs, id, sqlId))
+    },
+
+    openAssistantTab: (sessionId) => {
+      const { tabs } = get()
+      const open = tabs.find((tab) => tab.assistantSessionId === sessionId)
+      if (open) {
+        set({ activeId: open.id })
+        return
+      }
+      const tab: Tab = {
+        id: `assistant-${sessionId}`,
+        title: 'Assistant',
+        path: null,
+        content: '',
+        savedContent: null,
+        connectionId: null,
+        assistantSessionId: sessionId,
+      }
+      set({ tabs: [...tabs, tab], activeId: tab.id })
+    },
+
     setContent: (id, content) => update(id, { content }),
     setConnection: (id, connectionId) => update(id, { connectionId }),
 
@@ -228,13 +283,26 @@ export const useTabsStore = create<TabsState>((set, get) => {
     },
 
     close: (id) => {
-      const { tabs, activeId } = get()
+      const { tabs, activeId, sqlId } = get()
       const index = tabs.findIndex((tab) => tab.id === id)
       if (index < 0) return
       const remaining = tabs.filter((tab) => tab.id !== id)
-      const next = remaining.length > 0 ? remaining : [makeTab([])]
+      // The editor always has a minimum of one SQL tab.
+      const next = remaining.some((tab) => !isAssistantTab(tab))
+        ? remaining
+        : [...remaining, makeTab([])]
       const neighbour = next[Math.min(index, next.length - 1)]
-      set({ tabs: next, activeId: activeId === id ? neighbour.id : activeId })
+      const nextActive =
+        activeId === id ? neighbour.id : (activeId ?? neighbour.id)
+      const sqlTabs = next.filter((tab) => !isAssistantTab(tab))
+      const nextSql =
+        sqlId !== id && sqlTabs.some((tab) => tab.id === sqlId)
+          ? sqlId
+          : (
+              sqlTabs[Math.min(sqlTabs.length - 1, Math.max(0, index - 1))] ??
+              sqlTabs[0]
+            ).id
+      set({ tabs: next, ...activation(next, nextActive, nextSql) })
     },
 
     reloadFromDisk: async () => {
@@ -311,4 +379,31 @@ export function persistTabs(): () => void {
       store()
     }
   }
+}
+
+/**
+ * Returns the SQL tab that the editor and the tools use: the `sqlId` tab, else the
+ * active tab if it is a SQL tab, else the first SQL tab.
+ */
+export function sqlTabOf(
+  state: Pick<TabsState, 'tabs' | 'activeId' | 'sqlId'>,
+): Tab | undefined {
+  const sqlTabs = state.tabs.filter((tab) => !isAssistantTab(tab))
+  return (
+    sqlTabs.find((tab) => tab.id === state.sqlId) ??
+    sqlTabs.find((tab) => tab.id === state.activeId) ??
+    sqlTabs[0]
+  )
+}
+
+/** Returns the SQL tab that the editor and the tools use. */
+export function sqlTabForTools(): Tab | undefined {
+  return sqlTabOf(useTabsStore.getState())
+}
+
+/** Returns the identifier of the SQL tab that the editor and the tools use. */
+export function sqlTabIdOf(
+  state: Pick<TabsState, 'tabs' | 'activeId' | 'sqlId'>,
+): string | null {
+  return sqlTabOf(state)?.id ?? null
 }

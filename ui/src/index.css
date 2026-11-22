@@ -2370,16 +2370,16 @@ body {
   visibility: visible;
 }
 
-.query > .query__bar {
+.query__sql > .query__bar {
   gap: 0.5rem;
   padding: 0.75rem;
 }
 
-.query > .message {
+.query__sql > .message {
   margin: 0 0.75rem 0.5rem;
 }
 
-.query > .code-editor {
+.query__sql > .code-editor {
   margin: 0 0.75rem 0.75rem;
   border-radius: 8px;
 }

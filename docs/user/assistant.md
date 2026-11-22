@@ -91,7 +91,24 @@ Do not use **Measure the times** in these conditions. For a full protection, use
 
 A plan read closes an open result of the tab. The results pane then tells you that the assistant closed the result.
 
-## 6. Limits
+## 6. Use sessions
+
+Each conversation is a session. Two or more sessions can run at the same time. The sessions stay until you close the workspace. Tabloxide does not store them on disk.
+
+- To start a new session, select **+** (New conversation) in the panel. The earlier session continues.
+- To see all sessions, select **Assistant sessions** in the left tool strip. Each session shows its state: Running, Waiting for you, or Done. Waiting for you means that a plan read waits for your confirmation.
+- To open a session in an editor tab, select it in the list, or select **Open the session in a tab** in the panel.
+
+The tab of a session shows these parts:
+
+1. The steps of the last request, for example the plan read, the structure read, and the answer.
+2. The conversation and the request field.
+3. **Proposed changes**: the SQL blocks of the last answer. **Open in a new tab** puts the SQL into a new editor tab. **Insert into** puts the SQL at the cursor of the last SQL tab. Tabloxide does not run the SQL.
+4. **Context**: the connection, the tab, and the schema of the last request.
+
+A request of a session uses the last SQL tab, also when the tab of the session is active. The status bar shows the number of sessions that run.
+
+## 7. Limits
 
 - The model can make mistakes. Examine each statement before you run it, most of all a statement that changes or removes data.
 - The model does not see rows, the number of rows, or the distribution of values, unless a plan shows them.

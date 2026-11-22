@@ -1,5 +1,6 @@
+import { useRunningSessions } from '../assistant/useSessions'
 import { useQuery } from '../query/queryStore'
-import { useTabsStore } from '../tabs/tabsStore'
+import { sqlTabOf, useTabsStore } from '../tabs/tabsStore'
 import { useWorkspaceStore } from '../workspace/workspaceStore'
 import { useShellStore } from './shellStore'
 import { useAppInfo, type AppInfoState } from './useAppInfo'
@@ -23,12 +24,10 @@ export function StatusBar() {
   const connections = useWorkspaceStore(
     (store) => store.workspace?.connections ?? NO_CONNECTIONS,
   )
-  const connectionId = useTabsStore(
-    (store) =>
-      store.tabs.find((tab) => tab.id === store.activeId)?.connectionId,
-  )
+  const connectionId = useTabsStore((store) => sqlTabOf(store)?.connectionId)
   const session = useQuery((store) => store.session)
   const cursor = useShellStore((store) => store.cursor)
+  const running = useRunningSessions()
   const connection = connections.find((item) => item.id === connectionId)
   const server = session
     ? connection?.engine === 'duckdb'
@@ -44,6 +43,13 @@ export function StatusBar() {
       {cursor && (
         <span>
           Ln {cursor.line}, Col {cursor.column}
+        </span>
+      )}
+      {running > 0 && (
+        <span>
+          {running === 1
+            ? '1 assistant session running'
+            : `${running} assistant sessions running`}
         </span>
       )}
       <span className="status-bar__spacer" />

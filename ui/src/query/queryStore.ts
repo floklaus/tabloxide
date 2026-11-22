@@ -11,7 +11,7 @@ import {
 } from '../bindings'
 import { invalidateCatalog } from '../completion/catalogCache'
 import { toMessage } from '../lib/errors'
-import { useTabsStore } from '../tabs/tabsStore'
+import { sqlTabIdOf, useTabsStore } from '../tabs/tabsStore'
 
 export type StatementReport = StatementReport_Serialize
 export type QueryError = QueryError_Serialize
@@ -361,11 +361,11 @@ const NO_TAB = ''
 
 /** Returns the query state of the active tab. */
 export function activeQueryStore(): QueryStore {
-  return getQueryStore(useTabsStore.getState().activeId ?? NO_TAB)
+  return getQueryStore(sqlTabIdOf(useTabsStore.getState()) ?? NO_TAB)
 }
 
 /** Reads the query state of the active tab. */
 export function useQuery<T>(selector: (state: QueryState) => T): T {
-  const tabId = useTabsStore((state) => state.activeId) ?? NO_TAB
+  const tabId = useTabsStore(sqlTabIdOf) ?? NO_TAB
   return useStore(getQueryStore(tabId), selector)
 }

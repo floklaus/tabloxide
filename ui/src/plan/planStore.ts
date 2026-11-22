@@ -4,7 +4,7 @@ import { activeEditor } from '../editor/editorBridge'
 import { toMessage } from '../lib/errors'
 import { getQueryStore } from '../query/queryStore'
 import { useResultsViewStore } from '../results/resultsViewStore'
-import { useTabsStore } from '../tabs/tabsStore'
+import { sqlTabForTools } from '../tabs/tabsStore'
 import { useWorkspaceStore } from '../workspace/workspaceStore'
 import { parsePlan, type Plan } from './planModel'
 
@@ -40,8 +40,7 @@ export const usePlanStore = create<PlanState>((set, get) => ({
 
   read: async (analyze) => {
     if (get().status === 'reading') return
-    const tabs = useTabsStore.getState()
-    const tab = tabs.tabs.find((item) => item.id === tabs.activeId)
+    const tab = sqlTabForTools()
     const connection = useWorkspaceStore
       .getState()
       .workspace?.connections.find((item) => item.id === tab?.connectionId)

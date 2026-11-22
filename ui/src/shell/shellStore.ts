@@ -13,7 +13,8 @@ import {
 
 export type { Panels, ResultsPosition } from './layout/layoutModel'
 
-export type SidebarView = 'files' | 'connections' | 'schema' | 'git' | 'history'
+export type SidebarView =
+  'files' | 'connections' | 'schema' | 'git' | 'history' | 'sessions'
 
 /** The size of the controls and the space around them. */
 export type Density = 'comfortable' | 'compact'

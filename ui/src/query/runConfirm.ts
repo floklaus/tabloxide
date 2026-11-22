@@ -8,7 +8,7 @@ import {
 } from '../bindings'
 import { toMessage } from '../lib/errors'
 import { usePreferencesStore } from '../preferences/preferencesStore'
-import { useTabsStore } from '../tabs/tabsStore'
+import { sqlTabForTools } from '../tabs/tabsStore'
 import { useWorkspaceStore } from '../workspace/workspaceStore'
 import { activeQueryStore } from './queryStore'
 
@@ -82,8 +82,7 @@ export async function requestRun(
   sql: string,
   target: RunTarget,
 ): Promise<void> {
-  const tabs = useTabsStore.getState()
-  const tab = tabs.tabs.find((item) => item.id === tabs.activeId)
+  const tab = sqlTabForTools()
   const connections = useWorkspaceStore.getState().workspace?.connections ?? []
   const connection = connections.find((item) => item.id === tab?.connectionId)
   if (!connection) return

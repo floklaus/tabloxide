@@ -1,4 +1,7 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
+import { useStore } from 'zustand'
+import { sessionStore, type SessionStore } from '../assistant/assistantStore'
+import { DEFAULT_TITLE } from '../assistant/sessionLabels'
 import { ConfirmDialog } from '../connections/ConfirmDialog'
 import { disposeQueryStore } from '../query/queryStore'
 import { useWorkspaceStore } from '../workspace/workspaceStore'
@@ -20,6 +23,19 @@ function targetIndex(key: string, index: number, count: number): number | null {
     default:
       return null
   }
+}
+
+function SessionTitle({ store }: { store: SessionStore }) {
+  const title = useStore(store, (state) => state.title)
+  return <>{`Assistant: ${title ?? DEFAULT_TITLE}`}</>
+}
+
+/** The title of a tab. An assistant tab shows the title of its session. */
+function TabTitle({ tab }: { tab: Tab }) {
+  const store = tab.assistantSessionId
+    ? sessionStore(tab.assistantSessionId)
+    : undefined
+  return store ? <SessionTitle store={store} /> : <>{tab.title}</>
 }
 
 /**
@@ -111,7 +127,7 @@ export function TabBar() {
                 onClick={() => activate(tab.id)}
                 onKeyDown={(event) => onTabKeyDown(event, index)}
               >
-                {tab.title}
+                <TabTitle tab={tab} />
                 {dirty && (
                   <span className="tabs__dirty" aria-label="Unsaved changes">
                     {' '}

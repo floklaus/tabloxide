@@ -7,6 +7,7 @@ const VIEWS: { id: SidebarView; label: string; icon: IconName }[] = [
   { id: 'schema', label: 'Schema', icon: 'schema' },
   { id: 'git', label: 'Git', icon: 'git' },
   { id: 'history', label: 'History', icon: 'history' },
+  { id: 'sessions', label: 'Assistant sessions', icon: 'sessions' },
 ]
 
 /** The buttons of the sidebar views. A second click on the open view hides the sidebar. */

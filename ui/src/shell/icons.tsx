@@ -7,6 +7,7 @@ const PATHS = {
   git: 'M6 3v12 M6 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M18 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M18 9c0 5-12 2-12 6',
   history: 'M3 12a9 9 0 1 0 3-6.7 M3 4v5h5 M12 7v5l3 2',
   assistant: 'M4 5h16v11H9l-5 4z M8 9h8 M8 12h5',
+  sessions: 'M3 4h13v9H7l-4 3z M8 16v1h9l4 3V8h-2',
   search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M20 20l-4-4',
   chevron: 'M6 9l6 6 6-6',
   folder: 'M3 6h6l2 2h10v11H3z',

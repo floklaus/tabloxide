@@ -1,7 +1,7 @@
 import { useState, type KeyboardEvent } from 'react'
 import { useGitStore } from '../git/gitStore'
 import { useQuery } from '../query/queryStore'
-import { useTabsStore } from '../tabs/tabsStore'
+import { sqlTabOf, useTabsStore } from '../tabs/tabsStore'
 import { useWorkspaceStore } from '../workspace/workspaceStore'
 import { newConnection, switchConnection } from './commands'
 import { Icon } from './icons'
@@ -65,10 +65,7 @@ export function ConnectionWidget() {
   const connections = useWorkspaceStore(
     (state) => state.workspace?.connections ?? NO_CONNECTIONS,
   )
-  const connectionId = useTabsStore(
-    (state) =>
-      state.tabs.find((tab) => tab.id === state.activeId)?.connectionId,
-  )
+  const connectionId = useTabsStore((state) => sqlTabOf(state)?.connectionId)
   const hasSession = useQuery((state) => state.session !== null)
   const [filter, setFilter] = useState('')
   const active = connections.find(
