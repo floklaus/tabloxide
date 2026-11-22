@@ -3,6 +3,8 @@ import type { RunTarget } from '../bindings'
 import { combineSources } from '../completion/combine'
 import { completeSql } from '../completion/sqlCompletion'
 import { usePlanStore } from '../plan/planStore'
+import { Icon } from '../shell/icons'
+import { MenuButton } from '../shell/menu/MenuButton'
 import { useShellStore } from '../shell/shellStore'
 import { SaveSnippetDialog } from '../snippets/SaveSnippetDialog'
 import { completeSnippets } from '../snippets/snippets'
@@ -26,7 +28,6 @@ export function QueryEditor() {
     state.tabs.find((item) => item.id === state.activeId),
   )
   const setContent = useTabsStore((state) => state.setContent)
-  const setConnection = useTabsStore((state) => state.setConnection)
   const saveTab = useTabsStore((state) => state.save)
   const editorPreferences = usePreferencesStore(
     (state) => state.preferences.editor,
@@ -59,38 +60,44 @@ export function QueryEditor() {
     if (!canRun) return
     void requestRun(tab.content, target)
   }
-  const selectConnection = (connectionId: string) => {
-    const query = activeQueryStore().getState()
-    setConnection(tab.id, connectionId || null)
-    void (connectionId ? query.connect(connectionId) : query.disconnect())
-  }
-
   return (
     <section className="pane query" aria-label="Editor">
       <TabBar />
       <div className="query__bar">
-        <label className="query__connection">
-          <span className="visually-hidden">Connection</span>
-          <select
-            value={active?.id ?? ''}
-            disabled={isConnecting || runState !== 'idle'}
-            onChange={(event) => selectConnection(event.target.value)}
-          >
-            <option value="">No connection</option>
-            {connections.map((connection) => (
-              <option key={connection.id} value={connection.id}>
-                {connection.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        {active && (
-          <span className={`badge badge--${active.environment}`}>
-            {active.environment}
+        <button
+          type="button"
+          className="button button--primary query__run"
+          disabled={!canRun}
+          aria-keyshortcuts="Control+Enter"
+          title="Run the selection, or the statement at the cursor"
+          onClick={() => run(editorRef.current?.getTarget() ?? { type: 'all' })}
+        >
+          <Icon name="play" size={14} />
+          Run
+          <span className="query__key" aria-hidden="true">
+            Ctrl+Enter
           </span>
-        )}
+        </button>
+        <button
+          type="button"
+          className="button"
+          disabled={!canRun}
+          title="Run all statements (Ctrl+Shift+Enter)"
+          onClick={() => run({ type: 'all' })}
+        >
+          Run all
+        </button>
+        <button
+          type="button"
+          className="button button--danger-outline"
+          disabled={runState !== 'running'}
+          onClick={() => void activeQueryStore().getState().cancel()}
+        >
+          Cancel
+        </button>
         {active?.read_only && <span className="badge">read-only</span>}
         {isConnecting && <span role="status">Connecting…</span>}
+        <span className="title-bar__spacer" />
         {session && (
           <span className="query__server">
             {active?.engine === 'duckdb'
@@ -101,80 +108,55 @@ export function QueryEditor() {
         {active && !session && !isConnecting && (
           <span className="query__server">Connects at the first run</span>
         )}
-        <span className="title-bar__spacer" />
-        <button
-          type="button"
-          className="button button--small"
-          disabled={!active || runState !== 'idle'}
-          title="Show the plan of the statement at the cursor. The statement does not run."
-          onClick={() => void usePlanStore.getState().read(false)}
+        <MenuButton
+          label="More query actions"
+          menuLabel="Query actions"
+          className="icon-button"
+          items={() => [
+            {
+              kind: 'action',
+              label: 'Explain',
+              detail: 'The plan. The statement does not run.',
+              disabled: !active || runState !== 'idle',
+              run: () => void usePlanStore.getState().read(false),
+            },
+            {
+              kind: 'action',
+              label: 'Explain analyze',
+              detail: 'Runs a statement that reads data, and measures it.',
+              disabled: !active || runState !== 'idle',
+              run: () => void usePlanStore.getState().read(true),
+            },
+            { kind: 'separator' },
+            {
+              kind: 'action',
+              label: 'Format the SQL',
+              shortcut: 'Shift+Alt+F',
+              run: () => {
+                setFormatError(null)
+                editorRef.current?.format()
+              },
+            },
+            {
+              kind: 'action',
+              label: 'Save as snippet…',
+              run: () =>
+                setSnippetText(
+                  editorRef.current?.getSelectedText() ?? tab.content,
+                ),
+            },
+          ]}
         >
-          Explain
-        </button>
+          <Icon name="more" size={16} />
+        </MenuButton>
         <button
           type="button"
-          className="button button--small"
-          disabled={!active || runState !== 'idle'}
-          title="Run the statement at the cursor and show the measured plan. Only for a statement that reads data."
-          onClick={() => void usePlanStore.getState().read(true)}
-        >
-          Explain analyze
-        </button>
-        <button
-          type="button"
-          className="button button--small"
-          title="Format the selection, or all text (Shift+Alt+F)"
-          onClick={() => {
-            setFormatError(null)
-            editorRef.current?.format()
-          }}
-        >
-          Format
-        </button>
-        <button
-          type="button"
-          className="button button--small"
-          title="Save the selection, or all text, as a snippet"
-          onClick={() =>
-            setSnippetText(editorRef.current?.getSelectedText() ?? tab.content)
-          }
-        >
-          Save as snippet
-        </button>
-        <button
-          type="button"
-          className="button button--small"
+          className="button"
           disabled={!isDirty(tab)}
           title="Save the file (Ctrl+S)"
           onClick={() => void saveTab(tab.id)}
         >
           Save
-        </button>
-        <button
-          type="button"
-          className="button button--small button--primary"
-          disabled={!canRun}
-          title="Run the selection, or the statement at the cursor (Ctrl+Enter)"
-          onClick={() => run(editorRef.current?.getTarget() ?? { type: 'all' })}
-        >
-          Run
-        </button>
-        <button
-          type="button"
-          className="button button--small"
-          disabled={!canRun}
-          title="Run all statements (Ctrl+Shift+Enter)"
-          onClick={() => run({ type: 'all' })}
-        >
-          Run all
-        </button>
-        <button
-          type="button"
-          className="button button--small button--danger"
-          disabled={runState !== 'running'}
-          onClick={() => void activeQueryStore().getState().cancel()}
-        >
-          Cancel
         </button>
       </div>
       {connectState.status === 'failed' && (

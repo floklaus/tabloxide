@@ -56,14 +56,18 @@ describe('TabBar', () => {
     )
   })
 
-  test('shows the connection name of a tab', () => {
+  test('shows the connection name of a tab in its tooltip', () => {
     useWorkspaceStore.setState({
       workspace: makeWorkspace([makeProfile({ id: 'c1', name: 'Live' })]),
     })
 
     renderTabs([tab({ connectionId: 'c1' }), tab({ id: 't2', title: 'b.sql' })])
 
-    expect(titles()).toEqual(['Query 1 — Live', 'b.sql'])
+    expect(titles()).toEqual(['Query 1', 'b.sql'])
+    expect(screen.getByRole('tab', { name: 'Query 1' })).toHaveAttribute(
+      'title',
+      'Query 1 · Live',
+    )
   })
 
   test('activates a tab when the user clicks it', async () => {

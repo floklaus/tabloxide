@@ -86,7 +86,10 @@ describe('PlanView', () => {
     })
     const user = renderWith('postgres')
 
-    await user.click(screen.getByRole('button', { name: 'Explain' }))
+    await user.click(screen.getByRole('button', { name: 'More query actions' }))
+    await user.click(
+      screen.getByRole('menuitem', { name: /^Explain(?! analyze)/ }),
+    )
 
     expect(planRead).toHaveBeenCalledWith(4, STATEMENT, false)
     const tree = await screen.findByRole('list', { name: 'Plan steps' })
@@ -108,7 +111,10 @@ describe('PlanView', () => {
     })
     const user = renderWith('duckdb')
 
-    await user.click(screen.getByRole('button', { name: 'Explain analyze' }))
+    await user.click(screen.getByRole('button', { name: 'More query actions' }))
+    await user.click(
+      screen.getByRole('menuitem', { name: /^Explain analyze(?! analyze)/ }),
+    )
 
     expect(planRead).toHaveBeenCalledWith(4, STATEMENT, true)
     expect(await screen.findByText(/measured each step/)).toBeInTheDocument()
@@ -128,7 +134,10 @@ describe('PlanView', () => {
     })
     const user = renderWith('postgres')
 
-    await user.click(screen.getByRole('button', { name: 'Explain analyze' }))
+    await user.click(screen.getByRole('button', { name: 'More query actions' }))
+    await user.click(
+      screen.getByRole('menuitem', { name: /^Explain analyze(?! analyze)/ }),
+    )
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'EXPLAIN ANALYZE runs the statement.',
@@ -150,7 +159,10 @@ describe('PlanView', () => {
     await query.getState().connect('id-1')
     query.setState({ open: { resultId: 1, index: 0 } })
 
-    await user.click(screen.getByRole('button', { name: 'Explain' }))
+    await user.click(screen.getByRole('button', { name: 'More query actions' }))
+    await user.click(
+      screen.getByRole('menuitem', { name: /^Explain(?! analyze)/ }),
+    )
 
     await screen.findByRole('list', { name: 'Plan steps' })
     expect(query.getState().open).toBeNull()

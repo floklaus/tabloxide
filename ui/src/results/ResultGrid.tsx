@@ -18,7 +18,7 @@ import {
   type SortState,
 } from './gridModel'
 
-const ROW_HEIGHT = 26
+const ROW_HEIGHT = 35
 const OVERSCAN_ROWS = 12
 const DEFAULT_COLUMN_WIDTH = 160
 const MIN_COLUMN_WIDTH = 48
@@ -301,7 +301,11 @@ export function ResultGrid({ columns, rows, hasMore, onNeedMore }: Props) {
               >
                 <button
                   type="button"
-                  className="grid__sort"
+                  className={
+                    isRightAligned(columns[index].kind)
+                      ? 'grid__sort grid__sort--right'
+                      : 'grid__sort'
+                  }
                   title={columns[index].type_name ?? undefined}
                   onClick={(event) => {
                     setSort(nextSort(sort, index))
@@ -340,7 +344,7 @@ export function ResultGrid({ columns, rows, hasMore, onNeedMore }: Props) {
             return (
               <div
                 key={rowIndex}
-                className="grid__row"
+                className={`grid__row${item.index % 2 === 1 ? ' grid__row--even' : ''}`}
                 role="row"
                 aria-rowindex={item.index + 2}
                 style={{

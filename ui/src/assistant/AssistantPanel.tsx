@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 import { Modal } from '../connections/Modal'
 import { activeEditor } from '../editor/editorBridge'
+import { Icon } from '../shell/icons'
 import { splitAnswer } from './answerSegments'
 import { ApiKeyField } from './ApiKeyField'
 import {
@@ -68,7 +69,9 @@ function Message({ message }: { message: AssistantMessage }) {
   const isAssistant = message.role === 'assistant'
   return (
     <div className={`assistant__message assistant__message--${message.role}`}>
-      <p className="assistant__who">{isAssistant ? 'Assistant' : 'You'}</p>
+      <p className="assistant__who visually-hidden">
+        {isAssistant ? 'Assistant' : 'You'}
+      </p>
       {splitAnswer(message.text).map((segment, index) =>
         segment.type === 'text' ? (
           <p key={index} className="assistant__text">
@@ -112,6 +115,7 @@ export function AssistantPanel() {
   const [measures, setMeasures] = useState(false)
   const logRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const requestId = useId()
   const isBusy = status !== 'idle'
   const hasConversation = messages.length > 0 || answer !== ''
   // The answer in progress is the last item. It keeps its position when it is
@@ -155,15 +159,17 @@ export function AssistantPanel() {
         <span className="title-bar__spacer" />
         <button
           type="button"
-          className="button button--small"
+          className="icon-link"
+          aria-label="New conversation"
+          title="New conversation"
           disabled={isBusy || !hasConversation}
           onClick={() => store().clear()}
         >
-          New conversation
+          <Icon name="plus" size={16} />
         </button>
       </div>
 
-      <p className="pane__hint">
+      <p className="pane__hint assistant__privacy">
         Each request sends the conversation and the structure of the connected
         database to Anthropic. It does not send rows, passwords, or connection
         settings. The application does not run the SQL of an answer.
@@ -238,41 +244,47 @@ export function AssistantPanel() {
             </div>
           )}
 
-          <div className="assistant__plan">
-            <button
-              type="button"
-              className="button button--small"
-              disabled={isBusy}
-              title="Read the plan of the statement at the cursor, and ask for its analysis"
-              onClick={() => void store().analyzePlan(measures)}
-            >
-              Analyze plan
-            </button>
-            <label className="field--check">
-              <input
-                type="checkbox"
-                checked={measures}
-                onChange={(event) => setMeasures(event.target.checked)}
-              />
-              <span>Measure the times (runs the statement)</span>
-            </label>
-          </div>
-
           <div className="assistant__form">
+            <label className="assistant__label" htmlFor={requestId}>
+              Request
+            </label>
             <textarea
+              id={requestId}
               ref={inputRef}
-              aria-label="Request"
               rows={3}
               value={draft}
               placeholder="Describe the SQL that you need"
               onChange={(event) => store().setDraft(event.target.value)}
               onKeyDown={onKeyDown}
             />
+            <div className="assistant__plan">
+              <button
+                type="button"
+                className="button button--small"
+                disabled={isBusy}
+                title="Read the plan of the statement at the cursor, and ask for its analysis"
+                onClick={() => void store().analyzePlan(measures)}
+              >
+                Analyze plan
+              </button>
+              <label className="field--check">
+                <input
+                  type="checkbox"
+                  checked={measures}
+                  onChange={(event) => setMeasures(event.target.checked)}
+                />
+                <span>Measure the times (runs the statement)</span>
+              </label>
+            </div>
             <div className="assistant__form-actions">
-              <span className="pane__hint">
-                Enter sends. Shift+Enter adds a line.
-              </span>
-              <span className="title-bar__spacer" />
+              <button
+                type="button"
+                className="button button--small button--primary"
+                disabled={isBusy || !draft.trim()}
+                onClick={() => void store().send()}
+              >
+                Send
+              </button>
               {isBusy && (
                 <button
                   type="button"
@@ -282,16 +294,11 @@ export function AssistantPanel() {
                   Stop
                 </button>
               )}
-              <button
-                type="button"
-                className="button button--small button--primary"
-                disabled={isBusy || !draft.trim()}
-                onClick={() => void store().send()}
-              >
-                Send
-              </button>
             </div>
           </div>
+          <p className="pane__hint assistant__keys">
+            Enter sends. Shift+Enter adds a line.
+          </p>
         </>
       )}
 

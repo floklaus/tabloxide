@@ -10,6 +10,11 @@ const PATHS = {
   search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M20 20l-4-4',
   chevron: 'M6 9l6 6 6-6',
   folder: 'M3 6h6l2 2h10v11H3z',
+  play: 'M7 5l12 7-12 7z',
+  more: 'M5 12h.01 M12 12h.01 M19 12h.01',
+  refresh: 'M20 11a8 8 0 1 0-2.3 5.7 M20 4v7h-7',
+  external: 'M14 4h6v6 M20 4l-9 9 M18 14v6H4V6h6',
+  plus: 'M12 5v14 M5 12h14',
 } as const
 
 export type IconName = keyof typeof PATHS

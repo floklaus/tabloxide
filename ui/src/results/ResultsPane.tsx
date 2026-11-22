@@ -132,8 +132,19 @@ function StatementView(props: { statement: StatementReport; index: number }) {
   const isOpen = open?.index === index
   return (
     <>
-      <div className="results__bar">
+      {fetchError && isLast(index) && (
+        <ErrorMessage error={fetchError} location={null} />
+      )}
+      <ResultGrid
+        key={`${index}-${statement.range.from}`}
+        columns={outcome.columns}
+        rows={outcome.rows}
+        hasMore={isOpen}
+        onNeedMore={() => void fetchMore()}
+      />
+      <div className="results__bar results__bar--footer">
         <RowsStatus statement={statement} index={index} />
+        <span className="title-bar__spacer" />
         {isOpen && (
           <button
             type="button"
@@ -153,16 +164,6 @@ function StatementView(props: { statement: StatementReport; index: number }) {
           {isExporting ? 'Exporting…' : 'Export CSV'}
         </button>
       </div>
-      {fetchError && isLast(index) && (
-        <ErrorMessage error={fetchError} location={null} />
-      )}
-      <ResultGrid
-        key={`${index}-${statement.range.from}`}
-        columns={outcome.columns}
-        rows={outcome.rows}
-        hasMore={isOpen}
-        onNeedMore={() => void fetchMore()}
-      />
     </>
   )
 }
@@ -259,11 +260,15 @@ export function ResultsPane() {
           </button>
         ))}
       </div>
-      {view === 'results' && <Results />}
-      {view === 'history' && <HistoryPanel onRun={() => setView('results')} />}
-      {view === 'table' && <TableDetail />}
-      {view === 'plan' && <PlanView />}
-      {view === 'diff' && <DiffView />}
+      <div className="results__content">
+        {view === 'results' && <Results />}
+        {view === 'history' && (
+          <HistoryPanel onRun={() => setView('results')} />
+        )}
+        {view === 'table' && <TableDetail />}
+        {view === 'plan' && <PlanView />}
+        {view === 'diff' && <DiffView />}
+      </div>
     </section>
   )
 }

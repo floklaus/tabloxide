@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import {
   afterAll,
@@ -12,6 +12,7 @@ import {
 import { commands } from '../bindings'
 import { useResultsViewStore } from '../results/resultsViewStore'
 import { makeProfile, makeWorkspace } from '../test/fixtures'
+import { useTabsStore } from '../tabs/tabsStore'
 import { useWorkspaceStore } from '../workspace/workspaceStore'
 import { SchemaTree } from './SchemaTree'
 import { useSchemaStore } from './schemaStore'
@@ -52,6 +53,23 @@ afterAll(() => {
   )
   Object.defineProperty(Element.prototype, 'clientWidth', original.clientWidth)
 })
+
+/** Sets the connection of the active tab. The schema browser follows it. */
+function setTabConnection(connectionId: string | null) {
+  useTabsStore.setState({
+    tabs: [
+      {
+        id: 'tab-1',
+        title: 'Query 1',
+        path: null,
+        content: '',
+        savedContent: null,
+        connectionId,
+      },
+    ],
+    activeId: 'tab-1',
+  })
+}
 
 function ok<T>(data: T) {
   return { status: 'ok' as const, data }
@@ -117,7 +135,7 @@ async function connect() {
     </>,
   )
   const user = userEvent.setup()
-  await user.selectOptions(screen.getByRole('combobox'), 'Local')
+  act(() => setTabConnection('id-1'))
   await screen.findByRole('button', { name: /public/ })
   return user
 }
@@ -127,6 +145,7 @@ describe('SchemaTree', () => {
     vi.clearAllMocks()
     useWorkspaceStore.setState(initialWorkspaceState, true)
     useSchemaStore.getState().reset()
+    setTabConnection(null)
     useResultsViewStore.getState().setView('results')
     schemaRelations.mockResolvedValue(
       ok([
@@ -143,9 +162,8 @@ describe('SchemaTree', () => {
 
     expect(sessionOpen).toHaveBeenCalledWith('id-1')
     expect(schemaList).toHaveBeenCalledWith(3)
-    expect(
-      screen.getByRole('heading', { name: 'Schema: shop' }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Schema' })).toBeInTheDocument()
+    expect(screen.getByText('shop')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /pg_catalog/ })).toHaveAttribute(
       'data-system',
       'true',
@@ -167,7 +185,7 @@ describe('SchemaTree', () => {
     )
     render(<SchemaTree />)
 
-    await userEvent.selectOptions(screen.getByRole('combobox'), 'Local')
+    act(() => setTabConnection('id-1'))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'refused Check the host.',
@@ -279,7 +297,9 @@ describe('SchemaTree', () => {
       ok([{ name: 'new_table', kind: 'table' }]),
     )
 
-    await user.click(screen.getByRole('button', { name: 'Refresh' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Read the schema again' }),
+    )
 
     expect(
       await screen.findByRole('button', { name: 'new_table' }),
@@ -314,10 +334,10 @@ describe('SchemaTree', () => {
     ).toBeInTheDocument()
   })
 
-  test('closes its session when the user selects no connection', async () => {
-    const user = await connect()
+  test('closes its session when the tab has no connection', async () => {
+    await connect()
 
-    await user.selectOptions(screen.getByRole('combobox'), 'No connection')
+    act(() => setTabConnection(null))
 
     await waitFor(() => expect(commands.sessionClose).toHaveBeenCalledWith(3))
     expect(

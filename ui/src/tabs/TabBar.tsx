@@ -105,17 +105,13 @@ export function TabBar() {
                 tabIndex={tab.id === focusableId ? 0 : -1}
                 aria-selected={tab.id === activeId}
                 aria-describedby={hintId}
-                title={tab.path ?? tab.title}
+                title={[tab.path ?? tab.title, connectionName(tab)]
+                  .filter(Boolean)
+                  .join(' · ')}
                 onClick={() => activate(tab.id)}
                 onKeyDown={(event) => onTabKeyDown(event, index)}
               >
                 {tab.title}
-                {connectionName(tab) && (
-                  <span className="tabs__connection">
-                    {' '}
-                    — {connectionName(tab)}
-                  </span>
-                )}
                 {dirty && (
                   <span className="tabs__dirty" aria-label="Unsaved changes">
                     {' '}

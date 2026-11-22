@@ -86,6 +86,15 @@ const TEXT_TOKENS = [
   'color-env-production',
 ]
 const BACKGROUND_TOKENS = ['color-bg', 'color-surface']
+/** The text colours on the page around the panels: the title bar and the status bar. */
+const PAGE_TEXT_TOKENS = [
+  'color-text',
+  'color-text-muted',
+  'color-accent',
+  'color-env-development',
+  'color-env-staging',
+  'color-env-production',
+]
 /** Backgrounds of buttons and markers that have text in the page background colour. */
 const FILL_TOKENS = ['color-focus', 'color-danger', 'color-ok']
 const SYNTAX_TOKENS = [
@@ -109,6 +118,15 @@ describe.each(themes)('colour contrast of the %s theme', (_name, tokens) => {
       TEXT_RATIO,
     )
   })
+
+  test.each(PAGE_TEXT_TOKENS)(
+    '--%s is readable as text on --color-page',
+    (text) => {
+      expect(contrast(rgb(text), rgb('color-page'))).toBeGreaterThanOrEqual(
+        TEXT_RATIO,
+      )
+    },
+  )
 
   test.each(FILL_TOKENS)(
     'text in the page background colour is readable on --%s',

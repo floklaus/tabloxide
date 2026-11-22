@@ -1,13 +1,13 @@
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { useMemo, useRef } from 'react'
-import { useWorkspaceStore } from '../workspace/workspaceStore'
+import { useEffect, useMemo, useRef } from 'react'
+import { Icon } from '../shell/icons'
+import { useTabsStore } from '../tabs/tabsStore'
 import { useSchemaStore } from './schemaStore'
 import { buildRows, kindLabel, type TreeRow } from './treeModel'
 
 const ROW_HEIGHT = 24
 const OVERSCAN_ROWS = 15
 const INDENT_REM = 0.9
-const NO_CONNECTIONS: never[] = []
 
 const DEPTHS: Record<Exclude<TreeRow['type'], 'note'>, number> = {
   schema: 0,
@@ -92,8 +92,10 @@ function Row({ row }: { row: TreeRow }) {
 /** The schemas, tables, and columns of one connection. Each node loads when the user opens it. */
 export function SchemaTree() {
   const scrollRef = useRef<HTMLDivElement>(null)
-  const connections = useWorkspaceStore(
-    (state) => state.workspace?.connections ?? NO_CONNECTIONS,
+  // The schema browser shows the connection of the active tab.
+  const connectionId = useTabsStore(
+    (state) =>
+      state.tabs.find((tab) => tab.id === state.activeId)?.connectionId ?? null,
   )
   const session = useSchemaStore((state) => state.session)
   const isConnecting = useSchemaStore((state) => state.isConnecting)
@@ -107,6 +109,12 @@ export function SchemaTree() {
   const disconnect = useSchemaStore((state) => state.disconnect)
   const refresh = useSchemaStore((state) => state.refresh)
   const setFilter = useSchemaStore((state) => state.setFilter)
+
+  useEffect(() => {
+    const current = useSchemaStore.getState().session?.connectionId ?? null
+    if (connectionId === current) return
+    void (connectionId ? connect(connectionId) : disconnect())
+  }, [connectionId, connect, disconnect])
 
   const rows = useMemo(
     () => buildRows({ schemas, relations, details, expanded, filter }),
@@ -124,40 +132,19 @@ export function SchemaTree() {
   return (
     <section className="schema" aria-label="Schema">
       <div className="connections__header">
-        <h2 className="pane__title">
-          Schema{session ? `: ${session.database}` : ''}
-        </h2>
+        <h2 className="pane__title">Schema</h2>
         <button
           type="button"
-          className="link-button"
+          className="icon-link"
+          aria-label="Read the schema again"
+          title="Read the schema again (F5)"
           disabled={!session}
           onClick={() => void refresh()}
         >
-          Refresh
+          <Icon name="refresh" size={16} />
         </button>
       </div>
-      <label>
-        <span className="visually-hidden">
-          Connection of the schema browser
-        </span>
-        <select
-          className="schema__select"
-          value={session?.connectionId ?? ''}
-          disabled={isConnecting}
-          onChange={(event) =>
-            void (event.target.value
-              ? connect(event.target.value)
-              : disconnect())
-          }
-        >
-          <option value="">No connection</option>
-          {connections.map((connection) => (
-            <option key={connection.id} value={connection.id}>
-              {connection.name}
-            </option>
-          ))}
-        </select>
-      </label>
+      {session && <p className="schema__database">{session.database}</p>}
       {isConnecting && <p role="status">Connecting…</p>}
       {error && (
         <p className="message message--error" role="alert">
@@ -175,7 +162,10 @@ export function SchemaTree() {
         />
       )}
       {!session && !isConnecting && !error && (
-        <p className="pane__hint">Select a connection to see its schema.</p>
+        <p className="pane__hint">
+          Select a connection for the tab. The schema of that connection shows
+          here.
+        </p>
       )}
       <div ref={scrollRef} className="schema__scroll">
         <ul

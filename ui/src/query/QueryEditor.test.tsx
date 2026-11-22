@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { commands } from '../bindings'
@@ -6,6 +6,7 @@ import { ResultsPane } from '../results/ResultsPane'
 import { makeProfile, makeWorkspace } from '../test/fixtures'
 import { useWorkspaceStore } from '../workspace/workspaceStore'
 import { QueryEditor } from './QueryEditor'
+import { switchConnection } from '../shell/commands'
 import { useTabsStore, type Tab } from '../tabs/tabsStore'
 import { resetQueryStores } from './queryStore'
 
@@ -51,7 +52,7 @@ function renderEditor() {
   return userEvent.setup()
 }
 
-async function connect(user: ReturnType<typeof userEvent.setup>) {
+async function connect(_user: ReturnType<typeof userEvent.setup>) {
   sessionOpen.mockResolvedValue(
     ok({
       status: 'connected',
@@ -63,7 +64,7 @@ async function connect(user: ReturnType<typeof userEvent.setup>) {
       },
     }),
   )
-  await user.selectOptions(screen.getByRole('combobox'), 'Live')
+  await act(async () => switchConnection('id-2'))
   await screen.findByText('PostgreSQL 17.2')
 }
 
@@ -90,18 +91,19 @@ describe('QueryEditor', () => {
     ).toBeInTheDocument()
   })
 
-  test('connects and shows the environment of the connection', async () => {
+  test('connects and shows the server version', async () => {
     const user = renderEditor()
 
     await connect(user)
 
+    // The title bar shows the environment. Refer to the shell tests.
     expect(sessionOpen).toHaveBeenCalledWith('id-2')
-    expect(screen.getByText('production')).toHaveClass('badge--production')
+    expect(screen.getByText('PostgreSQL 17.2')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Run' })).toBeEnabled()
   })
 
   test('shows the failure and the advice when the connect fails', async () => {
-    const user = renderEditor()
+    renderEditor()
     sessionOpen.mockResolvedValue(
       ok({
         status: 'failed',
@@ -113,7 +115,7 @@ describe('QueryEditor', () => {
       }),
     )
 
-    await user.selectOptions(screen.getByRole('combobox'), 'Live')
+    await act(async () => switchConnection('id-2'))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'password authentication failed',
@@ -295,7 +297,8 @@ describe('QueryEditor', () => {
     fileWrite.mockResolvedValue(ok(null))
     const user = renderEditor()
 
-    await user.click(screen.getByRole('button', { name: 'Save as snippet' }))
+    await user.click(screen.getByRole('button', { name: 'More query actions' }))
+    await user.click(screen.getByRole('menuitem', { name: /Save as snippet/ }))
     const dialog = screen.getByRole('dialog', { name: 'Save as snippet' })
     expect(dialog).toHaveTextContent('select * from item')
     await user.type(screen.getByLabelText('Name'), 'all items')
@@ -318,7 +321,6 @@ describe('QueryEditor', () => {
     })
     useWorkspaceStore.setState({ workspace: makeWorkspace([duck]) })
     render(<QueryEditor />)
-    const user = userEvent.setup()
     sessionOpen.mockResolvedValue(
       ok({
         status: 'connected',
@@ -331,7 +333,7 @@ describe('QueryEditor', () => {
       }),
     )
 
-    await user.selectOptions(screen.getByRole('combobox'), 'Duck')
+    await act(async () => switchConnection('id-3'))
 
     expect(await screen.findByText('DuckDB v2.0.0')).toBeInTheDocument()
     expect(screen.queryByText(/PostgreSQL/)).not.toBeInTheDocument()
