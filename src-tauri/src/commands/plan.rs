@@ -5,7 +5,7 @@ use crate::state::{AppState, SessionId};
 use serde::Serialize;
 use specta::Type;
 use tabloxide_assistant::{ExplainRejection, explain_json_statement, plan_json};
-use tabloxide_core::{QueryError, QueryErrorKind, QuerySession};
+use tabloxide_core::{Engine, QueryError, QueryErrorKind, QuerySession};
 use tauri::State;
 
 /// The plan is one row. The limit protects against a different result.
@@ -32,8 +32,8 @@ pub enum PlanRead {
     },
 }
 
-async fn read(session: &QuerySession, sql: &str, analyze: bool) -> PlanRead {
-    let statement = match explain_json_statement(sql, analyze) {
+async fn read(session: &QuerySession, sql: &str, analyze: bool, engine: Engine) -> PlanRead {
+    let statement = match explain_json_statement(sql, analyze, engine) {
         Ok(statement) => statement,
         Err(reason) => {
             return PlanRead::Rejected {
@@ -73,8 +73,8 @@ pub async fn plan_read(
     sql: String,
     analyze: bool,
 ) -> Result<PlanRead, CommandError> {
-    let session = state.session(session_id)?;
-    Ok(read(&session, &sql, analyze).await)
+    let entry = state.session_entry(session_id)?;
+    Ok(read(&entry.session, &sql, analyze, entry.engine).await)
 }
 
 #[cfg(test)]
@@ -92,19 +92,20 @@ mod tests {
     async fn runs_explain_as_json_and_returns_the_cell_of_the_plan() {
         let (session, probe) = session(vec![Scripted::Rows(1)]);
 
-        let result = read(&session, "select * from item;", true).await;
+        let result = read(&session, "select * from item;", true, Engine::Postgres).await;
 
         assert_eq!(
             result,
             PlanRead::Plan {
-                statement: "EXPLAIN (ANALYZE, FORMAT JSON) select * from item".to_owned(),
+                statement: "EXPLAIN (ANALYZE, VERBOSE, BUFFERS, FORMAT JSON) select * from item"
+                    .to_owned(),
                 json: "1".to_owned(),
                 is_analyzed: true,
             }
         );
         assert_eq!(
             *probe.executed.lock().unwrap(),
-            vec!["EXPLAIN (ANALYZE, FORMAT JSON) select * from item"]
+            vec!["EXPLAIN (ANALYZE, VERBOSE, BUFFERS, FORMAT JSON) select * from item"]
         );
     }
 
@@ -112,7 +113,7 @@ mod tests {
     async fn a_result_without_rows_is_a_failure() {
         let (session, _probe) = session(vec![Scripted::Rows(0)]);
 
-        let result = read(&session, "select 1", false).await;
+        let result = read(&session, "select 1", false, Engine::Postgres).await;
 
         assert!(matches!(result, PlanRead::Failed { .. }));
     }
@@ -121,7 +122,7 @@ mod tests {
     async fn rejects_analyze_for_a_statement_that_changes_data() {
         let (session, probe) = session(vec![]);
 
-        let result = read(&session, "delete from item", true).await;
+        let result = read(&session, "delete from item", true, Engine::Postgres).await;
 
         assert!(matches!(
             result,

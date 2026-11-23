@@ -8,8 +8,13 @@ export type PlanNode = {
   operation: string
   /** The table or the index that the step reads. */
   target: string | null
-  /** Other data of the step, for example the filter or the join condition. */
+  /**
+   * All other data of the step as the engine names it, for example the filter, the
+   * join condition, or the buffer reads. The values are text.
+   */
   details: [string, string][]
+  /** How many times the step ran. Only after ANALYZE, and only for PostgreSQL. */
+  loops: number | null
   /** The number of rows that the planner expected. */
   estimatedRows: number | null
   /** The number of rows that the step returned. Only after ANALYZE. */
@@ -32,8 +37,11 @@ export type PlanNode = {
 }
 
 export type Plan = {
+  engine: Engine
   root: PlanNode
   isAnalyzed: boolean
+  /** The data of the complete statement, for example the memory or the trigger times. */
+  totals: [string, string][]
   /** The total time in milliseconds. Only after ANALYZE. */
   totalTime: number | null
   /** The time of the planner in milliseconds, if the engine gives it. */
@@ -58,9 +66,24 @@ function number(value: unknown): number | null {
 }
 
 function text(value: unknown): string | null {
-  if (Array.isArray(value)) return value.map(String).join(', ')
   if (value === null || value === undefined || value === '') return null
+  if (Array.isArray(value)) {
+    if (value.length === 0) return null
+    return value
+      .map((item) => (isObject(item) ? JSON.stringify(item) : String(item)))
+      .join(', ')
+  }
+  if (typeof value === 'boolean') return value ? 'yes' : 'no'
+  if (isObject(value)) return JSON.stringify(value)
   return String(value)
+}
+
+/** Returns the fields of `object` as text, without the keys in `skip`. */
+function fieldsOf(object: Json, skip: Set<string>): [string, string][] {
+  return Object.entries(object).flatMap(([key, value]) => {
+    const shown = skip.has(key) ? null : text(value)
+    return shown === null ? [] : [[key, shown] as [string, string]]
+  })
 }
 
 const sum = (values: (number | null)[]): number =>
@@ -68,22 +91,15 @@ const sum = (values: (number | null)[]): number =>
 
 // PostgreSQL
 
-/** The data of a PostgreSQL step that the tree shows. */
-const POSTGRES_DETAILS = [
-  'Join Type',
-  'Strategy',
-  'Hash Cond',
-  'Merge Cond',
-  'Join Filter',
-  'Index Cond',
-  'Recheck Cond',
-  'Filter',
-  'Rows Removed by Filter',
-  'Sort Key',
-  'Sort Method',
-  'Group Key',
-  'Parent Relationship',
-]
+/** The fields of a PostgreSQL step that the step summary shows, or that are the tree. */
+const POSTGRES_STRUCTURE = new Set(['Node Type', 'Plans'])
+
+/** The fields of the PostgreSQL plan that `Plan` has as numbers, or that are the tree. */
+const POSTGRES_PLAN_STRUCTURE = new Set([
+  'Plan',
+  'Planning Time',
+  'Execution Time',
+])
 
 function postgresTarget(node: Json): string | null {
   const relation = text(node['Relation Name'])
@@ -111,10 +127,8 @@ function postgresNode(node: Json): RawNode {
   return {
     operation: text(node['Node Type']) ?? 'Step',
     target: postgresTarget(node),
-    details: POSTGRES_DETAILS.flatMap((key) => {
-      const value = text(node[key])
-      return value === null ? [] : [[key, value] as [string, string]]
-    }),
+    details: fieldsOf(node, POSTGRES_STRUCTURE),
+    loops: number(node['Actual Loops']),
     estimatedRows: number(node['Plan Rows']),
     // The estimate is for one loop. Compare it with the rows of one loop.
     actualRows: actualRows,
@@ -138,7 +152,9 @@ function inclusiveTime(node: RawNode): number {
   return (node.selfTime ?? 0) + sum(node.children.map(inclusiveTime))
 }
 
-function parsePostgres(json: unknown): Omit<Plan, 'root'> & { raw: RawNode } {
+type Parsed = Omit<Plan, 'root' | 'engine'> & { raw: RawNode }
+
+function parsePostgres(json: unknown): Parsed {
   const first = Array.isArray(json) ? json[0] : json
   if (!isObject(first) || !isObject(first['Plan'])) {
     throw new Error('The plan of PostgreSQL has no "Plan" object.')
@@ -150,6 +166,7 @@ function parsePostgres(json: unknown): Omit<Plan, 'root'> & { raw: RawNode } {
     isAnalyzed: execution !== null,
     totalTime: execution,
     planningTime: number(first['Planning Time']),
+    totals: fieldsOf(first, POSTGRES_PLAN_STRUCTURE),
   }
 }
 
@@ -165,6 +182,39 @@ const DUCKDB_WRAPPERS = new Set([
 
 const DUCKDB_HIDDEN = new Set(['Estimated Cardinality', 'Table'])
 
+/** The fields of a DuckDB operator that the step summary shows, or that are the tree. */
+const DUCKDB_STRUCTURE = new Set([
+  'children',
+  'extra_info',
+  'name',
+  'type',
+  'operator_type',
+  'timing',
+  'operator_timing',
+  'operator_cardinality',
+  'intermediate_rows',
+])
+
+/** The groups of the DuckDB profile with data of the complete statement. */
+const DUCKDB_TOTAL_GROUPS = [
+  'query',
+  'system',
+  'io',
+  'planner',
+  'physical_planner',
+]
+
+function duckdbTotals(json: unknown): [string, string][] {
+  if (!isObject(json)) return []
+  return DUCKDB_TOTAL_GROUPS.flatMap((group) => {
+    const values = json[group]
+    if (!isObject(values)) return []
+    return fieldsOf(values, new Set(['sql'])).map(
+      ([key, value]) => [`${group}.${key}`, value] as [string, string],
+    )
+  })
+}
+
 function duckdbNode(node: Json): RawNode {
   const info = isObject(node['extra_info']) ? node['extra_info'] : {}
   const children = (Array.isArray(node['children']) ? node['children'] : [])
@@ -176,12 +226,11 @@ function duckdbNode(node: Json): RawNode {
     operation:
       text(node['name'] ?? node['type'] ?? node['operator_type']) ?? 'Step',
     target: text(info['Table']),
-    details: Object.entries(info).flatMap(([key, value]) => {
-      const shown = text(value)
-      return DUCKDB_HIDDEN.has(key) || shown === null
-        ? []
-        : [[key, shown] as [string, string]]
-    }),
+    details: [
+      ...fieldsOf(info, DUCKDB_HIDDEN),
+      ...fieldsOf(node, DUCKDB_STRUCTURE),
+    ],
+    loops: null,
     estimatedRows: number(info['Estimated Cardinality']),
     actualRows: number(
       node['operator_cardinality'] ?? node['intermediate_rows'],
@@ -207,7 +256,7 @@ function unwrapDuckdb(node: Json): Json {
   }
 }
 
-function parseDuckdb(json: unknown): Omit<Plan, 'root'> & { raw: RawNode } {
+function parseDuckdb(json: unknown): Parsed {
   const isAnalyzed = isObject(json) && Array.isArray(json['operator'])
   const nodes = isAnalyzed ? (json as Json)['operator'] : json
   const first = Array.isArray(nodes) ? nodes[0] : null
@@ -218,6 +267,7 @@ function parseDuckdb(json: unknown): Omit<Plan, 'root'> & { raw: RawNode } {
     isAnalyzed,
     totalTime: isAnalyzed ? inclusiveTime(raw) : null,
     planningTime: null,
+    totals: isAnalyzed ? duckdbTotals(json) : [],
   }
 }
 
@@ -266,7 +316,7 @@ export function parsePlan(engine: Engine, jsonText: string): Plan {
   const useTime = rest.isAnalyzed && inclusiveTime(raw) > 0
   const measure = (node: RawNode) => (useTime ? node.selfTime : node.selfCost)
   const total = useTime ? inclusiveTime(raw) : inclusiveCost(raw) || null
-  return { ...rest, root: finish(raw, '0', total, measure) }
+  return { ...rest, engine, root: finish(raw, '0', total, measure) }
 }
 
 /** Returns the steps of the plan, each step before its children. */

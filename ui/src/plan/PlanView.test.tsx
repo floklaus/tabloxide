@@ -99,6 +99,44 @@ describe('PlanView', () => {
     expect(useResultsViewStore.getState().view).toBe('plan')
   })
 
+  test('explains each step and each field, and can hide the fields', async () => {
+    planRead.mockResolvedValue({
+      status: 'ok',
+      data: {
+        status: 'plan',
+        statement: `EXPLAIN (VERBOSE, FORMAT JSON) ${STATEMENT}`,
+        json: postgresExplain,
+        is_analyzed: false,
+      },
+    })
+    const user = renderWith('postgres')
+    await user.click(screen.getByRole('button', { name: 'More query actions' }))
+    await user.click(
+      screen.getByRole('menuitem', { name: /^Explain(?! analyze)/ }),
+    )
+
+    const tree = await screen.findByRole('list', { name: 'Plan steps' })
+    expect(
+      within(tree).getAllByText(/Reads all rows of the table/).length,
+    ).toBe(2)
+    expect(within(tree).getAllByText(/The planner expected/).length).toBe(6)
+    expect(
+      within(tree).getAllByText(
+        /The condition that the step checks on each row/,
+      ).length,
+    ).toBeGreaterThan(0)
+    expect(screen.getByText('How to read this plan')).toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole('checkbox', { name: 'Show all fields of each step' }),
+    )
+
+    expect(within(tree).queryByText('Plan Width')).toBeNull()
+    expect(
+      within(tree).getAllByText(/Reads all rows of the table/).length,
+    ).toBe(2)
+  })
+
   test('shows the measured plan of DuckDB with a misestimate', async () => {
     planRead.mockResolvedValue({
       status: 'ok',

@@ -1,0 +1,105 @@
+/* ---------- Plan view: explanations and all fields ---------- */
+
+.plan__bar-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.plan__bar-top .results__status {
+  margin: 0;
+}
+
+.plan__card {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+}
+
+.plan__card > summary {
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.plan__card .plan__details {
+  margin: 0.4rem 0 0.2rem;
+}
+
+.plan__guide {
+  margin: 0.4rem 0 0.2rem;
+  padding-left: 1.2rem;
+}
+
+.plan__guide li {
+  margin-bottom: 0.2rem;
+}
+
+.plan__body {
+  margin: 0 0 0.4rem 1.25rem;
+}
+
+.plan__about {
+  max-width: 60rem;
+  margin: 0.1rem 0 0.3rem;
+}
+
+.plan__hints {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-width: 60rem;
+  margin: 0 0 0.4rem;
+  padding: 0;
+  list-style: none;
+}
+
+.plan__hint {
+  padding: 0.3rem 0.5rem;
+  border-left: 3px solid var(--color-focus);
+  border-radius: 4px;
+  background: var(--color-surface);
+}
+
+.plan__hint--warning {
+  border-left-color: var(--color-env-staging);
+}
+
+.plan__hint-level {
+  font-weight: 600;
+}
+
+.plan__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.3rem;
+}
+
+.plan__group-title {
+  margin: 0.2rem 0 0.1rem;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.plan__details .plan__value {
+  font-family: var(--font-mono);
+}
+
+.plan__explain {
+  display: block;
+  max-width: 60rem;
+  margin-bottom: 0.2rem;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+/* The plan scrolls as one. Its parts keep their height. */
+.plan > * {
+  flex-shrink: 0;
+}

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 import './assistant/assistantSession.css'
+import './plan/plan.css'
 import { applyTheme } from './theme/theme'
 import { useThemeStore } from './theme/themeStore'
 
