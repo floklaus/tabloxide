@@ -1,4 +1,10 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from 'react'
 import { ApiKeyField } from '../assistant/ApiKeyField'
 import { UpdateSettings } from '../updates/UpdateSettings'
 import { useAssistantStore } from '../assistant/assistantStore'
@@ -7,6 +13,8 @@ import { Modal } from '../connections/Modal'
 import { allLayouts, useShellStore } from '../shell/shellStore'
 import { useThemeStore } from '../theme/themeStore'
 import { AppearanceSettings, type Appearance } from './AppearanceSettings'
+import { PreferencesTabs } from './PreferencesTabs'
+import { panelId, tabId } from './preferencesTabIds'
 import {
   LIMITS,
   usePreferencesStore,
@@ -70,7 +78,36 @@ const MODELS: { value: AssistantModel; label: string }[] = [
   { value: 'claude-fable-5-2', label: 'Claude Fable 5.2 (highest cost)' },
 ]
 
+const TABS = [
+  { id: 'appearance', label: 'Appearance' },
+  { id: 'editor', label: 'Editor' },
+  { id: 'confirm', label: 'Ask before a run' },
+  { id: 'assistant', label: 'AI assistant' },
+  { id: 'updates', label: 'Updates' },
+] as const
+
+type TabId = (typeof TABS)[number]['id']
+
+type PanelProps = { id: TabId; selected: TabId; children: ReactNode }
+
+/** A tab panel. A panel that is not selected stays in the form, but is hidden. */
+function Panel({ id, selected, children }: PanelProps) {
+  return (
+    <div
+      id={panelId(id)}
+      role="tabpanel"
+      className="preferences__panel"
+      aria-labelledby={tabId(id)}
+      data-tab={id}
+      hidden={id !== selected}
+    >
+      {children}
+    </div>
+  )
+}
+
 export function PreferencesDialog({ onClose }: Props) {
+  const [tab, setTab] = useState<TabId>('appearance')
   const stored = usePreferencesStore((state) => state.preferences)
   const save = usePreferencesStore((state) => state.save)
   const [draft, setDraft] = useState<Preferences>(stored)
@@ -86,6 +123,31 @@ export function PreferencesDialog({ onClose }: Props) {
     void useAssistantStore.getState().loadStatus()
   }, [])
 
+  // A field that is not valid can be on a hidden tab. Then the dialog selects that
+  // tab and shows the message of the browser. Only the first field that is not
+  // valid selects a tab. The invalid event does not bubble, and React does not
+  // give it to the form. Thus a native listener in the capture phase gets it.
+  const formRef = useRef<HTMLFormElement>(null)
+  useEffect(() => {
+    const form = formRef.current
+    if (!form) return
+    const showInvalid = (event: Event) => {
+      const field = event.target as HTMLInputElement
+      // A fieldset that contains such a field also matches :invalid.
+      const first = form.querySelector(
+        'input:invalid, select:invalid, textarea:invalid',
+      )
+      if (first !== field) return
+      const panel = field.closest<HTMLElement>('[role="tabpanel"]')
+      const id = panel?.dataset.tab as TabId | undefined
+      if (!id || !panel?.hidden) return
+      setTab(id)
+      setTimeout(() => field.reportValidity())
+    }
+    form.addEventListener('invalid', showInvalid, true)
+    return () => form.removeEventListener('invalid', showInvalid, true)
+  }, [])
+
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     await save(draft)
@@ -95,125 +157,147 @@ export function PreferencesDialog({ onClose }: Props) {
 
   return (
     <Modal title="Preferences" onClose={onClose} isWide hasCloseButton>
-      <form className="preferences" onSubmit={(event) => void submit(event)}>
-        <AppearanceSettings
-          value={appearance}
-          layouts={allLayouts(useShellStore.getState().customLayouts)}
-          onChange={setAppearance}
+      <form
+        className="preferences"
+        onSubmit={(event) => void submit(event)}
+        ref={formRef}
+      >
+        <PreferencesTabs
+          tabs={TABS}
+          selected={tab}
+          onSelect={(id) => setTab(id as TabId)}
         />
-        <fieldset className="form__group">
-          <legend>Editor</legend>
-          <div className="form__grid form__grid--three">
-            <NumberField
-              label="Font size (pixels)"
-              value={draft.editor.font_size}
-              limits={LIMITS.fontSize}
-              onChange={(font_size) => setEditor({ font_size })}
-            />
-            <NumberField
-              label="Tab width (spaces)"
-              value={draft.editor.tab_width}
-              limits={LIMITS.tabWidth}
-              onChange={(tab_width) => setEditor({ tab_width })}
-            />
-            <NumberField
-              label="Keep the query history (days)"
-              value={draft.history_retention_days}
-              limits={LIMITS.historyRetentionDays}
-              onChange={(history_retention_days) =>
-                setDraft({ ...draft, history_retention_days })
-              }
-            />
-          </div>
-          <div className="form__checks">
-            <label className="field field--check">
-              <input
-                type="checkbox"
-                checked={draft.editor.line_numbers}
-                onChange={(event) =>
-                  setEditor({ line_numbers: event.target.checked })
+        <Panel id="appearance" selected={tab}>
+          <AppearanceSettings
+            value={appearance}
+            layouts={allLayouts(useShellStore.getState().customLayouts)}
+            onChange={setAppearance}
+          />
+        </Panel>
+        <Panel id="editor" selected={tab}>
+          <fieldset className="form__group">
+            <legend>Editor</legend>
+            <div className="form__grid form__grid--three">
+              <NumberField
+                label="Font size (pixels)"
+                value={draft.editor.font_size}
+                limits={LIMITS.fontSize}
+                onChange={(font_size) => setEditor({ font_size })}
+              />
+              <NumberField
+                label="Tab width (spaces)"
+                value={draft.editor.tab_width}
+                limits={LIMITS.tabWidth}
+                onChange={(tab_width) => setEditor({ tab_width })}
+              />
+              <NumberField
+                label="Keep the query history (days)"
+                value={draft.history_retention_days}
+                limits={LIMITS.historyRetentionDays}
+                onChange={(history_retention_days) =>
+                  setDraft({ ...draft, history_retention_days })
                 }
               />
-              <span>Show line numbers</span>
-            </label>
-            <label className="field field--check">
-              <input
-                type="checkbox"
-                checked={draft.editor.word_wrap}
-                onChange={(event) =>
-                  setEditor({ word_wrap: event.target.checked })
-                }
-              />
-              <span>Wrap long lines</span>
-            </label>
-          </div>
-        </fieldset>
-        <fieldset className="form__group">
-          <legend>Ask before a run</legend>
-          <p className="field__hint">
-            A destructive statement removes or changes data or structure, writes
-            files, or loads an extension.
-          </p>
-          <div className="form__grid form__grid--three">
-            {ENVIRONMENTS.map((environment) => (
-              <label key={environment.value} className="field">
-                <span className="field__label">{environment.label}</span>
+            </div>
+            <div className="form__checks">
+              <label className="field field--check">
+                <input
+                  type="checkbox"
+                  checked={draft.editor.line_numbers}
+                  onChange={(event) =>
+                    setEditor({ line_numbers: event.target.checked })
+                  }
+                />
+                <span>Show line numbers</span>
+              </label>
+              <label className="field field--check">
+                <input
+                  type="checkbox"
+                  checked={draft.editor.word_wrap}
+                  onChange={(event) =>
+                    setEditor({ word_wrap: event.target.checked })
+                  }
+                />
+                <span>Wrap long lines</span>
+              </label>
+            </div>
+          </fieldset>
+        </Panel>
+        <Panel id="confirm" selected={tab}>
+          <fieldset className="form__group">
+            <legend>Ask before a run</legend>
+            <p className="field__hint">
+              A destructive statement removes or changes data or structure,
+              writes files, or loads an extension.
+            </p>
+            <div className="form__grid form__grid--three">
+              {ENVIRONMENTS.map((environment) => (
+                <label key={environment.value} className="field">
+                  <span className="field__label">{environment.label}</span>
+                  <select
+                    value={draft.guardrails[environment.value]}
+                    onChange={(event) =>
+                      setDraft({
+                        ...draft,
+                        guardrails: {
+                          ...draft.guardrails,
+                          [environment.value]: event.target
+                            .value as ConfirmRule,
+                        },
+                      })
+                    }
+                  >
+                    {CONFIRM_RULES.map((rule) => (
+                      <option key={rule.value} value={rule.value}>
+                        {rule.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        </Panel>
+        <Panel id="assistant" selected={tab}>
+          <fieldset className="form__group">
+            <legend>AI assistant</legend>
+            <p className="field__hint">
+              The assistant sends each request to the Claude API of Anthropic.
+              The account of the API key pays for the requests.
+            </p>
+            <div className="form__grid form__grid--two">
+              <label className="field">
+                <span className="field__label">Model</span>
                 <select
-                  value={draft.guardrails[environment.value]}
+                  value={draft.assistant.model}
                   onChange={(event) =>
                     setDraft({
                       ...draft,
-                      guardrails: {
-                        ...draft.guardrails,
-                        [environment.value]: event.target.value as ConfirmRule,
+                      assistant: {
+                        model: event.target.value as AssistantModel,
                       },
                     })
                   }
                 >
-                  {CONFIRM_RULES.map((rule) => (
-                    <option key={rule.value} value={rule.value}>
-                      {rule.label}
+                  {MODELS.map((model) => (
+                    <option key={model.value} value={model.value}>
+                      {model.label}
                     </option>
                   ))}
                 </select>
               </label>
-            ))}
-          </div>
-        </fieldset>
-        <fieldset className="form__group">
-          <legend>AI assistant</legend>
-          <p className="field__hint">
-            The assistant sends each request to the Claude API of Anthropic. The
-            account of the API key pays for the requests.
-          </p>
-          <div className="form__grid form__grid--two">
-            <label className="field">
-              <span className="field__label">Model</span>
-              <select
-                value={draft.assistant.model}
-                onChange={(event) =>
-                  setDraft({
-                    ...draft,
-                    assistant: { model: event.target.value as AssistantModel },
-                  })
-                }
-              >
-                {MODELS.map((model) => (
-                  <option key={model.value} value={model.value}>
-                    {model.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <ApiKeyField />
-          </div>
-        </fieldset>
-        <UpdateSettings
-          isEnabled={draft.check_for_updates}
-          onChange={(isEnabled) =>
-            setDraft({ ...draft, check_for_updates: isEnabled })
-          }
-        />
+              <ApiKeyField />
+            </div>
+          </fieldset>
+        </Panel>
+        <Panel id="updates" selected={tab}>
+          <UpdateSettings
+            isEnabled={draft.check_for_updates}
+            onChange={(isEnabled) =>
+              setDraft({ ...draft, check_for_updates: isEnabled })
+            }
+          />
+        </Panel>
         <div className="modal__actions">
           <button type="button" className="button" onClick={onClose}>
             Cancel

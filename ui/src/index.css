@@ -2707,6 +2707,55 @@ body {
   margin-top: 0;
 }
 
+.preferences__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.preferences__tab {
+  margin-bottom: -1px;
+  padding: 0.45rem 0.9rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.preferences__tab:hover {
+  color: var(--color-text);
+}
+
+.preferences__tab[aria-selected='true'] {
+  border-bottom-color: var(--color-accent);
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+/* The panels have one height, so that the dialog does not change size. */
+.preferences__panel {
+  min-height: 22rem;
+}
+
+.preferences__panel[hidden] {
+  display: none;
+}
+
+/* The tab shows the name of the group. */
+.preferences__panel > .form__group > legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .preferences .form__group > .field__hint {
   margin: 0 0 0.5rem;
 }

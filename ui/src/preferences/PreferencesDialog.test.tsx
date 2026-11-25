@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { commands } from '../bindings'
@@ -56,6 +56,7 @@ describe('PreferencesDialog', () => {
     preferencesSave.mockResolvedValue({ status: 'ok', data: changed })
     render(<PreferencesDialog onClose={onClose} />)
 
+    await user.click(screen.getByRole('tab', { name: 'Editor' }))
     await user.clear(screen.getByLabelText(/Font size/))
     await user.type(screen.getByLabelText(/Font size/), '18')
     await user.click(screen.getByLabelText('Wrap long lines'))
@@ -86,6 +87,7 @@ describe('PreferencesDialog', () => {
     }))
     render(<PreferencesDialog onClose={() => {}} />)
 
+    await user.click(screen.getByRole('tab', { name: 'Ask before a run' }))
     await user.selectOptions(
       screen.getByLabelText('Staging connections'),
       'Before each run',
@@ -107,6 +109,7 @@ describe('PreferencesDialog', () => {
     const onClose = vi.fn()
     render(<PreferencesDialog onClose={onClose} />)
 
+    await user.click(screen.getByRole('tab', { name: 'Editor' }))
     await user.click(screen.getByLabelText('Wrap long lines'))
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
@@ -122,6 +125,7 @@ describe('PreferencesDialog', () => {
     })
     render(<PreferencesDialog onClose={() => {}} />)
 
+    await user.click(screen.getByRole('tab', { name: 'AI assistant' }))
     await user.selectOptions(
       screen.getByLabelText('Model'),
       'claude-sonnet-5-5',
@@ -139,6 +143,7 @@ describe('PreferencesDialog', () => {
     const onClose = vi.fn()
     render(<PreferencesDialog onClose={onClose} />)
 
+    await user.click(screen.getByRole('tab', { name: 'AI assistant' }))
     await user.type(
       screen.getByLabelText('API key of Anthropic'),
       'sk-test{Enter}',
@@ -157,8 +162,8 @@ describe('PreferencesDialog', () => {
     })
     render(<PreferencesDialog onClose={() => {}} />)
 
-    // The focus starts on the selected theme.
-    expect(screen.getByRole('radio', { name: 'Light' })).toHaveFocus()
+    // The focus starts on the selected tab.
+    expect(screen.getByRole('tab', { name: 'Appearance' })).toHaveFocus()
     await user.click(screen.getByRole('radio', { name: 'Neon' }))
     const density = screen.getByRole('radiogroup', { name: 'Density' })
     await user.click(within(density).getByRole('radio', { name: 'Compact' }))
@@ -184,5 +189,91 @@ describe('PreferencesDialog', () => {
     expect(onClose).toHaveBeenCalled()
     expect(document.documentElement.dataset.theme).toBe('light')
     expect(preferencesSave).not.toHaveBeenCalled()
+  })
+
+  test('groups the sections in tabs and shows one tab at a time', async () => {
+    const user = userEvent.setup()
+    render(<PreferencesDialog onClose={() => {}} />)
+
+    const tabs = screen.getAllByRole('tab')
+    expect(tabs.map((tab) => tab.textContent)).toEqual([
+      'Appearance',
+      'Editor',
+      'Ask before a run',
+      'AI assistant',
+      'Updates',
+    ])
+    expect(screen.getByRole('tabpanel')).toHaveAccessibleName('Appearance')
+    expect(screen.getByLabelText(/Font size/)).not.toBeVisible()
+
+    await user.click(screen.getByRole('tab', { name: 'Editor' }))
+
+    expect(screen.getByRole('tab', { name: 'Editor' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+    expect(screen.getByRole('tabpanel')).toHaveAccessibleName('Editor')
+    expect(screen.getByLabelText(/Font size/)).toBeVisible()
+  })
+
+  test('the arrow keys, Home, and End select a different tab', async () => {
+    const user = userEvent.setup()
+    render(<PreferencesDialog onClose={() => {}} />)
+    const tab = (name: string) => screen.getByRole('tab', { name })
+
+    await user.keyboard('{ArrowRight}')
+    expect(tab('Editor')).toHaveFocus()
+    expect(tab('Editor')).toHaveAttribute('aria-selected', 'true')
+
+    await user.keyboard('{End}')
+    expect(tab('Updates')).toHaveFocus()
+
+    await user.keyboard('{ArrowRight}')
+    expect(tab('Appearance')).toHaveFocus()
+
+    await user.keyboard('{ArrowLeft}')
+    expect(tab('Updates')).toHaveFocus()
+
+    await user.keyboard('{Home}')
+    expect(tab('Appearance')).toHaveAttribute('aria-selected', 'true')
+  })
+
+  test('keeps the changes of a tab when the user selects a different tab', async () => {
+    const user = userEvent.setup()
+    preferencesSave.mockResolvedValue({
+      status: 'ok',
+      data: DEFAULT_PREFERENCES,
+    })
+    render(<PreferencesDialog onClose={() => {}} />)
+
+    await user.click(screen.getByRole('tab', { name: 'Editor' }))
+    await user.click(screen.getByLabelText('Wrap long lines'))
+    await user.click(screen.getByRole('tab', { name: 'Updates' }))
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(preferencesSave).toHaveBeenCalledWith({
+      ...DEFAULT_PREFERENCES,
+      editor: { ...DEFAULT_PREFERENCES.editor, word_wrap: true },
+    })
+  })
+
+  test('selects the tab of a field that is not valid', async () => {
+    const user = userEvent.setup()
+    render(<PreferencesDialog onClose={() => {}} />)
+    const fontSize = screen.getByLabelText(/Font size/)
+
+    await user.click(screen.getByRole('tab', { name: 'Editor' }))
+    await user.clear(fontSize)
+    await user.click(screen.getByRole('tab', { name: 'Updates' }))
+    // jsdom does not check the form on submit. A browser fires the same events.
+    act(() => {
+      fontSize.closest('form')?.reportValidity()
+    })
+
+    expect(screen.getByRole('tab', { name: 'Editor' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+    expect(fontSize).toBeVisible()
   })
 })
