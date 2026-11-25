@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use tabloxide_adapter_duckdb::DuckDbAdapter;
 use tabloxide_adapter_postgres::PostgresAdapter;
-use tabloxide_assistant::{AnthropicProvider, ChatProvider, SchemaContext};
+use tabloxide_assistant::{AnthropicProvider, ChatProvider, ModelLister, SchemaContext};
 use tabloxide_core::{ConnectionId, DbAdapter, Engine, QuerySession};
 use tabloxide_git::AskpassServer;
 use tabloxide_workspace::{KeyringStore, LocalState, SecretStore, Workspace, WorkspaceWatcher};
@@ -42,6 +42,8 @@ pub struct AppState {
     credentials: Arc<CredentialRequests>,
     /// The AI service of the assistant.
     assistant: Arc<dyn ChatProvider>,
+    /// The same AI service. It gives the list of its models.
+    model_lister: Arc<dyn ModelLister>,
     /// The schema that the assistant read for each session.
     assistant_schemas: Mutex<HashMap<SessionId, Arc<SchemaContext>>>,
     /// The requests to the AI service that are in progress. A notification cancels one.
@@ -50,6 +52,7 @@ pub struct AppState {
 
 impl Default for AppState {
     fn default() -> Self {
+        let anthropic = Arc::new(AnthropicProvider::default());
         Self {
             workspace: Mutex::new(None),
             secrets: Arc::new(KeyringStore),
@@ -61,7 +64,8 @@ impl Default for AppState {
             watcher: Mutex::new(None),
             askpass: Mutex::new(None),
             credentials: Arc::default(),
-            assistant: Arc::new(AnthropicProvider::default()),
+            assistant: Arc::clone(&anthropic) as Arc<dyn ChatProvider>,
+            model_lister: anthropic,
             assistant_schemas: Mutex::new(HashMap::new()),
             asks: Mutex::new(HashMap::new()),
         }
@@ -126,6 +130,10 @@ impl AppState {
 
     pub fn assistant(&self) -> Arc<dyn ChatProvider> {
         Arc::clone(&self.assistant)
+    }
+
+    pub fn model_lister(&self) -> Arc<dyn ModelLister> {
+        Arc::clone(&self.model_lister)
     }
 
     fn lock_schemas(&self) -> MutexGuard<'_, HashMap<SessionId, Arc<SchemaContext>>> {

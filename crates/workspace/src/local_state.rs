@@ -15,6 +15,8 @@ use tabloxide_core::ConnectionId;
 const DATABASE_FILE_NAME: &str = "state.sqlite3";
 const PREFERENCES_KEY: &str = "preferences";
 const GIT_DISABLED_PREFIX: &str = "git-disabled:";
+/// Cache entries have this prefix. Thus they cannot replace a setting.
+const CACHE_PREFIX: &str = "cache:";
 const SECONDS_PER_DAY: i64 = 24 * 60 * 60;
 
 /// Largest number of entries that one history search returns.
@@ -260,6 +262,46 @@ impl LocalState {
             .execute(sql, params![key, json])
             .map(|_| ())
             .map_err(db_error)
+    }
+
+    /// Returns the cached JSON text for `key`, or `None` if the cache has no entry.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the database read fails.
+    pub fn load_cache(&self, key: &str) -> Result<Option<String>, WorkspaceError> {
+        self.read_json(
+            "SELECT json FROM settings WHERE key = ?1",
+            &format!("{CACHE_PREFIX}{key}"),
+        )
+    }
+
+    /// Stores `json` in the cache for `key`. It replaces an earlier entry.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the database write fails.
+    pub fn save_cache(&self, key: &str, json: &str) -> Result<(), WorkspaceError> {
+        self.write_json(
+            "INSERT INTO settings (key, json) VALUES (?1, ?2)
+             ON CONFLICT (key) DO UPDATE SET json = excluded.json",
+            &format!("{CACHE_PREFIX}{key}"),
+            json,
+        )
+    }
+
+    /// Removes the cache entry for `key`. A missing entry is not an error.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the database write fails.
+    pub fn delete_cache(&self, key: &str) -> Result<(), WorkspaceError> {
+        // `write_json` binds two parameters. The second one has no effect here.
+        self.write_json(
+            "DELETE FROM settings WHERE key = ?1 AND ?2 = ?2",
+            &format!("{CACHE_PREFIX}{key}"),
+            "",
+        )
     }
 
     /// Returns the open tabs of `workspace`. Data that is missing or not valid gives no tabs.
@@ -519,5 +561,29 @@ mod tests {
         let state = LocalState::open(dir.path()).unwrap();
 
         assert_eq!(found(&state, ""), vec!["select 1"]);
+    }
+
+    #[test]
+    fn a_cache_entry_can_be_saved_replaced_and_deleted() {
+        let state = LocalState::in_memory().unwrap();
+        assert_eq!(state.load_cache("models").unwrap(), None);
+
+        state.save_cache("models", "[1]").unwrap();
+        state.save_cache("models", "[2]").unwrap();
+        assert_eq!(state.load_cache("models").unwrap().as_deref(), Some("[2]"));
+
+        state.delete_cache("models").unwrap();
+        assert_eq!(state.load_cache("models").unwrap(), None);
+    }
+
+    #[test]
+    fn a_cache_entry_does_not_replace_a_setting_with_the_same_name() {
+        let state = LocalState::in_memory().unwrap();
+
+        state
+            .save_cache(PREFERENCES_KEY, "not preferences")
+            .unwrap();
+
+        assert_eq!(state.load_preferences().unwrap(), Preferences::default());
     }
 }

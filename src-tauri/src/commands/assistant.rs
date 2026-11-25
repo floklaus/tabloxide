@@ -1,5 +1,6 @@
 //! Commands of the AI assistant.
 
+use crate::commands::assistant_models::clear_model_cache;
 use crate::commands::workspace::state_dir;
 use crate::error::CommandError;
 use crate::state::{AppState, SessionEntry, SessionId, blocking};
@@ -17,7 +18,7 @@ use tauri::{AppHandle, State};
 use tokio::sync::Notify;
 
 /// The name of the API key in the credential store of the operating system.
-const KEY_ENTRY: &str = "assistant:anthropic";
+pub(crate) const KEY_ENTRY: &str = "assistant:anthropic";
 
 /// Largest number of rows that the application reads from a plan.
 const MAX_PLAN_ROWS: usize = 5000;
@@ -107,10 +108,12 @@ pub async fn assistant_status(state: State<'_, AppState>) -> Result<AssistantSta
     })
 }
 
-/// Stores the API key in the credential store of the operating system.
+/// Stores the API key in the credential store of the operating system. It also
+/// removes the stored model list, because a different key can have different models.
 #[tauri::command]
 #[specta::specta]
 pub async fn assistant_key_set(
+    app: AppHandle,
     state: State<'_, AppState>,
     key: String,
 ) -> Result<(), CommandError> {
@@ -119,15 +122,20 @@ pub async fn assistant_key_set(
         return Err(CommandError::internal("Enter an API key."));
     }
     let secrets = state.secrets();
-    blocking(move || Ok(secrets.set_entry(KEY_ENTRY, &key)?)).await
+    blocking(move || Ok(secrets.set_entry(KEY_ENTRY, &key)?)).await?;
+    clear_model_cache(&app, &state).await
 }
 
-/// Removes the API key from the credential store.
+/// Removes the API key from the credential store, and the stored model list.
 #[tauri::command]
 #[specta::specta]
-pub async fn assistant_key_delete(state: State<'_, AppState>) -> Result<(), CommandError> {
+pub async fn assistant_key_delete(
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<(), CommandError> {
     let secrets = state.secrets();
-    blocking(move || Ok(secrets.delete_entry(KEY_ENTRY)?)).await
+    blocking(move || Ok(secrets.delete_entry(KEY_ENTRY)?)).await?;
+    clear_model_cache(&app, &state).await
 }
 
 fn engine_name(engine: Engine) -> &'static str {

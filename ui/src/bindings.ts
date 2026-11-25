@@ -182,9 +182,12 @@ export const commands = {
 	uiStateSave: (uiState: UiState_Deserialize, options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("ui_state_save", { uiState }, options)),
 	/**  Tells if the application has an API key for the AI service. */
 	assistantStatus: (options?: InvokeOptions) => typedError<AssistantStatus, CommandError>(__TAURI_INVOKE("assistant_status", undefined, options)),
-	/**  Stores the API key in the credential store of the operating system. */
+	/**
+	 *  Stores the API key in the credential store of the operating system. It also
+	 *  removes the stored model list, because a different key can have different models.
+	 */
 	assistantKeySet: (key: string, options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("assistant_key_set", { key }, options)),
-	/**  Removes the API key from the credential store. */
+	/**  Removes the API key from the credential store, and the stored model list. */
 	assistantKeyDelete: (options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("assistant_key_delete", undefined, options)),
 	/**
 	 *  Sends a conversation to the AI service. The answer text comes on `on_event`.
@@ -203,6 +206,14 @@ export const commands = {
 	 *  The query history does not record the plan read. This closes the open result.
 	 */
 	assistantExplain: (sessionId: number, sql: string, analyze: boolean, options?: InvokeOptions) => typedError<ExplainResult_Serialize, CommandError>(__TAURI_INVOKE("assistant_explain", { sessionId, sql, analyze }, options)),
+	/**
+	 *  Returns the models that the stored API key can use.
+	 * 
+	 *  The application keeps the last list for one day. `refresh` gets the list from
+	 *  the service before that time. If the service does not give the list, the result
+	 *  has the error and the last stored list.
+	 */
+	assistantModels: (refresh: boolean, options?: InvokeOptions) => typedError<ModelsResult_Serialize, CommandError>(__TAURI_INVOKE("assistant_models", { refresh }, options)),
 };
 
 /* Types */
@@ -817,6 +828,111 @@ export type Location = {
 	line: number,
 	column: number,
 };
+
+/**  The features of a model that the application uses. */
+export type ModelFeatures = {
+	/**  The model can think before it answers. */
+	thinking: boolean,
+	/**  The model can read images. */
+	image_input: boolean,
+};
+
+/**
+ *  One model that an AI service has. A service does not give each value. Then the
+ *  value is `None`.
+ */
+export type ModelInfo = ModelInfo_Serialize | ModelInfo_Deserialize;
+
+/**
+ *  One model that an AI service has. A service does not give each value. Then the
+ *  value is `None`.
+ */
+export type ModelInfo_Deserialize = {
+	/**  The identifier that a request uses, for example `claude-opus-5-5`. */
+	id: string,
+	/**  The name for the user, for example "Claude Opus 5.5". */
+	display_name: string,
+	/**  The release date of the model as an RFC 3339 text. */
+	created_at?: string | null,
+	/**  The maximum number of input tokens (the context window). */
+	context_tokens?: number | null,
+	/**  The maximum number of output tokens of one answer. */
+	max_output_tokens?: number | null,
+	features: ModelFeatures,
+};
+
+/**
+ *  One model that an AI service has. A service does not give each value. Then the
+ *  value is `None`.
+ */
+export type ModelInfo_Serialize = {
+	/**  The identifier that a request uses, for example `claude-opus-5-5`. */
+	id: string,
+	/**  The name for the user, for example "Claude Opus 5.5". */
+	display_name: string,
+	/**  The release date of the model as an RFC 3339 text. */
+	created_at: string | null,
+	/**  The maximum number of input tokens (the context window). */
+	context_tokens: number | null,
+	/**  The maximum number of output tokens of one answer. */
+	max_output_tokens: number | null,
+	features: ModelFeatures,
+};
+
+/**  A list of models and the time when the application got it from the service. */
+export type ModelList = ModelList_Serialize | ModelList_Deserialize;
+
+/**  A list of models and the time when the application got it from the service. */
+export type ModelList_Deserialize = {
+	/**  The models, the newest model first. */
+	models: ModelInfo_Deserialize[],
+	/**  The time of the request to the service, in seconds since 1970 (UTC). */
+	fetched_at_secs: number,
+	/**  The models that were not in the previous list. The first list has none. */
+	new_ids: string[],
+};
+
+/**  A list of models and the time when the application got it from the service. */
+export type ModelList_Serialize = {
+	/**  The models, the newest model first. */
+	models: ModelInfo_Serialize[],
+	/**  The time of the request to the service, in seconds since 1970 (UTC). */
+	fetched_at_secs: number,
+	/**  The models that were not in the previous list. The first list has none. */
+	new_ids: string[],
+};
+
+/**
+ *  The result of a model list request. A failure of the service is a normal
+ *  result, not a command error.
+ */
+export type ModelsResult = ModelsResult_Serialize | ModelsResult_Deserialize;
+
+/**
+ *  The result of a model list request. A failure of the service is a normal
+ *  result, not a command error.
+ */
+export type ModelsResult_Deserialize = { status: "ready"; list: ModelList_Deserialize; 
+/**  `true` if the list comes from the cache, not from the service. */
+is_from_cache: boolean } | 
+/**
+ *  The service did not give the list. `cached` is the last list, if one is
+ *  stored. The UI can show it with the error.
+ */
+{ status: "failed"; error: AssistantError; cached?: ModelList_Deserialize | null };
+
+/**
+ *  The result of a model list request. A failure of the service is a normal
+ *  result, not a command error.
+ */
+export type ModelsResult_Serialize = { status: "ready"; list: ModelList_Serialize; 
+/**  `true` if the list comes from the cache, not from the service. */
+is_from_cache: boolean } | 
+/**
+ *  The service did not give the list. `cached` is the last list, if one is
+ *  stored. The UI can show it with the error.
+ */
+{ status: "failed"; error: AssistantError; cached: ModelList_Serialize | null };
 
 /**  The result of one statement. */
 export type Outcome = Outcome_Serialize | Outcome_Deserialize;
