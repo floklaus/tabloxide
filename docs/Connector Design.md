@@ -4,6 +4,8 @@ A connector is a separate program that connects Tabloxide to one database engine
 
 Status on 2026-11-16: the product owner made the decisions of section 2. Section 8 gives the stages and their status.
 
+Status on 2026-11-25: the product owner decided that MongoDB is the first connector, and that the downloads come from tabloxide.org. Section 10 gives the design for MongoDB. It changes the sequence of the stages.
+
 ## 1. Why connectors
 
 Each database engine needs a driver. A driver in the Tabloxide program makes the installer larger and the build longer for all users, also for the users who do not use that engine. DuckDB, for example, is a C++ library that the build compiles from source.
@@ -21,6 +23,8 @@ With connectors:
 | Protocol         | gRPC on a local socket.                                                                                                                                          |
 | Built-in engines | PostgreSQL only. DuckDB and all new engines are connectors. DuckDB is the first connector.                                                                       |
 | Delivery         | Tabloxide downloads a connector when the user selects its engine. An install from a local file is also possible.                                                 |
+| Download place   | The signed index is at `https://tabloxide.org/connectors/v1/index.json`. The packages are assets of GitHub releases. The index has the full address of each package. |
+| First connector  | MongoDB. DuckDB stays built in until the measurement of stage 3.                                                                                                  |
 | Trust            | A connector with the signature of the Tabloxide project runs without a question. A connector from a different source needs a confirmation that names the risk.   |
 
 ## 3. Parts
@@ -125,6 +129,65 @@ Limits that the design does not remove:
 ## 9. Open points
 
 - **The signature key.** The key pair exists. The public key is in `crates/connector-host/keys/`, and the product owner keeps the private key. A rule for a second person with access to the key is open.
-- **The place for the downloads.** The repository has no remote yet. The index file and the connectors need a public address, for example the releases of the repository.
+- **The place for the downloads.** Closed on 2026-11-25: refer to section 2 and section 10.
 - **The measurement of stage 3.** A local file engine through a loopback connection is slower than in the process. If the difference is not acceptable for DuckDB, DuckDB can stay built in, and the design applies to the new engines only.
 - **The workspace folder.** A DuckDB connection uses a path relative to the workspace. The connector gets the workspace folder in `OpenSession`. A connector from a different source then knows a path of the user.
+
+## 10. MongoDB, the first connector
+
+The product owner made these decisions on 2026-11-25:
+
+- MongoDB is the first connector. It proves the connector host and the SDK. DuckDB stays built in.
+- The user writes a subset of the MongoDB shell syntax, or a JSON command document. Tabloxide runs no JavaScript.
+- This round includes the download from tabloxide.org.
+- The app repository owns the guide for connector authors. A CI job copies it to the website repository.
+
+### 10.1 Engine and query language
+
+- `Engine` becomes a name (backlog item F1). `postgres` and `duckdb` stay valid names, so the profiles in the workspaces do not change.
+- `Describe` gets new fields: the query language, the default port, and the editor mode. This is a minor change of protocol `v1`.
+- The core keeps the guardrails. Thus the core knows each query language: `sql` and `mongodb-shell`. A connector with a language that the core does not know gets the rule "ask before each run" (principle 4 of the backlog).
+- The language gives the statement split, the statement at the cursor, the risk, the read check for pages, and the password check for the history.
+
+### 10.2 MongoDB statements
+
+| Form | Example |
+| --- | --- |
+| Collection method | `db.users.find({ age: { $gt: 30 } }).sort({ name: 1 }).limit(10)` |
+| Other collection names | `db.getCollection("my-users").countDocuments({})`, `db.getSiblingDB("sales").orders.find()` |
+| Database method | `db.createCollection("logs")`, `db.dropDatabase()` |
+| Command document | `{ "count": "users" }`. The connector runs it with `runCommand`. |
+| Shell commands | `use sales`, `show dbs`, `show collections` |
+
+Values can be JSON, with keys without quotes and strings in single quotes. These constructors are available: `ObjectId`, `ISODate`, `new Date`, `NumberInt`, `NumberLong`, `NumberDecimal`, `UUID`, and `/regex/flags`.
+
+A `;` or a line break ends a statement. A line that starts with `.` continues the statement of the line before it.
+
+| Statement | Risk |
+| --- | --- |
+| `drop`, `dropDatabase`, `dropIndex`, `dropIndexes` | Drop |
+| `deleteMany({})`, `remove({})` | Delete without a filter |
+| `updateMany({}, …)`, `replaceOne({}, …)` | Update without a filter |
+| `renameCollection`, `collMod` | Alter |
+| `aggregate` with `$out` or `$merge` | Overwrite |
+| A command document or a database method that the check does not know | Unchecked |
+
+Only `find` and `aggregate` without `$out` and `$merge` give results that the grid can read in pages. `createUser`, `updateUser`, and `changeUserPassword` do not go into the history.
+
+### 10.3 Results and catalog
+
+- A document is a row. The columns are the top-level fields of the first page, with `_id` first. When the result has more pages, the last column is `(more fields)`. It holds the fields that the first page did not have, as JSON.
+- A nested document or an array is a cell of the kind JSON, in relaxed Extended JSON.
+- A schema is a database. A relation is a collection or a view. The columns of a collection come from a sample of 100 documents. The indexes come from `listIndexes`. A `$jsonSchema` validator is a check constraint.
+
+### 10.4 Connector host and SDK
+
+- `crates/connector-sdk` serves a `DbAdapter` as a connector. A connector in Rust needs only a `main` function.
+- `crates/connector-host` finds the connectors, starts one process for each engine on the first use, and gives a `DbAdapter` for each engine. A process that stopped starts again on the next use.
+- The connectors are in `connectors/<engine>/` of the repository. The MongoDB connector is `connectors/mongodb`.
+
+### 10.5 Package and index
+
+- A package is `tabloxide-connector-<engine>-<version>-<target>.tar.gz`. It holds the program and `connector.toml` (the engine, the version, the protocol, and the program name).
+- The index has `issued` and `expires`. Tabloxide refuses an index that is older than the last index that it accepted, and an index after its expiry date.
+- A tag `connector-<engine>-v<version>` starts the CI job. The job builds the packages, adds them to a GitHub release, and writes an index without a signature. The maintainer signs the index on their own machine and copies it to the website repository.
