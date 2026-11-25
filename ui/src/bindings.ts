@@ -34,6 +34,11 @@ export const commands = {
 	/**  Returns the recent workspaces. The most recent workspace is first. */
 	workspaceRecent: (options?: InvokeOptions) => typedError<RecentWorkspaceInfo_Serialize[], CommandError>(__TAURI_INVOKE("workspace_recent", undefined, options)),
 	/**
+	 *  Removes the workspace `path` from the recent list and returns the new list.
+	 *  The folder does not change.
+	 */
+	workspaceRecentRemove: (path: string, options?: InvokeOptions) => typedError<RecentWorkspaceInfo_Serialize[], CommandError>(__TAURI_INVOKE("workspace_recent_remove", { path }, options)),
+	/**
 	 *  Starts to watch the workspace folder. Sends a message on `on_change` after a
 	 *  different program changed files. One message covers all changes of a short time.
 	 *  The watch stops when the workspace closes.

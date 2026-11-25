@@ -136,6 +136,20 @@ impl RecentWorkspaces {
                 .collect(),
         }
     }
+
+    /// Returns a list without the entry for `path`. The order of the other entries
+    /// does not change. An unknown path gives the same list.
+    #[must_use]
+    pub fn without(&self, path: &str) -> Self {
+        Self {
+            entries: self
+                .entries
+                .iter()
+                .filter(|entry| entry.path != path)
+                .cloned()
+                .collect(),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -167,6 +181,20 @@ mod tests {
 
         assert_eq!(recent.entries().len(), MAX_RECENT_WORKSPACES);
         assert_eq!(recent.entries()[0].path, "/work/12");
+    }
+
+    #[test]
+    fn without_removes_only_the_entry_and_keeps_the_order() {
+        let recent = RecentWorkspaces::default()
+            .with_opened(Path::new("/work/a"), 1)
+            .with_opened(Path::new("/work/b"), 2)
+            .with_opened(Path::new("/work/c"), 3);
+
+        let removed = recent.without("/work/b");
+
+        assert_eq!(paths(&removed), ["/work/c", "/work/a"]);
+        assert_eq!(paths(&recent), ["/work/c", "/work/b", "/work/a"]);
+        assert_eq!(removed.without("/work/unknown"), removed);
     }
 
     #[test]

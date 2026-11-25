@@ -24,6 +24,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
             workspace::workspace_current,
             workspace::workspace_close,
             workspace::workspace_recent,
+            workspace::workspace_recent_remove,
             workspace::workspace_watch,
             connections::connection_template,
             connections::connection_save,

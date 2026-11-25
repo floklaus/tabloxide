@@ -2,7 +2,10 @@ import { open } from '@tauri-apps/plugin-dialog'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { commands, type RecentWorkspaceInfo } from '../bindings'
+import {
+  commands,
+  type RecentWorkspaceInfo_Serialize as RecentWorkspaceInfo,
+} from '../bindings'
 import { makeWorkspace } from '../test/fixtures'
 import { WelcomeScreen } from './WelcomeScreen'
 import { useWorkspaceStore } from './workspaceStore'
@@ -63,7 +66,7 @@ describe('WelcomeScreen', () => {
     })
     render(<WelcomeScreen />)
 
-    await userEvent.click(screen.getByRole('button', { name: /sql-project/ }))
+    await userEvent.click(screen.getByRole('button', { name: /^sql-project/ }))
 
     expect(commands.workspaceOpen).toHaveBeenCalledWith('/work/sql-project')
   })
@@ -86,11 +89,52 @@ describe('WelcomeScreen', () => {
     render(<WelcomeScreen />)
 
     const list = screen.getByRole('region', { name: 'Recent workspaces' })
-    const items = within(list).getAllByRole('button')
+    const items = within(list).getAllByRole('button', { name: /^(?!Remove)/ })
     expect(items[0]).toHaveTextContent('PostgreSQL · 2 hours ago')
     expect(items[1]).toHaveTextContent('PostgreSQL, DuckDB · last week')
     expect(items[2]).toHaveTextContent(/old\/lab\/old$/)
     expect(items[3]).toHaveTextContent('The folder does not exist')
+  })
+
+  test('removes a workspace from the list without opening it', async () => {
+    const kept = recent({ path: '/lab/kept', name: 'kept' })
+    useWorkspaceStore.setState({ recent: [recent(), kept] })
+    vi.mocked(commands.workspaceRecentRemove).mockResolvedValue({
+      status: 'ok',
+      data: [kept],
+    })
+    render(<WelcomeScreen />)
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Remove sql-project from the list' }),
+    )
+
+    expect(commands.workspaceRecentRemove).toHaveBeenCalledWith(
+      '/work/sql-project',
+    )
+    expect(commands.workspaceOpen).not.toHaveBeenCalled()
+    expect(
+      screen.queryByRole('button', { name: /sql-project/ }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^kept/ })).toBeInTheDocument()
+  })
+
+  test('shows the error message of a failed remove', async () => {
+    useWorkspaceStore.setState({ recent: [recent()] })
+    vi.mocked(commands.workspaceRecentRemove).mockResolvedValue({
+      status: 'error',
+      error: { kind: 'internal', message: 'The disk is full.' },
+    } as never)
+    render(<WelcomeScreen />)
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Remove sql-project from the list' }),
+    )
+
+    expect(screen.getByRole('alert')).toHaveTextContent('The disk is full.')
+    expect(
+      screen.getByRole('button', { name: /^sql-project/ }),
+    ).toBeInTheDocument()
   })
 
   test('Ctrl+O opens the folder dialog', async () => {

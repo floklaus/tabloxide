@@ -29,6 +29,7 @@ export function WelcomeScreen() {
   const error = useWorkspaceStore((state) => state.error)
   const openFolder = useWorkspaceStore((state) => state.openFolder)
   const openPath = useWorkspaceStore((state) => state.openPath)
+  const removeRecent = useWorkspaceStore((state) => state.removeRecent)
   const [showsClone, setShowsClone] = useState(false)
   const [showsShortcuts, setShowsShortcuts] = useState(false)
 
@@ -115,7 +116,7 @@ export function WelcomeScreen() {
           </h2>
           <ul className="recent-list">
             {recent.map((entry) => (
-              <li key={entry.path}>
+              <li key={entry.path} className="recent-list__row">
                 <button
                   type="button"
                   className="recent-list__item"
@@ -131,6 +132,15 @@ export function WelcomeScreen() {
                   >
                     {recentDetail(entry)}
                   </span>
+                </button>
+                <button
+                  type="button"
+                  className="recent-list__remove"
+                  aria-label={`Remove ${entry.name} from the list`}
+                  title="Remove from the list. The folder does not change."
+                  onClick={() => void removeRecent(entry.path)}
+                >
+                  <Icon name="close" />
                 </button>
               </li>
             ))}

@@ -11,6 +11,9 @@ export function createBindingsMock() {
       workspaceCurrent: vi.fn().mockResolvedValue(null),
       workspaceClose: vi.fn().mockResolvedValue(undefined),
       workspaceRecent: vi.fn().mockResolvedValue({ status: 'ok', data: [] }),
+      workspaceRecentRemove: vi
+        .fn()
+        .mockResolvedValue({ status: 'ok', data: [] }),
       connectionTemplate: vi.fn(),
       connectionSave: vi.fn(),
       connectionDelete: vi.fn(),

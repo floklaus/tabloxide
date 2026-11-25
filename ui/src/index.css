@@ -456,6 +456,44 @@ body {
   color: var(--color-danger);
 }
 
+.recent-list__row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.recent-list__remove {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  opacity: 0;
+}
+
+.recent-list__row:hover .recent-list__remove,
+.recent-list__remove:focus-visible {
+  opacity: 1;
+}
+
+.recent-list__remove:hover {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+@media (hover: none) {
+  .recent-list__remove {
+    opacity: 1;
+  }
+}
+
 /* ---------- Connections ---------- */
 
 .connections__header {

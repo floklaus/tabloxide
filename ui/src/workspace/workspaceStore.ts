@@ -19,6 +19,8 @@ type WorkspaceState = {
   /** Shows the folder selection dialog and opens the selected folder. */
   openFolder: () => Promise<void>
   openPath: (path: string) => Promise<void>
+  /** Removes `path` from the recent list. The folder does not change. */
+  removeRecent: (path: string) => Promise<void>
   close: () => Promise<void>
   setWorkspace: (workspace: Workspace) => void
   setError: (error: string | null) => void
@@ -65,6 +67,19 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         return
       }
       set({ workspace: result.data, error: null, recent: await loadRecent() })
+    } catch (error) {
+      set({ error: toMessage(error) })
+    }
+  },
+
+  removeRecent: async (path) => {
+    try {
+      const result = await commands.workspaceRecentRemove(path)
+      if (result.status === 'error') {
+        set({ error: result.error.message })
+        return
+      }
+      set({ recent: result.data })
     } catch (error) {
       set({ error: toMessage(error) })
     }

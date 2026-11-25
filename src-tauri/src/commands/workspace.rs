@@ -120,18 +120,35 @@ pub async fn workspace_watch(
     Ok(())
 }
 
+fn recent_info(recent: &RecentWorkspaces) -> Vec<RecentWorkspaceInfo> {
+    recent
+        .entries()
+        .iter()
+        .map(RecentWorkspaceInfo::read)
+        .collect()
+}
+
 /// Returns the recent workspaces. The most recent workspace is first.
 #[tauri::command]
 #[specta::specta]
 pub async fn workspace_recent(app: AppHandle) -> Result<Vec<RecentWorkspaceInfo>, CommandError> {
     let state_dir = state_dir(&app)?;
+    blocking(move || Ok(recent_info(&RecentWorkspaces::load(&state_dir)))).await
+}
+
+/// Removes the workspace `path` from the recent list and returns the new list.
+/// The folder does not change.
+#[tauri::command]
+#[specta::specta]
+pub async fn workspace_recent_remove(
+    app: AppHandle,
+    path: String,
+) -> Result<Vec<RecentWorkspaceInfo>, CommandError> {
+    let state_dir = state_dir(&app)?;
     blocking(move || {
-        let recent = RecentWorkspaces::load(&state_dir);
-        Ok(recent
-            .entries()
-            .iter()
-            .map(RecentWorkspaceInfo::read)
-            .collect())
+        let recent = RecentWorkspaces::load(&state_dir).without(&path);
+        recent.save(&state_dir)?;
+        Ok(recent_info(&recent))
     })
     .await
 }
