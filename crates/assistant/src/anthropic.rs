@@ -60,6 +60,35 @@ impl AnthropicProvider {
             base_url: base_url.trim_end_matches('/').to_owned(),
         }
     }
+
+    /// Makes a request to `path` with the API key and the API version.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the API key has a character that cannot go into an
+    /// HTTP header.
+    pub(crate) fn request(
+        &self,
+        method: reqwest::Method,
+        path: &str,
+        api_key: &Secret,
+    ) -> Result<reqwest::RequestBuilder, AssistantError> {
+        let mut key_header =
+            reqwest::header::HeaderValue::from_str(api_key.expose()).map_err(|_| {
+                AssistantError::new(
+                    AssistantErrorKind::Authentication,
+                    "The API key has a character that is not permitted. Enter the key again \
+                     in the preferences.",
+                )
+            })?;
+        // The HTTP library does not write a sensitive value to a log.
+        key_header.set_sensitive(true);
+        Ok(self
+            .client
+            .request(method, format!("{}{path}", self.base_url))
+            .header("x-api-key", key_header)
+            .header("anthropic-version", API_VERSION))
+    }
 }
 
 /// Returns `true` if the service can run a declined request of `model` again on a
@@ -165,7 +194,7 @@ fn api_error(fallback_kind: AssistantErrorKind, error: &Value) -> AssistantError
     AssistantError::new(kind, message.trim_end())
 }
 
-fn status_error(status: u16, body: &str) -> AssistantError {
+pub(crate) fn status_error(status: u16, body: &str) -> AssistantError {
     let fallback_kind = kind_of_status(status);
     match serde_json::from_str::<Value>(body) {
         Ok(json) if json["error"].is_object() => api_error(fallback_kind, &json["error"]),
@@ -179,7 +208,7 @@ fn status_error(status: u16, body: &str) -> AssistantError {
     }
 }
 
-fn network_error(error: &reqwest::Error) -> AssistantError {
+pub(crate) fn network_error(error: &reqwest::Error) -> AssistantError {
     // The text of the error has the address of the service, but not the request
     // headers. Thus it cannot contain the API key.
     let message = format!(
@@ -298,22 +327,9 @@ impl ChatProvider for AnthropicProvider {
                 format!("The application cannot make the request: {error}"),
             )
         })?;
-        let mut key_header =
-            reqwest::header::HeaderValue::from_str(api_key.expose()).map_err(|_| {
-                AssistantError::new(
-                    AssistantErrorKind::Authentication,
-                    "The API key has a character that is not permitted. Enter the key again \
-                     in the preferences.",
-                )
-            })?;
-        // The HTTP library does not write a sensitive value to a log.
-        key_header.set_sensitive(true);
         let mut call = self
-            .client
-            .post(format!("{}/v1/messages", self.base_url))
+            .request(reqwest::Method::POST, "/v1/messages", api_key)?
             .header("content-type", "application/json")
-            .header("x-api-key", key_header)
-            .header("anthropic-version", API_VERSION)
             .body(body);
         if supports_fallback(&request.model) {
             call = call.header("anthropic-beta", FALLBACK_BETA);
@@ -344,9 +360,8 @@ impl ChatProvider for AnthropicProvider {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_server::{json_response, serve};
     use crate::{ChatMessage, SystemPart};
-    use tokio::io::{AsyncReadExt, AsyncWriteExt};
-    use tokio::net::TcpListener;
 
     fn request(model: &str) -> ChatRequest {
         ChatRequest {
@@ -528,49 +543,12 @@ data: {\"type\":\"message_stop\"}\n\n";
         assert_eq!(status_error(429, "").kind, AssistantErrorKind::RateLimit);
     }
 
-    fn is_complete(received: &[u8]) -> bool {
-        let text = String::from_utf8_lossy(received).to_lowercase();
-        let Some(head_end) = text.find("\r\n\r\n") else {
-            return false;
-        };
-        let length = text[..head_end]
-            .lines()
-            .find_map(|line| line.strip_prefix("content-length:"))
-            .and_then(|value| value.trim().parse::<usize>().ok())
-            .unwrap_or(0);
-        received.len() >= head_end + 4 + length
-    }
-
-    /// Starts a server that answers one request with `response`. Returns its address
-    /// and a task that gives the text of the request.
-    async fn serve_once(response: String) -> (String, tokio::task::JoinHandle<String>) {
-        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let address = format!("http://{}", listener.local_addr().unwrap());
-        let task = tokio::spawn(async move {
-            let (mut socket, _) = listener.accept().await.unwrap();
-            let mut received = Vec::new();
-            let mut buffer = [0u8; 4096];
-            // The request is complete when the body has the length of its header.
-            while !is_complete(&received) {
-                let count = socket.read(&mut buffer).await.unwrap();
-                if count == 0 {
-                    break;
-                }
-                received.extend_from_slice(&buffer[..count]);
-            }
-            socket.write_all(response.as_bytes()).await.unwrap();
-            socket.shutdown().await.unwrap();
-            String::from_utf8_lossy(&received).into_owned()
-        });
-        (address, task)
-    }
-
     #[tokio::test]
     async fn the_client_sends_the_headers_and_reads_the_stream() {
         let response = format!(
             "HTTP/1.1 200 OK\r\ncontent-type: text/event-stream\r\nconnection: close\r\n\r\n{STREAM}"
         );
-        let (address, server) = serve_once(response).await;
+        let (address, server) = serve(vec![response]).await;
         let provider = AnthropicProvider::with_base_url(&address);
         let mut text = String::new();
         let mut on_text = |part: &str| text.push_str(part);
@@ -583,7 +561,7 @@ data: {\"type\":\"message_stop\"}\n\n";
             )
             .await
             .unwrap();
-        let sent = server.await.unwrap().to_lowercase();
+        let sent = server.await.unwrap()[0].to_lowercase();
 
         assert_eq!(text, "SELECT 1");
         assert_eq!(outcome.stop, StopKind::Complete);
@@ -596,11 +574,7 @@ data: {\"type\":\"message_stop\"}\n\n";
     #[tokio::test]
     async fn the_client_returns_the_error_of_an_error_status() {
         let body = r#"{"type":"error","error":{"type":"rate_limit_error","message":"slow down"}}"#;
-        let response = format!(
-            "HTTP/1.1 429 Too Many Requests\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{body}",
-            body.len()
-        );
-        let (address, _server) = serve_once(response).await;
+        let (address, _server) = serve(vec![json_response("429 Too Many Requests", body)]).await;
         let provider = AnthropicProvider::with_base_url(&address);
 
         let error = provider
