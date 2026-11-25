@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Schema browser with AI actions for a table</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit}
+</style>
+</helmet>
+<div style="width: 1200px; height: 720px; padding: 8px; background: #eceef2; color: #1b1f27; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.4; display: flex; gap: 8px">
+
+<section aria-label="Schema" style="flex: 0 0 280px; min-width: 0; padding: 12px; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; display: flex; flex-direction: column; gap: 2px; font-size: 13px; position: relative">
+<h2 style="margin: 0 0 8px; font-size: 14px; font-weight: 600">Schema</h2>
+<div style="padding: 3px 8px; font-weight: 600">public</div>
+<div style="padding: 3px 8px 3px 24px">customer</div>
+<div style="padding: 3px 8px 3px 24px">item</div>
+<div style="padding: 3px 8px 3px 24px; border-radius: 6px; background: #f1f3f6; font-weight: 600">orders</div>
+<div style="padding: 3px 8px 3px 24px">order_line</div>
+<div style="padding: 3px 8px 3px 24px">payment</div>
+
+<div role="menu" aria-label="Actions for the table orders" style="position: absolute; top: 150px; left: 110px; width: 260px; padding: 6px; border: 1px solid #d5d9e0; border-radius: 10px; background: #ffffff; box-shadow: 0 12px 32px rgba(27, 31, 39, 0.18); display: flex; flex-direction: column; gap: 2px; z-index: 1">
+<button type="button" role="menuitem" style="height: 32px; padding: 0 10px; border: 0; border-radius: 6px; background: none; color: #1b1f27; font-size: 13px; text-align: left">Show the first 100 rows</button>
+<button type="button" role="menuitem" style="height: 32px; padding: 0 10px; border: 0; border-radius: 6px; background: none; color: #1b1f27; font-size: 13px; text-align: left">Copy the name</button>
+<span aria-hidden="true" style="height: 1px; margin: 4px 0; background: #e1e4ea"></span>
+<button type="button" role="menuitem" style="height: 32px; padding: 0 10px; border: 0; border-radius: 6px; background: #f1f3f6; color: #1b1f27; font-size: 13px; text-align: left; display: flex; align-items: center; gap: 8px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"></path></svg>Explain the table</button>
+<button type="button" role="menuitem" style="height: 32px; padding: 0 10px; border: 0; border-radius: 6px; background: none; color: #1b1f27; font-size: 13px; text-align: left; display: flex; align-items: center; gap: 8px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"></path></svg>Write a starter query</button>
+</div>
+</section>
+
+<section aria-label="Editor" style="flex: 1 1 0; min-width: 0; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; display: flex; flex-direction: column">
+<div role="tablist" aria-label="Open files" style="display: flex; gap: 2px; padding: 4px 8px 0; background: #f4f5f7; border-bottom: 1px solid #e1e4ea; border-radius: 10px 10px 0 0">
+<button type="button" role="tab" aria-selected="false" style="height: 32px; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: none; color: #5b6472; font-size: 13px">revenue.sql</button>
+<button type="button" role="tab" aria-selected="true" style="height: 32px; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: #ffffff; color: #1b1f27; font-size: 13px; font-weight: 600">orders: starter query</button>
+</div>
+<pre style="flex-grow: 1; margin: 10px; padding: 10px 12px; border: 1px solid #e1e4ea; border-radius: 8px; background: #fafbfc; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 13px; line-height: 1.7; white-space: pre"><span style="color: #5b6472">-- The orders of one customer, newest first,</span>
+<span style="color: #5b6472">-- with the number of lines of each order.</span>
+<span style="color: #6d28d9">select</span> o.order_id,
+       o.created_at,
+       o.status,
+       o.total,
+       <span style="color: #6d28d9">count</span>(l.order_line_id) <span style="color: #6d28d9">as</span> line_count
+<span style="color: #6d28d9">from</span> orders o
+<span style="color: #6d28d9">left join</span> order_line l <span style="color: #6d28d9">on</span> l.order_id = o.order_id
+<span style="color: #6d28d9">where</span> o.customer_id = <span style="color: #ad5009">:customer_id</span>
+<span style="color: #6d28d9">group by</span> o.order_id
+<span style="color: #6d28d9">order by</span> o.created_at <span style="color: #6d28d9">desc</span>
+<span style="color: #6d28d9">limit</span> <span style="color: #ad5009">100</span>;</pre>
+</section>
+
+<section aria-label="Assistant" style="flex: 0 0 340px; min-width: 0; padding: 12px; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 14px; font-weight: 600">Assistant</h2>
+<div style="align-self: flex-end; max-width: 92%; padding: 10px 12px; border-radius: 10px; background: #f1f3f6">
+<p style="margin: 0">Explain the table public.orders.</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px">
+<p style="margin: 0">Each row is one order of one customer.</p>
+<ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px">
+<li><strong>Key:</strong> order_id</li>
+<li><strong>Refers to:</strong> customer, by customer_id</li>
+<li><strong>Referred to by:</strong> order_line and payment, by order_id</li>
+<li><strong>Indexes:</strong> customer_id, and created_at</li>
+</ul>
+<p style="margin: 0">status has the values new, paid, shipped, and cancelled, from a check constraint. total includes the tax. The discount is in a separate column.</p>
+<p style="margin: 0; color: #5b6472">This explanation comes from the structure only. The request sent no rows.</p>
+</div>
+</section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":720}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

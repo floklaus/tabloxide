@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Merge conflict with a resolution that the AI proposes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit}
+</style>
+</helmet>
+<div style="width: 1200px; height: 800px; padding: 8px; background: #eceef2; color: #1b1f27; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.4; display: flex">
+<section aria-label="Merge conflict in reports/revenue.sql" style="flex-grow: 1; min-width: 0; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; display: flex; flex-direction: column">
+
+<div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #e1e4ea">
+<h2 style="margin: 0; font-size: 14px; font-weight: 600">Merge conflict: reports/revenue.sql</h2>
+<span style="color: #5b6472; font-size: 13px">Conflict 1 of 2</span>
+<span style="flex-grow: 1"></span>
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px; display: inline-flex; align-items: center; gap: 6px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"></path></svg>Propose a resolution</button>
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px">Abort the merge</button>
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #2563eb; border-radius: 6px; background: #2563eb; color: #ffffff; font-size: 13px; font-weight: 600">Mark as resolved</button>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 8px">
+<div style="border: 1px solid #e1e4ea; border-radius: 8px; overflow: hidden">
+<p style="margin: 0; padding: 6px 10px; background: #f4f5f7; border-bottom: 1px solid #e1e4ea; font-size: 12px; font-weight: 600">Current: main</p>
+<pre style="margin: 0; padding: 10px; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 13px; line-height: 1.7; white-space: pre"><span style="color: #6d28d9">select</span> c.customer_id,
+       <span style="display: inline-block; padding: 0 4px; background: #fdecec; color: #b91c1c">sum(o.total - o.discount) as revenue</span>
+<span style="color: #6d28d9">from</span> customer c
+<span style="color: #6d28d9">join</span> orders o <span style="color: #6d28d9">on</span> o.customer_id = c.customer_id</pre>
+</div>
+<div style="border: 1px solid #e1e4ea; border-radius: 8px; overflow: hidden">
+<p style="margin: 0; padding: 6px 10px; background: #f4f5f7; border-bottom: 1px solid #e1e4ea; font-size: 12px; font-weight: 600">Incoming: feature/currency</p>
+<pre style="margin: 0; padding: 10px; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 13px; line-height: 1.7; white-space: pre"><span style="color: #6d28d9">select</span> c.customer_id,
+       <span style="display: inline-block; padding: 0 4px; background: #e7f6ec; color: #166534">sum(o.total * o.rate) as revenue_eur</span>
+<span style="color: #6d28d9">from</span> customer c
+<span style="color: #6d28d9">join</span> orders o <span style="color: #6d28d9">on</span> o.customer_id = c.customer_id</pre>
+</div>
+</div>
+
+<div style="flex-grow: 1; margin: 0 8px 8px; border: 1px solid #e1e4ea; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden">
+<p style="margin: 0; padding: 6px 10px; background: #f4f5f7; border-bottom: 1px solid #e1e4ea; font-size: 12px; font-weight: 600">Result</p>
+<div style="display: flex; flex-grow: 1">
+<pre style="flex: 1 1 0; margin: 0; padding: 10px; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 13px; line-height: 1.7; white-space: pre"><span style="color: #6d28d9">select</span> c.customer_id,
+<span style="display: block; margin: 0 -10px; padding: 0 10px; background: #fdf3e7; outline: 1px dashed #b45309">       sum((o.total - o.discount) * o.rate) as revenue_eur</span><span style="color: #6d28d9">from</span> customer c
+<span style="color: #6d28d9">join</span> orders o <span style="color: #6d28d9">on</span> o.customer_id = c.customer_id</pre>
+
+<aside aria-label="Proposed resolution" style="flex: 0 0 380px; margin: 10px; padding: 12px; border: 1px solid #e1e4ea; border-radius: 8px; display: flex; flex-direction: column; gap: 10px; align-self: flex-start">
+<p style="margin: 0; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"></path></svg>Proposed resolution</p>
+<p style="margin: 0; font-size: 13px">The two branches change the same line for different reasons. main deducts the discount. feature/currency converts the total to euros. The proposal keeps both: it deducts the discount, then converts the result.</p>
+<p style="margin: 0; font-size: 13px">The column name comes from feature/currency. A query that reads the column <code style="font-family: ui-monospace, Menlo, Consolas, monospace">revenue</code> needs a change.</p>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #2563eb; border-radius: 6px; background: #2563eb; color: #ffffff; font-size: 12px; font-weight: 600">Accept</button>
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px">Edit in the result</button>
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px">Reject</button>
+</div>
+<p style="margin: 0; font-size: 12px; color: #5b6472">The request sent the three versions of this block to Anthropic. Accept puts the text in the result. You still mark the file as resolved.</p>
+</aside>
+</div>
+</div>
+
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

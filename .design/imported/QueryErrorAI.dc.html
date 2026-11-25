@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Query error with an AI explanation and a fix</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit}
+</style>
+</helmet>
+<div style="width: 1200px; height: 720px; padding: 8px; background: #eceef2; color: #1b1f27; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.4; display: flex; gap: 8px">
+
+<div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+<section aria-label="Editor" style="flex: 1 1 0; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; display: flex; flex-direction: column">
+<div role="tablist" aria-label="Open files" style="display: flex; gap: 2px; padding: 4px 8px 0; background: #f4f5f7; border-bottom: 1px solid #e1e4ea; border-radius: 10px 10px 0 0">
+<button type="button" role="tab" aria-selected="true" style="height: 32px; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: #ffffff; color: #1b1f27; font-size: 13px; font-weight: 600">revenue.sql</button>
+</div>
+<div style="display: flex; align-items: center; gap: 8px; padding: 10px 10px 6px">
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #2563eb; border-radius: 6px; background: #2563eb; color: #ffffff; font-size: 13px; font-weight: 600">Run</button>
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 13px">Explain</button>
+<span style="flex-grow: 1"></span>
+<span style="color: #5b6472; font-size: 12px">PostgreSQL 17.2</span>
+</div>
+<div style="flex-grow: 1; margin: 0 10px 10px; display: flex; border: 1px solid #e1e4ea; border-radius: 8px; background: #fafbfc; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 13px; line-height: 1.7">
+<div aria-hidden="true" style="padding: 8px 12px; color: #5b6472; text-align: right; white-space: pre-line">1
+2
+3
+4</div>
+<div style="padding: 8px 4px; white-space: pre"><span style="color: #6d28d9">select</span> c.customer_id, <span style="color: #6d28d9">sum</span>(<span style="text-decoration: underline wavy #b91c1c; text-underline-offset: 3px">o.totl</span>) <span style="color: #6d28d9">as</span> revenue
+<span style="color: #6d28d9">from</span> customer c
+<span style="color: #6d28d9">join</span> orders o <span style="color: #6d28d9">on</span> o.customer_id = c.customer_id
+<span style="color: #6d28d9">group by</span> c.customer_id;</div>
+</div>
+</section>
+
+<section aria-label="Results" style="flex: 1 1 0; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; display: flex; flex-direction: column">
+<div role="tablist" aria-label="Result views" style="display: flex; gap: 2px; padding: 4px 8px 0; background: #f4f5f7; border-bottom: 1px solid #e1e4ea; border-radius: 10px 10px 0 0">
+<button type="button" role="tab" aria-selected="true" style="height: 32px; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: #ffffff; color: #1b1f27; font-size: 13px; font-weight: 600">Results</button>
+<button type="button" role="tab" aria-selected="false" style="height: 32px; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: none; color: #5b6472; font-size: 13px">History</button>
+<button type="button" role="tab" aria-selected="false" style="height: 32px; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: none; color: #5b6472; font-size: 13px">Git console</button>
+</div>
+<div role="alert" style="margin: 12px; padding: 12px; border-radius: 8px; background: #fdecec; color: #8a1616; display: flex; flex-direction: column; gap: 8px">
+<p style="margin: 0; font-weight: 600">column o.totl does not exist</p>
+<p style="margin: 0; font-size: 13px">Line 1, position 34. Hint from the database: Perhaps you meant to reference the column "o.total".</p>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px; display: inline-flex; align-items: center; gap: 6px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"></path></svg>Explain and fix</button>
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px">Go to the position</button>
+</div>
+</div>
+</section>
+</div>
+
+<section aria-label="Assistant" style="flex: 0 0 360px; min-width: 0; padding: 12px; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 14px; font-weight: 600">Assistant</h2>
+<div style="align-self: flex-end; max-width: 92%; padding: 10px 12px; border-radius: 10px; background: #f1f3f6; display: flex; flex-direction: column; gap: 6px">
+<p style="margin: 0">Explain the error and fix the statement.</p>
+<p style="margin: 0; font-size: 12px; color: #5b6472">Sent: the statement, the error message, and the structure of 12 tables</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<p style="margin: 0">The table orders has no column totl. The column name is total. The error is a typing error.</p>
+<div style="border-radius: 8px; background: #fafbfc; border: 1px solid #e1e4ea">
+<pre style="margin: 0; padding: 12px; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px; white-space: pre-wrap">select c.customer_id, sum(o.total) as revenue
+from customer c
+join orders o on o.customer_id = c.customer_id
+group by c.customer_id;</pre>
+<div style="display: flex; gap: 4px; padding: 0 8px 8px">
+<button type="button" style="height: 32px; padding: 0 12px; border: 0; border-radius: 6px; background: none; color: #1b1f27; font-size: 12px; font-weight: 600">Replace in the editor</button>
+<button type="button" style="height: 32px; padding: 0 12px; border: 0; border-radius: 6px; background: none; color: #1b1f27; font-size: 12px">Copy</button>
+</div>
+</div>
+<p style="margin: 0; font-size: 13px; color: #5b6472">Replace in the editor changes the text only. Run the statement yourself.</p>
+</div>
+</section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":720}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

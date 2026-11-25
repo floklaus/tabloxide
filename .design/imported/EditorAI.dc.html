@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Editor with an AI change of the selection</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit}
+</style>
+</helmet>
+<div style="width: 1200px; height: 720px; padding: 8px; background: #eceef2; color: #1b1f27; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.4; display: flex">
+<section aria-label="Editor" style="flex-grow: 1; min-width: 0; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; display: flex; flex-direction: column">
+<div role="tablist" aria-label="Open files" style="display: flex; gap: 2px; padding: 4px 8px 0; background: #f4f5f7; border-bottom: 1px solid #e1e4ea; border-radius: 10px 10px 0 0">
+<button type="button" role="tab" aria-selected="true" style="height: 32px; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: #ffffff; color: #1b1f27; font-size: 13px; font-weight: 600">revenue.sql</button>
+</div>
+<div style="display: flex; align-items: center; gap: 8px; padding: 10px 10px 6px">
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #2563eb; border-radius: 6px; background: #2563eb; color: #ffffff; font-size: 13px; font-weight: 600">Run</button>
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 13px">Explain</button>
+<span style="flex-grow: 1"></span>
+<span style="color: #5b6472; font-size: 12px">PostgreSQL 17.2</span>
+</div>
+
+<div style="flex-grow: 1; margin: 0 10px 10px; padding: 8px 0; border: 1px solid #e1e4ea; border-radius: 8px; background: #fafbfc; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 13px; line-height: 1.7">
+<div style="display: flex"><span aria-hidden="true" style="width: 44px; padding-right: 12px; color: #5b6472; text-align: right">1</span><span style="white-space: pre"><span style="color: #5b6472">-- Revenue per customer</span></span></div>
+<div style="display: flex; background: #fdecec"><span aria-hidden="true" style="width: 44px; padding-right: 12px; color: #b91c1c; text-align: right">−</span><span style="white-space: pre; color: #b91c1c">select c.customer_id, sum(o.total) as revenue</span></div>
+<div style="display: flex; background: #fdecec"><span aria-hidden="true" style="width: 44px; padding-right: 12px; color: #b91c1c; text-align: right">−</span><span style="white-space: pre; color: #b91c1c">from customer c join orders o on o.customer_id = c.customer_id</span></div>
+<div style="display: flex; background: #fdecec"><span aria-hidden="true" style="width: 44px; padding-right: 12px; color: #b91c1c; text-align: right">−</span><span style="white-space: pre; color: #b91c1c">group by c.customer_id;</span></div>
+<div style="display: flex; background: #e7f6ec"><span aria-hidden="true" style="width: 44px; padding-right: 12px; color: #166534; text-align: right">+</span><span style="white-space: pre; color: #166534">select c.customer_id, sum(o.total) as revenue</span></div>
+<div style="display: flex; background: #e7f6ec"><span aria-hidden="true" style="width: 44px; padding-right: 12px; color: #166534; text-align: right">+</span><span style="white-space: pre; color: #166534">from customer c join orders o on o.customer_id = c.customer_id</span></div>
+<div style="display: flex; background: #e7f6ec"><span aria-hidden="true" style="width: 44px; padding-right: 12px; color: #166534; text-align: right">+</span><span style="white-space: pre; color: #166534">where o.created_at &gt;= now() - interval '30 days'</span></div>
+<div style="display: flex; background: #e7f6ec"><span aria-hidden="true" style="width: 44px; padding-right: 12px; color: #166534; text-align: right">+</span><span style="white-space: pre; color: #166534">group by c.customer_id</span></div>
+<div style="display: flex; background: #e7f6ec"><span aria-hidden="true" style="width: 44px; padding-right: 12px; color: #166534; text-align: right">+</span><span style="white-space: pre; color: #166534">order by revenue desc;</span></div>
+
+<div style="margin: 10px 12px 10px 44px; max-width: 640px; padding: 10px; border: 1px solid #d5d9e0; border-radius: 10px; background: #ffffff; box-shadow: 0 8px 24px rgba(27, 31, 39, 0.12); display: flex; flex-direction: column; gap: 8px; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px">
+<label style="display: flex; align-items: center; gap: 8px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"></path></svg><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Change the selection</span><input type="text" value="Only the orders of the last 30 days. Sort by the revenue." style="flex-grow: 1; height: 32px; padding: 0 8px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27"></label>
+<div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px">
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #2563eb; border-radius: 6px; background: #2563eb; color: #ffffff; font-size: 12px; font-weight: 600">Accept</button>
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px">Reject</button>
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px">Change again</button>
+<span style="flex-grow: 1"></span>
+<span style="color: #5b6472; font-size: 12px">Ctrl+Enter accepts. Esc rejects.</span>
+</div>
+</div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px; padding: 0 12px 10px; font-size: 12px; color: #5b6472">
+<span><kbd style="font-family: ui-monospace, Menlo, Consolas, monospace">Ctrl+I</kbd> changes the selection with AI</span>
+<span><kbd style="font-family: ui-monospace, Menlo, Consolas, monospace">Ctrl+Shift+I</kbd> explains the selection in the assistant panel</span>
+<span>A request sends the selection, the instruction, and the structure of the database. It sends no rows.</span>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":720}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

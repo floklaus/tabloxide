@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Git panel with an AI commit message and a diff explanation</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit}
+</style>
+</helmet>
+<div style="width: 1200px; height: 800px; padding: 8px; background: #eceef2; color: #1b1f27; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.4; display: flex; gap: 8px">
+
+<section aria-label="Git" style="flex: 0 0 340px; min-width: 0; padding: 12px; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; gap: 8px">
+<h2 style="margin: 0; font-size: 14px; font-weight: 600">Git</h2>
+<span style="font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 13px; color: #b45309">main ↑1</span>
+<span style="flex-grow: 1"></span>
+<button type="button" style="height: 32px; padding: 0 10px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px">Pull</button>
+<button type="button" style="height: 32px; padding: 0 10px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px">Push</button>
+</div>
+<div style="display: flex; flex-direction: column; gap: 2px; font-size: 13px">
+<p style="margin: 0 0 4px; font-size: 12px; font-weight: 600; color: #5b6472">Staged changes</p>
+<div style="padding: 4px 8px; border-radius: 6px; background: #f1f3f6; display: flex; gap: 10px"><span style="width: 14px; font-weight: 700; color: #a16207">M</span><span>reports/revenue.sql</span></div>
+<div style="padding: 4px 8px; display: flex; gap: 10px"><span style="width: 14px; font-weight: 700; color: #15803d">A</span><span>reports/churn.sql</span></div>
+<p style="margin: 12px 0 4px; font-size: 12px; font-weight: 600; color: #5b6472">Changes</p>
+<div style="padding: 4px 8px; display: flex; gap: 10px"><span style="width: 14px; font-weight: 700; color: #a16207">M</span><span>tabloxide.toml</span></div>
+</div>
+<span style="flex-grow: 1"></span>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; color: #5b6472">Message</span>
+<textarea rows="6" style="padding: 8px 10px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 13px; resize: vertical">Deduct the discount from the revenue report
+
+The revenue of a customer is now the sum of the
+order totals minus the discounts. Add a report of
+the customers without an order in 90 days.</textarea></label>
+<div style="display: flex; align-items: center; gap: 8px">
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px; display: inline-flex; align-items: center; gap: 6px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"></path></svg>Write again</button>
+<span style="flex-grow: 1"></span>
+<button type="button" style="height: 32px; padding: 0 14px; border: 1px solid #2563eb; border-radius: 6px; background: #2563eb; color: #ffffff; font-size: 13px; font-weight: 600">Commit</button>
+</div>
+<p style="margin: 0; font-size: 12px; color: #5b6472">The AI wrote this message from the staged diff. Read it and change it before you commit.</p>
+</div>
+</section>
+
+<section aria-label="Diff of reports/revenue.sql" style="flex: 1 1 0; min-width: 0; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; display: flex; flex-direction: column">
+<div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid #e1e4ea">
+<h2 style="margin: 0; font-size: 14px; font-weight: 600">reports/revenue.sql</h2>
+<span style="padding: 0 8px; border-radius: 999px; background: #f1f3f6; color: #5b6472; font-size: 12px">staged</span>
+<span style="flex-grow: 1"></span>
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px; display: inline-flex; align-items: center; gap: 6px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"></path></svg>Explain the changes</button>
+</div>
+<div style="flex-grow: 1; padding: 8px 0; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 13px; line-height: 1.7">
+<div style="padding: 0 12px; color: #5b6472">@@ -1,6 +1,8 @@</div>
+<div style="padding: 0 12px; white-space: pre"> <span style="color: #6d28d9">select</span> c.customer_id,</div>
+<div style="padding: 0 12px; white-space: pre">        c.name,</div>
+<div style="padding: 0 12px; white-space: pre; background: #fdecec; color: #b91c1c">-       sum(o.total) as revenue</div>
+<div style="padding: 0 12px; white-space: pre; background: #e7f6ec; color: #166534">+       sum(o.total - o.discount) as revenue,</div>
+<div style="padding: 0 12px; white-space: pre; background: #e7f6ec; color: #166534">+       sum(o.discount) as discounts</div>
+<div style="padding: 0 12px; white-space: pre"> <span style="color: #6d28d9">from</span> customer c</div>
+<div style="padding: 0 12px; white-space: pre"> <span style="color: #6d28d9">join</span> orders o <span style="color: #6d28d9">on</span> o.customer_id = c.customer_id</div>
+<div style="padding: 0 12px; white-space: pre; background: #e7f6ec; color: #166534">+<span style="color: #6d28d9">where</span> o.status &lt;&gt; 'cancelled'</div>
+<div style="padding: 0 12px; white-space: pre"> <span style="color: #6d28d9">group by</span> c.customer_id, c.name;</div>
+</div>
+</section>
+
+<section aria-label="Assistant" style="flex: 0 0 340px; min-width: 0; padding: 12px; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 14px; font-weight: 600">Assistant</h2>
+<p style="margin: 0; color: #5b6472; font-size: 12px">A Git request sends the diff text and the conversation to Anthropic. It does not send rows, passwords, or connection settings.</p>
+<div style="align-self: flex-end; max-width: 92%; padding: 10px 12px; border-radius: 10px; background: #f1f3f6; display: flex; flex-direction: column; gap: 6px">
+<p style="margin: 0">Explain the changes in this diff.</p>
+<p style="margin: 0; font-size: 12px; color: #5b6472">reports/revenue.sql, staged: 3 lines added, 1 line removed</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<p style="margin: 0">The change has two effects on the report:</p>
+<ol style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px">
+<li>The revenue is now the order total minus the discount. A new column shows the sum of the discounts.</li>
+<li>The new filter removes the cancelled orders. Before, a cancelled order added to the revenue.</li>
+</ol>
+<p style="margin: 0">Both changes make the revenue smaller. A dashboard that compares this month with an earlier month shows a decrease that the data does not have.</p>
+</div>
+<span style="flex-grow: 1"></span>
+<div style="padding: 8px; border: 1px solid #7f8898; border-radius: 10px; display: flex; flex-direction: column; gap: 8px">
+<label style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; color: #5b6472">Request</span>
+<textarea rows="2" placeholder="Ask about the diff" style="padding: 0; border: 0; background: none; color: #1b1f27; resize: none"></textarea></label>
+<div style="display: flex; justify-content: flex-end"><button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #2563eb; border-radius: 6px; background: #2563eb; color: #ffffff; font-size: 13px; font-weight: 600">Send</button></div>
+</div>
+</section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

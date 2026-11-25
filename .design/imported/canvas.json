@@ -168,6 +168,55 @@
       "w": 440,
       "h": 760,
       "title": "Assistant: select the model"
+    },
+    "GitAI.dc.html": {
+      "x": 0,
+      "y": 8620,
+      "w": 1200,
+      "h": 800,
+      "title": "Git: commit message and diff with AI"
+    },
+    "ConflictAI.dc.html": {
+      "x": 1280,
+      "y": 8620,
+      "w": 1200,
+      "h": 800,
+      "title": "Merge conflict: resolution proposed by AI"
+    },
+    "GitConsole.dc.html": {
+      "x": 2560,
+      "y": 8620,
+      "w": 1200,
+      "h": 800,
+      "title": "Git console (git commands only)"
+    },
+    "QueryErrorAI.dc.html": {
+      "x": 0,
+      "y": 9540,
+      "w": 1200,
+      "h": 720,
+      "title": "Query error: explain and fix with AI"
+    },
+    "EditorAI.dc.html": {
+      "x": 1280,
+      "y": 9540,
+      "w": 1200,
+      "h": 720,
+      "title": "Editor: explain or change the selection with AI"
+    },
+    "SchemaAI.dc.html": {
+      "x": 2560,
+      "y": 9540,
+      "w": 1200,
+      "h": 720,
+      "title": "Schema: explain a table, write a starter query"
+    },
+    "RowsConfirm.dc.html": {
+      "x": 3840,
+      "y": 9540,
+      "w": 560,
+      "h": 440,
+      "title": "Confirm: send rows to the AI"
     }
   },
   "order": [
@@ -192,9 +241,30 @@
     "TitleWidgets.dc.html",
     "AIConnections.dc.html",
     "AddAIConnection.dc.html",
-    "AssistantModelPicker.dc.html"
+    "AssistantModelPicker.dc.html",
+    "GitAI.dc.html",
+    "ConflictAI.dc.html",
+    "GitConsole.dc.html",
+    "QueryErrorAI.dc.html",
+    "EditorAI.dc.html",
+    "SchemaAI.dc.html",
+    "RowsConfirm.dc.html"
   ],
   "notes": {
+    "aieach": {
+      "x": 0,
+      "y": 8340,
+      "text": "AI in each feature, and the Git console (proposal)",
+      "kind": "title1",
+      "maxW": 4400
+    },
+    "aieachrules": {
+      "x": 3840,
+      "y": 8620,
+      "w": 400,
+      "text": "Rules for the AI actions:\n\n1. A sparkle icon in the accent colour marks each AI action.\n2. An answer goes to the assistant panel, as a step of the current session. Exception: the commit message goes into the message field, and a change of the selection shows as a diff in the editor.\n3. The application never runs SQL and never runs a Git command from an answer. You accept each change.\n4. A request sends no rows. Only 'Ask about these rows' sends rows, after a confirmation.\n5. The Git console accepts git commands only. It runs no shell.",
+      "color": "orange"
+    },
     "title": {
       "x": 0,
       "y": -300,

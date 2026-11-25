@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Git console in the results pane</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit}
+</style>
+</helmet>
+<div style="width: 1200px; height: 800px; padding: 8px; background: #eceef2; color: #1b1f27; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.4; display: flex; flex-direction: column; gap: 8px">
+
+<section aria-label="Editor" style="flex: 0 0 170px; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; display: flex; flex-direction: column">
+<div role="tablist" aria-label="Open files" style="display: flex; gap: 2px; padding: 4px 8px 0; background: #f4f5f7; border-bottom: 1px solid #e1e4ea; border-radius: 10px 10px 0 0">
+<button type="button" role="tab" aria-selected="true" style="height: 32px; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: #ffffff; color: #1b1f27; font-size: 13px; font-weight: 600">revenue.sql</button>
+</div>
+<pre style="margin: 8px; padding: 8px 12px; flex-grow: 1; border: 1px solid #e1e4ea; border-radius: 8px; background: #fafbfc; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 13px; line-height: 1.7; white-space: pre"><span style="color: #6d28d9">select</span> c.customer_id, <span style="color: #6d28d9">sum</span>(o.total - o.discount) <span style="color: #6d28d9">as</span> revenue
+<span style="color: #6d28d9">from</span> customer c <span style="color: #6d28d9">join</span> orders o <span style="color: #6d28d9">on</span> o.customer_id = c.customer_id
+<span style="color: #6d28d9">group by</span> c.customer_id;</pre>
+</section>
+
+<section aria-label="Git console" style="flex-grow: 1; min-height: 0; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; display: flex; flex-direction: column">
+<div style="display: flex; align-items: flex-end; gap: 2px; padding: 4px 8px 0; background: #f4f5f7; border-bottom: 1px solid #e1e4ea; border-radius: 10px 10px 0 0">
+<div role="tablist" aria-label="Result views" style="display: flex; gap: 2px">
+<button type="button" role="tab" aria-selected="false" style="height: 32px; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: none; color: #5b6472; font-size: 13px">Results</button>
+<button type="button" role="tab" aria-selected="false" style="height: 32px; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: none; color: #5b6472; font-size: 13px">History</button>
+<button type="button" role="tab" aria-selected="false" style="height: 32px; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: none; color: #5b6472; font-size: 13px">Diff</button>
+<button type="button" role="tab" aria-selected="true" style="height: 32px; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: #ffffff; color: #1b1f27; font-size: 13px; font-weight: 600">Git console</button>
+</div>
+<span style="flex-grow: 1"></span>
+<button type="button" style="height: 28px; margin-bottom: 4px; padding: 0 10px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px; display: inline-flex; align-items: center; gap: 6px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"></path></svg>Explain the last output</button>
+<button type="button" style="height: 28px; margin-bottom: 4px; padding: 0 10px; border: 0; border-radius: 6px; background: none; color: #1b1f27; font-size: 12px">Clear</button>
+</div>
+
+<div role="log" aria-label="Git console output" style="flex-grow: 1; min-height: 0; overflow: hidden; padding: 10px 14px; display: flex; flex-direction: column; gap: 12px; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 13px; line-height: 1.6">
+
+<div>
+<div style="font-weight: 600"><span style="color: #b45309">git</span> log --oneline -3</div>
+<div style="white-space: pre; color: #1b1f27"><span style="color: #a16207">4c1a9e2</span> Deduct the discount from the revenue report
+<span style="color: #a16207">b07d3f1</span> Add the churn report
+<span style="color: #a16207">93e8c55</span> Read the order totals in euros</div>
+</div>
+
+<div>
+<div style="font-weight: 600"><span style="color: #b45309">git</span> rebase -i HEAD~3</div>
+<div style="margin-top: 4px; padding: 8px 10px; border-radius: 6px; background: #fdecec; color: #8a1616; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px">Not run. This command opens an editor, and the Git console cannot show an editor. Use the terminal of your system for an interactive rebase.</div>
+</div>
+
+<div>
+<div style="font-weight: 600"><span style="color: #b45309">git</span> stash push -m "wip revenue"</div>
+<div style="white-space: pre">Saved working directory and index state On main: wip revenue</div>
+</div>
+
+<div>
+<div style="font-weight: 600"><span style="color: #b45309">git</span> reset --hard origin/main</div>
+<div role="alertdialog" aria-label="Run a command that removes changes?" style="margin-top: 4px; padding: 10px 12px; border: 1px solid #e1e4ea; border-radius: 8px; display: flex; align-items: center; flex-wrap: wrap; gap: 10px; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M12 8v5 M12 16.5h.01 M10.3 3.9L2.6 17.5A2 2 0 0 0 4.3 20.5h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" stroke="#b91c1c" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+<span style="flex: 1 1 300px">This command removes the changes in 2 files and moves main back by 1 commit. You cannot undo it in Tabloxide.</span>
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px">Cancel</button>
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #b91c1c; border-radius: 6px; background: #b91c1c; color: #ffffff; font-size: 12px; font-weight: 600">Run</button>
+</div>
+</div>
+
+</div>
+
+<div style="padding: 8px 10px; border-top: 1px solid #e1e4ea; display: flex; flex-direction: column; gap: 6px">
+<label style="display: flex; align-items: center; gap: 8px; padding: 0 10px; height: 36px; border: 1px solid #7f8898; border-radius: 6px; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 13px"><span style="color: #b45309; font-weight: 600">git</span><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Git command</span><input type="text" value="status -sb" style="flex-grow: 1; border: 0; background: none; color: #1b1f27; outline-offset: 4px"></label>
+<p style="margin: 0; font-size: 12px; color: #5b6472">Runs in the workspace folder sql-project. Up and Down select an earlier command. Tab completes branch and file names. There is no shell: pipes, redirects, and variables do not operate.</p>
+</div>
+</section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
