@@ -384,11 +384,202 @@ Status on 2026-11-16: the product owner added an AI assistant to this phase, and
 Decisions of the product owner for the assistant:
 
 * The AI service is the Claude API of Anthropic, with the API key of the user. The code calls the service through the interface `ChatProvider` of `crates/assistant`, so that a second service needs only a second implementation.
-* A request sends the structure of the database, the conversation, and the plan text. It sends no rows.
+* A request sends the structure of the database, the conversation, and the plan text. It sends no rows. On 2026-11-25, the product owner added one exception: "Ask about these rows" in M19.
 * The plan comes from `EXPLAIN`. `EXPLAIN ANALYZE` is on request, and only for a statement that reads data.
 * The assistant is a side panel. The application never runs the SQL of an answer.
 
 Not done: a test against the real service. The tests use a local test server and a test provider.
+
+### M19 and M20 — AI in each feature, and the Git console
+
+Status on 2026-11-25: the product owner asked for AI actions in each main feature. The product owner also asked for an embedded Git console for experienced users. The design is on the design canvas, in the section "AI in each feature, and the Git console". The copy is in `.design/imported/`. No code exists yet.
+
+The work has two milestones:
+
+* **M19:** AI actions in the Git panel, the query errors, the editor, the schema browser, and the result grid.
+* **M20:** the Git console.
+
+M20 does not need M19, except for the button "Explain the last output". Thus the two milestones can go in parallel after stage 1 of M19.
+
+#### Decisions of the product owner
+
+The product owner made these decisions on 2026-11-25:
+
+| Decision | Answer |
+|---|---|
+| Features with AI actions | Git, query errors, editor, and schema |
+| Rows | A request sends no rows. Only the action "Ask about these rows" sends rows, after a confirmation. |
+| Number of rows | A preference sets the number: 1 to 1000, default 100. |
+| Production | A production connection never sends rows to the AI service. No setting changes this. |
+| Git console | Git commands only. No shell. |
+
+The rules on the design canvas apply to each AI action:
+
+1. A sparkle icon in the accent colour marks each AI action.
+2. An answer goes to the assistant panel, as a step of the current session. There are two exceptions. The commit message goes into the message field. A change of the selection shows as a diff in the editor.
+3. The application never runs SQL from an answer. It never runs a Git command from an answer. The user accepts each change.
+4. Only "Ask about these rows" sends rows.
+5. The Git console runs no shell.
+
+These decisions replace one decision of 2026-11-16: "A request sends no rows." That rule stays true for all actions except "Ask about these rows".
+
+#### Architecture
+
+The backend builds the context of each request. The UI does not send free context text. The backend has three reasons for this:
+
+* The backend can enforce the rows rule and the production rule. A check in the UI only is not sufficient.
+* The backend limits the size of the context and removes credentials, in one place for all actions.
+* The backend tells the UI exactly what it sent. The panel shows this text. An example is "Sent: the statement, the error message, and the structure of 12 tables".
+
+Changes in `crates/assistant`:
+
+* `Task` gets one value for each action:
+  * `QueryError`, `ChangeSelection`, `ExplainSelection`.
+  * `ExplainTable`, `StarterQuery`.
+  * `CommitMessage`, `ExplainDiff`, `Conflict`, `GitOutput`.
+  * `Rows`.
+  * `Sql` and `Plan` stay.
+* A new type `ActionContext` holds the data of one action. Examples are the statement, the error, the selection, the diff, the conflict block, the Git output, and the rows. `ActionContext::render` makes the text that goes to the AI service. `ActionContext::summary` makes the "Sent:" text.
+* `chat_request` adds a third system part with the instructions of the task. The instructions and the schema stay the first two parts. Thus the service can keep them for the next request.
+* Each task sets its effort. `Plan` and `Conflict` use `High`. The other tasks use `Medium`.
+* Size limits: 60 000 characters for a diff, 20 000 characters for Git output, and 500 characters for each value of a row. A text that is longer than its limit gets a clear marker where the cut is. The summary tells the user about the cut.
+
+Changes in `src-tauri`:
+
+* `AskRequest` gets `context: Option<ActionContextRequest>`. The request has identifiers only where the backend has the data. Examples are the path of a staged file, or the path and the number of a conflict block.
+* The backend reads the Git data itself, with the `git` crate. The UI sends text only for the data that the backend does not have. This data is the error of a query, the selection, and the rows.
+* For `Rows`, the backend reads the environment of the connection from the workspace at the time of the request, through `connection_id` of the session. Thus a connection that changed to production after the connect also refuses rows. A request without a session refuses rows.
+* `AssistantEvent` gets `Sent { summary }`. The backend sends it before the first answer text.
+
+Changes in the UI:
+
+* A component `AiAction` shows the sparkle button. If no API key exists, it opens the setup of the assistant, as the panel does now.
+* The session view shows the "Sent:" line and the new step kinds.
+* An answer that has one SQL block gets the buttons that its action needs: "Replace in the editor", "Open in a new tab", or "Accept".
+
+#### M19 stages
+
+**Stage 1: foundation (1 week).**
+
+* `Task`, `ActionContext`, the instructions of each task, and the `Sent` event.
+* The component `AiAction` and the new step kinds of the session view.
+* The preference `assistant.rows_for_ai`, 1 to 1000, default 100. It goes on the tab "AI assistant" of the Preferences dialog. The tab also shows: "A production connection never sends rows, and no setting changes this."
+* Unit tests for the context text, the limits, the summaries, and the third system part.
+
+**Stage 2: query errors (0.5 weeks).**
+
+* The error of a query gets the button "Explain and fix".
+* The request sends the statement, the error message, the position, the hint, the SQLSTATE code, and the schema.
+* The answer goes to the panel. Its SQL block gets "Replace in the editor". This replaces the text of the statement that failed. The UI keeps the range of that statement with the error.
+* If the editor text in that range changed after the error, "Replace in the editor" is not available. Then "Copy" stays available.
+
+**Stage 3: editor (1.5 weeks).**
+
+* `Ctrl+I` opens an instruction field at the selection. Without a selection, the statement at the cursor is the selection. The UI finds it with the statement reader of the completion.
+* The request sends the selection, the instruction, and the schema.
+* The answer must have exactly one SQL block. Another answer is an error that the field shows.
+* The editor shows the change as an inline diff, with `@codemirror/merge`.
+  * `Ctrl+Enter` or "Accept" applies the change.
+  * `Esc` or "Reject" removes the diff.
+  * "Change again" sends a new instruction in the same conversation.
+* If the user changes the text of the selection while the request runs, the UI discards the answer and tells the user why.
+* `Ctrl+Shift+I` explains the selection in the assistant panel.
+* Add the two shortcuts to the command list and to the help screen. Before the work starts, check that no other command uses them.
+
+**Stage 4: schema browser (0.5 weeks).**
+
+* The menu of a table or a view gets "Explain the table" and "Write a starter query".
+* The request sends the detail of the relation: the columns, the keys, the indexes, the constraints, and the references in the two directions. It uses `schema_relation_detail`. It sends no rows.
+* "Explain the table" goes to the panel.
+* "Write a starter query" opens a new editor tab with the name "<table>: starter query". The tab has the SQL of the answer. The application does not run it.
+
+**Stage 5: Git (1.5 weeks).**
+
+* **Commit message.** The message field gets a sparkle button, and then "Write again".
+  * The request sends the staged diff (`git diff --cached --no-color --no-ext-diff`) and the subjects of the last 10 commits, for the style.
+  * It does not send binary files.
+  * For a diff that is longer than the limit, the request sends `--stat` and the first part of each file.
+  * The answer is a subject of 72 characters or fewer, an empty line, and a body. It goes into the message field.
+  * If the field has text that the user typed, the UI asks before it replaces the text.
+* **Explain the changes.** The diff view gets this button. The request sends the diff of the one file in the view.
+* **Merge conflict.** The conflict view gets "Propose a resolution".
+  * The request sends the base, the current, and the incoming version of the one block, with 20 lines of context. The data comes from `ConflictSides`.
+  * The answer has one SQL block and an explanation.
+  * "Accept" puts the block into the result. "Edit in the result" puts it there and moves the focus to it. "Reject" removes the proposal.
+  * The user still marks the file as resolved.
+* The `git` crate removes credentials from the remote addresses in each text, with `redact_credentials`.
+
+**Stage 6: ask about these rows (1 week).**
+
+* The results toolbar gets "Ask about these rows". Its position is not on the design canvas yet. Add it to the canvas before this stage starts.
+* For a production connection, the button is not available. Its tooltip gives the reason.
+* The confirmation dialog shows the number of rows, the columns, and the connection with its environment. Its button tells the number, for example "Send 100 rows".
+* The request sends the column names and types, and the first N rows of the result in the grid. N is the preference. A NULL value has a clear marker. Each value has a maximum of 500 characters.
+* The backend refuses the request for a production connection, for a request without a session, and for more rows than the preference permits.
+
+Completion criteria of M19:
+
+* Each action of the design canvas works, and the panel shows what it sent.
+* A test proves that each action except "Ask about these rows" sends no rows.
+* A test proves that the backend refuses rows for a production connection, also when the UI sends them.
+* `docs/user/assistant.md` tells, for each action, what the request sends.
+
+#### M20: the Git console (2 weeks)
+
+The console is a tab of the results pane, with the name "Git console". It is also in the View menu and in the command palette. It runs in the folder of the workspace.
+
+Backend, in a new module `crates/git/src/console.rs`:
+
+* **Words.** The console splits the line into words with the crate `shell-words`. The crate knows quotes, and it does not expand variables or file patterns.
+* **Shell characters.** The console refuses a word outside quotes that has `|`, `>`, `<`, `;`, `&`, `$(`, or a backtick. The message says that the console has no shell.
+* **The program.** The console always runs the `git` executable with the words as arguments. It adds `--no-pager` and `-c color.ui=never`. It sets `GIT_TERMINAL_PROMPT=0` and uses the askpass helper, as the Git panel does.
+* **Options that run other programs.** The console refuses these options of the user:
+  * `-c` and `--config-env`.
+  * `--exec-path`, `--git-dir`, `--work-tree`, and `-C`.
+  * `--upload-pack`, `--receive-pack`, and `-u` for `clone`, `fetch`, `pull`, and `push`.
+* **Aliases.** The console refuses an alias that starts with `!`, because such an alias runs a shell. It reads the alias with `git config --get alias.<name>`.
+* **Commands that need a terminal or a window.** The console refuses these commands, with the instruction to use the terminal of the system:
+  * `rebase -i`, `add -p`, `add -i`, `commit -p`.
+  * `difftool`, `mergetool`, `gui`, `citool`, `gitk`, `help`, and `instaweb`.
+* **Editor.** As a second check, `GIT_EDITOR` and `GIT_SEQUENCE_EDITOR` point to the askpass helper in a new editor mode. That mode stops with an error. Thus a command that opens an editor fails at once and does not wait.
+* **Destructive commands.** A command that can remove work gets a confirmation in the console before it runs. The confirmation tells the effect, from a check without changes:
+  * `reset --hard`: the number of changed files from the status, and the number of commits that the branch moves back, from `rev-list --count`.
+  * `clean -f`: the file list from `clean -n`.
+  * `checkout -f`, `checkout -- <path>`, and `restore` of the working tree: the changed files that the command overwrites.
+  * `push --force` and `push --force-with-lease`.
+  * `branch -D`, `stash drop`, `stash clear`, `tag -d`, `update-ref -d`, `reflog expire`, and `gc --prune`.
+* **Run.** A command can stop with "Cancel". The output has a maximum of 1 MB. After that, the console keeps the last part and shows a marker.
+* **After a run.** The Git panel reads the status and the branches again.
+
+UI:
+
+* The line has the fixed prefix `git`.
+* Up and Down select an earlier command. The application keeps the last 200 commands of each workspace in the application data directory.
+* Tab completes subcommands, branch names, remote names, tag names, and file paths.
+* "Explain the last output" sends the command and its output to the assistant panel. This uses the task `GitOutput` of M19.
+* "Clear" removes the output from the view. It does not remove the history.
+
+Completion criteria of M20:
+
+* The tests of `console.rs` run against temporary repositories. They cover each refused option, the shell characters, a shell alias, the editor mode, each confirmation, and the output limit.
+* A test proves that no command of the console runs a program other than `git` and the askpass helper.
+* `docs/user/` gets a page about the console, with the commands that it refuses and the reason for each.
+
+#### Sequence
+
+| Week | Work |
+|---|---|
+| 1 | M19 stage 1 |
+| 2 | M19 stages 2 and 4. M20 backend starts. |
+| 3–4 | M19 stage 3. M20 backend and UI. |
+| 5–6 | M19 stage 5. M20 history, completion, and tests. |
+| 7 | M19 stage 6. "Explain the last output" in M20. |
+
+#### Open items
+
+* The position of "Ask about these rows" in the results toolbar. It is not on the design canvas.
+* A shortcut for the Git console. The proposal is ``Ctrl+` ``, if the shortcut list does not use it.
+* The design canvas also has AI connections for more than one service. M19 does not need them. The texts say "Anthropic" until the AI connections exist. After that, the texts use the name of the service of the selected connection.
 
 ## 7. Tests
 
