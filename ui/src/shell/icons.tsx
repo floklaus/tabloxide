@@ -69,9 +69,9 @@ export function Logo({ size = 20 }: { size?: number }) {
         />
         <rect
           x="9.75"
-          y="9.25"
+          y="8.5"
           width="4.5"
-          height="4.5"
+          height="5.25"
           className="logo__cell"
         />
       </svg>
