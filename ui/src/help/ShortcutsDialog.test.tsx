@@ -17,9 +17,9 @@ test('shows the shortcuts in tables, finds a shortcut, and closes', async () => 
   expect(
     within(dialog).getByRole('table', { name: 'Result grid' }),
   ).toBeInTheDocument()
-  const view = within(dialog).getByRole('table', { name: 'View' })
+  const help = within(dialog).getByRole('table', { name: 'Help' })
   expect(
-    within(view).getByRole('row', {
+    within(help).getByRole('row', {
       name: /Ctrl\s*K\s*Search or run a command/,
     }),
   ).toBeInTheDocument()

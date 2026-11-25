@@ -302,13 +302,11 @@ export function buildMenus(): Menu[] {
         item('view.zoom-reset'),
         separator,
         item('view.full-screen'),
-        separator,
-        item('view.palette'),
       ]),
     },
     {
       label: 'Help',
-      items: [item('help.shortcuts')],
+      items: [item('help.palette'), item('help.shortcuts')],
     },
   ]
 }

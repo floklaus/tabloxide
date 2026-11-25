@@ -162,7 +162,7 @@ describe('menu bar', () => {
     // The focus is on the first item, the Layout submenu.
     expect(document.activeElement).toHaveTextContent('Layout')
     await user.keyboard('{End}')
-    expect(document.activeElement).toHaveTextContent('Search or run a command')
+    expect(document.activeElement).toHaveTextContent('Full screen')
     const theme = within(menu).getByRole('menuitem', { name: /Theme/ })
     theme.focus()
     await user.keyboard('{ArrowRight}')
@@ -352,6 +352,25 @@ describe('command palette', () => {
 
     expect(screen.queryByRole('dialog', { name: 'Command palette' })).toBeNull()
     expect(useShellStore.getState().panels.statusBar).toBe(false)
+  })
+
+  test('Help › Search or run a command opens the palette, and the View menu does not have it', async () => {
+    const user = renderShell()
+
+    const view = await openMenu(user, 'View')
+    expect(
+      within(view).queryByRole('menuitem', { name: /Search or run a command/ }),
+    ).toBeNull()
+    await user.keyboard('{Escape}')
+
+    const help = await openMenu(user, 'Help')
+    await user.click(
+      within(help).getByRole('menuitem', { name: /Search or run a command/ }),
+    )
+
+    expect(
+      screen.getByRole('combobox', { name: 'Search or run a command' }),
+    ).toHaveFocus()
   })
 
   test('the palette finds the files of the workspace and opens one', async () => {

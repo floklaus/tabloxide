@@ -73,11 +73,11 @@ describe('shortcutGroups', () => {
       'Lists and menus',
       'Assistant',
     ])
-    expect(find('View')?.shortcuts).toContainEqual({
-      keys: ['Ctrl+K'],
-      description: 'Search or run a command',
-    })
+    expect(find('View')?.shortcuts).not.toContainEqual(
+      expect.objectContaining({ description: 'Search or run a command' }),
+    )
     expect(find('Help')?.shortcuts).toEqual([
+      { keys: ['Ctrl+K'], description: 'Search or run a command' },
       { keys: ['F1'], description: 'Keyboard shortcuts' },
     ])
     expect(find('File')?.shortcuts).toContainEqual({

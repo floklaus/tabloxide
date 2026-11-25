@@ -68,9 +68,9 @@ This will be the first release.
 
 ### Navigation
 
-- A menu bar with the menus File, Connections, Git, and View.
+- A menu bar with the menus File, Connections, Git, View, and Help.
 - The title bar shows the project, the connection of the active tab, and the Git branch. Each of them opens a menu to switch the project, the connection, or the branch.
-- The command palette (`Ctrl+K`) finds commands, files, schema objects, and settings.
+- The command palette (`Ctrl+K`, or Help › Search or run a command) finds commands, files, schema objects, and settings.
 - `F1` and Help › Keyboard shortcuts show all keyboard shortcuts, with a search. The start screen has the same list.
 - Tool strips on the two sides open the sidebar views and the assistant.
 - The View menu shows or hides the sidebar, the assistant, the results, and the status bar. It puts the results below or beside the editor, and it has the layouts Standard and Simple.

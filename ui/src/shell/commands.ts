@@ -371,6 +371,14 @@ export function buildCommands(): Command[] {
     },
     // Help
     {
+      id: 'help.palette',
+      label: 'Search or run a command',
+      group: 'Help',
+      shortcut: 'Ctrl+K',
+      isEnabled: always,
+      run: () => shell().openDialog('palette'),
+    },
+    {
       id: 'help.shortcuts',
       label: 'Keyboard shortcuts',
       group: 'Help',
@@ -379,14 +387,6 @@ export function buildCommands(): Command[] {
       run: () => shell().openDialog('shortcuts'),
     },
     // View
-    {
-      id: 'view.palette',
-      label: 'Search or run a command',
-      group: 'View',
-      shortcut: 'Ctrl+K',
-      isEnabled: always,
-      run: () => shell().openDialog('palette'),
-    },
     {
       id: 'view.sidebar',
       label: 'Show or hide the sidebar',

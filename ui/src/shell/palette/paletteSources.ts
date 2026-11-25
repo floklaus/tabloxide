@@ -15,7 +15,7 @@ const SETTING_PREFIXES = ['view.theme-', 'view.layout-', 'view.results-']
 /** The commands that can run now. */
 export function commandEntries(): PaletteEntry[] {
   return buildCommands()
-    .filter((command) => command.isEnabled() && command.id !== 'view.palette')
+    .filter((command) => command.isEnabled() && command.id !== 'help.palette')
     .map((command) => ({
       id: command.id,
       group: SETTING_PREFIXES.some((prefix) => command.id.startsWith(prefix))
