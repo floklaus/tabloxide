@@ -13,9 +13,24 @@ name: Release
 #   macOS:          APPLE_CERTIFICATE, APPLE_CERTIFICATE_PASSWORD,
 #                   APPLE_SIGNING_IDENTITY, APPLE_ID, APPLE_PASSWORD, APPLE_TEAM_ID
 #   Windows:        WINDOWS_CERTIFICATE, WINDOWS_CERTIFICATE_PASSWORD
+#
+# A manual run (Actions › Release › Run workflow) builds the installers for one
+# platform or for all platforms. It makes no release. The installers are the
+# artifacts of the run.
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Platform to build
+        type: choice
+        default: macos-latest
+        options:
+          - macos-latest
+          - ubuntu-22.04
+          - windows-latest
+          - all
 
 permissions:
   contents: read
@@ -27,7 +42,8 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ubuntu-22.04, macos-latest, windows-latest]
+        # macos-latest runs on Apple silicon, so the macOS installer is for arm64 (M1 and newer).
+        os: ${{ fromJSON((github.event_name == 'workflow_dispatch' && inputs.platform != 'all') && format('["{0}"]', inputs.platform) || '["ubuntu-22.04", "macos-latest", "windows-latest"]') }}
     steps:
       - uses: actions/checkout@v4
 
@@ -157,7 +173,11 @@ jobs:
           for file in installers/*.app.tar.gz; do
             [ -e "$file" ] || continue
             arch="$(uname -m | sed 's/arm64/aarch64/')"
-            version="${GITHUB_REF_NAME#v}"
+            if [ "$GITHUB_REF_TYPE" = tag ]; then
+              version="${GITHUB_REF_NAME#v}"
+            else
+              version="dev-${GITHUB_SHA::7}"
+            fi
             target="installers/Tabloxide_${version}_${arch}.app.tar.gz"
             mv "$file" "$target"
             if [ -e "$file.sig" ]; then mv "$file.sig" "$target.sig"; fi
@@ -174,6 +194,7 @@ jobs:
   publish:
     name: Publish the draft release
     needs: build
+    if: github.ref_type == 'tag'
     runs-on: ubuntu-22.04
     permissions:
       contents: write
