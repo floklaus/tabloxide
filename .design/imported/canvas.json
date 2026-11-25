@@ -43,7 +43,7 @@
       "x": 2560,
       "y": 0,
       "w": 820,
-      "h": 1000,
+      "h": 1080,
       "title": "Preferences"
     },
     "Welcome.dc.html": {
@@ -262,7 +262,7 @@
       "x": 3840,
       "y": 8620,
       "w": 400,
-      "text": "Rules for the AI actions:\n\n1. A sparkle icon in the accent colour marks each AI action.\n2. An answer goes to the assistant panel, as a step of the current session. Exception: the commit message goes into the message field, and a change of the selection shows as a diff in the editor.\n3. The application never runs SQL and never runs a Git command from an answer. You accept each change.\n4. A request sends no rows. Only 'Ask about these rows' sends rows, after a confirmation.\n5. The Git console accepts git commands only. It runs no shell.",
+      "text": "Rules for the AI actions:\n\n1. A sparkle icon in the accent colour marks each AI action.\n2. An answer goes to the assistant panel, as a step of the current session. Exception: the commit message goes into the message field, and a change of the selection shows as a diff in the editor.\n3. The application never runs SQL and never runs a Git command from an answer. You accept each change.\n4. A request sends no rows. Only 'Ask about these rows' sends rows, after a confirmation. Preferences sets the number of rows. A production connection never sends rows.\n5. The Git console accepts git commands only. It runs no shell.",
       "color": "orange"
     },
     "title": {
