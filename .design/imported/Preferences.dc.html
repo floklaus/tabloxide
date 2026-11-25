@@ -14,11 +14,18 @@ body{margin:0}
 button,input,select,textarea{font:inherit}
 </style>
 </helmet>
-<div style="width: 820px; height: 1080px; padding: 24px; background: rgba(27, 31, 39, 0.35); font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.4; display: flex; align-items: center; justify-content: center">
-<div role="dialog" aria-label="Preferences" style="width: 100%; max-height: 100%; padding: 24px; border-radius: 14px; background: #ffffff; color: #1b1f27; box-shadow: 0 12px 32px rgba(27, 31, 39, 0.18); display: flex; flex-direction: column; gap: 20px">
+<div style="width: 820px; height: 660px; padding: 24px; background: rgba(27, 31, 39, 0.35); font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.4; display: flex; align-items: center; justify-content: center">
+<div role="dialog" aria-label="Preferences" style="width: 100%; max-height: 100%; padding: 24px; border-radius: 14px; background: #ffffff; color: #1b1f27; box-shadow: 0 12px 32px rgba(27, 31, 39, 0.18); display: flex; flex-direction: column; gap: 16px">
 <div style="display: flex; align-items: center; gap: 8px"><h2 style="margin: 0; font-size: 18px; font-weight: 600">Preferences</h2><span style="flex-grow: 1"></span><button type="button" aria-label="Close preferences" title="Close preferences" style="width: 32px; height: 32px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: none"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M6 6l12 12 M18 6L6 18" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button></div>
+<div role="tablist" aria-label="Preference groups" style="display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid #e1e4ea">
+<sc-for list="{{ tabs }}" as="tab" hint-placeholder-count="5">
+<button type="button" role="tab" aria-selected="{{ tab.selected }}" tabindex="{{ tab.tabindex }}" onClick="{{ tab.pick }}" style="{{ tab.style }}">{{ tab.label }}</button>
+</sc-for>
+</div>
+<div role="tabpanel" aria-label="{{ panelLabel }}" style="min-height: 352px; display: flex; flex-direction: column">
+<sc-if value="{{ isAppearance }}" hint-placeholder-val="{{ true }}">
 <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px">
-<legend style="padding: 0 0 8px; font-weight: 600">Appearance</legend>
+<legend style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap">Appearance</legend>
 <p style="margin: 0; color: #5b6472; font-size: 12px">System follows the light or dark setting of the operating system.</p>
 <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px">
 <label style="display: flex; flex-direction: column; gap: 8px; padding: 8px; border: 2px solid #2563eb; border-radius: 10px">
@@ -49,8 +56,10 @@ button,input,select,textarea{font:inherit}
 <span style="color: #5b6472; font-size: 12px">Edit layouts in View › Layout</span></label>
 </div>
 </fieldset>
+</sc-if>
+<sc-if value="{{ isEditor }}" hint-placeholder-val="{{ false }}">
 <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px">
-<legend style="padding: 0 0 8px; font-weight: 600">Editor</legend>
+<legend style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap">Editor</legend>
 <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 16px">
 <label style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; font-weight: 600">Font size (pixels)</span>
 <input type="number" value="14" style="height: 32px; padding: 0 10px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27">
@@ -65,8 +74,10 @@ button,input,select,textarea{font:inherit}
 <label style="display: flex; align-items: center; gap: 8px"><input type="checkbox"><span>Wrap long lines</span></label>
 </div>
 </fieldset>
+</sc-if>
+<sc-if value="{{ isConfirm }}" hint-placeholder-val="{{ false }}">
 <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px">
-<legend style="padding: 0 0 8px; font-weight: 600">Ask before a run</legend>
+<legend style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap">Ask before a run</legend>
 <p style="margin: 0; color: #5b6472; font-size: 12px">A destructive statement removes or changes data or structure, writes files, or loads an extension.</p>
 <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 16px">
 <label style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; font-weight: 600">Development connections</span>
@@ -77,8 +88,10 @@ button,input,select,textarea{font:inherit}
 <select style="height: 32px; padding: 0 10px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27"><option>Before each run</option></select></label>
 </div>
 </fieldset>
+</sc-if>
+<sc-if value="{{ isAssistant }}" hint-placeholder-val="{{ false }}">
 <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px">
-<legend style="padding: 0 0 8px; font-weight: 600">AI assistant</legend>
+<legend style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap">AI assistant</legend>
 <p style="margin: 0; color: #5b6472; font-size: 12px">The assistant sends each request to the service of the selected AI connection. The account of that connection pays for the requests.</p>
 <div style="display: flex; flex-direction: column; gap: 8px">
 <div style="display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid #e1e4ea; border-radius: 10px">
@@ -96,6 +109,19 @@ button,input,select,textarea{font:inherit}
 </div>
 </div>
 </fieldset>
+</sc-if>
+<sc-if value="{{ isUpdates }}" hint-placeholder-val="{{ false }}">
+<fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px">
+<legend style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap">Updates</legend>
+<label style="display: flex; align-items: center; gap: 8px"><input type="checkbox" checked><span>Check for a newer version when the application starts</span></label>
+<p style="margin: 0; color: #5b6472; font-size: 12px">The check sends a request to the release page of the project. The request contains no data of your workspace.</p>
+<div style="display: flex; align-items: center; gap: 12px">
+<button type="button" style="height: 28px; padding: 0 10px; border-radius: 6px; font-size: 12px; display: inline-flex; align-items: center; white-space: nowrap; border: 1px solid #d5d9e0; background: #ffffff; color: #1b1f27">Check now</button>
+<span role="status" style="color: #5b6472; font-size: 12px">You have the newest version.</span>
+</div>
+</fieldset>
+</sc-if>
+</div>
 <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px">
 <button type="button" style="height: 32px; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 1px solid #d5d9e0; background: #ffffff; color: #1b1f27">Cancel</button>
 <button type="button" style="height: 32px; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 1px solid #2563eb; background: #2563eb; color: #ffffff; font-weight: 600">Save</button>
@@ -103,10 +129,37 @@ button,input,select,textarea{font:inherit}
 </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":820,"height":1080}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":820,"height":660}}'>
 class Component extends DCLogic {
 renderVals() {
-return {};
+const tab = (this.state && this.state.tab) || 'appearance';
+const groups = [
+['appearance', 'Appearance'],
+['editor', 'Editor'],
+['confirm', 'Ask before a run'],
+['assistant', 'AI assistant'],
+['updates', 'Updates'],
+];
+const base = 'margin-bottom: -1px; padding: 8px 14px; border: 0; border-bottom: 2px solid transparent; background: none; font-size: 13px; cursor: pointer; ';
+const tabs = groups.map(([id, label]) => {
+const selected = id === tab;
+return {
+label,
+selected: selected ? 'true' : 'false',
+tabindex: selected ? '0' : '-1',
+style: base + (selected ? 'border-bottom-color: #2563eb; color: #1b1f27; font-weight: 600' : 'color: #5b6472'),
+pick: () => this.setState({ tab: id }),
+};
+});
+return {
+tabs,
+panelLabel: groups.find(([id]) => id === tab)[1],
+isAppearance: tab === 'appearance',
+isEditor: tab === 'editor',
+isConfirm: tab === 'confirm',
+isAssistant: tab === 'assistant',
+isUpdates: tab === 'updates',
+};
 }
 }
 </script>
