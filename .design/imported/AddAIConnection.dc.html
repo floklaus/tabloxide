@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Add an AI connection</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+button,input{font:inherit}
+a{color:#2563eb}a:hover{color:#1d4ed8}
+</style>
+</helmet>
+<div style="width: 720px; height: 700px; padding: 24px; background: rgba(27, 31, 39, 0.35); font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.4; display: flex; align-items: center; justify-content: center">
+<div role="dialog" aria-label="Add an AI connection" style="width: 100%; padding: 24px; border-radius: 14px; background: #ffffff; color: #1b1f27; box-shadow: 0 12px 32px rgba(27, 31, 39, 0.18); display: flex; flex-direction: column; gap: 18px">
+<h2 style="margin: 0; font-size: 18px; font-weight: 600">Add an AI connection</h2>
+
+<fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px">
+<legend style="padding: 0 0 8px; font-weight: 600">Provider</legend>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<label style="display: flex; align-items: flex-start; gap: 8px; padding: 10px; border: 2px solid #2563eb; border-radius: 10px; background: #eaf1fe"><input type="radio" name="provider" checked style="margin: 3px 0 0"><span style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600">Anthropic (Claude)</span><span style="color: #5b6472; font-size: 12px">Claude API with an API key</span></span></label>
+<label style="display: flex; align-items: flex-start; gap: 8px; padding: 10px; border: 1px solid #d5d9e0; border-radius: 10px; color: #5b6472"><input type="radio" name="provider" disabled style="margin: 3px 0 0"><span style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1"><span style="display: flex; gap: 8px"><span style="font-weight: 600">OpenAI</span><span style="flex-grow: 1"></span><span style="font-size: 11px; font-weight: 600">Planned</span></span><span style="font-size: 12px">API key</span></span></label>
+<label style="display: flex; align-items: flex-start; gap: 8px; padding: 10px; border: 1px solid #d5d9e0; border-radius: 10px; color: #5b6472"><input type="radio" name="provider" disabled style="margin: 3px 0 0"><span style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1"><span style="display: flex; gap: 8px"><span style="font-weight: 600">Google Gemini</span><span style="flex-grow: 1"></span><span style="font-size: 11px; font-weight: 600">Planned</span></span><span style="font-size: 12px">API key</span></span></label>
+<label style="display: flex; align-items: flex-start; gap: 8px; padding: 10px; border: 1px solid #d5d9e0; border-radius: 10px; color: #5b6472"><input type="radio" name="provider" disabled style="margin: 3px 0 0"><span style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1"><span style="display: flex; gap: 8px"><span style="font-weight: 600">Ollama</span><span style="flex-grow: 1"></span><span style="font-size: 11px; font-weight: 600">Planned</span></span><span style="font-size: 12px">Models on this computer, no key</span></span></label>
+<label style="grid-column: 1 / 3; display: flex; align-items: flex-start; gap: 8px; padding: 10px; border: 1px solid #d5d9e0; border-radius: 10px; color: #5b6472"><input type="radio" name="provider" disabled style="margin: 3px 0 0"><span style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1"><span style="display: flex; gap: 8px"><span style="font-weight: 600">OpenAI-compatible service</span><span style="flex-grow: 1"></span><span style="font-size: 11px; font-weight: 600">Planned</span></span><span style="font-size: 12px">An address and a key, for example OpenRouter or LM Studio</span></span></label>
+</div>
+</fieldset>
+
+<div style="display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 12px 16px">
+<label style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; font-weight: 600">Name</span>
+<input type="text" value="Claude" style="height: 32px; padding: 0 10px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27"></label>
+<label style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; font-weight: 600">API key of Anthropic</span>
+<input type="password" value="new-key-placeholder" autocomplete="off" style="height: 32px; padding: 0 10px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27"></label>
+<span style="grid-column: 2; margin-top: -8px; color: #5b6472; font-size: 12px">Make a key in the <a href="#console">Claude Console</a>. The application keeps the key in the credential store of the operating system.</span>
+</div>
+
+<div role="status" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: #f1f8f3; border: 1px solid #b7dcc2">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10" stroke="#15803d" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+<span>Connected. The service has 14 models. The application shows the 4 newest models.</span>
+</div>
+
+<p style="margin: 0; color: #5b6472; font-size: 12px">The application gets the list of models from the service when you add the connection, when you open the assistant, and one time each day.</p>
+
+<div style="display: flex; align-items: center; gap: 8px">
+<span style="flex-grow: 1"></span>
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 13px">Cancel</button>
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 13px">Test the connection</button>
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #2563eb; border-radius: 6px; background: #2563eb; color: #ffffff; font-size: 13px; font-weight: 600">Add the connection</button>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":720,"height":700}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

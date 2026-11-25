@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AI connections</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+button,input,select{font:inherit}
+a{color:#2563eb}a:hover{color:#1d4ed8}
+</style>
+</helmet>
+<div style="width: 1200px; height: 860px; padding: 24px; background: rgba(27, 31, 39, 0.35); font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.4; display: flex; align-items: center; justify-content: center">
+<div role="dialog" aria-label="AI connections" style="width: 100%; height: 100%; padding: 24px; border-radius: 14px; background: #ffffff; color: #1b1f27; box-shadow: 0 12px 32px rgba(27, 31, 39, 0.18); display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: flex; align-items: center; gap: 12px">
+<h2 style="margin: 0; font-size: 18px; font-weight: 600">AI connections</h2>
+<span style="color: #5b6472; font-size: 12px">Preferences › AI assistant</span>
+<span style="flex-grow: 1"></span>
+<button type="button" aria-label="Close" title="Close" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: none"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M6 6l12 12 M18 6L6 18" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round"></path></svg></button>
+</div>
+
+<div style="flex-grow: 1; min-height: 0; display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 24px">
+
+<nav aria-label="Connections" style="display: flex; flex-direction: column; gap: 8px">
+<button type="button" aria-current="true" style="padding: 10px 12px; border: 2px solid #2563eb; border-radius: 10px; background: #eaf1fe; color: #1b1f27; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left">
+<span style="display: flex; align-items: center; gap: 8px; width: 100%"><span style="font-weight: 600">Claude</span><span style="flex-grow: 1"></span><span style="padding: 0 8px; border-radius: 999px; background: #ffffff; border: 1px solid #d5d9e0; font-size: 11px; font-weight: 600">Default</span></span>
+<span style="color: #5b6472; font-size: 12px">Anthropic API · 14 models</span>
+<span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #15803d"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10" stroke="#15803d" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>Connected</span>
+</button>
+<button type="button" style="padding: 10px 12px; border: 1px solid #d5d9e0; border-radius: 10px; background: #ffffff; color: #1b1f27; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left">
+<span style="font-weight: 600">Claude: team workspace</span>
+<span style="color: #5b6472; font-size: 12px">Anthropic API · no model list</span>
+<span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #b91c1c"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24"><path d="M12 7v6 M12 16.5h.01" stroke="#b91c1c" stroke-width="2.5" fill="none" stroke-linecap="round"></path></svg>The key is not valid</span>
+</button>
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px dashed #7f8898; border-radius: 10px; background: none; color: #1b1f27; display: inline-flex; align-items: center; gap: 6px; font-size: 13px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M12 5v14 M5 12h14" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round"></path></svg>Add a connection</button>
+<p style="margin: 4px 0 0; color: #5b6472; font-size: 12px">A new conversation uses the default connection and its default model. You can select a different model in each conversation.</p>
+</nav>
+
+<section aria-label="Connection Claude" style="min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<div style="display: grid; grid-template-columns: 220px minmax(0, 1fr) auto; gap: 12px 16px; align-items: end">
+<label style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; font-weight: 600">Name</span>
+<input type="text" value="Claude" style="height: 32px; padding: 0 10px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27"></label>
+<label style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; font-weight: 600">API key of Anthropic</span>
+<input type="password" value="stored-key-placeholder" autocomplete="off" style="height: 32px; padding: 0 10px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27"></label>
+<div style="display: flex; gap: 8px">
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 13px">Test the connection</button>
+<button type="button" style="height: 32px; padding: 0 12px; border: 0; background: none; color: #b91c1c; font-size: 13px">Remove</button>
+</div>
+<span style="grid-column: 2 / 4; margin-top: -8px; color: #5b6472; font-size: 12px">A key is stored in the credential store of the operating system. Enter a new key to replace it.</span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: #f1f8f3; border: 1px solid #b7dcc2">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10" stroke="#15803d" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+<span style="flex-grow: 1">Connected. The service sent the list of models 3 minutes ago. <strong>1 model is new</strong> since the last list.</span>
+<button type="button" style="height: 28px; padding: 0 10px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px; display: inline-flex; align-items: center; gap: 6px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7 M20 4v7h-7" stroke="#5b6472" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>Get the list again</button>
+</div>
+
+<div style="display: flex; align-items: baseline; gap: 12px">
+<h3 style="margin: 0; font-size: 14px; font-weight: 600">Models</h3>
+<span style="color: #5b6472; font-size: 12px">Select the models that the assistant shows. Select one default model.</span>
+<span style="flex-grow: 1"></span>
+<label style="display: flex; align-items: center; gap: 6px; font-size: 12px"><input type="checkbox"><span>Show new models automatically</span></label>
+</div>
+
+<div style="border: 1px solid #e1e4ea; border-radius: 10px; overflow: hidden">
+<table style="width: 100%; border-collapse: collapse; font-size: 13px">
+<thead>
+<tr style="background: #fafbfc; color: #5b6472; font-size: 12px; text-align: left">
+<th scope="col" style="padding: 8px 12px; font-weight: 600; width: 56px">Show</th>
+<th scope="col" style="padding: 8px 12px; font-weight: 600">Model</th>
+<th scope="col" style="padding: 8px 12px; font-weight: 600">Context</th>
+<th scope="col" style="padding: 8px 12px; font-weight: 600">Output</th>
+<th scope="col" style="padding: 8px 12px; font-weight: 600">Features</th>
+<th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">Price per 1M tokens (in / out)</th>
+<th scope="col" style="padding: 8px 12px; font-weight: 600; width: 72px">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr style="border-top: 1px solid #e1e4ea; background: #f7f9fc">
+<td style="padding: 8px 12px"><input type="checkbox" checked aria-label="Show Claude Opus 5.5"></td>
+<td style="padding: 8px 12px"><div style="font-weight: 600">Claude Opus 5.5</div><div style="color: #5b6472; font-size: 12px; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace">claude-opus-5-5</div></td>
+<td style="padding: 8px 12px">1M</td><td style="padding: 8px 12px">128K</td>
+<td style="padding: 8px 12px; color: #5b6472">Thinking, images</td>
+<td style="padding: 8px 12px; text-align: right">$4 / $20</td>
+<td style="padding: 8px 12px"><input type="radio" name="default" checked aria-label="Default model: Claude Opus 5.5"></td>
+</tr>
+<tr style="border-top: 1px solid #e1e4ea">
+<td style="padding: 8px 12px"><input type="checkbox" checked aria-label="Show Claude Sonnet 5.5"></td>
+<td style="padding: 8px 12px"><div style="display: flex; align-items: center; gap: 8px"><span style="font-weight: 600">Claude Sonnet 5.5</span><span style="padding: 0 6px; border-radius: 999px; background: #eaf1fe; color: #1d4ed8; font-size: 11px; font-weight: 600">New</span></div><div style="color: #5b6472; font-size: 12px; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace">claude-sonnet-5-5</div></td>
+<td style="padding: 8px 12px">1M</td><td style="padding: 8px 12px">128K</td>
+<td style="padding: 8px 12px; color: #5b6472">Thinking, images</td>
+<td style="padding: 8px 12px; text-align: right">$2 / $10</td>
+<td style="padding: 8px 12px"><input type="radio" name="default" aria-label="Default model: Claude Sonnet 5.5"></td>
+</tr>
+<tr style="border-top: 1px solid #e1e4ea">
+<td style="padding: 8px 12px"><input type="checkbox" checked aria-label="Show Claude Haiku 5.5"></td>
+<td style="padding: 8px 12px"><div style="font-weight: 600">Claude Haiku 5.5</div><div style="color: #5b6472; font-size: 12px; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace">claude-haiku-5-5</div></td>
+<td style="padding: 8px 12px">1M</td><td style="padding: 8px 12px">128K</td>
+<td style="padding: 8px 12px; color: #5b6472">Thinking, images</td>
+<td style="padding: 8px 12px; text-align: right">$0.10 / $0.50</td>
+<td style="padding: 8px 12px"><input type="radio" name="default" aria-label="Default model: Claude Haiku 5.5"></td>
+</tr>
+<tr style="border-top: 1px solid #e1e4ea">
+<td style="padding: 8px 12px"><input type="checkbox" checked aria-label="Show Claude Fable 5.2"></td>
+<td style="padding: 8px 12px"><div style="font-weight: 600">Claude Fable 5.2</div><div style="color: #5b6472; font-size: 12px; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace">claude-fable-5-2</div></td>
+<td style="padding: 8px 12px">1M</td><td style="padding: 8px 12px">128K</td>
+<td style="padding: 8px 12px; color: #5b6472">Thinking, images</td>
+<td style="padding: 8px 12px; text-align: right">$8 / $40</td>
+<td style="padding: 8px 12px"><input type="radio" name="default" aria-label="Default model: Claude Fable 5.2"></td>
+</tr>
+<tr style="border-top: 1px solid #e1e4ea">
+<td style="padding: 8px 12px"><input type="checkbox" aria-label="Show Claude Opus 5"></td>
+<td style="padding: 8px 12px"><div style="font-weight: 600">Claude Opus 5</div><div style="color: #5b6472; font-size: 12px; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace">claude-opus-5</div></td>
+<td style="padding: 8px 12px">1M</td><td style="padding: 8px 12px">128K</td>
+<td style="padding: 8px 12px; color: #5b6472">Thinking, images</td>
+<td style="padding: 8px 12px; text-align: right">$5 / $25</td>
+<td style="padding: 8px 12px"><input type="radio" name="default" aria-label="Default model: Claude Opus 5"></td>
+</tr>
+<tr style="border-top: 1px solid #e1e4ea">
+<td style="padding: 8px 12px"><input type="checkbox" aria-label="Show Claude Haiku 4.5"></td>
+<td style="padding: 8px 12px"><div style="font-weight: 600">Claude Haiku 4.5</div><div style="color: #5b6472; font-size: 12px; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace">claude-haiku-4-5</div></td>
+<td style="padding: 8px 12px">200K</td><td style="padding: 8px 12px">64K</td>
+<td style="padding: 8px 12px; color: #5b6472">Thinking, images</td>
+<td style="padding: 8px 12px; text-align: right">$1 / $5</td>
+<td style="padding: 8px 12px"><input type="radio" name="default" aria-label="Default model: Claude Haiku 4.5"></td>
+</tr>
+<tr style="border-top: 1px solid #e1e4ea">
+<td colspan="7" style="padding: 6px 12px"><button type="button" style="height: 28px; padding: 0; border: 0; background: none; color: #2563eb; font-size: 12px">Show 8 older models</button></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p style="margin: 0; color: #5b6472; font-size: 12px">The service gives the names, the sizes and the features. The prices come from a list in the application. If a model is not in that list, the price shows “Unknown”.</p>
+</section>
+</div>
+
+<div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px">
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 13px">Cancel</button>
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #2563eb; border-radius: 6px; background: #2563eb; color: #ffffff; font-size: 13px; font-weight: 600">Save</button>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":860}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

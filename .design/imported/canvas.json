@@ -147,6 +147,27 @@
       "w": 1200,
       "h": 620,
       "title": "Title bar widgets: project, connection, branch"
+    },
+    "AIConnections.dc.html": {
+      "x": 0,
+      "y": 7200,
+      "w": 1200,
+      "h": 860,
+      "title": "AI connections and models"
+    },
+    "AddAIConnection.dc.html": {
+      "x": 1280,
+      "y": 7200,
+      "w": 720,
+      "h": 700,
+      "title": "Add an AI connection"
+    },
+    "AssistantModelPicker.dc.html": {
+      "x": 2080,
+      "y": 7200,
+      "w": 440,
+      "h": 760,
+      "title": "Assistant: select the model"
     }
   },
   "order": [
@@ -168,7 +189,10 @@
     "MainHighContrast.dc.html",
     "AssistantTab.dc.html",
     "CommandPalette.dc.html",
-    "TitleWidgets.dc.html"
+    "TitleWidgets.dc.html",
+    "AIConnections.dc.html",
+    "AddAIConnection.dc.html",
+    "AssistantModelPicker.dc.html"
   ],
   "notes": {
     "title": {
@@ -205,6 +229,13 @@
       "text": "New screens: assistant tab, command palette, title bar widgets",
       "kind": "title1",
       "maxW": 3760
+    },
+    "aiconnections": {
+      "x": 0,
+      "y": 6920,
+      "text": "AI connections and model selection (proposal)",
+      "kind": "title1",
+      "maxW": 2520
     }
   },
   "designSystems": []
