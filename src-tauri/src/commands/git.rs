@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tabloxide_git::{
     AskpassSession, BranchDeletion, BranchInfo, CommitFile, CommitInfo, ConflictSides, FileDiff,
-    Git, GitError, Prompt, StatusReport,
+    Git, GitError, Prompt, RemoteBranchInfo, StatusReport,
 };
 use tauri::ipc::Channel;
 use tauri::{AppHandle, State};
@@ -30,6 +30,8 @@ pub enum GitOverview {
         root: String,
         status: StatusReport,
         branches: Vec<BranchInfo>,
+        /// The branches of the remote repositories, newest commit first.
+        remote_branches: Vec<RemoteBranchInfo>,
         /// The message for the merge commit. `None` if no merge is in progress.
         merge_message: Option<String>,
     },
@@ -158,6 +160,7 @@ fn overview(git: &Git, workspace_root: &Path) -> Result<GitOverview, GitError> {
         version,
         status: git.status(&root)?,
         branches: git.branches(&root)?,
+        remote_branches: git.remote_branches(&root)?,
         merge_message: git.merge_message(&root)?,
         root: root.display().to_string(),
     })

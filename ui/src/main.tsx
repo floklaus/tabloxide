@@ -4,6 +4,7 @@ import App from './App.tsx'
 import './index.css'
 import './assistant/assistantSession.css'
 import './plan/plan.css'
+import './shell/menu/menu.css'
 import { applyTheme } from './theme/theme'
 import { useThemeStore } from './theme/themeStore'
 

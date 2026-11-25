@@ -1,0 +1,92 @@
+/* ---------- Menu items: dots, side texts, code labels ---------- */
+
+.menu__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text);
+}
+
+.menu__item[role='menuitemradio'][aria-checked='true'] {
+  background: var(--color-surface);
+}
+
+.menu__item[role='menuitemradio'][aria-checked='true']
+  .menu__label
+  > :first-child {
+  font-weight: 600;
+}
+
+.menu__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.menu__dot--development {
+  background: var(--color-env-development);
+}
+
+.menu__dot--staging {
+  background: var(--color-env-staging);
+}
+
+.menu__dot--production {
+  background: var(--color-env-production);
+}
+
+.menu__code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.menu__aside {
+  flex: none;
+  margin-left: auto;
+  padding-left: 1rem;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.menu__heading .badge {
+  text-transform: none;
+}
+
+/* ---------- Title widget menus ---------- */
+
+.title-widget--connection + .menu-popup,
+.title-widget--branch + .menu-popup {
+  min-width: 21rem;
+}
+
+.menu-popup__search {
+  position: relative;
+}
+
+.menu-popup__search .icon {
+  position: absolute;
+  top: 50%;
+  left: 1rem;
+  color: var(--color-text-muted);
+  transform: translateY(-40%);
+  pointer-events: none;
+}
+
+.menu-popup__search input {
+  padding-left: 1.8rem;
+}
+
+.menu-popup__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.menu-popup__title .field__hint {
+  margin: 0;
+  font-weight: 400;
+}

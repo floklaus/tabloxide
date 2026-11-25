@@ -70,6 +70,7 @@ This will be the first release.
 
 - A menu bar with the menus File, Connections, Git, View, and Help.
 - The title bar shows the project, the connection of the active tab, and the Git branch. Each of them opens a menu to switch the project, the connection, or the branch.
+- The connection menu groups the connections by environment, with a coloured mark for each environment and the engine of each connection. The branch menu shows the time of the last commit of each branch, and the remote branches. A remote branch switches to a new local branch that tracks it.
 - The command palette (`Ctrl+K`, or Help › Search or run a command) finds commands, files, schema objects, and settings.
 - `F1` and Help › Keyboard shortcuts show all keyboard shortcuts, with a search. The start screen has the same list.
 - Tool strips on the two sides open the sidebar views and the assistant.

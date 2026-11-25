@@ -218,6 +218,11 @@ fn creates_and_switches_branches() {
         .map(|b| (b.name.as_str(), b.is_current))
         .collect();
     assert_eq!(listed, vec![("feature/report", true), ("main", false)]);
+    assert!(
+        branches
+            .iter()
+            .all(|b| b.last_commit.is_some_and(|t| t > 0))
+    );
 
     // An unsaved change of the working tree stays after a switch.
     fixture.write("a.sql", "changed\n");
@@ -357,4 +362,38 @@ fn a_failed_remote_operation_with_progress_gives_the_message_of_git() {
     let error = with_progress.push(&second).unwrap_err();
 
     assert!(error.to_string().contains("rejected"), "{error}");
+}
+
+#[test]
+fn lists_the_remote_branches_without_the_symbolic_head() {
+    let (_home, git, first, second) = two_clones();
+    std::process::Command::new("git")
+        .current_dir(&first)
+        .args(["push", "--quiet", "origin", "main:release-0.2"])
+        .status()
+        .unwrap();
+    git.fetch(&second).unwrap();
+
+    let remote = git.remote_branches(&second).unwrap();
+
+    let mut names: Vec<(&str, &str)> = remote
+        .iter()
+        .map(|b| (b.name.as_str(), b.local_name.as_str()))
+        .collect();
+    names.sort_unstable();
+    assert_eq!(
+        names,
+        vec![
+            ("origin/main", "main"),
+            ("origin/release-0.2", "release-0.2")
+        ]
+    );
+    assert!(remote.iter().all(|b| b.last_commit.is_some()));
+
+    // A switch to the local name makes a branch that tracks the remote branch.
+    git.switch_branch(&second, "release-0.2").unwrap();
+    assert_eq!(
+        git.status(&second).unwrap().upstream.as_deref(),
+        Some("origin/release-0.2")
+    );
 }

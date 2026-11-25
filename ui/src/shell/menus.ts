@@ -1,6 +1,8 @@
-import type { Environment } from '../bindings'
+import type { Engine, Environment } from '../bindings'
 import { useConnectionStore } from '../connections/connectionStore'
 import { useGitStore } from '../git/gitStore'
+import { relativeTime } from '../lib/relativeTime'
+import { activeQueryStore } from '../query/queryStore'
 import { useThemeStore } from '../theme/themeStore'
 import { THEME_LABELS, THEMES } from '../theme/theme'
 import { useWorkspaceStore } from '../workspace/workspaceStore'
@@ -44,8 +46,9 @@ const separator: MenuItem = { kind: 'separator' }
 export function connectionItems(filter = ''): MenuItem[] {
   const connections = useWorkspaceStore.getState().workspace?.connections ?? []
   const current = activeConnection()?.id
+  const version = activeQueryStore().getState().session?.version ?? null
   const needle = filter.trim().toLowerCase()
-  return ENVIRONMENTS.flatMap(({ value, label }) => {
+  return ENVIRONMENTS.flatMap(({ value }) => {
     const matching = connections.filter(
       (connection) =>
         connection.environment === value &&
@@ -53,11 +56,15 @@ export function connectionItems(filter = ''): MenuItem[] {
     )
     if (matching.length === 0) return []
     return [
-      { kind: 'heading', label } as MenuItem,
+      { kind: 'heading', label: value, tone: value } as MenuItem,
       ...matching.map((connection): MenuItem => ({
         kind: 'radio',
         label: connection.name,
-        detail: ENGINE_LABELS[connection.engine ?? 'postgres'],
+        dot: connection.environment,
+        aside: serverText(
+          connection.engine ?? 'postgres',
+          connection.id === current ? version : null,
+        ),
         checked: connection.id === current,
         run: () => switchConnection(connection.id),
       })),
@@ -65,16 +72,68 @@ export function connectionItems(filter = ''): MenuItem[] {
   })
 }
 
-/** The local branches as radio items. */
+/** The engine, with the server version if the tab is connected. */
+function serverText(engine: Engine, version: string | null): string {
+  if (version === null) return ENGINE_LABELS[engine]
+  return engine === 'duckdb' ? `DuckDB ${version}` : `PostgreSQL ${version}`
+}
+
+/** Writes the commits to push and to pull, for example "↑1 ↓2". */
+export function aheadBehind(ahead: number, behind: number): string {
+  return [ahead > 0 ? `↑${ahead}` : null, behind > 0 ? `↓${behind}` : null]
+    .filter(Boolean)
+    .join(' ')
+}
+
+const whenText = (seconds: number | null | undefined) =>
+  seconds === null || seconds === undefined ? undefined : relativeTime(seconds)
+
+/** The largest number of remote branches in the menu. The Git sidebar has all branches. */
+const MAX_REMOTE_BRANCHES = 10
+
+/**
+ * The local branches, and the remote branches without a local branch of the same
+ * name, as radio items. A remote branch switches to a new local branch that tracks it.
+ */
 export function branchItems(): MenuItem[] {
   const overview = useGitStore.getState().overview
   if (overview?.state !== 'repository') return []
-  return overview.branches.map((branch) => ({
+  const { ahead, behind } = overview.status
+  const switchTo = (name: string) => () =>
+    void useGitStore.getState().switchBranch(name)
+  // The current branch is first, as in the branch widget.
+  const sorted = [...overview.branches].sort(
+    (a, b) => Number(b.is_current) - Number(a.is_current),
+  )
+  const local = sorted.map((branch): MenuItem => ({
     kind: 'radio',
     label: branch.name,
+    isCode: true,
+    aside: branch.is_current
+      ? aheadBehind(ahead, behind) || undefined
+      : whenText(branch.last_commit),
     checked: branch.is_current,
-    run: () => void useGitStore.getState().switchBranch(branch.name),
+    run: switchTo(branch.name),
   }))
+  const localNames = new Set(overview.branches.map((branch) => branch.name))
+  const remote = (overview.remote_branches ?? [])
+    .filter((branch) => !localNames.has(branch.local_name))
+    .slice(0, MAX_REMOTE_BRANCHES)
+    .map((branch): MenuItem => ({
+      kind: 'radio',
+      label: branch.name,
+      isCode: true,
+      aside: whenText(branch.last_commit),
+      checked: false,
+      run: switchTo(branch.local_name),
+    }))
+  return [
+    { kind: 'heading', label: 'Local branches' },
+    ...local,
+    ...(remote.length > 0
+      ? [{ kind: 'heading', label: 'Remote branches' } as MenuItem, ...remote]
+      : []),
+  ]
 }
 
 /** The recent workspaces as radio items. */

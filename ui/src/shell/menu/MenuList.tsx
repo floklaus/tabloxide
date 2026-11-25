@@ -30,29 +30,49 @@ const ROLES = {
 } as const
 
 function Mark({ item }: { item: MenuItem }) {
-  if (item.kind !== 'check' && item.kind !== 'radio') {
-    return <span className="menu__mark" aria-hidden="true" />
-  }
+  const isChecked =
+    (item.kind === 'check' || item.kind === 'radio') && item.checked
   return (
     <span className="menu__mark" aria-hidden="true">
-      {item.checked ? (item.kind === 'check' ? '✓' : '●') : ''}
+      {isChecked && (
+        <svg width="14" height="14" viewBox="0 0 24 24">
+          <path
+            d="M5 12.5l4.5 4.5L19 7.5"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      )}
     </span>
   )
 }
 
 function ItemContent({ item }: { item: MenuItem }): ReactNode {
   if (item.kind === 'separator' || item.kind === 'heading') return null
-  const detail =
-    item.kind === 'action' || item.kind === 'radio' ? item.detail : undefined
+  const extras = item.kind === 'action' || item.kind === 'radio' ? item : null
   const shortcut =
     item.kind === 'action' || item.kind === 'check' ? item.shortcut : undefined
   return (
     <>
       <Mark item={item} />
+      {extras?.dot && (
+        <span
+          className={`menu__dot menu__dot--${extras.dot}`}
+          aria-hidden="true"
+        />
+      )}
       <span className="menu__label">
-        {item.label}
-        {detail && <span className="menu__detail">{detail}</span>}
+        <span className={extras?.isCode ? 'menu__code' : undefined}>
+          {item.label}
+        </span>
+        {extras?.detail && (
+          <span className="menu__detail">{extras.detail}</span>
+        )}
       </span>
+      {extras?.aside && <span className="menu__aside">{extras.aside}</span>}
       {shortcut && (
         <span className="menu__shortcut" aria-hidden="true">
           {shortcut}
@@ -184,7 +204,13 @@ export function MenuList({
         if (item.kind === 'heading') {
           return (
             <li key={index} role="presentation" className="menu__heading">
-              {item.label}
+              {item.tone ? (
+                <span className={`badge badge--${item.tone}`}>
+                  {item.label}
+                </span>
+              ) : (
+                item.label
+              )}
             </li>
           )
         }

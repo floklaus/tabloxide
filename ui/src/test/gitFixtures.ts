@@ -38,9 +38,10 @@ export function repository(
     version: '2.43.0',
     root: '/work/sql-project',
     branches: [
-      { name: 'feature', is_current: false },
-      { name: 'main', is_current: true },
+      { name: 'feature', is_current: false, last_commit: null },
+      { name: 'main', is_current: true, last_commit: null },
     ],
+    remote_branches: [],
     merge_message: mergeMessage,
     status: {
       branch: 'main',

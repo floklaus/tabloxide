@@ -288,6 +288,13 @@ describe('title bar widgets', () => {
     expect(
       within(menu).queryByRole('menuitemradio', { name: /Local/ }),
     ).toBeNull()
+    // The environment is a badge heading, and each connection shows its engine.
+    expect(within(menu).getByText('production')).toHaveClass(
+      'badge--production',
+    )
+    expect(
+      within(menu).getByRole('menuitemradio', { name: /Live/ }),
+    ).toHaveTextContent('PostgreSQL')
     await user.click(within(menu).getByRole('menuitemradio', { name: /Live/ }))
 
     expect(useTabsStore.getState().tabs[0].connectionId).toBe('id-2')
@@ -308,8 +315,20 @@ describe('title bar widgets', () => {
         root: '/work/sql-project',
         merge_message: null,
         branches: [
-          { name: 'feature', is_current: false },
-          { name: 'main', is_current: true },
+          {
+            name: 'feature',
+            is_current: false,
+            last_commit: Date.now() / 1000 - 3 * 86400,
+          },
+          { name: 'main', is_current: true, last_commit: Date.now() / 1000 },
+        ],
+        remote_branches: [
+          { name: 'origin/main', local_name: 'main', last_commit: null },
+          {
+            name: 'origin/release-0.2',
+            local_name: 'release-0.2',
+            last_commit: Date.now() / 1000 - 14 * 86400,
+          },
         ],
         status: {
           branch: 'main',
@@ -327,11 +346,63 @@ describe('title bar widgets', () => {
       await screen.findByRole('button', { name: 'Git branch: main ↑1' }),
     )
     const menu = screen.getByRole('menu', { name: 'Git branch' })
+    expect(
+      within(menu).getByRole('menuitemradio', { name: /^main/ }),
+    ).toHaveTextContent('↑1')
+    expect(
+      within(menu).getByRole('menuitemradio', { name: /^feature/ }),
+    ).toHaveTextContent('3 days ago')
+    // A remote branch with a local branch of the same name is not in the list.
+    expect(
+      within(menu).queryByRole('menuitemradio', { name: /^origin\/main/ }),
+    ).toBeNull()
+    expect(within(menu).getByText('Remote branches')).toBeInTheDocument()
     await user.click(
-      within(menu).getByRole('menuitemradio', { name: 'feature' }),
+      within(menu).getByRole('menuitemradio', { name: /^feature/ }),
     )
 
     expect(commands.gitBranchSwitch).toHaveBeenCalledWith('feature')
+  })
+
+  test('a remote branch in the branch widget switches to a local branch that tracks it', async () => {
+    vi.mocked(commands.gitOverview).mockResolvedValue({
+      status: 'ok',
+      data: {
+        state: 'repository',
+        version: '2.43.0',
+        root: '/work/sql-project',
+        merge_message: null,
+        branches: [{ name: 'main', is_current: true, last_commit: null }],
+        remote_branches: [
+          {
+            name: 'origin/release-0.2',
+            local_name: 'release-0.2',
+            last_commit: Date.now() / 1000 - 14 * 86400,
+          },
+        ],
+        status: {
+          branch: 'main',
+          has_commits: true,
+          upstream: 'origin/main',
+          ahead: 0,
+          behind: 0,
+          files: [],
+        },
+      },
+    })
+    const user = renderShell()
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Git branch: main' }),
+    )
+    const menu = screen.getByRole('menu', { name: 'Git branch' })
+    const remote = within(menu).getByRole('menuitemradio', {
+      name: /^origin\/release-0.2/,
+    })
+    expect(remote).toHaveTextContent('2 weeks ago')
+    await user.click(remote)
+
+    expect(commands.gitBranchSwitch).toHaveBeenCalledWith('release-0.2')
   })
 })
 

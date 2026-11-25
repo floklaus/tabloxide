@@ -310,9 +310,20 @@ export type BranchDeletion = "deleted" |
 /**  The branch has commits that are in no other branch. Git did not delete it. */
 "not-merged";
 
-export type BranchInfo = {
+export type BranchInfo = BranchInfo_Serialize | BranchInfo_Deserialize;
+
+export type BranchInfo_Deserialize = {
 	name: string,
 	is_current: boolean,
+	/**  The time of the last commit of the branch, in seconds since 1970. */
+	last_commit?: number | null,
+};
+
+export type BranchInfo_Serialize = {
+	name: string,
+	is_current: boolean,
+	/**  The time of the last commit of the branch, in seconds since 1970. */
+	last_commit: number | null,
 };
 
 export type ChangeKind = "added" | "modified" | "deleted" | "renamed" | "copied" | "type-changed";
@@ -706,7 +717,9 @@ export type GitOverview_Deserialize =
 /**  The workspace folder is not in a repository. */
 { state: "no-repository"; version: string } | { state: "repository"; version: string; 
 /**  Root of the repository. The file paths of the status are relative to it. */
-root: string; status: StatusReport_Deserialize; branches: BranchInfo[]; 
+root: string; status: StatusReport_Deserialize; branches: BranchInfo_Deserialize[]; 
+/**  The branches of the remote repositories, newest commit first. */
+remote_branches: RemoteBranchInfo_Deserialize[]; 
 /**  The message for the merge commit. `None` if no merge is in progress. */
 merge_message?: string | null };
 
@@ -719,7 +732,9 @@ export type GitOverview_Serialize =
 /**  The workspace folder is not in a repository. */
 { state: "no-repository"; version: string } | { state: "repository"; version: string; 
 /**  Root of the repository. The file paths of the status are relative to it. */
-root: string; status: StatusReport_Serialize; branches: BranchInfo[]; 
+root: string; status: StatusReport_Serialize; branches: BranchInfo_Serialize[]; 
+/**  The branches of the remote repositories, newest commit first. */
+remote_branches: RemoteBranchInfo_Serialize[]; 
 /**  The message for the merge commit. `None` if no merge is in progress. */
 merge_message: string | null };
 
@@ -972,6 +987,29 @@ export type RelationInfo = {
 };
 
 export type RelationKind = "table" | "view" | "materialized-view" | "foreign-table";
+
+/**  A branch of a remote repository, for example `origin/release-0.2`. */
+export type RemoteBranchInfo = RemoteBranchInfo_Serialize | RemoteBranchInfo_Deserialize;
+
+/**  A branch of a remote repository, for example `origin/release-0.2`. */
+export type RemoteBranchInfo_Deserialize = {
+	/**  The name with the remote, for example `origin/release-0.2`. */
+	name: string,
+	/**  The name of the local branch that a switch makes, for example `release-0.2`. */
+	local_name: string,
+	/**  The time of the last commit of the branch, in seconds since 1970. */
+	last_commit?: number | null,
+};
+
+/**  A branch of a remote repository, for example `origin/release-0.2`. */
+export type RemoteBranchInfo_Serialize = {
+	/**  The name with the remote, for example `origin/release-0.2`. */
+	name: string,
+	/**  The name of the local branch that a switch makes, for example `release-0.2`. */
+	local_name: string,
+	/**  The time of the last commit of the branch, in seconds since 1970. */
+	last_commit: number | null,
+};
 
 /**  Why a statement needs a confirmation before it runs. */
 export type Risk = "drop" | "truncate" | "alter" | 

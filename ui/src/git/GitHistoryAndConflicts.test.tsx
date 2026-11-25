@@ -191,7 +191,7 @@ describe('branch operations', () => {
     if (overview.state !== 'repository') throw new Error('fixture')
     await renderPanel({
       ...overview,
-      branches: [{ name: 'main', is_current: true }],
+      branches: [{ name: 'main', is_current: true, last_commit: null }],
     })
 
     expect(

@@ -17,6 +17,28 @@ const MAX_DIFF_BYTES: usize = 1024 * 1024;
 pub struct BranchInfo {
     pub name: String,
     pub is_current: bool,
+    /// The time of the last commit of the branch, in seconds since 1970.
+    #[cfg_attr(feature = "specta", specta(type = Option<f64>))]
+    pub last_commit: Option<i64>,
+}
+
+/// A branch of a remote repository, for example `origin/release-0.2`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+pub struct RemoteBranchInfo {
+    /// The name with the remote, for example `origin/release-0.2`.
+    pub name: String,
+    /// The name of the local branch that a switch makes, for example `release-0.2`.
+    pub local_name: String,
+    /// The time of the last commit of the branch, in seconds since 1970.
+    #[cfg_attr(feature = "specta", specta(type = Option<f64>))]
+    pub last_commit: Option<i64>,
+}
+
+/// Reads one line of `git branch --format=%(committerdate:unix) %(refname:short)`.
+fn dated_ref(line: &str) -> Option<(Option<i64>, &str)> {
+    let (date, name) = line.split_once(' ')?;
+    (!name.is_empty()).then(|| (date.parse().ok(), name))
 }
 
 /// The result of a request to delete a branch.
@@ -258,17 +280,57 @@ impl Git {
             root,
             [
                 "branch",
-                "--format=%(HEAD)%(refname:short)",
+                "--format=%(HEAD)%(committerdate:unix) %(refname:short)",
                 "--sort=refname",
             ],
         )?;
         Ok(output
             .stdout_text()
             .lines()
-            .filter(|line| line.len() > 1 && !line[1..].starts_with('('))
-            .map(|line| BranchInfo {
-                name: line[1..].to_owned(),
-                is_current: line.starts_with('*'),
+            .filter(|line| line.len() > 1)
+            .filter_map(|line| {
+                let (date, name) = dated_ref(&line[1..])?;
+                // A detached HEAD has a name such as "(HEAD detached at 1a2b3c4)".
+                (!name.starts_with('(')).then(|| BranchInfo {
+                    name: name.to_owned(),
+                    is_current: line.starts_with('*'),
+                    last_commit: date,
+                })
+            })
+            .collect())
+    }
+
+    /// Returns the branches of the remote repositories, newest commit first. The list
+    /// does not have the symbolic `HEAD` of a remote.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if Git fails.
+    pub fn remote_branches(&self, root: &Path) -> Result<Vec<RemoteBranchInfo>, GitError> {
+        let output = self.run(
+            root,
+            [
+                "branch",
+                "--remotes",
+                "--format=%(committerdate:unix) %(refname:short) %(symref)",
+                "--sort=-committerdate",
+            ],
+        )?;
+        Ok(output
+            .stdout_text()
+            .lines()
+            .filter_map(|line| {
+                let (date, rest) = dated_ref(line)?;
+                let (name, symref) = rest.split_once(' ').unwrap_or((rest, ""));
+                if !symref.trim().is_empty() {
+                    return None;
+                }
+                let (_, local) = name.split_once('/')?;
+                Some(RemoteBranchInfo {
+                    name: name.to_owned(),
+                    local_name: local.to_owned(),
+                    last_commit: date,
+                })
             })
             .collect())
     }

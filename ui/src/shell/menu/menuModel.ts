@@ -1,14 +1,26 @@
+import type { Environment } from '../../bindings'
+
+/** Optional parts of an action or a radio item. */
+type ItemExtras = {
+  /** A second line below the label, for example a path. */
+  detail?: string
+  /** A short text at the right side, for example a server version or a time. */
+  aside?: string
+  /** A coloured dot before the label, for the environment of a connection. */
+  dot?: Environment
+  /** `true` if the label is code, for example a branch name. */
+  isCode?: boolean
+}
+
 /** The items of a menu. The menu bar, the title bar widgets, and the submenus use them. */
 export type MenuItem =
-  | {
+  | ({
       kind: 'action'
       label: string
-      /** A second text after the label, for example a path or a server version. */
-      detail?: string
       shortcut?: string
       disabled?: boolean
       run: () => void
-    }
+    } & ItemExtras)
   | {
       kind: 'check'
       label: string
@@ -17,17 +29,17 @@ export type MenuItem =
       disabled?: boolean
       run: () => void
     }
-  | {
+  | ({
       kind: 'radio'
       label: string
-      detail?: string
       checked: boolean
       disabled?: boolean
       run: () => void
-    }
+    } & ItemExtras)
   | { kind: 'submenu'; label: string; items: MenuItem[]; disabled?: boolean }
   | { kind: 'separator' }
-  | { kind: 'heading'; label: string }
+  /** A heading. With `tone`, the heading is an environment badge. */
+  | { kind: 'heading'; label: string; tone?: Environment }
 
 export type Menu = { label: string; items: MenuItem[] }
 

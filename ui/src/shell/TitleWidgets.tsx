@@ -7,7 +7,7 @@ import { newConnection, switchConnection } from './commands'
 import { Icon } from './icons'
 import { MenuButton } from './menu/MenuButton'
 import { tidy, type MenuItem } from './menu/menuModel'
-import { branchItems, connectionItems, recentItems } from './menus'
+import { aheadBehind, branchItems, connectionItems, recentItems } from './menus'
 import { useShellStore } from './shellStore'
 
 const separator: MenuItem = { kind: 'separator' }
@@ -82,6 +82,7 @@ export function ConnectionWidget() {
       className="title-widget--connection"
       header={() => (
         <div className="menu-popup__search">
+          <Icon name="search" size={14} />
           <input
             type="search"
             aria-label="Find a connection"
@@ -134,12 +135,6 @@ export function ConnectionWidget() {
   )
 }
 
-function aheadBehind(ahead: number, behind: number): string {
-  return [ahead > 0 ? `↑${ahead}` : null, behind > 0 ? `↓${behind}` : null]
-    .filter(Boolean)
-    .join(' ')
-}
-
 /** The Git branch of the workspace. Hidden if the workspace has no repository. */
 export function BranchWidget() {
   const overview = useGitStore((state) => state.overview)
@@ -157,13 +152,20 @@ export function BranchWidget() {
       className="title-widget--branch"
       header={(close) => (
         <div className="menu-popup__summary">
-          <p className="menu-popup__title">{name}</p>
-          <p className="field__hint">
-            {`${ahead} ${ahead === 1 ? 'commit' : 'commits'} to push · ${files.length} changed ${files.length === 1 ? 'file' : 'files'}`}
+          <p className="menu-popup__title">
+            <Icon name="git" size={14} />
+            <span className="menu__code">{name}</span>
+            <span className="field__hint">
+              {`${ahead} ${ahead === 1 ? 'commit' : 'commits'} to push · ${files.length} changed ${files.length === 1 ? 'file' : 'files'}`}
+            </span>
           </p>
           <div className="git__row">
             {[
-              { label: 'Commit…', run: () => shell.showSidebar('git') },
+              {
+                label: 'Commit…',
+                run: () => shell.showSidebar('git'),
+                isPrimary: true,
+              },
               {
                 label: `Push${ahead > 0 ? ` ↑${ahead}` : ''}`,
                 run: () => void git.push(),
@@ -173,7 +175,7 @@ export function BranchWidget() {
               <button
                 key={button.label}
                 type="button"
-                className="button button--small"
+                className={`button button--small${'isPrimary' in button ? ' button--primary' : ''}`}
                 onClick={() => {
                   close()
                   button.run()
@@ -187,7 +189,6 @@ export function BranchWidget() {
       )}
       items={() =>
         tidy([
-          { kind: 'heading', label: 'Local branches' },
           ...branchItems(),
           separator,
           action('New branch…', () => shell.showSidebar('git')),

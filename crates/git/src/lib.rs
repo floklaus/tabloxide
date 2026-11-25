@@ -17,6 +17,6 @@ pub use askpass::{
 pub use error::GitError;
 pub use history::{CommitFile, CommitInfo};
 pub use merge::ConflictSides;
-pub use operations::{BranchDeletion, BranchInfo, FileDiff, STARTER_GITIGNORE};
+pub use operations::{BranchDeletion, BranchInfo, FileDiff, RemoteBranchInfo, STARTER_GITIGNORE};
 pub use runner::Git;
 pub use status::{ChangeKind, FileStatus, StatusReport};
