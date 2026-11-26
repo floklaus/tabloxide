@@ -33,7 +33,9 @@ concurrency:
 
 jobs:
   sync:
-    runs-on: ubuntu-22.04
+    # The self-hosted runner. The job runs only for a push to main, thus only for
+    # code of the maintainer. Refer to docs/self-hosted-runner.md.
+    runs-on: [self-hosted, linux, tabloxide]
     env:
       WEBSITE_REPOSITORY: ${{ github.repository_owner }}/tabloxide-website
       HAS_TOKEN: ${{ secrets.WEBSITE_SYNC_TOKEN != '' }}
@@ -89,7 +91,16 @@ jobs:
           git add src/content/connectors public/connectors/v1/connector.proto
           git commit -m "docs: sync the connector guide from the app (${GITHUB_SHA::7})"
           git push --force origin "$branch"
-          gh pr create --repo "$WEBSITE_REPOSITORY" --head "$branch" \
-            --title "docs: sync the connector guide from the app" \
-            --body "Copied from $GITHUB_REPOSITORY at $GITHUB_SHA by the workflow Website sync." \
-            || echo "A pull request for this branch exists."
+          # The REST API, because the self-hosted runner has no gh program.
+          # HTTP 422 means that a pull request for this branch exists.
+          body="$(jq -n --arg head "$branch" --arg sha "$GITHUB_SHA" --arg repo "$GITHUB_REPOSITORY" \
+            '{title: "docs: sync the connector guide from the app", head: $head, base: "main",
+              body: ("Copied from " + $repo + " at " + $sha + " by the workflow Website sync.")}')"
+          code="$(curl -sS -o response.json -w '%{http_code}' -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$WEBSITE_REPOSITORY/pulls" -d "$body")"
+          case "$code" in
+            201) jq -r .html_url response.json ;;
+            422) echo "A pull request for this branch exists." ;;
+            *) cat response.json; exit 1 ;;
+          esac

@@ -11,8 +11,8 @@ GitHub does not count the minutes of a self-hosted runner. The macOS and Windows
 | CI, on a push or a pull request | Linux: format, lint, tests, Docker tests, build, smoke test | The self-hosted runner |
 | CI, on a pull request from a fork | Linux | GitHub-hosted (`ubuntu-22.04`) |
 | CI, started by hand with "All platforms" | macOS and Windows | GitHub-hosted |
-| Release, Connectors | All builds | GitHub-hosted |
-| Website sync | Copy | GitHub-hosted |
+| Release, Connectors | All builds | GitHub-hosted. They need free GitHub minutes. |
+| Website sync | Copy | The self-hosted runner |
 
 The release builds stay on GitHub-hosted runners. A Linux program needs the glibc version of the computer that built it, or an older version. The installers support Ubuntu 22.04 (glibc 2.35). A build on a server with a newer system would not start on Ubuntu 22.04.
 

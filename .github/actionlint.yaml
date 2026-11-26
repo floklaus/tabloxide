@@ -1,0 +1,4 @@
+# The labels of the self-hosted runner. Refer to docs/self-hosted-runner.md.
+self-hosted-runner:
+  labels:
+    - tabloxide
