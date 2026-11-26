@@ -10,6 +10,8 @@ type ItemExtras = {
   dot?: Environment
   /** `true` if the label is code, for example a branch name. */
   isCode?: boolean
+  /** `true` for an AI action. A sparkle icon marks it. */
+  isAi?: boolean
 }
 
 /** The items of a menu. The menu bar, the title bar widgets, and the submenus use them. */

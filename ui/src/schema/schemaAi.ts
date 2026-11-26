@@ -1,5 +1,9 @@
 import { onlyCodeBlock } from '../assistant/answerSegments'
-import type { ActionRequest, SessionStore } from '../assistant/assistantStore'
+import {
+  runAiAction,
+  type ActionRequest,
+  type SessionStore,
+} from '../assistant/assistantStore'
 import { sqlTabForTools, useTabsStore } from '../tabs/tabsStore'
 
 type Relation = { schema: string; name: string }
@@ -40,4 +44,15 @@ export function openStarterQuery(
   const tabs = useTabsStore.getState()
   const id = tabs.newTab(`${query}\n`, `${name}: starter query`)
   tabs.setConnection(id, source?.connectionId ?? null)
+}
+
+/** "Explain the table": the answer goes to the assistant panel. */
+export async function explainTable(relation: Relation): Promise<void> {
+  await runAiAction(explainTableRequest(relation))
+}
+
+/** "Write a starter query": the query opens in a new tab after the answer. */
+export async function writeStarterQuery(relation: Relation): Promise<void> {
+  const session = await runAiAction(starterQueryRequest(relation))
+  if (session) openStarterQuery(relation, session)
 }

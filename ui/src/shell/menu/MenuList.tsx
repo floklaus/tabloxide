@@ -1,3 +1,4 @@
+import { Icon } from '../icons'
 import {
   useEffect,
   useRef,
@@ -58,6 +59,11 @@ function ItemContent({ item }: { item: MenuItem }): ReactNode {
   return (
     <>
       <Mark item={item} />
+      {extras?.isAi && (
+        <span className="menu__ai" aria-hidden="true">
+          <Icon name="sparkle" size={14} />
+        </span>
+      )}
       {extras?.dot && (
         <span
           className={`menu__dot menu__dot--${extras.dot}`}

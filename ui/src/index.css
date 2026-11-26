@@ -3578,3 +3578,38 @@ body {
 .inline-change__instruction {
   color: var(--color-text);
 }
+
+/* The menu of a table shows on the row that has the pointer or the focus. */
+.schema__row .menu-button {
+  flex: none;
+  margin-left: auto;
+}
+
+.title-widget.schema__menu {
+  width: 1.5rem;
+  height: 1.25rem;
+  justify-content: center;
+  padding: 0;
+  opacity: 0;
+}
+
+.schema__row:hover .schema__menu,
+.schema__menu:focus-visible,
+.schema__menu[aria-expanded='true'] {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .title-widget.schema__menu {
+    opacity: 1;
+  }
+}
+
+.menu-popup--floating {
+  z-index: 40;
+}
+
+.menu__ai {
+  display: inline-flex;
+  color: var(--color-accent);
+}

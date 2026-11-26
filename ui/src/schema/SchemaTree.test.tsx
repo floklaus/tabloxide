@@ -345,4 +345,53 @@ describe('SchemaTree', () => {
       screen.queryByRole('button', { name: /public/ }),
     ).not.toBeInTheDocument()
   })
+
+  test('the menu of a table has the AI actions and does not read rows', async () => {
+    const user = await connect()
+    vi.mocked(commands.assistantAsk).mockResolvedValue({
+      status: 'ok',
+      data: {
+        status: 'done',
+        outcome: {
+          stop: 'complete',
+          model: 'claude-opus-5-5',
+          input_tokens: 1,
+          output_tokens: 1,
+        },
+        text: 'Each row is one order.',
+      },
+    })
+    const { useAssistantStore } = await import('../assistant/assistantStore')
+    useAssistantStore.getState().reset()
+    useAssistantStore.setState({ hasKey: true })
+    await user.click(screen.getByRole('button', { name: /public/ }))
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Actions for orders' }),
+    )
+    const menu = screen.getByRole('menu', {
+      name: 'Actions for public.orders',
+    })
+    // The menu is not in the row, so the row does not cut it.
+    expect(menu.closest('.schema__row')).toBeNull()
+    const explain = screen.getByRole('menuitem', { name: /Explain the table/ })
+    expect(explain.querySelector('.menu__ai svg')).not.toBeNull()
+    await user.click(explain)
+
+    expect(commands.assistantAsk).toHaveBeenCalledWith(
+      expect.objectContaining({
+        task: 'explain-table',
+        messages: [
+          expect.objectContaining({
+            context: { type: 'relation', schema: 'public', name: 'orders' },
+          }),
+        ],
+      }),
+      expect.anything(),
+    )
+    expect(schemaSample).not.toHaveBeenCalled()
+    expect(
+      screen.queryByRole('menu', { name: 'Actions for public.orders' }),
+    ).not.toBeInTheDocument()
+  })
 })

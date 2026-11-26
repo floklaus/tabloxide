@@ -1,6 +1,9 @@
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useEffect, useMemo, useRef } from 'react'
 import { Icon } from '../shell/icons'
+import { MenuButton } from '../shell/menu/MenuButton'
+import type { MenuItem } from '../shell/menu/menuModel'
+import { explainTable, writeStarterQuery } from './schemaAi'
 import { sqlTabOf, useTabsStore } from '../tabs/tabsStore'
 import { useSchemaStore } from './schemaStore'
 import { buildRows, kindLabel, type TreeRow } from './treeModel'
@@ -18,6 +21,37 @@ const DEPTHS: Record<Exclude<TreeRow['type'], 'note'>, number> = {
 
 function depthOf(row: TreeRow): number {
   return row.type === 'note' ? row.depth : DEPTHS[row.type]
+}
+
+/** The items of the menu of a table or a view. */
+function relationItems(
+  schema: string,
+  name: string,
+  show: () => void,
+): MenuItem[] {
+  const relation = { schema, name }
+  return [
+    { kind: 'action', label: 'Show the table', run: show },
+    {
+      kind: 'action',
+      label: 'Copy the name',
+      run: () =>
+        void navigator.clipboard.writeText(`${schema}.${name}`).catch(() => {}),
+    },
+    { kind: 'separator' },
+    {
+      kind: 'action',
+      label: 'Explain the table',
+      isAi: true,
+      run: () => void explainTable(relation),
+    },
+    {
+      kind: 'action',
+      label: 'Write a starter query',
+      isAi: true,
+      run: () => void writeStarterQuery(relation),
+    },
+  ]
 }
 
 function Row({ row }: { row: TreeRow }) {
@@ -65,6 +99,21 @@ function Row({ row }: { row: TreeRow }) {
               <span className="schema__detail">{kindLabel(row.kind)}</span>
             )}
           </button>
+          <MenuButton
+            label={`Actions for ${row.name}`}
+            menuLabel={`Actions for ${row.schema}.${row.name}`}
+            className="schema__menu"
+            isFloating
+            items={() =>
+              relationItems(
+                row.schema,
+                row.name,
+                () => void selectRelation(row.schema, row.name),
+              )
+            }
+          >
+            <Icon name="more" size={14} />
+          </MenuButton>
         </>
       )
     case 'group':

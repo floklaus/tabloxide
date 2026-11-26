@@ -522,7 +522,7 @@ Status of stage 3 on 2026-11-25: stage 3 is complete in code.
 
 Status of stage 4 on 2026-11-25: stage 4 is complete in code.
 
-* The two actions are in the Table view of the results pane, not in a menu of the schema tree. Each row of the tree hides the content outside the row, thus a menu at a row would be cut.
+* The two actions are in the Table view of the results pane. Since 2026-11-26 they are also in the menu of each table in the schema tree, as in the design. The menu opens at the end of the document, because each row of the virtual list cuts its content. The menu does not read a row sample.
 * The UI sends the schema and the name of the table. The backend reads the structure with `relation_detail` and puts it into the request. The UI cannot set the structure, because the field is not in the input.
 * "Write a starter query" opens a new tab only for an answer with exactly one code block. The tab gets the connection of the SQL tab.
 
