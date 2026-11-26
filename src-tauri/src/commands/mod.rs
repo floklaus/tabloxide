@@ -5,6 +5,7 @@ pub mod assistant;
 pub mod assistant_git;
 pub mod assistant_models;
 pub mod connections;
+pub mod console;
 pub mod engines;
 pub mod files;
 pub mod git;

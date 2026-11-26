@@ -192,6 +192,19 @@ export const commands = {
 	/**  Sends the commits of the current branch to the remote. Returns the text that Git wrote. */
 	gitPush: (onEvent: Channel<GitRemoteEvent>, options?: InvokeOptions) => typedError<string, CommandError>(__TAURI_INVOKE("git_push", { onEvent }, options)),
 	/**
+	 *  Checks a line of the Git console, and runs it if the check permits it.
+	 * 
+	 *  A command that can remove work runs only with `confirmed`. The command runs in the
+	 *  root of the repository of the workspace. The line goes into the history.
+	 */
+	gitConsoleRun: (id: number, line: string, confirmed: boolean, onEvent: Channel<GitRemoteEvent>, options?: InvokeOptions) => typedError<ConsoleResult_Serialize, CommandError>(__TAURI_INVOKE("git_console_run", { id, line, confirmed, onEvent }, options)),
+	/**  Stops a console command that runs. The command then returns `is_cancelled`. */
+	gitConsoleCancel: (id: number, options?: InvokeOptions) => __TAURI_INVOKE<void>("git_console_cancel", { id }, options),
+	/**  Returns the earlier lines of the console of the workspace. The oldest is first. */
+	gitConsoleHistory: (options?: InvokeOptions) => typedError<string[], CommandError>(__TAURI_INVOKE("git_console_history", undefined, options)),
+	/**  Returns the names that the console completes: branches, remotes, tags, and files. */
+	gitConsoleNames: (options?: InvokeOptions) => typedError<ConsoleNames, CommandError>(__TAURI_INVOKE("git_console_names", undefined, options)),
+	/**
 	 *  Gives the answer of the user to a credential prompt. `answer` is `null` if the
 	 *  user cancelled. Then Git stops the operation.
 	 */
@@ -774,6 +787,64 @@ export type ConnectionProfile_Serialize = {
 
 /**  Result of a connection test. A failed test is a normal result, not a command error. */
 export type ConnectionTestResult = { status: "connected"; server: ServerInfo } | { status: "failed"; error: ConnectError };
+
+/**  The names that the console completes with the Tab key. */
+export type ConsoleNames = {
+	/**  Local branches, and remote branches as `origin/main`. */
+	branches: string[],
+	remotes: string[],
+	tags: string[],
+	/**  The files of the repository, without the ignored files. */
+	files: string[],
+};
+
+/**  The output of a command of the console. */
+export type ConsoleOutput = ConsoleOutput_Serialize | ConsoleOutput_Deserialize;
+
+/**  The output of a command of the console. */
+export type ConsoleOutput_Deserialize = {
+	stdout: string,
+	stderr: string,
+	is_success: boolean,
+	/**  `true` if the output was longer than the limit. The text has its end. */
+	is_cut: boolean,
+	is_cancelled: boolean,
+	/**  An explanation of the application, for example that Git wanted an editor. */
+	note?: string | null,
+};
+
+/**  The output of a command of the console. */
+export type ConsoleOutput_Serialize = {
+	stdout: string,
+	stderr: string,
+	is_success: boolean,
+	/**  `true` if the output was longer than the limit. The text has its end. */
+	is_cut: boolean,
+	is_cancelled: boolean,
+	/**  An explanation of the application, for example that Git wanted an editor. */
+	note: string | null,
+};
+
+/**  The result of a line of the console. */
+export type ConsoleResult = ConsoleResult_Serialize | ConsoleResult_Deserialize;
+
+/**  The result of a line of the console. */
+export type ConsoleResult_Deserialize = 
+/**  The command did not run, because of `reason`. */
+{ status: "refused"; reason: string } | 
+/**  The command can remove work. It runs only after a confirmation. */
+{ status: "confirm"; effect: string } | 
+/**  The command ran. */
+{ status: "done"; output: ConsoleOutput_Deserialize };
+
+/**  The result of a line of the console. */
+export type ConsoleResult_Serialize = 
+/**  The command did not run, because of `reason`. */
+{ status: "refused"; reason: string } | 
+/**  The command can remove work. It runs only after a confirmation. */
+{ status: "confirm"; effect: string } | 
+/**  The command ran. */
+{ status: "done"; output: ConsoleOutput_Serialize };
 
 export type ConstraintInfo = {
 	name: string,

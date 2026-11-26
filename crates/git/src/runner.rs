@@ -19,7 +19,7 @@ pub struct Git {
     progress: Option<ProgressHandler>,
 }
 
-fn spawn_error(error: std::io::Error) -> GitError {
+pub(crate) fn spawn_error(error: std::io::Error) -> GitError {
     if error.kind() == std::io::ErrorKind::NotFound {
         GitError::NotInstalled
     } else {
@@ -113,7 +113,7 @@ impl Git {
         self.progress.is_some()
     }
 
-    fn command<I, S>(&self, directory: &Path, args: I) -> Command
+    pub(crate) fn command<I, S>(&self, directory: &Path, args: I) -> Command
     where
         I: IntoIterator<Item = S>,
         S: AsRef<OsStr>,

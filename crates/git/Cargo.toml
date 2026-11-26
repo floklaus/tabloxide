@@ -10,6 +10,7 @@ serde = { version = "1.0.229", features = ["derive"] }
 thiserror = "2"
 
 specta = { version = "=2.0.0-rc.28", features = ["derive"], optional = true }
+shell-words = "1"
 
 [features]
 specta = ["dep:specta"]

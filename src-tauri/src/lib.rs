@@ -6,8 +6,8 @@ mod error;
 mod state;
 
 use commands::{
-    app, assistant, assistant_models, connections, engines, files, git, local, plan, queries,
-    schema, sessions, updates, workspace,
+    app, assistant, assistant_models, connections, console, engines, files, git, local, plan,
+    queries, schema, sessions, updates, workspace,
 };
 use tauri::Manager;
 use tauri_specta::{Builder, ErrorHandlingMode, collect_commands};
@@ -76,6 +76,10 @@ fn specta_builder() -> Builder<tauri::Wry> {
             git::git_fetch,
             git::git_pull,
             git::git_push,
+            console::git_console_run,
+            console::git_console_cancel,
+            console::git_console_history,
+            console::git_console_names,
             git::git_credential_answer,
             local::history_search,
             local::history_clear,

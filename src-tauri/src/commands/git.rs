@@ -58,8 +58,8 @@ pub enum GitRemoteEvent {
 
 /// A Git for one remote operation. It sends the progress lines and the credential
 /// prompts to the UI.
-struct RemoteGit {
-    git: Git,
+pub(crate) struct RemoteGit {
+    pub(crate) git: Git,
     /// Keeps the registration for the prompts until the operation ends.
     _prompts: Option<AskpassSession>,
 }
@@ -91,7 +91,7 @@ fn register_prompts(
     Some((session, helper))
 }
 
-fn remote_git(state: &AppState, on_event: Channel<GitRemoteEvent>) -> RemoteGit {
+pub(crate) fn remote_git(state: &AppState, on_event: Channel<GitRemoteEvent>) -> RemoteGit {
     let prompts = register_prompts(state, &on_event);
     let git = Git::new().with_progress(Arc::new(move |line: &str| {
         let line = line.to_owned();

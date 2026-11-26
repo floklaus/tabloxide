@@ -85,7 +85,7 @@ fn check_commit_id(id: &str) -> Result<(), GitError> {
 }
 
 impl Git {
-    fn has_revision(&self, root: &Path, revision: &str) -> Result<bool, GitError> {
+    pub(crate) fn has_revision(&self, root: &Path, revision: &str) -> Result<bool, GitError> {
         let commit = format!("{revision}^{{commit}}");
         let output = self.output(root, ["rev-parse", "--verify", "--quiet", &commit])?;
         Ok(output.is_success)
