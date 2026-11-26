@@ -52,10 +52,13 @@ need_root() { [ "$(id -u)" -eq 0 ] || die "run this script as root (sudo)"; }
 # `ps` would show it.
 config_as_runner() {
   local secret
-  secret="$(mktemp)"
-  chown "$RUNNER_USER" "$secret"
+  # The file is in the runner folder, not in /tmp. In /tmp, the kernel setting
+  # fs.protected_regular stops root from writing to a file of a different user.
+  # Root writes the token first, and gives the file to the runner user after that.
+  secret="$(mktemp "$RUNNER_DIR/.token.XXXXXX")"
   chmod 600 "$secret"
   printf '%s' "$RUNNER_TOKEN" > "$secret"
+  chown "$RUNNER_USER" "$secret"
   local status=0
   # The inner shell expands the variables, so the single quotes are correct.
   # shellcheck disable=SC2016
