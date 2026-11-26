@@ -749,6 +749,7 @@ Status of stages 1 and 2 on 2026-11-26: complete in code.
 * "Insert" and "Replace in the editor" are only on a block with a tag of the language of the tab, or without a tag. A different block gets "Copy" only. For a language without a guide, the panel shows a note.
 * The structure text says "collection" and "fields" for MongoDB. `RelationDetail` has the field `columns_from_sample`, in the core and in the protocol. The protocol minor version is now 2. The MongoDB connector sets the field.
 * The structure text and the "Sent:" line tell that the fields come from a sample. A test of the MongoDB connector proves that the fields of a sample have no values.
+* Stage 4 on 2026-11-26: a proposed code block and the preview of `Ctrl+I` show the risk of their statements, from the classifier of the language through `query_preview`. A language without a classifier shows "The application cannot check this statement." The texts of the risks are in `ui/src/query/riskLabels.ts`, with the words of MongoDB where they are different. The run confirmation uses the same texts.
 * The statement at the cursor needs no new command `statement_at`. The command `query_preview` already takes the language, and the editor actions use it.
 
 ## 7. Tests

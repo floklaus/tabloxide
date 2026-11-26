@@ -3,7 +3,7 @@ import { create } from 'zustand'
 import {
   commands,
   type Environment,
-  type Risk,
+  type QueryLanguage_Serialize as QueryLanguage,
   type RunTarget,
   type StatementPreview_Serialize,
 } from '../bindings'
@@ -12,20 +12,9 @@ import { usePreferencesStore } from '../preferences/preferencesStore'
 import { sqlTabForTools } from '../tabs/tabsStore'
 import { useWorkspaceStore } from '../workspace/workspaceStore'
 import { activeQueryStore } from './queryStore'
+import { riskLabel } from './riskLabels'
 
 const PREVIEW_LENGTH = 80
-
-const RISK_LABELS: Record<Risk, string> = {
-  drop: 'DROP removes an object',
-  truncate: 'TRUNCATE removes all rows',
-  alter: 'ALTER changes the structure',
-  'delete-without-where': 'DELETE without WHERE removes all rows',
-  'update-without-where': 'UPDATE without WHERE changes all rows',
-  'write-file': 'The statement writes files on the disk',
-  'load-extension': 'The statement adds program code to the database engine',
-  overwrite: 'The statement replaces or changes the documents of a collection',
-  unchecked: 'The application cannot check this statement',
-}
 
 export type RiskyStatement = { text: string; reason: string }
 
@@ -64,6 +53,7 @@ export const useRunConfirmStore = create<RunConfirmState>((set, get) => ({
 function toRisky(
   sql: string,
   previews: StatementPreview_Serialize[],
+  language: QueryLanguage,
 ): RiskyStatement[] {
   return previews.flatMap((preview) => {
     if (!preview.risk) return []
@@ -72,7 +62,7 @@ function toRisky(
       .replace(/\s+/g, ' ')
     const short =
       text.length > PREVIEW_LENGTH ? `${text.slice(0, PREVIEW_LENGTH)}…` : text
-    return [{ text: short, reason: RISK_LABELS[preview.risk] }]
+    return [{ text: short, reason: riskLabel(preview.risk, language) }]
   })
 }
 
@@ -97,18 +87,15 @@ export async function requestRun(
     return
   }
   let previews: StatementPreview_Serialize[]
+  const language = engineLanguage(connection.engine ?? 'postgres')
   try {
-    previews = await commands.queryPreview(
-      sql,
-      target,
-      engineLanguage(connection.engine ?? 'postgres'),
-    )
+    previews = await commands.queryPreview(sql, target, language)
   } catch (error) {
     // Without the preview, the application cannot know the risk. It does not run.
     activeQueryStore().getState().setNotice(toMessage(error))
     return
   }
-  const risky = toRisky(sql, previews)
+  const risky = toRisky(sql, previews, language)
   const asksAlways = rule === 'always' && previews.length > 0
   if (risky.length === 0 && !asksAlways) {
     start(run)

@@ -220,6 +220,19 @@ describe('AI change of the selection', () => {
     ).toBeInTheDocument()
   })
 
+  test('the preview shows the risk of the proposed text', async () => {
+    const { user, editor } = setup()
+    queryPreview.mockResolvedValue([{ range: SECOND, risk: 'drop' }])
+    answerWith(block('drop table orders'))
+    const input = await openChange(user, editor)
+
+    await user.type(input, 'Remove the table.{Enter}')
+
+    expect(
+      await screen.findByText('Before you run it: DROP removes an object.'),
+    ).toBeInTheDocument()
+  })
+
   test('Ctrl+Shift+I explains the selection in the assistant panel', async () => {
     const { user, editor } = setup()
     answerWith('It reads all orders.')

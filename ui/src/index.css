@@ -3314,6 +3314,7 @@ body {
 }
 
 .inline-change__hint,
+.inline-change__risk,
 .inline-change__error {
   margin: 0;
   font-size: 12px;
@@ -3520,4 +3521,18 @@ body {
 .assistant__block-note {
   color: var(--color-text-muted);
   font-size: 12px;
+}
+
+.assistant__block-actions {
+  flex-wrap: wrap;
+}
+
+.assistant__block-risk {
+  flex-basis: 100%;
+  color: var(--color-danger);
+  font-size: 12px;
+}
+
+.inline-change__risk {
+  color: var(--color-danger);
 }

@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { commands } from '../bindings'
 import { useTabsStore, type Tab } from '../tabs/tabsStore'
@@ -99,5 +99,34 @@ describe('the language of a code block', () => {
     expect(
       screen.queryByText(/no guide of the AI for the query language/),
     ).not.toBeInTheDocument()
+  })
+
+  test('a proposed block shows its risk from the classifier of the language', async () => {
+    vi.mocked(commands.queryPreview).mockResolvedValue([
+      { range: { from: 0, to: 23 }, risk: 'delete-without-where' },
+    ])
+    showAnswer('mongodb', '```mongodb\ndb.users.deleteMany({})\n```')
+
+    expect(
+      await screen.findByText(
+        'Before you run it: The statement deletes all documents of the collection.',
+      ),
+    ).toBeInTheDocument()
+    expect(commands.queryPreview).toHaveBeenCalledWith(
+      'db.users.deleteMany({})',
+      { type: 'all' },
+      'mongodb-shell',
+    )
+  })
+
+  test('a block without a risk shows no risk', async () => {
+    vi.mocked(commands.queryPreview).mockResolvedValue([
+      { range: { from: 0, to: 8 }, risk: null },
+    ])
+    showAnswer('postgres', '```sql\nselect 1\n```')
+
+    await screen.findByText('select 1')
+    await waitFor(() => expect(commands.queryPreview).toHaveBeenCalled())
+    expect(screen.queryByText(/Before you run it/)).not.toBeInTheDocument()
   })
 })

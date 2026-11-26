@@ -3,6 +3,7 @@ import { activeEditor } from '../editor/editorBridge'
 import { sqlTabIdOf, useTabsStore } from '../tabs/tabsStore'
 import { splitAnswer } from './answerSegments'
 import { fitsLanguage, KNOWN_LANGUAGES, useTabLanguage } from './codeLanguage'
+import { useStatementRisk } from './statementRisk'
 import type {
   AssistantMessage,
   AssistantStatus,
@@ -61,6 +62,7 @@ function CodeBlock(props: {
   const language = useTabLanguage()
   // Only a block in the language of the tab can go into the editor.
   const fits = fitsLanguage(tag, language)
+  const risk = useStatementRisk(code, language, canInsert && fits && isComplete)
   return (
     <div className="assistant__block">
       {/* The block can scroll. The keyboard needs the focus to scroll it. */}
@@ -69,6 +71,11 @@ function CodeBlock(props: {
       </pre>
       {canInsert && (
         <div className="assistant__block-actions">
+          {risk && (
+            <span className="assistant__block-risk" role="note">
+              {risk}
+            </span>
+          )}
           {!fits && (
             <span className="assistant__block-note">
               This block is not in the language of the tab. You can copy it.

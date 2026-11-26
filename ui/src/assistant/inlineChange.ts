@@ -4,10 +4,11 @@ import { activeEditor } from '../editor/editorBridge'
 import { connectionLanguage } from '../engines/engineStore'
 import { toMessage } from '../lib/errors'
 import { useShellStore } from '../shell/shellStore'
-import { sqlTabForTools, type Tab } from '../tabs/tabsStore'
+import { sqlTabForTools, useTabsStore, type Tab } from '../tabs/tabsStore'
 import { onlyCodeBlock } from './answerSegments'
 import { createSession, type SessionStore } from './assistantSession'
 import { runAiAction, useAssistantStore } from './assistantStore'
+import { statementRisk } from './statementRisk'
 
 /** The text that an AI action of the editor uses. */
 export type EditorText = { tab: Tab; from: number; to: number; text: string }
@@ -77,6 +78,8 @@ type InlineState = {
   proposal: string | null
   /** What the last request sent, for example "Sent: your request." */
   sent: string | null
+  /** The risk of the proposed text, for example a drop, or `null`. */
+  risk: string | null
   error: string | null
 
   /** Ctrl+I: opens the instruction field for the selection or the statement. */
@@ -103,6 +106,7 @@ const CLOSED = {
   instruction: '',
   proposal: null,
   sent: null,
+  risk: null,
   error: null,
 }
 
@@ -183,14 +187,23 @@ export const useInlineChange = create<InlineState>((set, get) => {
         set({ phase: 'instruction', error: state.error ?? NOT_ONE_BLOCK })
         return
       }
-      const { from, to } = get()
+      const { from, to, tabId } = get()
       activeEditor()?.showProposal({ from, to, text: proposal })
       set({
         phase: 'preview',
         proposal,
         sent: request?.sent ?? null,
+        risk: null,
         instruction: '',
       })
+      // The user sees the risk of the proposal before the accept.
+      const tab = useTabsStore.getState().tabs.find((item) => item.id === tabId)
+      statementRisk(proposal, connectionLanguage(tab?.connectionId))
+        .then((risk) => {
+          if (number === requestNumber && get().phase === 'preview')
+            set({ risk })
+        })
+        .catch(() => {})
     },
 
     accept: () => {

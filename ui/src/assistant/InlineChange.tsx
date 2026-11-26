@@ -134,6 +134,11 @@ export function InlineChange() {
           </button>
         </div>
       )}
+      {phase === 'preview' && state.risk && (
+        <p className="inline-change__risk" role="note">
+          {state.risk}
+        </p>
+      )}
       {state.error && (
         <p className="message message--error inline-change__error" role="alert">
           {state.error}
