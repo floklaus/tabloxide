@@ -1,3 +1,4 @@
+import { engineLanguage, findEngine } from '../engines/engineStore'
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { commands as backend } from '../bindings'
@@ -116,6 +117,12 @@ export function buildCommands(): Command[] {
   const always = () => true
   const hasTab = () => activeTab() !== undefined
   const hasConnection = () => activeConnection() !== undefined
+  // Only the SQL engines give a plan.
+  const canExplain = () =>
+    canRun() &&
+    (findEngine(activeConnection()?.engine ?? 'postgres')?.info.capabilities
+      .explainPlan ??
+      false)
   const commands: Command[] = [
     // File
     {
@@ -220,14 +227,14 @@ export function buildCommands(): Command[] {
       id: 'query.explain',
       label: 'Explain the statement at the cursor',
       group: 'Query',
-      isEnabled: canRun,
+      isEnabled: canExplain,
       run: () => usePlanStore.getState().read(false),
     },
     {
       id: 'query.explain-analyze',
       label: 'Explain analyze the statement at the cursor',
       group: 'Query',
-      isEnabled: canRun,
+      isEnabled: canExplain,
       run: () => usePlanStore.getState().read(true),
     },
     {
@@ -235,7 +242,9 @@ export function buildCommands(): Command[] {
       label: 'Format the SQL',
       group: 'Query',
       shortcut: 'Shift+Alt+F',
-      isEnabled: hasTab,
+      isEnabled: () =>
+        hasTab() &&
+        engineLanguage(activeConnection()?.engine ?? 'postgres') === 'sql',
       run: () => activeEditor()?.format(),
     },
     // Connections

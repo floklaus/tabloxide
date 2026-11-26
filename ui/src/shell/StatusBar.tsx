@@ -1,3 +1,4 @@
+import { serverLabel } from '../engines/engineStore'
 import { useRunningSessions } from '../assistant/useSessions'
 import { useQuery } from '../query/queryStore'
 import { sqlTabOf, useTabsStore } from '../tabs/tabsStore'
@@ -30,9 +31,7 @@ export function StatusBar() {
   const running = useRunningSessions()
   const connection = connections.find((item) => item.id === connectionId)
   const server = session
-    ? connection?.engine === 'duckdb'
-      ? session.version
-      : `PostgreSQL ${session.version}`
+    ? serverLabel(connection?.engine ?? 'postgres', session.version)
     : 'not connected'
 
   return (

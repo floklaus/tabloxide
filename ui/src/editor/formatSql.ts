@@ -2,7 +2,7 @@ import { format } from 'sql-formatter'
 import type { Engine } from '../bindings'
 
 /** The SQL dialect of the formatter for each database engine. */
-const LANGUAGES: Record<Engine, 'postgresql' | 'duckdb'> = {
+const LANGUAGES: Record<string, 'postgresql' | 'duckdb'> = {
   postgres: 'postgresql',
   duckdb: 'duckdb',
 }
@@ -19,6 +19,9 @@ export function formatSql(
   engine: Engine,
   tabWidth: number,
 ): FormatResult {
+  if (!(engine in LANGUAGES)) {
+    return { ok: false, message: 'The formatter knows only SQL.' }
+  }
   try {
     const formatted = format(text, {
       language: LANGUAGES[engine],

@@ -24,7 +24,7 @@ pub struct InstallRecord {
     /// The SHA-256 checksum of the package, in hexadecimal.
     pub sha256: String,
     /// Seconds since 1970-01-01 UTC.
-    #[cfg_attr(feature = "specta", specta(type = f64))]
+    #[cfg_attr(feature = "specta", specta(type = u32))]
     pub installed_at: u64,
 }
 

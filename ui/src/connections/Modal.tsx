@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import { Icon } from '../shell/icons'
 import {
   useEffect,
@@ -75,7 +76,9 @@ export function Modal({
     }
   }, [])
 
-  return (
+  // The dialog is a child of the body. Thus a dialog that opens from a different
+  // dialog is not inside the box of that dialog.
+  return createPortal(
     <div
       className="modal__backdrop"
       // A click on the area around the dialog must not take the focus out of the
@@ -96,6 +99,8 @@ export function Modal({
             event.stopPropagation()
             onClose()
           } else if (event.key === 'Tab') {
+            // Only the innermost dialog keeps the focus.
+            event.stopPropagation()
             keepFocusInside(event, event.currentTarget)
           }
         }}
@@ -118,6 +123,7 @@ export function Modal({
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

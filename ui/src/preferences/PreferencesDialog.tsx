@@ -1,3 +1,4 @@
+import { ConnectorsSettings } from '../engines/ConnectorsSettings'
 import {
   useEffect,
   useRef,
@@ -83,6 +84,7 @@ const TABS = [
   { id: 'editor', label: 'Editor' },
   { id: 'confirm', label: 'Ask before a run' },
   { id: 'assistant', label: 'AI assistant' },
+  { id: 'connectors', label: 'Connectors' },
   { id: 'updates', label: 'Updates' },
 ] as const
 
@@ -289,6 +291,9 @@ export function PreferencesDialog({ onClose }: Props) {
               <ApiKeyField />
             </div>
           </fieldset>
+        </Panel>
+        <Panel id="connectors" selected={tab}>
+          <ConnectorsSettings />
         </Panel>
         <Panel id="updates" selected={tab}>
           <UpdateSettings

@@ -201,6 +201,7 @@ describe('PreferencesDialog', () => {
       'Editor',
       'Ask before a run',
       'AI assistant',
+      'Connectors',
       'Updates',
     ])
     expect(screen.getByRole('tabpanel')).toHaveAccessibleName('Appearance')

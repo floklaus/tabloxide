@@ -12,6 +12,7 @@ import {
   historyKeymap,
   indentWithTab,
 } from '@codemirror/commands'
+import { javascript, javascriptLanguage } from '@codemirror/lang-javascript'
 import { PostgreSQL, sql } from '@codemirror/lang-sql'
 import {
   bracketMatching,
@@ -20,7 +21,7 @@ import {
   syntaxHighlighting,
 } from '@codemirror/language'
 import { highlightSelectionMatches, searchKeymap } from '@codemirror/search'
-import { EditorState, type Extension } from '@codemirror/state'
+import { Compartment, EditorState, type Extension } from '@codemirror/state'
 import {
   drawSelection,
   EditorView,
@@ -34,6 +35,7 @@ import { useEffect, useImperativeHandle, useRef, type Ref } from 'react'
 import type {
   EditorPreferences_Serialize,
   Engine,
+  QueryLanguage_Serialize,
   RunTarget,
 } from '../bindings'
 import { formatSql } from './formatSql'
@@ -66,6 +68,8 @@ export type CodeEditorProps = {
   onCursorChange?: (cursor: { line: number; column: number }) => void
   /** The database engine whose SQL syntax the formatter uses. */
   engine?: Engine
+  /** The query language of the tab. It selects the syntax highlighting. */
+  language?: QueryLanguage_Serialize
   /** Receives the message when the formatter cannot read the SQL. */
   onFormatError?: (message: string) => void
   /** Gives completion options for the database of the tab. The keywords come from SQL. */
@@ -131,10 +135,40 @@ function preferenceExtensions(preferences: EditorPreferences): Extension[] {
   ]
 }
 
+/** The syntax and the completion of the query language. Each tab can have its own. */
+const languageCompartment = new Compartment()
+
+function languageExtensions(
+  language: QueryLanguage_Serialize,
+  callbacks: { current: Callbacks },
+): Extension {
+  const autocomplete = (context: CompletionContext) =>
+    callbacks.current.completionSource?.(context) ?? null
+  switch (language) {
+    case 'sql':
+      return [
+        EditorView.contentAttributes.of({ 'aria-label': 'SQL' }),
+        sql({ dialect: PostgreSQL }),
+        // The completion of the database joins the keyword completion of the language.
+        PostgreSQL.language.data.of({ autocomplete }),
+      ]
+    case 'mongodb-shell':
+      // The MongoDB statements are JavaScript calls. The application runs no JavaScript.
+      return [
+        EditorView.contentAttributes.of({ 'aria-label': 'MongoDB statements' }),
+        javascript(),
+        javascriptLanguage.data.of({ autocomplete }),
+      ]
+    default:
+      return [EditorView.contentAttributes.of({ 'aria-label': 'Statements' })]
+  }
+}
+
 function makeState(
   doc: string,
   preferences: EditorPreferences,
   callbacks: { current: Callbacks },
+  language: QueryLanguage_Serialize,
 ): EditorState {
   const run =
     (target: (state: EditorState) => RunTarget) => (view: EditorView) => {
@@ -151,12 +185,7 @@ function makeState(
       closeBrackets(),
       highlightActiveLine(),
       highlightSelectionMatches(),
-      sql({ dialect: PostgreSQL }),
-      // The completion of the database joins the keyword completion of the language.
-      PostgreSQL.language.data.of({
-        autocomplete: (context: CompletionContext) =>
-          callbacks.current.completionSource?.(context) ?? null,
-      }),
+      languageCompartment.of(languageExtensions(language, callbacks)),
       autocompletion({ icons: false }),
       syntaxHighlighting(classHighlighter),
       preferenceExtensions(preferences),
@@ -195,7 +224,6 @@ function makeState(
           })
         }
       }),
-      EditorView.contentAttributes.of({ 'aria-label': 'SQL' }),
     ],
   })
 }
@@ -203,9 +231,12 @@ function makeState(
 /** The SQL editor. One editor shows the text of the active tab. */
 export function CodeEditor(props: CodeEditorProps) {
   const { ref, tabId, value, preferences } = props
+  const language = props.language ?? 'sql'
   const hostRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   const statesRef = useRef(new Map<string, EditorState>())
+  /** The language that the stored state of each tab has. */
+  const languagesRef = useRef(new Map<string, QueryLanguage_Serialize>())
   const shownRef = useRef<{
     tabId: string
     preferences: EditorPreferences
@@ -233,12 +264,13 @@ export function CodeEditor(props: CodeEditorProps) {
     if (shown?.preferences !== preferences) {
       // New preferences need new editor states. The undo history starts again.
       states.clear()
+      languagesRef.current.clear()
     } else if (shown.tabId !== tabId) {
       states.set(shown.tabId, view.state)
     }
     if (shown?.tabId !== tabId || shown.preferences !== preferences) {
       view.setState(
-        states.get(tabId) ?? makeState(value, preferences, callbacks),
+        states.get(tabId) ?? makeState(value, preferences, callbacks, language),
       )
       shownRef.current = { tabId, preferences }
     }
@@ -248,7 +280,19 @@ export function CodeEditor(props: CodeEditorProps) {
         changes: { from: 0, to: view.state.doc.length, insert: value },
       })
     }
-  }, [tabId, value, preferences])
+    // A tab can change its connection, and with it its language.
+    const languages = languagesRef.current
+    if (!languages.has(tabId)) {
+      languages.set(tabId, language)
+    } else if (languages.get(tabId) !== language) {
+      view.dispatch({
+        effects: languageCompartment.reconfigure(
+          languageExtensions(language, callbacks),
+        ),
+      })
+      languages.set(tabId, language)
+    }
+  }, [tabId, value, preferences, language])
 
   useImperativeHandle(ref, () => ({
     getTarget: () =>

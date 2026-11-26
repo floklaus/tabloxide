@@ -1,3 +1,4 @@
+import { findEngine } from '../engines/engineStore'
 import type {
   ConnectionProfile_Serialize,
   Engine,
@@ -28,23 +29,44 @@ export type ConnectionDraft = {
   secretKind: SecretKind
   envVarName: string
   readOnly: boolean
+  /** MongoDB: the database that has the user. Empty means the database of the connection. */
+  authSource: string
+  /** MongoDB: the host is a DNS seed list (`mongodb+srv://`), as MongoDB Atlas uses. */
+  isSrv: boolean
+}
+
+/** The engine with its own fields in the form. */
+export const MONGODB: Engine = 'mongodb'
+const AUTH_SOURCE_PARAM = 'authSource'
+const SRV_PARAM = 'srv'
+
+/** The parameters that the MongoDB form shows in their own fields. */
+function ownFieldParams(engine: Engine): string[] {
+  return engine === MONGODB ? [AUTH_SOURCE_PARAM, SRV_PARAM] : []
 }
 
 export type DraftResult =
   | { ok: true; profile: ConnectionProfile }
   | { ok: false; issues: ValidationIssue[] }
 
-function paramsToText(params: ConnectionProfile['params']): string {
+function paramsToText(
+  params: ConnectionProfile['params'],
+  engine: Engine,
+): string {
+  const own = ownFieldParams(engine)
   return Object.entries(params ?? {})
+    .filter(([name]) => !own.includes(name))
     .map(([name, value]) => `${name}=${value}`)
     .join('\n')
 }
 
 export function toDraft(profile: ConnectionProfile): ConnectionDraft {
+  const engine = profile.engine ?? 'postgres'
+  const params = profile.params ?? {}
   return {
     id: profile.id,
     name: profile.name,
-    engine: profile.engine ?? 'postgres',
+    engine,
     environment: profile.environment,
     host: profile.host,
     port: String(profile.port),
@@ -57,10 +79,12 @@ export function toDraft(profile: ConnectionProfile): ConnectionDraft {
       profile.query_timeout_secs === undefined
         ? ''
         : String(profile.query_timeout_secs),
-    params: paramsToText(profile.params),
+    params: paramsToText(profile.params, engine),
     secretKind: profile.secret.type,
     envVarName: profile.secret.type === 'env-var' ? profile.secret.name : '',
     readOnly: profile.read_only ?? false,
+    authSource: engine === MONGODB ? (params[AUTH_SOURCE_PARAM] ?? '') : '',
+    isSrv: engine === MONGODB && params[SRV_PARAM] === 'true',
   }
 }
 
@@ -106,16 +130,46 @@ const FILE_ENGINE_DEFAULTS = {
 
 /** Returns `true` if the database of the engine is a file and not a server. */
 export function isFileEngine(engine: Engine): boolean {
-  return engine === 'duckdb'
+  return (
+    findEngine(engine)?.info.capabilities.fileDatabase ?? engine === 'duckdb'
+  )
 }
 
-/** Returns the draft for a different engine. A database file has no password. */
+/** Returns the port of a new connection of the engine. */
+export function defaultPort(engine: Engine): number | null {
+  return findEngine(engine)?.info.defaultPort ?? null
+}
+
+/**
+ * Returns the draft for a different engine. A database file has no password. The
+ * port changes to the port of the new engine if it was the port of the old engine.
+ */
 export function withEngine(
   draft: ConnectionDraft,
   engine: Engine,
 ): ConnectionDraft {
   const secretKind = isFileEngine(engine) ? 'none' : 'keychain'
-  return { ...draft, engine, secretKind }
+  const oldPort = defaultPort(draft.engine)
+  const newPort = defaultPort(engine)
+  const hasDefaultPort =
+    draft.port.trim() === '' ||
+    oldPort === null ||
+    draft.port === String(oldPort)
+  const port = hasDefaultPort && newPort !== null ? String(newPort) : draft.port
+  return { ...draft, engine, secretKind, port }
+}
+
+/** Adds the parameters of the own fields of the engine. */
+function withOwnFieldParams(
+  draft: ConnectionDraft,
+  params: Record<string, string>,
+): Record<string, string> {
+  if (draft.engine !== MONGODB) return params
+  const own: Record<string, string> = {}
+  if (draft.authSource.trim() !== '')
+    own[AUTH_SOURCE_PARAM] = draft.authSource.trim()
+  if (draft.isSrv) own[SRV_PARAM] = 'true'
+  return { ...params, ...own }
 }
 
 /** Converts the form state of a database file to a profile. */
@@ -196,11 +250,13 @@ export function toProfile(draft: ConnectionDraft): DraftResult {
   }
 
   const socketPath = draft.socketPath.trim()
+  const allParams = withOwnFieldParams(draft, params)
   return {
     ok: true,
     profile: {
       id: draft.id,
       name: draft.name.trim(),
+      engine: draft.engine,
       environment: draft.environment,
       host: draft.host.trim(),
       port,
@@ -213,7 +269,7 @@ export function toProfile(draft: ConnectionDraft): DraftResult {
       ...(queryTimeout === undefined
         ? {}
         : { query_timeout_secs: queryTimeout }),
-      ...(Object.keys(params).length === 0 ? {} : { params }),
+      ...(Object.keys(allParams).length === 0 ? {} : { params: allParams }),
       ...(draft.readOnly ? { read_only: true } : {}),
     },
   }

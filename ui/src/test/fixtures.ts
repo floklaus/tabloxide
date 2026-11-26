@@ -7,6 +7,7 @@ export function makeProfile(
   return {
     id: 'id-1',
     name: 'Local',
+    engine: 'postgres',
     environment: 'development',
     host: 'localhost',
     port: 5432,

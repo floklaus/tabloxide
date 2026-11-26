@@ -51,7 +51,9 @@ export function CodeEditor(props: CodeEditorProps) {
   return (
     <textarea
       ref={inputRef}
-      aria-label="SQL"
+      aria-label={
+        props.language === 'mongodb-shell' ? 'MongoDB statements' : 'SQL'
+      }
       value={value}
       onChange={(event) => onChange(event.target.value)}
       onKeyDown={onKeyDown}

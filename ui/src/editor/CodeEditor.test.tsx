@@ -40,6 +40,7 @@ function setup(
     preferences,
     completionSource: initial.completionSource,
     onFormatError: initial.onFormatError,
+    language: 'sql' as CodeEditorProps['language'],
     ...handlers,
   }
   const { container, rerender } = render(<CodeEditor {...props} />)
@@ -54,6 +55,20 @@ function setup(
 }
 
 describe('CodeEditor', () => {
+  test('changes the syntax and the label when the language of the tab changes', () => {
+    const { update, container } = setup({ value: 'db.users.find({ a: 1 })' })
+    const content = () => container.querySelector('.cm-content')
+
+    expect(content()).toHaveAttribute('aria-label', 'SQL')
+    update({ language: 'mongodb-shell' })
+
+    expect(content()).toHaveAttribute('aria-label', 'MongoDB statements')
+    // The JavaScript mode marks `users` and `find` as property names.
+    expect(container.querySelector('.tok-propertyName')?.textContent).toBe(
+      'users',
+    )
+  })
+
   test('shows the text with line numbers and SQL highlighting', () => {
     const { view, container } = setup()
 

@@ -338,4 +338,34 @@ describe('QueryEditor', () => {
     expect(await screen.findByText('DuckDB v2.0.0')).toBeInTheDocument()
     expect(screen.queryByText(/PostgreSQL/)).not.toBeInTheDocument()
   })
+
+  test('shows the MongoDB version and switches the editor to the MongoDB syntax', async () => {
+    const mongo = makeProfile({
+      id: 'id-4',
+      name: 'Docs',
+      engine: 'mongodb',
+      port: 27017,
+    })
+    useWorkspaceStore.setState({ workspace: makeWorkspace([mongo]) })
+    render(<QueryEditor />)
+    sessionOpen.mockResolvedValue(
+      ok({
+        status: 'connected',
+        session: {
+          id: 10,
+          connection_id: 'id-4',
+          database: 'app',
+          server: { version: '8.0.4' },
+        },
+      }),
+    )
+
+    await act(async () => switchConnection('id-4'))
+
+    expect(await screen.findByText('MongoDB 8.0.4')).toBeInTheDocument()
+    expect(
+      await screen.findByRole('textbox', { name: 'MongoDB statements' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: 'SQL' })).toBeNull()
+  })
 })

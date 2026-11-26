@@ -22,6 +22,50 @@ const KNOWN_LANGUAGES: Record<string, QueryLanguage_Serialize> = {
   mongodb: 'mongodb-shell',
 }
 
+const capabilities = (fileDatabase: boolean, unixSocket: boolean) => ({
+  cancel: true,
+  unixSocket,
+  fileDatabase,
+  explainPlan: true,
+})
+
+/**
+ * The engines before the first load. They are the same as the list of the backend
+ * without installed connectors.
+ */
+export const DEFAULT_ENGINES: EngineEntry_Serialize[] = [
+  {
+    info: {
+      engine: 'postgres',
+      displayName: 'PostgreSQL',
+      language: 'sql',
+      defaultPort: 5432,
+      capabilities: capabilities(false, true),
+    },
+    source: { type: 'built-in' },
+  },
+  {
+    info: {
+      engine: 'duckdb',
+      displayName: 'DuckDB',
+      language: 'sql',
+      defaultPort: null,
+      capabilities: capabilities(true, false),
+    },
+    source: { type: 'built-in' },
+  },
+  {
+    info: {
+      engine: 'mongodb',
+      displayName: 'MongoDB',
+      language: 'mongodb-shell',
+      defaultPort: 27017,
+      capabilities: { ...capabilities(false, false), explainPlan: false },
+    },
+    source: { type: 'available' },
+  },
+]
+
 type EngineState = {
   /** The built-in engines and the installed connectors. */
   engines: EngineEntry_Serialize[]
@@ -30,7 +74,7 @@ type EngineState = {
 }
 
 export const useEngineStore = create<EngineState>((set) => ({
-  engines: [],
+  engines: DEFAULT_ENGINES,
   error: null,
   load: async () => {
     try {
@@ -73,4 +117,13 @@ export function connectionLanguage(
     .getState()
     .workspace?.connections.find((item) => item.id === connectionId)
   return engineLanguage(connection?.engine ?? 'postgres')
+}
+
+/**
+ * Returns the server text, for example "PostgreSQL 17.2". A version text that
+ * already starts with the engine name stays as it is, for example "DuckDB v1.2.0".
+ */
+export function serverLabel(engine: Engine, version: string): string {
+  const label = engineLabel(engine)
+  return version.startsWith(label) ? version : `${label} ${version}`
 }

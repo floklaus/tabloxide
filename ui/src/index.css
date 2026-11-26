@@ -3173,3 +3173,59 @@ body {
   background: var(--color-bg);
   text-align: center;
 }
+
+/* Connectors: the download dialog, the install from a file, and the Preferences tab. */
+.connector__facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.35rem 1rem;
+  margin: 0.75rem 0;
+}
+
+.connector__facts dt {
+  color: var(--color-text-muted);
+}
+
+.connector__facts dd {
+  margin: 0;
+}
+
+.connector__checksum {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  overflow-wrap: anywhere;
+}
+
+.connector__progress {
+  width: 100%;
+  accent-color: var(--color-accent);
+}
+
+.message--warning {
+  border-color: var(--color-env-staging);
+}
+
+.connector__list {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+}
+
+.connector__row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.connector__name {
+  font-weight: 600;
+  min-width: 8rem;
+}
+
+.connector__source {
+  flex: 1;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}

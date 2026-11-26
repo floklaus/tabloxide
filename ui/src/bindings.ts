@@ -635,7 +635,7 @@ export type DownloadEvent =
 /**  Tabloxide loads and checks the list of connectors. */
 { type: "loading-index" } | 
 /**  The download of the package starts. */
-{ type: "downloading"; version: string; size: number | null } | { type: "progress"; received: number | null } | 
+{ type: "downloading"; version: string; size: number } | { type: "progress"; received: number } | 
 /**  Tabloxide checks and unpacks the package. */
 { type: "checking" };
 

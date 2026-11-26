@@ -1,4 +1,4 @@
-import { engineLabel } from '../engines/engineStore'
+import { engineLabel, serverLabel } from '../engines/engineStore'
 import type { Engine, Environment } from '../bindings'
 import { useConnectionStore } from '../connections/connectionStore'
 import { useGitStore } from '../git/gitStore'
@@ -73,8 +73,7 @@ export function connectionItems(filter = ''): MenuItem[] {
 
 /** The engine, with the server version if the tab is connected. */
 function serverText(engine: Engine, version: string | null): string {
-  const label = engineLabel(engine)
-  return version === null ? label : `${label} ${version}`
+  return version === null ? engineLabel(engine) : serverLabel(engine, version)
 }
 
 /** Writes the commits to push and to pull, for example "↑1 ↓2". */

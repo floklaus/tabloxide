@@ -9,6 +9,7 @@ import {
 } from './connectionStore'
 import { Field } from './Field'
 import {
+  MONGODB,
   isFileEngine,
   issueFor,
   toDraft,
@@ -18,12 +19,11 @@ import {
   type ConnectionProfile,
 } from './formModel'
 import { Modal } from './Modal'
-import {
-  ENGINE_OPTIONS,
-  ENVIRONMENT_OPTIONS,
-  SECRET_OPTIONS,
-  TLS_OPTIONS,
-} from './options'
+import { ConnectorDownloadDialog } from '../engines/ConnectorDownloadDialog'
+import { findEngine, useEngineStore } from '../engines/engineStore'
+import { InstallFromFile } from '../engines/InstallFromFile'
+import { EngineSelect, INSTALL_FROM_FILE } from './EngineSelect'
+import { ENVIRONMENT_OPTIONS, SECRET_OPTIONS, TLS_OPTIONS } from './options'
 import { TestResult } from './TestResult'
 
 type ConnectionFormProps = {
@@ -44,13 +44,29 @@ export function ConnectionForm({
   const [saveError, setSaveError] = useState<string | null>(null)
   const [testState, setTestState] = useState<TestState>()
   const [isBusy, setIsBusy] = useState(false)
+  /** The engine whose connector the user must download first. */
+  const [download, setDownload] = useState<Engine | null>(null)
+  const [isInstallingFile, setIsInstallingFile] = useState(false)
+  useEngineStore((state) => state.engines)
+
+  const selectEngine = (engine: Engine) => {
+    if (engine === INSTALL_FROM_FILE) {
+      setIsInstallingFile(true)
+      return
+    }
+    if (findEngine(engine)?.source.type === 'available') {
+      setDownload(engine)
+      return
+    }
+    setDraft((current) => withEngine(current, engine))
+  }
 
   const update = <K extends keyof ConnectionDraft>(
     key: K,
     value: ConnectionDraft[K],
   ) => setDraft((current) => ({ ...current, [key]: value }))
 
-  const text = (key: Exclude<keyof ConnectionDraft, 'readOnly'>) => ({
+  const text = (key: Exclude<keyof ConnectionDraft, 'readOnly' | 'isSrv'>) => ({
     value: draft[key],
     onChange: (event: { target: { value: string } }) =>
       update(key, event.target.value as never),
@@ -91,6 +107,10 @@ export function ConnectionForm({
 
   const error = (field: string) => issueFor(issues, field)
   const isFile = isFileEngine(draft.engine)
+  const isMongo = draft.engine === MONGODB
+  const hasSocket =
+    findEngine(draft.engine)?.info.capabilities.unixSocket ??
+    draft.engine === 'postgres'
 
   /** Lets the user select a database file. A file in the workspace gets a relative path. */
   const chooseFile = async () => {
@@ -135,21 +155,11 @@ export function ConnectionForm({
         <div className="form__grid">
           <Field label="Database engine">
             {(props) => (
-              <select
+              <EngineSelect
                 {...props}
                 value={draft.engine}
-                onChange={(event) =>
-                  setDraft((current) =>
-                    withEngine(current, event.target.value as Engine),
-                  )
-                }
-              >
-                {ENGINE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                onSelect={selectEngine}
+              />
             )}
           </Field>
           <Field label="Name" error={error('name')}>
@@ -186,7 +196,10 @@ export function ConnectionForm({
                   <input {...props} type="text" {...text('database')} />
                 )}
               </Field>
-              <Field label="User" error={error('user')}>
+              <Field
+                label={isMongo ? 'User (optional)' : 'User'}
+                error={error('user')}
+              >
                 {(props) => (
                   <input
                     {...props}
@@ -233,6 +246,30 @@ export function ConnectionForm({
               </select>
             )}
           </Field>
+        )}
+
+        {isMongo && (
+          <>
+            <Field
+              label="Auth source"
+              hint="The database that has the user. Empty means the database of the connection."
+            >
+              {(props) => (
+                <input {...props} type="text" {...text('authSource')} />
+              )}
+            </Field>
+            <label className="field field--check">
+              <input
+                type="checkbox"
+                checked={draft.isSrv}
+                onChange={(event) => update('isSrv', event.target.checked)}
+              />
+              <span>
+                SRV record (MongoDB Atlas). The host is a DNS name that lists
+                the servers. The port is not used.
+              </span>
+            </label>
+          </>
         )}
 
         <label className="field field--check">
@@ -294,15 +331,17 @@ export function ConnectionForm({
             <details className="form__advanced">
               <summary>Advanced settings</summary>
               <div className="form__grid">
-                <Field
-                  label="Socket directory"
-                  error={error('socket_path')}
-                  hint="Unix socket directory. When it has a value, the host is ignored."
-                >
-                  {(props) => (
-                    <input {...props} type="text" {...text('socketPath')} />
-                  )}
-                </Field>
+                {hasSocket && (
+                  <Field
+                    label="Socket directory"
+                    error={error('socket_path')}
+                    hint="Unix socket directory. When it has a value, the host is ignored."
+                  >
+                    {(props) => (
+                      <input {...props} type="text" {...text('socketPath')} />
+                    )}
+                  </Field>
+                )}
                 <Field
                   label="Connection timeout (seconds)"
                   error={error('connect_timeout_secs')}
@@ -360,6 +399,25 @@ export function ConnectionForm({
           </button>
         </div>
       </form>
+      {download !== null && (
+        <ConnectorDownloadDialog
+          engine={download}
+          onInstalled={() => {
+            setDraft((current) => withEngine(current, download))
+            setDownload(null)
+          }}
+          onClose={() => setDownload(null)}
+        />
+      )}
+      {isInstallingFile && (
+        <InstallFromFile
+          onInstalled={(engine) => {
+            setDraft((current) => withEngine(current, engine))
+            setIsInstallingFile(false)
+          }}
+          onClose={() => setIsInstallingFile(false)}
+        />
+      )}
     </Modal>
   )
 }

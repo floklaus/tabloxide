@@ -26,11 +26,11 @@ pub enum DownloadEvent {
     /// The download of the package starts.
     Downloading {
         version: String,
-        #[specta(type = f64)]
+        #[specta(type = u32)]
         size: u64,
     },
     Progress {
-        #[specta(type = f64)]
+        #[specta(type = u32)]
         received: u64,
     },
     /// Tabloxide checks and unpacks the package.

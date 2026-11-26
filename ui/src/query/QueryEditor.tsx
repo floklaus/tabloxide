@@ -1,3 +1,4 @@
+import { engineLanguage, serverLabel } from '../engines/engineStore'
 import { useEffect, useRef, useState } from 'react'
 import { AssistantSessionView } from '../assistant/AssistantSessionView'
 import type { RunTarget } from '../bindings'
@@ -59,6 +60,7 @@ export function QueryEditor() {
   if (!tab) return <section className="pane query" aria-label="Editor" />
 
   const active = connections.find((c) => c.id === tab.connectionId)
+  const language = engineLanguage(active?.engine ?? 'postgres')
   const isConnecting = connectState.status === 'connecting'
   const canRun = active !== undefined && runState === 'idle' && !isConnecting
   const run = (target: RunTarget) => {
@@ -111,9 +113,7 @@ export function QueryEditor() {
           <span className="title-bar__spacer" />
           {session && (
             <span className="query__server">
-              {active?.engine === 'duckdb'
-                ? session.version
-                : `PostgreSQL ${session.version}`}
+              {serverLabel(active?.engine ?? 'postgres', session.version)}
             </span>
           )}
           {active && !session && !isConnecting && (
@@ -206,12 +206,17 @@ export function QueryEditor() {
           onRun={run}
           onSave={() => void saveTab(tab.id)}
           engine={active?.engine ?? 'postgres'}
+          language={language}
           onFormatError={setFormatError}
           onCursorChange={setCursor}
-          completionSource={combineSources(
-            (context) => completeSql(context, tab.connectionId),
-            completeSnippets,
-          )}
+          completionSource={
+            language === 'sql'
+              ? combineSources(
+                  (context) => completeSql(context, tab.connectionId),
+                  completeSnippets,
+                )
+              : undefined
+          }
         />
       </div>
     </section>

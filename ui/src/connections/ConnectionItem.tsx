@@ -1,3 +1,5 @@
+import { engineLabel } from '../engines/engineStore'
+import { isFileEngine } from './formModel'
 import type { TestState } from './connectionStore'
 import type { ConnectionProfile } from './formModel'
 import { environmentLabel } from './options'
@@ -12,9 +14,12 @@ type ConnectionItemProps = {
 }
 
 function target(profile: ConnectionProfile): string {
-  if (profile.engine === 'duckdb') return `DuckDB: ${profile.database}`
+  const engine = profile.engine ?? 'postgres'
+  if (isFileEngine(engine)) return `${engineLabel(engine)}: ${profile.database}`
   const server = profile.socket_path ?? `${profile.host}:${profile.port}`
-  return `${profile.user ?? ''}@${server}/${profile.database}`
+  const user = profile.user ? `${profile.user}@` : ''
+  const prefix = engine === 'postgres' ? '' : `${engineLabel(engine)}: `
+  return `${prefix}${user}${server}/${profile.database}`
 }
 
 function statusText(state: TestState | undefined): string {
