@@ -33,6 +33,7 @@ import { buildMenus } from './menus'
 import { CommandPalette } from './palette/CommandPalette'
 import { applyDensity, applyZoom, useShellStore } from './shellStore'
 import { handleShortcut } from './shortcuts'
+import { useHistoryStore } from '../history/historyStore'
 import { Sidebar } from './Sidebar'
 import { handleAreaKey, rememberFocus } from './areas'
 import { StatusBar } from './StatusBar'
@@ -271,6 +272,7 @@ function useWorkspaceLifetime() {
       invalidateSnippets()
       usePlanStore.getState().reset()
       useSchemaStore.getState().reset()
+      useHistoryStore.getState().reset()
       useGitStore.getState().reset()
       useAssistantStore.getState().reset()
       useResultsViewStore.getState().setView('results')

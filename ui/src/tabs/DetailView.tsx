@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { ConnectionDetail } from '../connections/ConnectionDetail'
+import { HistoryDetail } from '../history/HistoryDetail'
 import { TableDetail } from '../schema/TableDetail'
 import { useSchemaStore } from '../schema/schemaStore'
 import type { Detail } from './tabsStore'
@@ -28,6 +29,12 @@ export function DetailView({ detail }: { detail: Detail }) {
       return (
         <div className="detail-tab">
           <ConnectionDetail id={detail.id} />
+        </div>
+      )
+    case 'history':
+      return (
+        <div className="detail-tab">
+          <HistoryDetail id={detail.id} />
         </div>
       )
   }

@@ -28,6 +28,7 @@ export type Tab = {
 export type Detail =
   | { kind: 'table'; schema: string; name: string }
   | { kind: 'connection'; id: string }
+  | { kind: 'history'; id: number }
 
 /** A key that is the same for the same detail. */
 export function detailKey(detail: Detail): string {
@@ -36,6 +37,8 @@ export function detailKey(detail: Detail): string {
       return `table:${detail.schema}.${detail.name}`
     case 'connection':
       return `connection:${detail.id}`
+    case 'history':
+      return `history:${detail.id}`
   }
 }
 

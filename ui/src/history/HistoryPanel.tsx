@@ -1,30 +1,41 @@
-import { useCallback, useEffect, useState } from 'react'
-import { commands, type HistoryEntry_Serialize } from '../bindings'
+import { useEffect, useRef, useState } from 'react'
 import { ConfirmDialog } from '../connections/ConfirmDialog'
-import { toMessage } from '../lib/errors'
-import { requestRun } from '../query/runConfirm'
-import { sqlTabForTools, useTabsStore } from '../tabs/tabsStore'
-
-export type HistoryEntry = HistoryEntry_Serialize
+import { Icon } from '../shell/icons'
+import { MenuButton } from '../shell/menu/MenuButton'
+import { useTabsStore } from '../tabs/tabsStore'
+import { SideView } from '../view/SideView'
+import { StatusMark } from '../view/StatusMark'
+import { useViewKeys, type KeyRow } from '../view/useViewKeys'
+import { EmptyState, NoMatch, ViewError } from '../view/ViewState'
+import { useWorkspaceStore } from '../workspace/workspaceStore'
+import {
+  HISTORY_STATUS,
+  showEntry,
+  durationText,
+  groupByDay,
+  hasText,
+  openInTab,
+  runAgain,
+  timeText,
+  useHistoryStore,
+  visibleEntries,
+  type HistoryEntry,
+  type ResultFilter,
+} from './historyStore'
 
 /** Time without a key press before the search starts. */
 const SEARCH_DELAY_MS = 250
-/** Prefix of an entry that has no statement text. The backend writes it. */
-const NOT_RECORDED_PREFIX = '-- Not recorded'
 
-const timeFormat = new Intl.DateTimeFormat(undefined, {
-  dateStyle: 'medium',
-  timeStyle: 'medium',
-})
+const RESULT_LABELS: Record<ResultFilter, string> = {
+  all: 'All results',
+  ok: 'Succeeded',
+  failed: 'Failed',
+  cancelled: 'Cancelled',
+}
 
-function describe(entry: HistoryEntry): string {
-  const time =
-    entry.elapsed_ms < 1000
-      ? `${entry.elapsed_ms} ms`
-      : `${(entry.elapsed_ms / 1000).toFixed(2)} s`
-  if (entry.status === 'cancelled') return `Cancelled, ${time}`
-  if (entry.status === 'failed') return `Failed, ${time}`
-  return entry.rows === null ? time : `${entry.rows} rows, ${time}`
+/** The first line of the statement, for the row. */
+function firstLine(sql: string): string {
+  return sql.trim().split('\n')[0] ?? ''
 }
 
 type Props = {
@@ -32,129 +43,243 @@ type Props = {
   onRun: () => void
 }
 
+/**
+ * The History view after the view standards: the statements that ran, in groups by
+ * day, with the status of each run.
+ */
 export function HistoryPanel({ onRun }: Props) {
-  const [query, setQuery] = useState('')
-  const [entries, setEntries] = useState<HistoryEntry[]>([])
-  const [error, setError] = useState<string | null>(null)
+  const query = useHistoryStore((state) => state.query)
+  const connectionId = useHistoryStore((state) => state.connectionId)
+  const results = useHistoryStore((state) => state.results)
+  const allEntries = useHistoryStore((state) => state.entries)
+  const error = useHistoryStore((state) => state.error)
+  const connections = useWorkspaceStore((state) => state.workspace?.connections)
+  const selectedKey = useTabsStore((state) => {
+    const detail = state.tabs.find((tab) => tab.id === state.activeId)?.detail
+    return detail?.kind === 'history' ? String(detail.id) : null
+  })
   const [isConfirming, setIsConfirming] = useState(false)
-  const newTab = useTabsStore((state) => state.newTab)
-  const setConnection = useTabsStore((state) => state.setConnection)
-
-  const search = useCallback(async (text: string) => {
-    try {
-      const result = await commands.historySearch(text)
-      if (result.status === 'ok') {
-        setEntries(result.data)
-        setError(null)
-      } else {
-        setError(result.error.message)
-      }
-    } catch (failure) {
-      setError(toMessage(failure))
-    }
-  }, [])
+  const filterRef = useRef<HTMLInputElement>(null)
+  const store = useHistoryStore.getState
 
   useEffect(() => {
-    const timer = setTimeout(() => void search(query), SEARCH_DELAY_MS)
+    const timer = setTimeout(() => void store().search(), SEARCH_DELAY_MS)
     return () => clearTimeout(timer)
-  }, [query, search])
+  }, [query, store])
 
-  const openInTab = (entry: HistoryEntry) => {
-    const id = newTab(entry.sql)
-    setConnection(id, entry.connection_id)
+  const entries = visibleEntries({
+    ...store(),
+    entries: allEntries,
+    connectionId,
+    results,
+  })
+  const groups = groupByDay(entries)
+  const keyRows: KeyRow[] = entries.map((entry) => ({
+    key: String(entry.id),
+    label: firstLine(entry.sql),
+  }))
+  const byKey = new Map(entries.map((entry) => [String(entry.id), entry]))
+  const withEntry = (key: string, action: (entry: HistoryEntry) => void) => {
+    const entry = byKey.get(key)
+    if (entry) action(entry)
   }
-  const runAgain = (entry: HistoryEntry) => {
-    const tab = sqlTabForTools()
-    if (tab && !tab.connectionId) setConnection(tab.id, entry.connection_id)
-    void requestRun(entry.sql, { type: 'all' })
-    onRun()
-  }
-  const clear = async () => {
-    setIsConfirming(false)
-    try {
-      const result = await commands.historyClear()
-      if (result.status === 'error') setError(result.error.message)
-    } catch (failure) {
-      setError(toMessage(failure))
-    }
-    await search(query)
-  }
+  const keys = useViewKeys({
+    kind: 'list',
+    rows: keyRows,
+    selectedKey,
+    filterRef,
+    onSelect: (key) => withEntry(key, (entry) => showEntry(entry, false)),
+    onOpen: (key) =>
+      withEntry(key, (entry) => hasText(entry) && openInTab(entry)),
+    onSecondary: (key) =>
+      withEntry(key, (entry) => {
+        if (!hasText(entry)) return
+        runAgain(entry)
+        onRun()
+      }),
+    onRefresh: () => void store().search(),
+    onEscape: () => useTabsStore.getState().closePreview(),
+    contextItems: (key) => {
+      const entry = byKey.get(key)
+      if (!entry || !hasText(entry)) return []
+      return [
+        {
+          kind: 'action',
+          label: 'Open in a new tab',
+          shortcut: 'Enter',
+          run: () => openInTab(entry),
+        },
+        {
+          kind: 'action',
+          label: 'Run again',
+          shortcut: 'Ctrl+Enter',
+          run: () => {
+            runAgain(entry)
+            onRun()
+          },
+        },
+        {
+          kind: 'action',
+          label: 'Copy the statement',
+          run: () =>
+            void navigator.clipboard.writeText(entry.sql).catch(() => {}),
+        },
+      ]
+    },
+  })
+
+  const scopeName =
+    connectionId === null
+      ? 'All connections'
+      : (connections?.find((item) => item.id === connectionId)?.name ??
+        'One connection')
+  const isFiltered =
+    query.trim() !== '' || connectionId !== null || results !== 'all'
 
   return (
-    <div className="history">
-      <div className="results__bar">
-        <input
-          type="search"
-          className="history__search"
-          aria-label="Search the history"
-          placeholder="Search the history"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-        />
-        <button
-          type="button"
-          className="button button--small button--danger"
-          disabled={entries.length === 0}
-          onClick={() => setIsConfirming(true)}
-        >
-          Clear history
-        </button>
-      </div>
+    <SideView
+      title="History"
+      scope={{
+        text: scopeName,
+        label: `Scope: ${scopeName.toLowerCase()}. Change the scope`,
+        items: () => [
+          {
+            kind: 'radio',
+            label: 'All connections',
+            checked: connectionId === null,
+            run: () => store().setConnection(null),
+          },
+          ...(connections ?? []).map((item) => ({
+            kind: 'radio' as const,
+            label: item.name,
+            checked: item.id === connectionId,
+            run: () => store().setConnection(item.id),
+          })),
+        ],
+      }}
+      overflow={() => [
+        {
+          kind: 'action',
+          label: 'Read the history again',
+          shortcut: 'F5',
+          run: () => void store().search(),
+        },
+        { kind: 'separator' },
+        {
+          kind: 'action',
+          label: 'Clear the history…',
+          disabled: allEntries.length === 0,
+          run: () => setIsConfirming(true),
+        },
+      ]}
+      filter={{
+        value: query,
+        onChange: (value) => store().setQuery(value),
+        label: 'Search the history',
+        placeholder: 'Search  /',
+        inputRef: filterRef,
+        onLeave: () => keys.focusRow(),
+        extra: (
+          <MenuButton
+            label={`Show: ${RESULT_LABELS[results].toLowerCase()}`}
+            menuLabel="Results to show"
+            className="view__scope history__results"
+            items={() =>
+              (Object.keys(RESULT_LABELS) as ResultFilter[]).map((value) => ({
+                kind: 'radio',
+                label: RESULT_LABELS[value],
+                checked: value === results,
+                run: () => store().setResults(value),
+              }))
+            }
+          >
+            <span className="view__scope-text">
+              {results === 'all' ? 'All' : RESULT_LABELS[results]}
+            </span>
+            <Icon name="chevron" size={14} />
+          </MenuButton>
+        ),
+      }}
+      status={`${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}`}
+    >
       {error && (
-        <p className="message message--error" role="alert">
-          {error}
-        </p>
+        <ViewError
+          title="Cannot read the history."
+          detail={error}
+          onRetry={() => void store().search()}
+        />
       )}
-      {entries.length === 0 && !error && (
-        <p className="pane__hint">
-          {query ? 'No entry contains this text.' : 'The history is empty.'}
-        </p>
+      {!error && allEntries.length === 0 && !query && (
+        <EmptyState text="The history is empty. The text of each statement that you run goes here." />
       )}
-      <ul className="history__list" aria-label="Query history">
-        {entries.map((entry) => {
-          const hasText = !entry.sql.startsWith(NOT_RECORDED_PREFIX)
-          return (
-            <li key={entry.id} className="history__entry">
-              <div className="history__meta">
-                <span>{timeFormat.format(entry.executed_at_secs * 1000)}</span>
-                <span>{entry.connection_name}</span>
-                <span className={`history__status--${entry.status}`}>
-                  {describe(entry)}
-                </span>
+      {entries.length === 0 &&
+        isFiltered &&
+        (allEntries.length > 0 || query) && (
+          <NoMatch
+            noun="entries"
+            filter={query || scopeName}
+            onClear={() => {
+              store().setQuery('')
+              store().setConnection(null)
+              store().setResults('all')
+            }}
+          />
+        )}
+      {entries.length > 0 && (
+        <div role="listbox" aria-label="Query history" className="view-list">
+          {groups.map((group) => (
+            <div key={group.day} role="group" aria-label={group.day}>
+              <div className="view-group" aria-hidden="true">
+                <span>{group.day}</span>
+                <span>{group.entries.length}</span>
               </div>
-              <pre className="history__sql">{entry.sql}</pre>
-              {entry.error && <p className="history__error">{entry.error}</p>}
-              {hasText && (
-                <div className="history__actions">
-                  <button
-                    type="button"
-                    className="link-button"
-                    onClick={() => openInTab(entry)}
+              {group.entries.map((entry) => {
+                const key = String(entry.id)
+                const index = keyRows.findIndex((row) => row.key === key)
+                const state = HISTORY_STATUS[entry.status]
+                return (
+                  <div
+                    key={key}
+                    {...keys.rowProps(keyRows[index], index)}
+                    className="view-row view-row--two"
+                    aria-label={`${firstLine(entry.sql)}, ${state.label}`}
                   >
-                    Open in a new tab
-                  </button>
-                  <button
-                    type="button"
-                    className="link-button"
-                    onClick={() => runAgain(entry)}
-                  >
-                    Run again
-                  </button>
-                </div>
-              )}
-            </li>
-          )
-        })}
-      </ul>
+                    <StatusMark status={state.status} label={state.label} />
+                    <span className="view-row__lines">
+                      <span className="view-row__label history__sql-line">
+                        {firstLine(entry.sql)}
+                      </span>
+                      <span className="view-row__line">
+                        {[
+                          entry.connection_name,
+                          timeText(entry.executed_at_secs),
+                          durationText(entry),
+                          entry.rows === null ? null : `${entry.rows} rows`,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </span>
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          ))}
+        </div>
+      )}
+      {keys.contextMenu}
       {isConfirming && (
         <ConfirmDialog
           title="Clear the history?"
           message="This deletes all history entries of this workspace. You cannot undo this."
           confirmLabel="Clear history"
-          onConfirm={() => void clear()}
+          onConfirm={() => {
+            setIsConfirming(false)
+            void store().clear()
+          }}
           onCancel={() => setIsConfirming(false)}
         />
       )}
-    </div>
+    </SideView>
   )
 }
