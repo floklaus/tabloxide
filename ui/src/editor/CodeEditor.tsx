@@ -21,7 +21,12 @@ import {
   syntaxHighlighting,
 } from '@codemirror/language'
 import { highlightSelectionMatches, searchKeymap } from '@codemirror/search'
-import { Compartment, EditorState, type Extension } from '@codemirror/state'
+import {
+  Compartment,
+  EditorState,
+  Prec,
+  type Extension,
+} from '@codemirror/state'
 import {
   drawSelection,
   EditorView,
@@ -39,6 +44,16 @@ import type {
   RunTarget,
 } from '../bindings'
 import { formatSql } from './formatSql'
+import {
+  applyProposal,
+  clearProposal,
+  hasProposal,
+  proposalExtensions,
+  setLocked,
+  showProposal,
+  withoutProposal,
+  type Proposal,
+} from './proposal'
 
 export type EditorPreferences = EditorPreferences_Serialize
 
@@ -54,6 +69,14 @@ export type CodeEditorHandle = {
    * gives the focus to the editor. The undo history keeps the change.
    */
   replaceRange: (from: number, to: number, text: string) => void
+  /** Makes the editor read-only while an AI request runs, or editable again. */
+  setLocked: (locked: boolean) => void
+  /** Shows a change of the AI. The text does not change until `applyProposal`. */
+  showProposal: (proposal: Proposal) => void
+  /** Puts the proposed text into the document. The undo history keeps it. */
+  applyProposal: () => void
+  /** Removes the proposal without a change of the text. */
+  clearProposal: () => void
   /** Formats the selection, or all text if there is no selection. */
   format: () => void
   /** The selection, or all text if there is no selection. */
@@ -81,6 +104,15 @@ export type CodeEditorProps = {
   completionSource?: (
     context: CompletionContext,
   ) => Promise<CompletionResult | null>
+  /** Ctrl+I: change the selection with AI. */
+  onAiChange?: () => void
+  /** Ctrl+Shift+I: explain the selection with AI. */
+  onAiExplain?: () => void
+  /**
+   * Receives Ctrl+Enter and Escape before the editor. Returns `true` if the key
+   * was for an AI change, for example to accept its proposal.
+   */
+  onAiKey?: (key: 'accept' | 'escape') => boolean
 }
 
 type Callbacks = Pick<
@@ -92,6 +124,9 @@ type Callbacks = Pick<
   | 'engine'
   | 'onFormatError'
   | 'onCursorChange'
+  | 'onAiChange'
+  | 'onAiExplain'
+  | 'onAiKey'
 >
 
 /** The selection, or all text if there is no selection. */
@@ -194,6 +229,35 @@ function makeState(
       autocompletion({ icons: false }),
       syntaxHighlighting(classHighlighter),
       preferenceExtensions(preferences),
+      proposalExtensions(),
+      // The AI keys come before all other keys. The default keys give Ctrl+I a
+      // different function, and Ctrl+Enter must not run a statement during a proposal.
+      Prec.highest(
+        keymap.of([
+          {
+            key: 'Mod-i',
+            run: () => {
+              callbacks.current.onAiChange?.()
+              return callbacks.current.onAiChange !== undefined
+            },
+          },
+          {
+            key: 'Shift-Mod-i',
+            run: () => {
+              callbacks.current.onAiExplain?.()
+              return callbacks.current.onAiExplain !== undefined
+            },
+          },
+          {
+            key: 'Mod-Enter',
+            run: () => callbacks.current.onAiKey?.('accept') ?? false,
+          },
+          {
+            key: 'Escape',
+            run: () => callbacks.current.onAiKey?.('escape') ?? false,
+          },
+        ]),
+      ),
       keymap.of([
         { key: 'Mod-Enter', run: run(targetOf) },
         { key: 'Shift-Mod-Enter', run: run(() => ({ type: 'all' })) },
@@ -271,7 +335,9 @@ export function CodeEditor(props: CodeEditorProps) {
       states.clear()
       languagesRef.current.clear()
     } else if (shown.tabId !== tabId) {
-      states.set(shown.tabId, view.state)
+      // An AI change belongs to the tab that the user sees. The tab that the user
+      // leaves must not stay read-only.
+      states.set(shown.tabId, withoutProposal(view.state))
     }
     if (shown?.tabId !== tabId || shown.preferences !== preferences) {
       view.setState(
@@ -330,6 +396,20 @@ export function CodeEditor(props: CodeEditorProps) {
         userEvent: 'input.paste',
       })
       view.focus()
+    },
+    setLocked: (locked) => {
+      if (viewRef.current) setLocked(viewRef.current, locked)
+    },
+    showProposal: (proposal) => {
+      if (viewRef.current) showProposal(viewRef.current, proposal)
+    },
+    applyProposal: () => {
+      if (viewRef.current) applyProposal(viewRef.current)
+    },
+    clearProposal: () => {
+      const view = viewRef.current
+      if (view && hasProposal(view.state)) clearProposal(view)
+      else if (view) setLocked(view, false)
     },
     replaceRange: (from, to, text) => {
       const view = viewRef.current

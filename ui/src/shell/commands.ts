@@ -2,6 +2,7 @@ import { engineLanguage, findEngine } from '../engines/engineStore'
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { commands as backend } from '../bindings'
+import { explainSelection, useInlineChange } from '../assistant/inlineChange'
 import { invalidateCatalog } from '../completion/catalogCache'
 import { useConnectionStore } from '../connections/connectionStore'
 import { activeEditor } from '../editor/editorBridge'
@@ -236,6 +237,22 @@ export function buildCommands(): Command[] {
       group: 'Query',
       isEnabled: canExplain,
       run: () => usePlanStore.getState().read(true),
+    },
+    {
+      id: 'query.ai-change',
+      label: 'Change the selection with AI…',
+      group: 'Query',
+      shortcut: 'Ctrl+I',
+      isEnabled: hasTab,
+      run: () => useInlineChange.getState().start(),
+    },
+    {
+      id: 'query.ai-explain',
+      label: 'Explain the selection with AI',
+      group: 'Query',
+      shortcut: 'Ctrl+Shift+I',
+      isEnabled: hasTab,
+      run: explainSelection,
     },
     {
       id: 'query.format',

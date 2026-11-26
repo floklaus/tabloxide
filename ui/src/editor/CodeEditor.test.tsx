@@ -6,7 +6,7 @@ import {
 } from '@codemirror/autocomplete'
 import { undo } from '@codemirror/commands'
 import { EditorView } from '@codemirror/view'
-import { render } from '@testing-library/react'
+import { act, render } from '@testing-library/react'
 import { createRef } from 'react'
 import { describe, expect, test, vi } from 'vitest'
 import {
@@ -49,7 +49,7 @@ function setup(
     if (!found) throw new Error('The editor view is not in the document.')
     return found
   }
-  const update = (change: Partial<typeof props>) =>
+  const update = (change: Partial<CodeEditorProps>) =>
     rerender(<CodeEditor {...props} {...change} />)
   return { ref, handlers, view, update, container }
 }
@@ -199,5 +199,108 @@ describe('CodeEditor', () => {
     expect(container.querySelector('.cm-lineNumbers')).toBeNull()
     expect(container.querySelector('.cm-lineWrapping')).not.toBeNull()
     expect(view().state.tabSize).toBe(4)
+  })
+
+  test('shows a proposal of the AI without a change of the text', () => {
+    const { ref, view, container, handlers } = setup({
+      value: 'select 1;\nselect 2',
+    })
+
+    act(() => ref.current?.showProposal({ from: 10, to: 18, text: 'select 3' }))
+
+    expect(view().state.doc.toString()).toBe('select 1;\nselect 2')
+    expect(view().state.readOnly).toBe(true)
+    expect(container.querySelector('.cm-ai-removed')).toHaveTextContent(
+      'select 2',
+    )
+    expect(container.querySelector('.cm-ai-proposal')).toHaveTextContent(
+      'select 3',
+    )
+    expect(handlers.onChange).not.toHaveBeenCalled()
+  })
+
+  test('an accepted proposal is one undo step, and a rejected one changes nothing', () => {
+    const { ref, view, container } = setup({ value: 'select 1;\nselect 2' })
+
+    act(() => ref.current?.showProposal({ from: 10, to: 18, text: 'select 3' }))
+    act(() => ref.current?.applyProposal())
+
+    expect(view().state.doc.toString()).toBe('select 1;\nselect 3')
+    expect(view().state.readOnly).toBe(false)
+    expect(container.querySelector('.cm-ai-proposal')).toBeNull()
+    undo(view())
+    expect(view().state.doc.toString()).toBe('select 1;\nselect 2')
+
+    act(() => ref.current?.showProposal({ from: 0, to: 8, text: 'select 9' }))
+    act(() => ref.current?.clearProposal())
+
+    expect(view().state.doc.toString()).toBe('select 1;\nselect 2')
+    expect(view().state.readOnly).toBe(false)
+    expect(container.querySelector('.cm-ai-removed')).toBeNull()
+  })
+
+  test('the lock makes the editor read-only until it opens again', () => {
+    const { ref, view } = setup()
+
+    act(() => ref.current?.setLocked(true))
+    expect(view().state.readOnly).toBe(true)
+    act(() => ref.current?.clearProposal())
+
+    expect(view().state.readOnly).toBe(false)
+  })
+
+  test('a tab that the user leaves during a proposal is not read-only', () => {
+    const { ref, view, update } = setup({ tabId: 't1', value: 'select 1' })
+    act(() => ref.current?.showProposal({ from: 0, to: 8, text: 'select 2' }))
+
+    update({ tabId: 't2', value: 'select 5' })
+    update({ tabId: 't1', value: 'select 1' })
+
+    expect(view().state.readOnly).toBe(false)
+    expect(view().state.doc.toString()).toBe('select 1')
+  })
+
+  test('Ctrl+I and Ctrl+Shift+I go to the AI functions, not to the default keys', () => {
+    const onAiChange = vi.fn()
+    const onAiExplain = vi.fn()
+    const { view, update } = setup()
+    update({ onAiChange, onAiExplain })
+    const key = (shiftKey: boolean) =>
+      view().contentDOM.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: shiftKey ? 'I' : 'i',
+          code: 'KeyI',
+          keyCode: 73,
+          ctrlKey: true,
+          shiftKey,
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+
+    key(false)
+    key(true)
+
+    expect(onAiChange).toHaveBeenCalledTimes(1)
+    expect(onAiExplain).toHaveBeenCalledTimes(1)
+  })
+
+  test('during a proposal, Ctrl+Enter goes to the AI function and does not run', () => {
+    const onAiKey = vi.fn(() => true)
+    const { view, update, handlers } = setup()
+    update({ onAiKey })
+
+    view().contentDOM.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Enter',
+        keyCode: 13,
+        ctrlKey: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+
+    expect(onAiKey).toHaveBeenCalledWith('accept')
+    expect(handlers.onRun).not.toHaveBeenCalled()
   })
 })

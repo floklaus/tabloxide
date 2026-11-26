@@ -504,6 +504,15 @@ Status of stage 2 on 2026-11-25: stage 2 is complete in code.
 * `Ctrl+Shift+I` explains the selection in the assistant panel.
 * Add the two shortcuts to the command list and to the help screen. Before the work starts, check that no other command uses them.
 
+Status of stage 3 on 2026-11-25: stage 3 is complete in code.
+
+* The editor shows the proposal as decorations: the old text struck through, and the new text as a block below it. The text of the document changes only at "Accept". Thus a proposal is not in the undo history, and "Reject" changes nothing.
+* The editor is read-only from `Ctrl+I` until the change closes. This replaces the plan to discard the answer after a change of the text, because the text cannot change.
+* A tab that the user leaves gets its state without the proposal and without the lock. The change closes.
+* The default keys of the editor give `Ctrl+I` to "select the parent syntax". The AI keys come first, with the highest precedence. `Ctrl+Enter` during a change accepts the proposal and does not run a statement.
+* The instruction field is a box at the bottom of the editor, not at the selection.
+* The conversation of a change is a session that is not in the list of the panel.
+
 **Stage 4: schema browser (0.5 weeks).**
 
 * The menu of a table or a view gets "Explain the table" and "Write a starter query".

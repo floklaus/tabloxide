@@ -1,6 +1,12 @@
 import { engineLanguage, serverLabel } from '../engines/engineStore'
 import { useEffect, useRef, useState } from 'react'
 import { AssistantSessionView } from '../assistant/AssistantSessionView'
+import { InlineChange } from '../assistant/InlineChange'
+import {
+  explainSelection,
+  inlineChangeKey,
+  useInlineChange,
+} from '../assistant/inlineChange'
 import type { RunTarget } from '../bindings'
 import { combineSources } from '../completion/combine'
 import { completeSql } from '../completion/sqlCompletion'
@@ -209,6 +215,9 @@ export function QueryEditor() {
           language={language}
           onFormatError={setFormatError}
           onCursorChange={setCursor}
+          onAiChange={() => void useInlineChange.getState().start()}
+          onAiExplain={() => void explainSelection()}
+          onAiKey={inlineChangeKey}
           completionSource={
             language === 'sql'
               ? combineSources(
@@ -218,6 +227,7 @@ export function QueryEditor() {
               : undefined
           }
         />
+        <InlineChange />
       </div>
     </section>
   )

@@ -105,7 +105,26 @@ The request sends the statement, the error message, the details of the error, an
 
 **Replace in the editor** is available only while the tab of the statement is open and its text is the same as at the run. After a change of the text, use **Copy**.
 
-## 7. Use sessions
+## 7. Change or explain the selection
+
+You can ask the AI to change text in the editor, or to explain it. Without a selection, the action uses the statement at the cursor.
+
+To change the text:
+
+1. Select the text, or put the cursor in a statement.
+2. Press **Ctrl+I**. A field for the instruction opens below the editor. The editor is read-only until the change closes.
+3. Type the instruction, for example "Only the orders of the last 30 days", and press **Enter**.
+4. The editor shows the removed text struck through, and the proposed text below it. The text of the file does not change yet.
+5. Select one of these:
+   - **Accept** or **Ctrl+Enter** puts the proposed text into the editor. **Ctrl+Z** removes it again.
+   - **Reject** or **Esc** removes the proposal. The text stays as it was.
+   - **Change again** asks for a new instruction. The AI gets the earlier instructions and answers too.
+
+To explain the text, press **Ctrl+Shift+I**. The explanation goes to the assistant panel.
+
+The request sends the text, the instruction, and the structure of the database. It sends no rows. Tabloxide does not run the changed text.
+
+## 8. Use sessions
 
 Each conversation is a session. Two or more sessions can run at the same time. The sessions stay until you close the workspace. Tabloxide does not store them on disk.
 
@@ -122,7 +141,7 @@ The tab of a session shows these parts:
 
 A request of a session uses the last SQL tab, also when the tab of the session is active. The status bar shows the number of sessions that run.
 
-## 8. Limits
+## 9. Limits
 
 - The model can make mistakes. Examine each statement before you run it, most of all a statement that changes or removes data.
 - The model does not see rows, the number of rows, or the distribution of values, unless a plan shows them.
