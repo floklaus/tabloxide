@@ -285,7 +285,15 @@ code?: string | null } |
 /**  `true` for the staged changes, `false` for the changes on disk. */
 staged: boolean } | 
 /**  The three versions of a file with a merge conflict. The backend reads them. */
-{ type: "conflict"; path: string };
+{ type: "conflict"; path: string } | 
+/**
+ *  Rows of a result, for "Ask about these rows". This is the only data with rows.
+ *  The backend refuses it for a production connection and for more rows than the
+ *  preferences permit.
+ */
+{ type: "rows"; columns: RowColumn_Deserialize[]; rows: ((string | null)[])[]; 
+/**  The number of rows of the result, if the application knows it. */
+total_rows?: number | null };
 
 /**  The data of an AI action. The UI sends it with the message of the user. */
 export type ActionContext_Serialize = 
@@ -323,7 +331,15 @@ is_cut: boolean; subjects: string[] } |
 /**  `true` for the staged changes, `false` for the changes on disk. */
 staged: boolean; diff: string | null } | 
 /**  The three versions of a file with a merge conflict. The backend reads them. */
-{ type: "conflict"; path: string; versions: ConflictVersions_Serialize | null };
+{ type: "conflict"; path: string; versions: ConflictVersions_Serialize | null } | 
+/**
+ *  Rows of a result, for "Ask about these rows". This is the only data with rows.
+ *  The backend refuses it for a production connection and for more rows than the
+ *  preferences permit.
+ */
+{ type: "rows"; columns: RowColumn_Serialize[]; rows: ((string | null)[])[]; 
+/**  The number of rows of the result, if the application knows it. */
+total_rows: number | null };
 
 /**  Name and version of the application. */
 export type AppInfo = {
@@ -1461,6 +1477,23 @@ export type Risk = "drop" | "truncate" | "alter" |
 "unchecked";
 
 export type Role = "user" | "assistant";
+
+/**  A column of the rows of "Ask about these rows". */
+export type RowColumn = RowColumn_Serialize | RowColumn_Deserialize;
+
+/**  A column of the rows of "Ask about these rows". */
+export type RowColumn_Deserialize = {
+	name: string,
+	/**  The type name of the database engine, if the engine gave one. */
+	type_name?: string | null,
+};
+
+/**  A column of the rows of "Ask about these rows". */
+export type RowColumn_Serialize = {
+	name: string,
+	/**  The type name of the database engine, if the engine gave one. */
+	type_name: string | null,
+};
 
 /**
  *  The report of one run. `open_result` identifies the result of the last statement,

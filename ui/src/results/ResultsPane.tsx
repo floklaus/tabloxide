@@ -12,6 +12,7 @@ import type { QueryError, StatementReport } from '../query/queryStore'
 import type { Location } from '../bindings'
 import { TableDetail } from '../schema/TableDetail'
 import { sqlTabForTools } from '../tabs/tabsStore'
+import { AskAboutRows } from './AskAboutRows'
 import { ResultGrid } from './ResultGrid'
 import { useResultsViewStore, type ResultsView } from './resultsViewStore'
 
@@ -217,6 +218,11 @@ function StatementView(props: { statement: StatementReport; index: number }) {
             Stop fetch
           </button>
         )}
+        <AskAboutRows
+          columns={outcome.columns}
+          rows={outcome.rows}
+          totalRows={outcome.total_rows}
+        />
         <button
           type="button"
           className="button button--small"

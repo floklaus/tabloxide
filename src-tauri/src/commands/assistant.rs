@@ -11,9 +11,11 @@ use std::sync::{Arc, Mutex, PoisonError};
 use tabloxide_assistant::{
     AssistantError, AssistantErrorKind, ChatMessage, ChatOutcome, ChatProvider, Database,
     ExplainRejection, MAX_DETAILED_RELATIONS, SchemaContext, SchemaCount, Task, TextSink,
-    chat_request, collect_schema, explain_statement, plan_text, read_relations, sent_summary,
+    chat_request, check_rows, collect_schema, explain_statement, plan_text, read_relations,
+    sent_summary,
 };
-use tabloxide_core::{QueryError, QuerySession, Secret};
+use tabloxide_core::{Environment, QueryError, QuerySession, Secret};
+use tabloxide_workspace::AssistantPreferences;
 use tauri::ipc::Channel;
 use tauri::{AppHandle, State};
 use tokio::sync::Notify;
@@ -173,6 +175,18 @@ async fn schema_of(
     Ok(schema)
 }
 
+/// Returns the environment of the connection of a session, from the workspace.
+/// Returns `None` if the session or its connection is not known.
+fn environment_of(state: &AppState, session_id: SessionId) -> Option<Environment> {
+    let entry = state.session_entry(session_id).ok()?;
+    let workspace = state.workspace().ok()?;
+    workspace
+        .connections()
+        .iter()
+        .find(|profile| profile.id == entry.connection_id)
+        .map(|profile| profile.environment)
+}
+
 /// Makes the "Sent:" line of a request.
 fn summary_of(request: &AskRequest, database: Option<&Database<'_>>) -> String {
     let schema = database.map(|database| SchemaCount {
@@ -238,13 +252,21 @@ impl Ask<'_> {
 async fn answer(
     state: &AppState,
     request: &AskRequest,
-    model: &str,
+    preferences: &AssistantPreferences,
     api_key: &Secret,
     cancel: &Notify,
     on_event: &Channel<AssistantEvent>,
 ) -> Result<AskResult, CommandError> {
+    let model = preferences.model.id();
     // A task without the structure of the database does not read it.
     let session_id = request.session_id.filter(|_| request.task.uses_schema());
+    // Rows go only from a connection that is not production, and only up to the
+    // number of the preferences. The check uses the workspace at this time, so that a
+    // connection that changed to production after the connect also refuses rows.
+    let environment = session_id.and_then(|id| environment_of(state, id));
+    if let Err(error) = check_rows(&request.messages, environment, preferences.rows_for_ai) {
+        return Ok(AskResult::Failed { error });
+    }
     let session = match session_id {
         Some(id) => {
             let entry = state.session_entry(id)?;
@@ -334,8 +356,15 @@ async fn prepare_and_answer(
     };
     let local = state.local(&state_dir(app)?)?;
     let preferences = blocking(move || Ok(local.load_preferences()?)).await?;
-    let model = preferences.assistant.model.id();
-    answer(state, request, model, &api_key, cancel, on_event).await
+    answer(
+        state,
+        request,
+        &preferences.assistant,
+        &api_key,
+        cancel,
+        on_event,
+    )
+    .await
 }
 
 /// Stops a request that is in progress. The request then returns `cancelled`.
@@ -537,6 +566,122 @@ mod tests {
             summary_of(&request, None),
             "Sent: your request, the statement, and the error message."
         );
+    }
+
+    /// A state with a workspace that has one connection of `environment`, and a
+    /// session of that connection.
+    fn state_with_a_session(environment: &str) -> (tempfile::TempDir, AppState, SessionId) {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("tabloxide.toml"),
+            format!(
+                "[[connections]]\nid = \"c1\"\nname = \"Shop\"\nenvironment = \"{environment}\"\n\
+                 database = \"shop\"\nuser = \"u\"\n"
+            ),
+        )
+        .unwrap();
+        let state = AppState::default();
+        state.set_workspace(Some(
+            tabloxide_workspace::Workspace::open(dir.path()).unwrap(),
+        ));
+        let (scripted, _) = ScriptedSession::new(vec![]);
+        let id = state.add_session(SessionEntry {
+            session: Arc::new(QuerySession::new(
+                Box::new(scripted),
+                tabloxide_core::QueryLanguage::Sql,
+            )),
+            connection_id: tabloxide_core::ConnectionId::from("c1"),
+            connection_name: "Shop".to_owned(),
+            engine: tabloxide_core::Engine::new("postgres"),
+            info: tabloxide_core::EngineInfo {
+                engine: tabloxide_core::Engine::new("postgres"),
+                display_name: "PostgreSQL".to_owned(),
+                language: tabloxide_core::QueryLanguage::Sql,
+                default_port: Some(5432),
+                capabilities: tabloxide_core::Capabilities {
+                    cancel: true,
+                    unix_socket: false,
+                    file_database: false,
+                    explain_plan: true,
+                },
+            },
+        });
+        (dir, state, id)
+    }
+
+    #[test]
+    fn the_environment_comes_from_the_connection_of_the_session() {
+        let (_production_dir, production, production_id) = state_with_a_session("production");
+        let (_staging_dir, staging, staging_id) = state_with_a_session("staging");
+
+        assert_eq!(
+            environment_of(&production, production_id),
+            Some(Environment::Production)
+        );
+        assert_eq!(
+            environment_of(&staging, staging_id),
+            Some(Environment::Staging)
+        );
+        assert_eq!(environment_of(&staging, staging_id + 1), None);
+    }
+
+    fn rows_request(session_id: SessionId, count: usize) -> AskRequest {
+        AskRequest {
+            id: 1,
+            session_id: Some(session_id),
+            task: Task::Rows,
+            messages: vec![ChatMessage {
+                context: Some(tabloxide_assistant::ActionContext::Rows {
+                    columns: vec![tabloxide_assistant::RowColumn {
+                        name: "id".to_owned(),
+                        type_name: None,
+                    }],
+                    rows: (0..count).map(|i| vec![Some(i.to_string())]).collect(),
+                    total_rows: None,
+                }),
+                ..user("Which ids?")
+            }],
+            refresh_schema: false,
+        }
+    }
+
+    async fn failure_of(state: &AppState, request: &AskRequest) -> String {
+        let channel = Channel::new(|_| Ok(()));
+        let result = answer(
+            state,
+            request,
+            &AssistantPreferences::default(),
+            &Secret::new("key"),
+            &Notify::new(),
+            &channel,
+        )
+        .await
+        .unwrap();
+        match result {
+            AskResult::Failed { error } => error.message,
+            other => panic!("{other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn a_request_with_rows_of_a_production_connection_fails_before_the_ai_service() {
+        let (_dir, state, id) = state_with_a_session("production");
+
+        let message = failure_of(&state, &rows_request(id, 3)).await;
+
+        assert!(
+            message.contains("A production connection never sends rows"),
+            "{message}"
+        );
+    }
+
+    #[tokio::test]
+    async fn a_request_with_more_rows_than_the_preferences_fails() {
+        let (_dir, state, id) = state_with_a_session("development");
+
+        let message = failure_of(&state, &rows_request(id, 101)).await;
+
+        assert!(message.contains("Preferences permit 100 rows"), "{message}");
     }
 
     #[test]

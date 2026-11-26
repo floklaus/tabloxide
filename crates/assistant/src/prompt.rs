@@ -60,7 +60,8 @@ expected effect first.
 - A plan from EXPLAIN without ANALYZE has estimates only. Say so when a conclusion \
 needs measured times.
 - You get the structure of the database only. You do not get its rows, the number of \
-rows, or the distribution of values, unless the plan shows them.
+rows, or the distribution of values, unless the plan shows them or the user sends rows \
+between the tags <rows>.
 
 Writing style:
 - Write the text outside of code blocks in Simplified Technical English, after the \

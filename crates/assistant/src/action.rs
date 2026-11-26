@@ -4,7 +4,7 @@
 
 use crate::{AssistantError, AssistantErrorKind, ChatMessage, relation_text};
 use serde::{Deserialize, Serialize};
-use tabloxide_core::QuerySession;
+use tabloxide_core::{Environment, QuerySession};
 
 /// Largest number of characters of the output of a Git command in a request.
 pub const MAX_GIT_OUTPUT_CHARS: usize = 20_000;
@@ -14,6 +14,18 @@ pub const MAX_DIFF_CHARS: usize = 60_000;
 
 /// Largest number of characters of the three versions of a conflict in a request.
 pub const MAX_CONFLICT_CHARS: usize = 60_000;
+
+/// Largest number of characters of one value of a row in a request.
+pub const MAX_CELL_CHARS: usize = 500;
+
+/// A column of the rows of "Ask about these rows".
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+pub struct RowColumn {
+    pub name: String,
+    /// The type name of the database engine, if the engine gave one.
+    pub type_name: Option<String>,
+}
 
 /// The text at the place where the application cut a long text.
 const CUT_MARKER: &str = "[The application removed the rest of this text here.]";
@@ -74,6 +86,75 @@ pub enum ActionContext {
         #[serde(default, skip_deserializing)]
         versions: Option<ConflictVersions>,
     },
+    /// Rows of a result, for "Ask about these rows". This is the only data with rows.
+    /// The backend refuses it for a production connection and for more rows than the
+    /// preferences permit.
+    Rows {
+        columns: Vec<RowColumn>,
+        rows: Vec<Vec<Option<String>>>,
+        /// The number of rows of the result, if the application knows it.
+        #[cfg_attr(feature = "specta", specta(type = Option<f64>))]
+        total_rows: Option<u64>,
+    },
+}
+
+/// One value of a row as text: `NULL` for no value, line breaks as `\n`, and a cut
+/// after the limit.
+fn cell_text(value: Option<&String>) -> String {
+    let Some(value) = value else {
+        return "NULL".to_owned();
+    };
+    let flat = value
+        .replace('\\', "\\\\")
+        .replace('\n', "\\n")
+        .replace('|', "\\|");
+    match flat.char_indices().nth(MAX_CELL_CHARS) {
+        Some((end, _)) => format!("{}[cut]", &flat[..end]),
+        None => flat,
+    }
+}
+
+/// Checks the rows of the messages before a request.
+///
+/// # Errors
+///
+/// Returns an error if a message has rows and `environment` is production or
+/// unknown, or if it has more rows than `limit`.
+pub fn check_rows(
+    messages: &[ChatMessage],
+    environment: Option<Environment>,
+    limit: u32,
+) -> Result<(), AssistantError> {
+    for message in messages {
+        let Some(ActionContext::Rows { rows, .. }) = &message.context else {
+            continue;
+        };
+        match environment {
+            None => {
+                return Err(AssistantError::new(
+                    AssistantErrorKind::InvalidRequest,
+                    "Rows go to the AI only with the connection of the tab.",
+                ));
+            }
+            Some(Environment::Production) => {
+                return Err(AssistantError::new(
+                    AssistantErrorKind::InvalidRequest,
+                    "A production connection never sends rows to the AI. No setting changes this.",
+                ));
+            }
+            Some(Environment::Development | Environment::Staging) => {}
+        }
+        if rows.len() > usize::try_from(limit).unwrap_or(usize::MAX) {
+            return Err(AssistantError::new(
+                AssistantErrorKind::InvalidRequest,
+                format!(
+                    "The request has {} rows. Preferences permit {limit} rows for the AI.",
+                    rows.len()
+                ),
+            ));
+        }
+    }
+    Ok(())
 }
 
 /// The versions of a file with a merge conflict. A version is `None` if that side
@@ -239,6 +320,34 @@ impl ActionContext {
                     "<conflict>\nFile: {path}\n(The application did not read the versions.)\n</conflict>"
                 ),
             },
+            Self::Rows {
+                columns,
+                rows,
+                total_rows,
+            } => {
+                let header = columns
+                    .iter()
+                    .map(|column| match &column.type_name {
+                        Some(type_name) => format!("{} ({type_name})", column.name),
+                        None => column.name.clone(),
+                    })
+                    .collect::<Vec<_>>()
+                    .join(" | ");
+                let count = match total_rows {
+                    Some(total) => format!("The first {} of {total} rows.", rows.len()),
+                    None => format!("{} rows. The result can have more rows.", rows.len()),
+                };
+                let lines: Vec<String> = rows
+                    .iter()
+                    .map(|row| {
+                        row.iter()
+                            .map(|value| cell_text(value.as_ref()))
+                            .collect::<Vec<_>>()
+                            .join(" | ")
+                    })
+                    .collect();
+                format!("<rows>\n{count}\n{header}\n{}\n</rows>", lines.join("\n"))
+            }
         }
     }
 
@@ -289,6 +398,11 @@ impl ActionContext {
             Self::Conflict { path, .. } => {
                 vec![format!("the three versions of {path}")]
             }
+            Self::Rows { columns, rows, .. } => vec![format!(
+                "{} rows with {} columns",
+                rows.len(),
+                columns.len()
+            )],
         }
     }
 }
@@ -695,6 +809,85 @@ mod tests {
         assert!(cut.contains("diff --git a/b b/b"));
         assert_eq!(cut.matches(CUT_MARKER).count(), 2);
         assert!(cut.chars().count() < diff.chars().count());
+    }
+
+    fn rows(count: usize) -> ActionContext {
+        ActionContext::Rows {
+            columns: vec![
+                RowColumn {
+                    name: "id".to_owned(),
+                    type_name: Some("int4".to_owned()),
+                },
+                RowColumn {
+                    name: "note".to_owned(),
+                    type_name: None,
+                },
+            ],
+            rows: (0..count)
+                .map(|index| vec![Some(index.to_string()), None])
+                .collect(),
+            total_rows: Some(3812),
+        }
+    }
+
+    #[test]
+    fn rows_have_the_count_the_columns_and_one_line_for_each_row() {
+        assert_eq!(
+            rows(2).render(),
+            "<rows>\nThe first 2 of 3812 rows.\nid (int4) | note\n0 | NULL\n1 | NULL\n</rows>"
+        );
+        assert_eq!(rows(2).summary_parts(), ["2 rows with 2 columns"]);
+    }
+
+    #[test]
+    fn a_value_keeps_one_line_and_its_limit() {
+        let long = "x".repeat(MAX_CELL_CHARS + 10);
+
+        assert_eq!(cell_text(Some(&"a|b\nc".to_owned())), "a\\|b\\nc");
+        assert_eq!(
+            cell_text(Some(&long)),
+            format!("{}[cut]", "x".repeat(MAX_CELL_CHARS))
+        );
+        assert_eq!(cell_text(None), "NULL");
+    }
+
+    #[test]
+    fn rows_never_go_for_production_or_without_a_connection() {
+        let messages = vec![ChatMessage {
+            context: Some(rows(3)),
+            ..ChatMessage::new(crate::Role::User, "Which ids?")
+        }];
+
+        let production = check_rows(&messages, Some(Environment::Production), 1000).unwrap_err();
+        let none = check_rows(&messages, None, 1000).unwrap_err();
+
+        assert!(
+            production
+                .message
+                .contains("A production connection never sends rows")
+        );
+        assert!(none.message.contains("connection of the tab"));
+        assert!(check_rows(&messages, Some(Environment::Staging), 3).is_ok());
+    }
+
+    #[test]
+    fn rows_never_go_above_the_limit_of_the_preferences() {
+        let messages = vec![ChatMessage {
+            context: Some(rows(4)),
+            ..ChatMessage::new(crate::Role::User, "Which ids?")
+        }];
+
+        let error = check_rows(&messages, Some(Environment::Development), 3).unwrap_err();
+
+        assert!(error.message.contains("Preferences permit 3 rows"));
+    }
+
+    #[test]
+    fn messages_without_rows_pass_for_each_environment() {
+        let messages = vec![ChatMessage::new(crate::Role::User, "x")];
+
+        assert!(check_rows(&messages, Some(Environment::Production), 1).is_ok());
+        assert!(check_rows(&messages, None, 1).is_ok());
     }
 
     #[test]

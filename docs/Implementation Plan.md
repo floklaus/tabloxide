@@ -558,6 +558,14 @@ Status of stage 5 on 2026-11-26: stage 5 is complete in code.
 * The request sends the column names and types, and the first N rows of the result in the grid. N is the preference. A NULL value has a clear marker. Each value has a maximum of 500 characters.
 * The backend refuses the request for a production connection, for a request without a session, and for more rows than the preference permits.
 
+Status of stage 6 on 2026-11-26: stage 6 is complete in code. M19 is complete in code.
+
+* "Ask about these rows" is in the bar below the rows of a result, next to "Export CSV". The design canvas does not have this position yet.
+* The confirmation also has a field for the question. The design does not show it, but the request needs a question.
+* The UI sends the rows, because only the UI has the loaded rows. The backend checks each request before the AI service gets it: a message with rows needs the session of a connection that is not production, and the number of rows must not be more than the preference. The backend reads the environment from the workspace at the time of the request.
+* A later request of the session sends the earlier messages again, also their rows. Thus the same check applies to each later request.
+* Only the data `Rows` has rows. The other data of the actions has no field for rows.
+
 Completion criteria of M19:
 
 * Each action of the design canvas works, and the panel shows what it sent.

@@ -26,7 +26,7 @@ Under each request, the panel shows a line that starts with **Sent:**. The line 
 
 A request does not send this data:
 
-- Rows of a table or of a result.
+- Rows of a table or of a result. The only exception is **Ask about these rows** (section 10), after your confirmation.
 - Passwords.
 - The host, the port, the database name, or the user of a connection.
 - The files of the workspace, unless you copy their text into a request.
@@ -151,7 +151,20 @@ What each request sends:
 
 Tabloxide never runs a Git command from an answer.
 
-## 10. Use sessions
+## 10. Ask about these rows
+
+This is the only AI action that sends rows.
+
+1. Run a statement that returns rows.
+2. In the bar below the rows, select **Ask about these rows**.
+3. The confirmation shows the number of rows, the columns, and the connection with its environment. Type your question.
+4. Select **Send** to send the question and the rows. The answer goes to the assistant panel.
+
+Tabloxide sends the first rows of the result that the grid has loaded. **Preferences › AI assistant › Rows for "Ask about these rows"** sets the number: 1 to 1000, and 100 if you do not change it. Each value has a maximum of 500 characters.
+
+**A production connection never sends rows.** For a connection with the environment production, the button is not available, and no setting changes this. Tabloxide also checks this when it sends the request. If you change a connection to production, its earlier rows do not go again either.
+
+## 11. Use sessions
 
 Each conversation is a session. Two or more sessions can run at the same time. The sessions stay until you close the workspace. Tabloxide does not store them on disk.
 
@@ -168,7 +181,7 @@ The tab of a session shows these parts:
 
 A request of a session uses the last SQL tab, also when the tab of the session is active. The status bar shows the number of sessions that run.
 
-## 11. Limits
+## 12. Limits
 
 - The model can make mistakes. Examine each statement before you run it, most of all a statement that changes or removes data.
 - The model does not see rows, the number of rows, or the distribution of values, unless a plan shows them.
