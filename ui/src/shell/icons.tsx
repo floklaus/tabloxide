@@ -11,6 +11,7 @@ const PATHS = {
   search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M20 20l-4-4',
   chevron: 'M6 9l6 6 6-6',
   'chevron-right': 'M9 6l6 6-6 6',
+  pencil: 'M4 20h4L19 9l-4-4L4 16z M14 6l4 4',
   database: 'M3 7h6l2 2h10v10H3z',
   table: 'M4 5h16v14H4z M4 10h16 M10 10v9',
   view: 'M4 5h16v14H4z M4 10h16',

@@ -25,13 +25,17 @@ export type Tab = {
 }
 
 /** The detail of a row of a side view, in a tab of the editor area. */
-export type Detail = { kind: 'table'; schema: string; name: string }
+export type Detail =
+  | { kind: 'table'; schema: string; name: string }
+  | { kind: 'connection'; id: string }
 
 /** A key that is the same for the same detail. */
 export function detailKey(detail: Detail): string {
   switch (detail.kind) {
     case 'table':
       return `table:${detail.schema}.${detail.name}`
+    case 'connection':
+      return `connection:${detail.id}`
   }
 }
 

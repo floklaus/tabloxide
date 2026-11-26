@@ -89,10 +89,12 @@ describe('connectionStore', () => {
 
     await store().test(makeProfile())
 
-    expect(store().tests['id-1']).toEqual({
+    expect(store().tests['id-1']).toMatchObject({
       status: 'connected',
       version: '17.2',
     })
+    // The detail tab tells the age of the test.
+    expect(store().tests['id-1']).toHaveProperty('at')
     expect(commands.connectionTest).toHaveBeenCalledWith(makeProfile(), null)
   })
 

@@ -7,8 +7,8 @@ import type { ConnectionProfile } from './formModel'
 
 export type TestState =
   | { status: 'testing' }
-  | { status: 'connected'; version: string }
-  | { status: 'failed'; error: ConnectError }
+  | { status: 'connected'; version: string; at?: number }
+  | { status: 'failed'; error: ConnectError; at?: number }
 
 type CommandResult =
   { status: 'ok'; data: Workspace } | { status: 'error'; error: CommandError }
@@ -113,6 +113,11 @@ export const useConnectionStore = create<ConnectionState>((set) => ({
       tests: { ...state.tests, [profile.id]: { status: 'testing' } },
     }))
     const result = await runConnectionTest(profile, null)
-    set((state) => ({ tests: { ...state.tests, [profile.id]: result } }))
+    // The time of the test, in seconds since 1970. The detail tab tells its age.
+    const tested =
+      result.status === 'testing'
+        ? result
+        : { ...result, at: Date.now() / 1000 }
+    set((state) => ({ tests: { ...state.tests, [profile.id]: tested } }))
   },
 }))

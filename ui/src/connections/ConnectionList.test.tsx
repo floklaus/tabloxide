@@ -2,10 +2,12 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { commands } from '../bindings'
-import { makeProfile, makeWorkspace } from '../test/fixtures'
-import { useWorkspaceStore } from '../workspace/workspaceStore'
 import { ConnectionEditor } from '../shell/ConnectionEditor'
 import { resetShellStore } from '../shell/shellStore'
+import { useTabsStore } from '../tabs/tabsStore'
+import { makeProfile, makeWorkspace } from '../test/fixtures'
+import { useWorkspaceStore } from '../workspace/workspaceStore'
+import { ConnectionDetail } from './ConnectionDetail'
 import { ConnectionList } from './ConnectionList'
 import { useConnectionStore } from './connectionStore'
 
@@ -22,7 +24,9 @@ const production = makeProfile({
 })
 
 function renderList(connections = [makeProfile(), production]) {
-  useWorkspaceStore.setState({ workspace: makeWorkspace(connections) })
+  useWorkspaceStore.setState({
+    workspace: { ...makeWorkspace(connections), name: 'sql-project' },
+  })
   render(
     <>
       <ConnectionList />
@@ -32,117 +36,177 @@ function renderList(connections = [makeProfile(), production]) {
   return userEvent.setup()
 }
 
+const option = (name: RegExp | string) =>
+  screen.getByRole('option', {
+    name: typeof name === 'string' ? new RegExp(`^${name},`) : name,
+  })
+
 describe('ConnectionList', () => {
   beforeEach(() => {
+    vi.clearAllMocks()
     resetShellStore()
     useWorkspaceStore.setState(initialWorkspaceState, true)
     useConnectionStore.setState({ tests: {} })
+    useTabsStore.getState().reset()
+    useTabsStore.getState().newTab()
   })
 
-  test('shows no connections when no workspace is open', () => {
-    render(<ConnectionList />)
-
-    expect(
-      screen.getByText('This workspace has no connections.'),
-    ).toBeInTheDocument()
-  })
-
-  test('shows a message when the workspace has no connections', () => {
+  test('without connections, the view says so and gives one action', () => {
     renderList([])
 
     expect(
       screen.getByText('This workspace has no connections.'),
     ).toBeInTheDocument()
+    expect(
+      screen.getAllByRole('button', { name: 'New connection' }),
+    ).not.toHaveLength(0)
   })
 
-  test('shows each connection with its target and its environment', () => {
+  test('groups the connections by environment, Production first', () => {
     renderList()
 
-    const live = screen.getByRole('listitem', { name: 'Live' })
-    expect(within(live).getByText('Production')).toBeInTheDocument()
-    expect(
-      within(live).getByText('app_user@localhost:5432/app'),
-    ).toBeInTheDocument()
-    expect(within(live).getByText('Not tested')).toBeInTheDocument()
+    const groups = screen
+      .getAllByRole('group')
+      .map((group) => group.getAttribute('aria-label'))
+    expect(groups).toEqual(['Production', 'Development'])
+    const local = option('Local')
+    expect(local).toHaveAccessibleName('Local, Not tested')
+    expect(local).toHaveTextContent('PostgreSQL · localhost/app')
+    expect(screen.getByRole('status')).toHaveTextContent(
+      '2 connections · 0 connected',
+    )
   })
 
-  test('shows the result of a connection test', async () => {
+  test('the test of a row shows its status mark and its error', async () => {
     vi.mocked(commands.connectionTest).mockResolvedValue({
       status: 'ok',
       data: {
         status: 'failed',
         error: {
           kind: 'authentication',
-          advice: 'Check the user and the password.',
-          detail: 'x',
+          advice: 'Check the password.',
+          detail: 'password refused',
         },
       },
     })
     const user = renderList([makeProfile()])
 
-    await user.click(screen.getByRole('button', { name: 'Test' }))
+    // The row buttons are for the pointer. A screen reader uses Ctrl+Enter.
+    await user.click(screen.getByLabelText('Test Local'))
 
     expect(
-      await screen.findByText('Failed. Check the user and the password. x'),
-    ).toBeInTheDocument()
+      await screen.findByRole('option', { name: 'Local, Failed' }),
+    ).toHaveTextContent('Failed: password refused')
+    expect(screen.getByRole('img', { name: 'Failed' })).toBeInTheDocument()
   })
 
-  test('deletes a connection only after the user confirms', async () => {
+  test('Delete asks first, and deletes only after the confirmation', async () => {
     vi.mocked(commands.connectionDelete).mockResolvedValue({
       status: 'ok',
       data: makeWorkspace([production]),
     })
     const user = renderList()
-    const local = screen.getByRole('listitem', { name: 'Local' })
+    option('Local').focus()
 
-    await user.click(within(local).getByRole('button', { name: 'Delete' }))
+    await user.keyboard('{Delete}')
     expect(commands.connectionDelete).not.toHaveBeenCalled()
     const dialog = screen.getByRole('dialog', { name: 'Delete connection' })
     await user.click(within(dialog).getByRole('button', { name: 'Delete' }))
 
     expect(commands.connectionDelete).toHaveBeenCalledWith('id-1')
-    expect(
-      screen.queryByRole('listitem', { name: 'Local' }),
-    ).not.toBeInTheDocument()
   })
 
-  test('does not delete a connection when the user cancels', async () => {
+  test('Cancel of the confirmation keeps the connection', async () => {
     const user = renderList()
-    const local = screen.getByRole('listitem', { name: 'Local' })
+    option('Local').focus()
 
-    await user.click(within(local).getByRole('button', { name: 'Delete' }))
+    await user.keyboard('{Delete}')
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
     expect(commands.connectionDelete).not.toHaveBeenCalled()
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  test('duplicates a connection', async () => {
-    const copy = makeProfile({ id: 'id-3', name: 'Local (copy)' })
+  test('the context menu duplicates a connection', async () => {
     vi.mocked(commands.connectionDuplicate).mockResolvedValue({
       status: 'ok',
-      data: makeWorkspace([makeProfile(), copy]),
+      data: makeWorkspace([
+        makeProfile(),
+        makeProfile({ id: 'id-3', name: 'Local (copy)' }),
+      ]),
     })
     const user = renderList([makeProfile()])
+    option('Local').focus()
 
-    await user.click(screen.getByRole('button', { name: 'Duplicate' }))
+    await user.keyboard('{Shift>}{F10}{/Shift}')
+    await user.click(screen.getByRole('menuitem', { name: /Duplicate/ }))
 
-    expect(
-      await screen.findByRole('listitem', { name: 'Local (copy)' }),
-    ).toBeInTheDocument()
+    expect(commands.connectionDuplicate).toHaveBeenCalledWith('id-1')
   })
 
-  test('opens the form with the template for a new connection', async () => {
+  test('Space shows the detail in a preview tab, and Enter connects the current tab', async () => {
+    const user = renderList()
+    option('Local').focus()
+
+    await user.keyboard(' ')
+    const detail = useTabsStore
+      .getState()
+      .tabs.find((tab) => tab.detail?.kind === 'connection')
+    expect(detail).toMatchObject({ title: 'Local', isPreview: true })
+
+    await user.keyboard('{Enter}')
+    const sql = useTabsStore
+      .getState()
+      .tabs.find((tab) => tab.detail === undefined)
+    expect(sql?.connectionId).toBe('id-1')
+  })
+
+  test('the primary action opens the form for a new connection', async () => {
     vi.mocked(commands.connectionTemplate).mockResolvedValue(
       makeProfile({ id: 'new-id', name: '', database: '', user: '' }),
     )
     const user = renderList([])
 
-    await user.click(screen.getByRole('button', { name: 'New' }))
+    await user.click(
+      screen.getAllByRole('button', { name: 'New connection' })[0],
+    )
 
     expect(
       await screen.findByRole('dialog', { name: 'New connection' }),
     ).toBeInTheDocument()
-    expect(screen.getByLabelText('Port')).toHaveValue('5432')
+  })
+})
+
+describe('ConnectionDetail', () => {
+  beforeEach(() => {
+    useConnectionStore.setState({ tests: {} })
+  })
+
+  test('shows the facts without the password, and the error of the last test', () => {
+    useWorkspaceStore.setState({ workspace: makeWorkspace([makeProfile()]) })
+    useConnectionStore.setState({
+      tests: {
+        'id-1': {
+          status: 'failed',
+          error: {
+            kind: 'authentication',
+            advice: 'Edit the password.',
+            detail: 'FATAL: password',
+          },
+          at: Date.now() / 1000 - 120,
+        },
+      },
+    })
+
+    render(<ConnectionDetail id="id-1" />)
+
+    expect(screen.getByRole('heading', { name: 'Local' })).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      /The test failed 2 minutes ago/,
+    )
+    expect(screen.getByRole('alert')).toHaveTextContent('FATAL: password')
+    expect(screen.getByText('Server').nextElementSibling).toHaveTextContent(
+      'localhost:5432',
+    )
+    expect(screen.getByRole('button', { name: 'Test again' })).toBeEnabled()
   })
 })

@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { ConnectionDetail } from '../connections/ConnectionDetail'
 import { TableDetail } from '../schema/TableDetail'
 import { useSchemaStore } from '../schema/schemaStore'
 import type { Detail } from './tabsStore'
@@ -23,5 +24,11 @@ export function DetailView({ detail }: { detail: Detail }) {
   switch (detail.kind) {
     case 'table':
       return <TableDetailTab schema={detail.schema} name={detail.name} />
+    case 'connection':
+      return (
+        <div className="detail-tab">
+          <ConnectionDetail id={detail.id} />
+        </div>
+      )
   }
 }

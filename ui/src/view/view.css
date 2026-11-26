@@ -429,3 +429,69 @@
   flex: none;
   cursor: pointer;
 }
+
+/* Two lines in a row: the name, and a quiet second line. */
+.view-row__lines {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.view-row__line {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.view-row__line--error {
+  color: var(--status-error);
+}
+
+.view-row[aria-selected='true'] .view-row__line {
+  color: inherit;
+}
+
+/* The facts of a detail tab: a term and a value on each row. */
+.detail-facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 6px 24px;
+  margin: 0.75rem 0;
+  font-size: 13px;
+}
+
+.detail-facts__row {
+  display: contents;
+}
+
+.detail-facts dt {
+  color: var(--color-text-muted);
+}
+
+.detail-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/*
+ * A row with buttons for the pointer. An option of a list cannot contain buttons,
+ * thus the buttons are next to the row, over its right end.
+ */
+.view-row-wrap {
+  position: relative;
+}
+
+.view-row-wrap > .view-row__actions {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+}
+
+.view-row-wrap:hover > .view-row__actions,
+.view-row-wrap:focus-within > .view-row__actions {
+  display: flex;
+}
