@@ -1,5 +1,8 @@
 import { MergeView } from '@codemirror/merge'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { AiAction } from '../assistant/AiAction'
+import { onlyCodeBlock } from '../assistant/answerSegments'
+import type { SessionStore } from '../assistant/assistantStore'
 import type { ConflictSides_Serialize as ConflictSides } from '../bindings'
 import { DIFF_BASE, readOnlySide, sideLabel } from './diffExtensions'
 import { useGitStore, type ConflictState } from './gitStore'
@@ -19,6 +22,24 @@ function TwoSides({ path, ours, theirs }: TwoSidesProps) {
   const resolveWithText = useGitStore((state) => state.resolveWithText)
   const hostRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<MergeView | null>(null)
+  /** The result that the AI proposes, or a note if the answer has none. */
+  const [proposal, setProposal] = useState<
+    { text: string } | { note: string } | null
+  >(null)
+
+  const receive = (session: SessionStore) => {
+    const { messages, error } = session.getState()
+    const answer = messages[messages.length - 1]
+    if (error || answer?.role !== 'assistant') return
+    const text = onlyCodeBlock(answer.text)
+    setProposal(
+      text === null
+        ? {
+            note: 'The answer has no result that the application can use. Read it in the assistant panel.',
+          }
+        : { text },
+    )
+  }
 
   useEffect(() => {
     const view = new MergeView({
@@ -52,6 +73,11 @@ function TwoSides({ path, ours, theirs }: TwoSidesProps) {
     const result = viewRef.current?.b
     if (result) void resolveWithText(path, result.state.doc.toString())
   }
+  const accept = (text: string, edit: boolean) => {
+    setResult(text)
+    setProposal(null)
+    if (edit) viewRef.current?.b.focus()
+  }
 
   return (
     <>
@@ -75,6 +101,16 @@ function TwoSides({ path, ours, theirs }: TwoSidesProps) {
         >
           Use the incoming version
         </button>
+        <AiAction
+          label="Propose a resolution"
+          title="The AI proposes a result that keeps the changes of the two branches. The request sends the three versions of this file."
+          request={() => ({
+            task: 'conflict',
+            text: `Propose a resolution of the conflict in ${path}.`,
+            context: { type: 'conflict', path },
+          })}
+          after={receive}
+        />
         <button
           type="button"
           className="button button--small button--primary"
@@ -84,6 +120,46 @@ function TwoSides({ path, ours, theirs }: TwoSidesProps) {
           Mark as resolved
         </button>
       </div>
+      {proposal && 'note' in proposal && (
+        <p className="message" role="status">
+          {proposal.note}
+        </p>
+      )}
+      {proposal && 'text' in proposal && (
+        <section
+          className="conflict__proposal"
+          aria-label="Proposed resolution"
+        >
+          <pre className="conflict__kept">{proposal.text}</pre>
+          <div className="git__row">
+            <button
+              type="button"
+              className="button button--small button--primary"
+              onClick={() => accept(proposal.text, false)}
+            >
+              Accept
+            </button>
+            <button
+              type="button"
+              className="button button--small"
+              onClick={() => accept(proposal.text, true)}
+            >
+              Edit in the result
+            </button>
+            <button
+              type="button"
+              className="button button--small"
+              onClick={() => setProposal(null)}
+            >
+              Reject
+            </button>
+          </div>
+          <p className="results__status">
+            Accept puts the text into the result. You still mark the file as
+            resolved. The explanation is in the assistant panel.
+          </p>
+        </section>
+      )}
       <div ref={hostRef} className="diff__sides code-editor" />
     </>
   )

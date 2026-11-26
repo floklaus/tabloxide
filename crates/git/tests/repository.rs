@@ -397,3 +397,38 @@ fn lists_the_remote_branches_without_the_symbolic_head() {
         Some("origin/release-0.2")
     );
 }
+
+#[test]
+fn the_staged_patch_has_only_the_staged_changes() {
+    let fixture = Fixture::new();
+    fixture.commit_file("report.sql", "select 1\n");
+    fixture.write("report.sql", "select 2\n");
+    fixture.write("other.sql", "select 3\n");
+    fixture
+        .git
+        .stage(&fixture.root, &["report.sql".to_owned()])
+        .unwrap();
+
+    let patch = fixture.git.staged_patch(&fixture.root).unwrap();
+
+    assert!(
+        patch.contains("diff --git a/report.sql b/report.sql"),
+        "{patch}"
+    );
+    assert!(patch.contains("-select 1\n+select 2"), "{patch}");
+    assert!(!patch.contains("other.sql"), "{patch}");
+}
+
+#[test]
+fn the_staged_patch_of_a_new_repository_is_against_the_empty_tree() {
+    let fixture = Fixture::new();
+    fixture.write("first.sql", "select 1\n");
+    fixture
+        .git
+        .stage(&fixture.root, &["first.sql".to_owned()])
+        .unwrap();
+
+    let patch = fixture.git.staged_patch(&fixture.root).unwrap();
+
+    assert!(patch.contains("+select 1"), "{patch}");
+}

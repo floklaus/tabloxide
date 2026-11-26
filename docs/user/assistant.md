@@ -133,7 +133,25 @@ Select a table or a view in the schema browser. The results pane shows its struc
 
 Tabloxide reads the structure of the table from the database for the request: the columns, the indexes, and the constraints. The request sends no rows and no default values.
 
-## 9. Use sessions
+## 9. Use AI with Git
+
+The Git panel and the diff view have three AI actions. They send no rows and no structure of the database.
+
+- **Write the message with AI**, above the commit message field. The AI writes the message from the staged changes, and the message goes into the field. Read it and change it before you commit. If the field has your own text, Tabloxide asks before it replaces it. **Write again** writes a new message.
+- **Explain the changes**, in the diff of a changed file. The explanation goes to the assistant panel.
+- **Propose a resolution**, in the view of a file with a merge conflict. The AI proposes a result that keeps the changes of the two branches. **Accept** puts it into the result side, and **Edit in the result** also moves the cursor there. **Reject** removes it. Then you mark the file as resolved.
+
+What each request sends:
+
+| Action | Data |
+| --- | --- |
+| Write the message with AI | The staged diff, and the subjects of the last 10 commits. A diff of more than 60 000 characters is cut, and the first part of each file stays. |
+| Explain the changes | The diff of the one file. |
+| Propose a resolution | The three versions of the file: the common base, your version, and the incoming version. The limit is 60 000 characters. |
+
+Tabloxide never runs a Git command from an answer.
+
+## 10. Use sessions
 
 Each conversation is a session. Two or more sessions can run at the same time. The sessions stay until you close the workspace. Tabloxide does not store them on disk.
 
@@ -150,7 +168,7 @@ The tab of a session shows these parts:
 
 A request of a session uses the last SQL tab, also when the tab of the session is active. The status bar shows the number of sessions that run.
 
-## 10. Limits
+## 11. Limits
 
 - The model can make mistakes. Examine each statement before you run it, most of all a statement that changes or removes data.
 - The model does not see rows, the number of rows, or the distribution of values, unless a plan shows them.

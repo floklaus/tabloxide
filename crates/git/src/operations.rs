@@ -246,6 +246,27 @@ impl Git {
         })
     }
 
+    /// Returns the diff of all staged changes as text. A binary file has only a line
+    /// that tells that it changed. The diff uses no external diff program and no text
+    /// conversion of the configuration, because those can run other programs.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if Git fails.
+    pub fn staged_patch(&self, root: &Path) -> Result<String, GitError> {
+        let output = self.run(
+            root,
+            [
+                "diff",
+                "--cached",
+                "--no-color",
+                "--no-ext-diff",
+                "--no-textconv",
+            ],
+        )?;
+        Ok(output.stdout_text())
+    }
+
     fn has_config(&self, root: &Path, key: &str) -> Result<bool, GitError> {
         let output = self.output(root, ["config", "--get", key])?;
         Ok(output.is_success && !output.stdout_text().trim().is_empty())

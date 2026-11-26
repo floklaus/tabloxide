@@ -2,6 +2,7 @@
 
 pub mod app;
 pub mod assistant;
+pub mod assistant_git;
 pub mod assistant_models;
 pub mod connections;
 pub mod engines;

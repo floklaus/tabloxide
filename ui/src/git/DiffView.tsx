@@ -1,5 +1,6 @@
 import { MergeView } from '@codemirror/merge'
 import { useEffect, useRef } from 'react'
+import { AiAction } from '../assistant/AiAction'
 import type { FileDiff } from '../bindings'
 import { ConflictView } from './ConflictView'
 import { readOnlySide } from './diffExtensions'
@@ -36,7 +37,24 @@ export function DiffView() {
 
   return (
     <div className="diff">
-      <h3 className="table-detail__title">{diff.title}</h3>
+      <div className="table-detail__header">
+        <h3 className="table-detail__title">{diff.title}</h3>
+        {diff.file && diff.load.status === 'loaded' && (
+          <AiAction
+            label="Explain the changes"
+            title="The AI explains the effect of the changes. The request sends the diff of this file."
+            request={() => ({
+              task: 'explain-diff',
+              text: `Explain the changes in ${diff.file?.path}.`,
+              context: {
+                type: 'file-diff',
+                path: diff.file?.path ?? '',
+                staged: diff.file?.staged ?? false,
+              },
+            })}
+          />
+        )}
+      </div>
       <p className="results__status">{diff.sides}</p>
       {diff.load.status === 'loading' && <p role="status">Loading the diff…</p>}
       {diff.load.status === 'failed' && (

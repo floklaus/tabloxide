@@ -274,7 +274,18 @@ code?: string | null } |
  *  A table or a view of the schema browser. The backend reads its structure. The
  *  UI cannot set `structure`, thus no other text goes into the request in its place.
  */
-{ type: "relation"; schema: string; name: string };
+{ type: "relation"; schema: string; name: string } | 
+/**
+ *  The staged changes, for a commit message. The backend reads the diff and the
+ *  subjects of the last commits. The UI cannot set them.
+ */
+{ type: "staged-changes" } | 
+/**  The changes of one file of the working tree. The backend reads the diff. */
+{ type: "file-diff"; path: string; 
+/**  `true` for the staged changes, `false` for the changes on disk. */
+staged: boolean } | 
+/**  The three versions of a file with a merge conflict. The backend reads them. */
+{ type: "conflict"; path: string };
 
 /**  The data of an AI action. The UI sends it with the message of the user. */
 export type ActionContext_Serialize = 
@@ -299,7 +310,20 @@ code: string | null } |
  *  A table or a view of the schema browser. The backend reads its structure. The
  *  UI cannot set `structure`, thus no other text goes into the request in its place.
  */
-{ type: "relation"; schema: string; name: string; structure: string | null };
+{ type: "relation"; schema: string; name: string; structure: string | null } | 
+/**
+ *  The staged changes, for a commit message. The backend reads the diff and the
+ *  subjects of the last commits. The UI cannot set them.
+ */
+{ type: "staged-changes"; diff: string | null; 
+/**  `true` if the application cut the diff at the limit. */
+is_cut: boolean; subjects: string[] } | 
+/**  The changes of one file of the working tree. The backend reads the diff. */
+{ type: "file-diff"; path: string; 
+/**  `true` for the staged changes, `false` for the changes on disk. */
+staged: boolean; diff: string | null } | 
+/**  The three versions of a file with a merge conflict. The backend reads them. */
+{ type: "conflict"; path: string; versions: ConflictVersions_Serialize | null };
 
 /**  Name and version of the application. */
 export type AppInfo = {
@@ -627,6 +651,32 @@ export type ConflictSides_Serialize = {
 	theirs: string | null,
 	/**  The file on disk. Git wrote conflict markers into it. */
 	working: string | null,
+};
+
+/**
+ *  The versions of a file with a merge conflict. A version is `None` if that side
+ *  has no file.
+ */
+export type ConflictVersions = ConflictVersions_Serialize | ConflictVersions_Deserialize;
+
+/**
+ *  The versions of a file with a merge conflict. A version is `None` if that side
+ *  has no file.
+ */
+export type ConflictVersions_Deserialize = {
+	base?: string | null,
+	current?: string | null,
+	incoming?: string | null,
+};
+
+/**
+ *  The versions of a file with a merge conflict. A version is `None` if that side
+ *  has no file.
+ */
+export type ConflictVersions_Serialize = {
+	base: string | null,
+	current: string | null,
+	incoming: string | null,
 };
 
 /**

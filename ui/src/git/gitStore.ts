@@ -30,6 +30,8 @@ export type DiffState = {
   title: string
   /** Tells the user what the two sides are. */
   sides: string
+  /** A changed file of the working tree. A file of a commit has no value. */
+  file?: { path: string; staged: boolean }
   load: Load<FileDiff>
 }
 
@@ -329,6 +331,7 @@ export const useGitStore = create<GitState>((set, get) => {
         {
           key: `file:${isStaged}:${path}`,
           title: path,
+          file: { path, staged: isStaged },
           sides: isStaged
             ? 'Left: last commit. Right: staged.'
             : 'Left: staged or last commit. Right: file on disk.',

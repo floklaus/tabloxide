@@ -168,3 +168,22 @@ export async function runAiAction(
   const session = activeSession()
   return (await session.getState().runAction(action)) ? session : null
 }
+
+/**
+ * Sends the request of an AI action in a session that is not in the panel. The
+ * answer goes to the place of the action, for example the commit message field.
+ * Without an API key, the panel opens with the setup and the request does not go.
+ *
+ * Returns the session after the end of the request, or `null` if no request went.
+ */
+export async function runHiddenAction(
+  action: ActionRequest,
+): Promise<SessionStore | null> {
+  if (useAssistantStore.getState().hasKey === false) {
+    const shell = useShellStore.getState()
+    if (!shell.panels.assistant) shell.togglePanel('assistant')
+    return null
+  }
+  const session = createSession()
+  return (await session.getState().runAction(action)) ? session : null
+}

@@ -3333,3 +3333,28 @@ body {
 .table-detail__header .table-detail__title {
   flex: 1 1 auto;
 }
+
+.git__ai {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.git__ai > .ai-action {
+  align-self: flex-start;
+}
+
+.git__ai-note {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.conflict__proposal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}

@@ -138,7 +138,7 @@ pub fn git_credential_answer(state: State<'_, AppState>, id: RequestId, answer: 
 }
 
 /// Finds the repository of the workspace.
-fn repository(git: &Git, workspace_root: &Path) -> Result<PathBuf, GitError> {
+pub(crate) fn repository(git: &Git, workspace_root: &Path) -> Result<PathBuf, GitError> {
     git.find_root(workspace_root)?
         .ok_or_else(|| GitError::NotARepository(workspace_root.to_owned()))
 }

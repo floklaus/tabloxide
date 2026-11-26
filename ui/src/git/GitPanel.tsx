@@ -4,6 +4,7 @@ import { ConfirmDialog } from '../connections/ConfirmDialog'
 import { Branches } from './Branches'
 import { CHANGE_LABELS } from './changeLabels'
 import { CommitHistory } from './CommitHistory'
+import { CommitMessageAi } from './CommitMessageAi'
 import { useGitStore, type GitOverview } from './gitStore'
 import { useRemoteStore } from './remoteStore'
 
@@ -205,6 +206,11 @@ function RepositoryView({ repository }: { repository: Repository }) {
         <p className="pane__hint">No changes in the working tree.</p>
       )}
       <form className="git__commit" onSubmit={(event) => void submit(event)}>
+        <CommitMessageAi
+          message={message}
+          onMessage={setMessage}
+          disabled={busy !== null || staged.length === 0}
+        />
         <textarea
           className="git__message"
           aria-label="Commit message"

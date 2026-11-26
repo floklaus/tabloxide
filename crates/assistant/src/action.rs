@@ -9,6 +9,12 @@ use tabloxide_core::QuerySession;
 /// Largest number of characters of the output of a Git command in a request.
 pub const MAX_GIT_OUTPUT_CHARS: usize = 20_000;
 
+/// Largest number of characters of a diff in a request.
+pub const MAX_DIFF_CHARS: usize = 60_000;
+
+/// Largest number of characters of the three versions of a conflict in a request.
+pub const MAX_CONFLICT_CHARS: usize = 60_000;
+
 /// The text at the place where the application cut a long text.
 const CUT_MARKER: &str = "[The application removed the rest of this text here.]";
 
@@ -43,6 +49,102 @@ pub enum ActionContext {
         #[serde(default, skip_deserializing)]
         structure: Option<String>,
     },
+    /// The staged changes, for a commit message. The backend reads the diff and the
+    /// subjects of the last commits. The UI cannot set them.
+    StagedChanges {
+        #[serde(default, skip_deserializing)]
+        diff: Option<String>,
+        /// `true` if the application cut the diff at the limit.
+        #[serde(default, skip_deserializing)]
+        is_cut: bool,
+        #[serde(default, skip_deserializing)]
+        subjects: Vec<String>,
+    },
+    /// The changes of one file of the working tree. The backend reads the diff.
+    FileDiff {
+        path: String,
+        /// `true` for the staged changes, `false` for the changes on disk.
+        staged: bool,
+        #[serde(default, skip_deserializing)]
+        diff: Option<String>,
+    },
+    /// The three versions of a file with a merge conflict. The backend reads them.
+    Conflict {
+        path: String,
+        #[serde(default, skip_deserializing)]
+        versions: Option<ConflictVersions>,
+    },
+}
+
+/// The versions of a file with a merge conflict. A version is `None` if that side
+/// has no file.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+pub struct ConflictVersions {
+    pub base: Option<String>,
+    pub current: Option<String>,
+    pub incoming: Option<String>,
+}
+
+impl ConflictVersions {
+    /// The number of characters of the three versions.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        [&self.base, &self.current, &self.incoming]
+            .into_iter()
+            .flatten()
+            .map(|text| text.chars().count())
+            .sum()
+    }
+
+    /// `true` if no side has a file.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.base.is_none() && self.current.is_none() && self.incoming.is_none()
+    }
+}
+
+/// Puts `text` between the tags `name`, or tells that the side has no file.
+fn version_part(name: &str, text: Option<&String>) -> String {
+    match text {
+        Some(text) => format!("<{name}>\n{text}\n</{name}>"),
+        None => format!("<{name}>The file does not exist in this version.</{name}>"),
+    }
+}
+
+/// Makes a unified diff with 3 lines of context from the two sides of a file.
+#[must_use]
+pub fn unified_diff(path: &str, original: &str, modified: &str) -> String {
+    similar::TextDiff::from_lines(original, modified)
+        .unified_diff()
+        .context_radius(3)
+        .header(&format!("a/{path}"), &format!("b/{path}"))
+        .to_string()
+}
+
+/// Cuts a diff of several files at `max` characters. Each file keeps its header and
+/// the first part of its changes. Returns `true` if the diff was longer.
+#[must_use]
+pub fn limit_diff(diff: &str, max: usize) -> (String, bool) {
+    if diff.chars().count() <= max {
+        return (diff.to_owned(), false);
+    }
+    let mut files: Vec<&str> = Vec::new();
+    let mut start = 0;
+    for (index, _) in diff.match_indices("\ndiff --git ") {
+        files.push(&diff[start..=index]);
+        start = index + 1;
+    }
+    files.push(&diff[start..]);
+    let share = max / files.len().max(1);
+    let text = files
+        .into_iter()
+        .map(|file| {
+            let (part, is_cut) = clip(file, share);
+            if is_cut { format!("{part}\n") } else { part }
+        })
+        .collect();
+    (text, true)
 }
 
 /// Returns `text` with a maximum of `max` characters, and `true` if the text was longer.
@@ -102,6 +204,41 @@ impl ActionContext {
                     .unwrap_or("  (The application did not read the structure.)\n");
                 format!("<relation>\n{schema}.{name}\n{structure}</relation>")
             }
+            Self::StagedChanges { diff, subjects, .. } => {
+                let diff = diff
+                    .as_deref()
+                    .unwrap_or("(The application did not read the diff.)");
+                let subjects = if subjects.is_empty() {
+                    "(The repository has no commits.)".to_owned()
+                } else {
+                    subjects.join("\n")
+                };
+                format!(
+                    "<staged_diff>\n{diff}\n</staged_diff>\n<earlier_commit_subjects>\n{subjects}\n</earlier_commit_subjects>"
+                )
+            }
+            Self::FileDiff { path, staged, diff } => {
+                let side = if *staged {
+                    "staged changes"
+                } else {
+                    "changes on disk"
+                };
+                let diff = diff
+                    .as_deref()
+                    .unwrap_or("(The application did not read the diff.)");
+                format!("<diff>\nFile: {path} ({side})\n{diff}\n</diff>")
+            }
+            Self::Conflict { path, versions } => match versions {
+                Some(versions) => format!(
+                    "<conflict>\nFile: {path}\n{}\n{}\n{}\n</conflict>",
+                    version_part("base", versions.base.as_ref()),
+                    version_part("current", versions.current.as_ref()),
+                    version_part("incoming", versions.incoming.as_ref()),
+                ),
+                None => format!(
+                    "<conflict>\nFile: {path}\n(The application did not read the versions.)\n</conflict>"
+                ),
+            },
         }
     }
 
@@ -127,6 +264,30 @@ impl ActionContext {
             }
             Self::Relation { schema, name, .. } => {
                 vec![format!("the structure of {schema}.{name}")]
+            }
+            Self::StagedChanges {
+                is_cut, subjects, ..
+            } => {
+                let diff = if *is_cut {
+                    format!(
+                        "the first part of the staged diff (the limit is {} characters)",
+                        thousands(MAX_DIFF_CHARS)
+                    )
+                } else {
+                    "the staged diff".to_owned()
+                };
+                let mut parts = vec![diff];
+                if !subjects.is_empty() {
+                    parts.push(format!(
+                        "the subjects of the last {} commits",
+                        subjects.len()
+                    ));
+                }
+                parts
+            }
+            Self::FileDiff { path, .. } => vec![format!("the diff of {path}")],
+            Self::Conflict { path, .. } => {
+                vec![format!("the three versions of {path}")]
             }
         }
     }
@@ -427,6 +588,113 @@ mod tests {
             })
         );
         assert!(missing.message.contains("Select a connection"));
+    }
+
+    #[test]
+    fn the_staged_changes_have_the_diff_and_the_subjects() {
+        let context = ActionContext::StagedChanges {
+            diff: Some("diff --git a/x b/x".to_owned()),
+            is_cut: true,
+            subjects: vec!["Add the report".to_owned(), "Fix the join".to_owned()],
+        };
+
+        assert_eq!(
+            context.render(),
+            "<staged_diff>\ndiff --git a/x b/x\n</staged_diff>\n\
+             <earlier_commit_subjects>\nAdd the report\nFix the join\n</earlier_commit_subjects>"
+        );
+        assert_eq!(
+            context.summary_parts(),
+            [
+                "the first part of the staged diff (the limit is 60 000 characters)",
+                "the subjects of the last 2 commits"
+            ]
+        );
+    }
+
+    #[test]
+    fn the_ui_cannot_set_the_git_data() {
+        let staged: ActionContext = serde_json::from_str(
+            r#"{"type":"staged-changes","diff":"x","is_cut":true,"subjects":["y"]}"#,
+        )
+        .unwrap();
+        let file: ActionContext =
+            serde_json::from_str(r#"{"type":"file-diff","path":"a.sql","staged":true,"diff":"x"}"#)
+                .unwrap();
+        let conflict: ActionContext = serde_json::from_str(
+            r#"{"type":"conflict","path":"a.sql","versions":{"base":"x","current":null,"incoming":null}}"#,
+        )
+        .unwrap();
+
+        assert_eq!(
+            staged,
+            ActionContext::StagedChanges {
+                diff: None,
+                is_cut: false,
+                subjects: vec![]
+            }
+        );
+        assert!(matches!(file, ActionContext::FileDiff { diff: None, .. }));
+        assert!(matches!(
+            conflict,
+            ActionContext::Conflict { versions: None, .. }
+        ));
+    }
+
+    #[test]
+    fn a_conflict_has_its_three_versions_in_tags() {
+        let context = ActionContext::Conflict {
+            path: "r.sql".to_owned(),
+            versions: Some(ConflictVersions {
+                base: Some("a".to_owned()),
+                current: Some("b".to_owned()),
+                incoming: None,
+            }),
+        };
+
+        assert_eq!(
+            context.render(),
+            "<conflict>\nFile: r.sql\n<base>\na\n</base>\n<current>\nb\n</current>\n\
+             <incoming>The file does not exist in this version.</incoming>\n</conflict>"
+        );
+        assert_eq!(context.summary_parts(), ["the three versions of r.sql"]);
+    }
+
+    #[test]
+    fn the_unified_diff_has_the_header_and_the_changed_lines() {
+        let diff = unified_diff("r.sql", "select 1\nfrom t\n", "select 2\nfrom t\n");
+
+        assert_eq!(
+            diff,
+            "--- a/r.sql\n+++ b/r.sql\n@@ -1,2 +1,2 @@\n-select 1\n+select 2\n from t\n"
+        );
+        assert!(
+            ActionContext::FileDiff {
+                path: "r.sql".to_owned(),
+                staged: false,
+                diff: Some(diff),
+            }
+            .render()
+            .starts_with("<diff>\nFile: r.sql (changes on disk)\n--- a/r.sql")
+        );
+    }
+
+    #[test]
+    fn limit_diff_keeps_the_header_of_each_file() {
+        let first = format!("diff --git a/a b/a\n{}", "+a\n".repeat(100));
+        let second = format!("diff --git a/b b/b\n{}", "+b\n".repeat(100));
+        let diff = format!("{first}{second}");
+
+        let (short, is_short_cut) = limit_diff("diff --git a/a b/a\n+a\n", 100);
+        let (cut, is_cut) = limit_diff(&diff, 200);
+
+        assert!(!is_short_cut);
+        assert_eq!(short, "diff --git a/a b/a\n+a\n");
+        assert!(is_cut);
+        assert!(cut.contains("diff --git a/a b/a"));
+        assert!(cut.contains("diff --git a/b b/b"));
+        assert_eq!(cut.matches(CUT_MARKER).count(), 2);
+        assert!(cut.chars().count() < diff.chars().count());
     }
 
     #[test]

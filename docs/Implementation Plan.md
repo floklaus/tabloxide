@@ -542,6 +542,14 @@ Status of stage 4 on 2026-11-25: stage 4 is complete in code.
   * The user still marks the file as resolved.
 * The `git` crate removes credentials from the remote addresses in each text, with `redact_credentials`.
 
+Status of stage 5 on 2026-11-26: stage 5 is complete in code.
+
+* The UI sends only the path of a file, or nothing for the commit message. The backend reads the Git data in `src-tauri/src/commands/assistant_git.rs`. The fields of the data are not in the input of the command.
+* The staged diff uses `--no-ext-diff` and `--no-textconv`, because a diff program or a text conversion of the configuration can run other programs.
+* "Explain the changes" gets a unified diff that the backend makes with the crate `similar` from the two sides of the diff view. Thus it is the same as the view, also for a new file.
+* The conflict view has no blocks. It shows the whole file. Thus "Propose a resolution" sends the three versions of the whole file, with a limit of 60 000 characters, and the proposal is the whole result.
+* The commit message request runs in a session that is not in the panel, because the answer goes into the field.
+
 **Stage 6: ask about these rows (1 week).**
 
 * The results toolbar gets "Ask about these rows". Its position is not on the design canvas yet. Add it to the canvas before this stage starts.

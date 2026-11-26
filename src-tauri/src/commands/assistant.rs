@@ -1,5 +1,6 @@
 //! Commands of the AI assistant.
 
+use crate::commands::assistant_git::read_git_data;
 use crate::commands::assistant_models::clear_model_cache;
 use crate::commands::workspace::state_dir;
 use crate::error::CommandError;
@@ -270,6 +271,11 @@ async fn answer(
     // UI cannot send it.
     let entry = session.as_ref().map(|(entry, _)| entry.session.as_ref());
     let messages = match read_relations(&request.messages, entry).await {
+        Ok(messages) => messages,
+        Err(error) => return Ok(AskResult::Failed { error }),
+    };
+    // The Git data comes from the repository of the workspace. The UI cannot send it.
+    let messages = match read_git_data(state, messages).await? {
         Ok(messages) => messages,
         Err(error) => return Ok(AskResult::Failed { error }),
     };

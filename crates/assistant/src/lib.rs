@@ -23,7 +23,10 @@ mod sse;
 #[cfg(test)]
 mod test_server;
 
-pub use action::{ActionContext, MAX_GIT_OUTPUT_CHARS, SchemaCount, read_relations, sent_summary};
+pub use action::{
+    ActionContext, ConflictVersions, MAX_CONFLICT_CHARS, MAX_DIFF_CHARS, MAX_GIT_OUTPUT_CHARS,
+    SchemaCount, limit_diff, read_relations, sent_summary, unified_diff,
+};
 pub use anthropic::AnthropicProvider;
 pub use context::{
     MAX_DETAILED_RELATIONS, RelationContext, SchemaContext, SchemaGroup, collect_schema,
