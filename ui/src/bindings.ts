@@ -960,7 +960,7 @@ export type EngineSource_Serialize =
 export type Environment = "development" | "staging" | "production";
 
 /**  Why the application does not read a plan. */
-export type ExplainRejection = "no-statement" | "many-statements" | "already-explain" | "not-explainable" | "analyze-changes-data" | "not-supported";
+export type ExplainRejection = "no-statement" | "many-statements" | "already-explain" | "not-explainable" | "analyze-changes-data" | "not-supported" | "measure-changes-data" | "no-plan";
 
 /**  Result of a plan read. A statement that fails is a normal result, not a command error. */
 export type ExplainResult = ExplainResult_Serialize | ExplainResult_Deserialize;

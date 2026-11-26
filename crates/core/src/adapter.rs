@@ -1,8 +1,8 @@
 //! The database interface that the other parts of the application use.
 
 use crate::{
-    Column, ConnectError, ConnectionProfile, Engine, Page, QueryError, QueryLanguage,
-    RelationDetail, RelationInfo, SchemaInfo, Secret, ServerInfo,
+    Column, ConnectError, ConnectionProfile, Engine, Page, QueryError, QueryErrorKind,
+    QueryLanguage, RelationDetail, RelationInfo, SchemaInfo, Secret, ServerInfo,
 };
 use async_trait::async_trait;
 use serde::Serialize;
@@ -91,6 +91,28 @@ pub trait Session: Send {
     /// Returns a statement that reads a maximum of `limit` rows of a table or view.
     /// The statement has the identifiers in quotes.
     async fn sample_statement(&self, schema: &str, relation: &str, limit: u32) -> String;
+
+    /// Reads the execution plan of one statement. With `run`, the engine runs the
+    /// statement and measures it. The caller permits `run` only for a statement that
+    /// reads data.
+    ///
+    /// The SQL engines of the application read their plans with `EXPLAIN` through
+    /// `execute`. An engine without a plan keeps this default, which is an error.
+    async fn read_plan(&mut self, _statement: &str, _run: bool) -> Result<PlanText, QueryError> {
+        Err(QueryError::new(
+            QueryErrorKind::Other,
+            "The engine of this connection gives no execution plan.",
+        ))
+    }
+}
+
+/// The execution plan of a statement, as text of the engine.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PlanText {
+    /// The plan, for example a JSON document.
+    pub text: String,
+    /// What the engine ran to make the plan, for the user.
+    pub statement: String,
 }
 
 /// Cancels the active statement of a session.

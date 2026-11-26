@@ -119,12 +119,16 @@ export function buildCommands(): Command[] {
   const always = () => true
   const hasTab = () => activeTab() !== undefined
   const hasConnection = () => activeConnection() !== undefined
-  // Only the SQL engines give a plan.
-  const canExplain = () =>
-    canRun() &&
-    (findEngine(activeConnection()?.engine ?? 'postgres')?.info.capabilities
-      .explainPlan ??
-      false)
+  // The plan tree reads the JSON of EXPLAIN. Thus it is only for the SQL engines.
+  // A connector engine with plans gives them to the assistant only.
+  const canExplain = () => {
+    const engine = findEngine(activeConnection()?.engine ?? 'postgres')
+    return (
+      canRun() &&
+      engine?.info.language === 'sql' &&
+      engine.info.capabilities.explainPlan
+    )
+  }
   const commands: Command[] = [
     // File
     {

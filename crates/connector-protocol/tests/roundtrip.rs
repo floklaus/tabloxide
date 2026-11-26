@@ -8,8 +8,9 @@ use tabloxide_connector_protocol::v1::{
     Capabilities, Cell, Column, ColumnKind, Completion, ConnectResponse, DescribeRelationRequest,
     DescribeRelationResponse, DescribeRequest, DescribeResponse, Empty, ExecuteEvent,
     ExecuteRequest, ListRelationsRequest, ListRelationsResponse, ListSchemasResponse,
-    OpenSessionRequest, Page, ResultStart, Row, SampleStatementRequest, SampleStatementResponse,
-    SessionRequest, StatusResponse, TestConnectionRequest, cell, execute_event,
+    OpenSessionRequest, Page, ReadPlanRequest, ReadPlanResponse, ResultStart, Row,
+    SampleStatementRequest, SampleStatementResponse, SessionRequest, StatusResponse,
+    TestConnectionRequest, cell, execute_event,
 };
 use tabloxide_connector_protocol::{PROTOCOL_MINOR, TOKEN_HEADER};
 use tokio::net::TcpListener;
@@ -139,6 +140,13 @@ impl Connector for FakeConnector {
         &self,
         _request: Request<SampleStatementRequest>,
     ) -> Result<Response<SampleStatementResponse>, Status> {
+        not_in_this_test()
+    }
+
+    async fn read_plan(
+        &self,
+        _request: Request<ReadPlanRequest>,
+    ) -> Result<Response<ReadPlanResponse>, Status> {
         not_in_this_test()
     }
 }

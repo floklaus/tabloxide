@@ -2,9 +2,9 @@
 
 use crate::csv::export_csv;
 use crate::{
-    CancelHandle, QueryError, QueryErrorKind, QueryLanguage, RelationDetail, RelationInfo,
-    ResultStream, Row, RunLimits, RunTarget, SchemaInfo, ServerInfo, Session, StatementReport,
-    run_script,
+    CancelHandle, PlanText, QueryError, QueryErrorKind, QueryLanguage, RelationDetail,
+    RelationInfo, ResultStream, Row, RunLimits, RunTarget, SchemaInfo, ServerInfo, Session,
+    StatementReport, run_script,
 };
 use serde::Serialize;
 use std::sync::Arc;
@@ -201,6 +201,18 @@ impl QuerySession {
         let mut inner = self.inner.lock().await;
         inner.close_open_result().await;
         inner.session.relations(schema).await
+    }
+
+    /// Reads the execution plan of one statement. With `run`, the engine runs it.
+    /// This closes the open result.
+    ///
+    /// # Errors
+    ///
+    /// Returns the error of the database, or an error if the engine gives no plan.
+    pub async fn read_plan(&self, statement: &str, run: bool) -> Result<PlanText, QueryError> {
+        let mut inner = self.inner.lock().await;
+        inner.close_open_result().await;
+        inner.session.read_plan(statement, run).await
     }
 
     /// Reads the structure of one table or view. This closes the open result.

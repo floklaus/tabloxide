@@ -13,7 +13,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tabloxide_core::mongo::parse_statement;
 use tabloxide_core::{
-    CancelHandle, Column, Completion, Page, QueryError, QueryErrorKind, RelationDetail,
+    CancelHandle, Column, Completion, Page, PlanText, QueryError, QueryErrorKind, RelationDetail,
     RelationInfo, ResultStream, SchemaInfo, ServerInfo, Session,
 };
 use tokio::sync::watch;
@@ -275,6 +275,80 @@ impl Session for MongoSession {
     async fn sample_statement(&self, schema: &str, relation: &str, limit: u32) -> String {
         catalog::sample_statement(&self.database, schema, relation, limit)
     }
+
+    async fn read_plan(&mut self, statement: &str, run: bool) -> Result<PlanText, QueryError> {
+        let parsed = parse_statement(statement).map_err(|error| QueryError {
+            position: Some(error.position),
+            ..QueryError::new(QueryErrorKind::Database, error.message)
+        })?;
+        let planned = plan(&parsed, &self.database, self.limits())
+            .map_err(|error| QueryError::new(QueryErrorKind::Database, error.0))?;
+        let (database, command) = explain_command(planned, run)?;
+        let verbosity = verbosity(run);
+        let answer = self
+            .guard(self.client.database(&database).run_command(command))
+            .await?;
+        let text = serde_json::to_string_pretty(&Bson::Document(answer).into_relaxed_extjson())
+            .unwrap_or_default();
+        Ok(PlanText {
+            text,
+            statement: format!("explain(\"{verbosity}\") of {}", statement.trim()),
+        })
+    }
+}
+
+/// The commands for which MongoDB gives a plan.
+const EXPLAINABLE: [&str; 7] = [
+    "find",
+    "aggregate",
+    "count",
+    "distinct",
+    "update",
+    "delete",
+    "findAndModify",
+];
+
+/// `executionStats` runs the statement and measures it. `queryPlanner` does not run it.
+fn verbosity(run: bool) -> &'static str {
+    if run {
+        "executionStats"
+    } else {
+        "queryPlanner"
+    }
+}
+
+/// Returns the database and the `explain` command for a planned statement.
+///
+/// # Errors
+///
+/// Returns an error for a statement without a plan, for example `use` or `drop`.
+fn explain_command(planned: Plan, run: bool) -> Result<(String, Document), QueryError> {
+    let Plan::Command {
+        database, command, ..
+    } = planned
+    else {
+        return Err(no_plan());
+    };
+    let name = command
+        .keys()
+        .next()
+        .map(String::as_str)
+        .unwrap_or_default();
+    if !EXPLAINABLE.contains(&name) {
+        return Err(no_plan());
+    }
+    Ok((
+        database,
+        doc! { "explain": command, "verbosity": verbosity(run) },
+    ))
+}
+
+fn no_plan() -> QueryError {
+    QueryError::new(
+        QueryErrorKind::Database,
+        "MongoDB gives a plan only for find, aggregate, count, distinct, update, delete, and \
+         findAndModify.",
+    )
 }
 
 /// The result of a statement that changes data.
@@ -394,6 +468,32 @@ impl ResultStream for DocumentStream {
 
 #[cfg(test)]
 mod tests {
+    fn explained(text: &str, run: bool) -> Result<(String, Document), QueryError> {
+        let parsed = parse_statement(text).unwrap();
+        let planned = plan(&parsed, "app", Limits { max_time_ms: None }).unwrap();
+        explain_command(planned, run)
+    }
+
+    #[test]
+    fn a_find_gets_an_explain_command_with_the_verbosity() {
+        let (database, estimate) = explained("db.users.find({ age: 3 })", false).unwrap();
+        let (_, measured) = explained("db.users.find({ age: 3 })", true).unwrap();
+
+        assert_eq!(database, "app");
+        assert_eq!(estimate.get_str("verbosity").unwrap(), "queryPlanner");
+        assert_eq!(measured.get_str("verbosity").unwrap(), "executionStats");
+        let inner = estimate.get_document("explain").unwrap();
+        assert_eq!(inner.get_str("find").unwrap(), "users");
+    }
+
+    #[test]
+    fn a_statement_without_a_plan_gets_a_clear_error() {
+        for text in ["use sales", "db.users.drop()", "show collections"] {
+            let error = explained(text, false).unwrap_err();
+            assert!(error.message.contains("only for find"), "{text}");
+        }
+    }
+
     use super::*;
 
     #[test]

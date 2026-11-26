@@ -17,7 +17,9 @@ pub mod sql;
 pub mod testing;
 mod validation;
 
-pub use adapter::{CancelHandle, Capabilities, DbAdapter, EngineInfo, ResultStream, Session};
+pub use adapter::{
+    CancelHandle, Capabilities, DbAdapter, EngineInfo, PlanText, ResultStream, Session,
+};
 pub use connection::{
     ConnectionId, ConnectionProfile, DEFAULT_CONNECT_TIMEOUT_SECS, DEFAULT_PORT, Engine,
     Environment, MEMORY_DATABASE, SecretSource, ServerInfo, TlsMode,

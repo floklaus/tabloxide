@@ -2,7 +2,7 @@ import { splitAnswer } from './answerSegments'
 import type { AssistantMessage, SchemaInfo } from './assistantSession'
 
 export const EMPTY_HINT =
-  'Describe the SQL that you need, for example a query, an index, or a change of a table. Or put the cursor in a statement and select Analyze plan.'
+  'Describe the statement that you need, for example a query, an index, or a change of a table or a collection. Or put the cursor in a statement and select Analyze plan.'
 
 export const PRIVACY_TEXT =
   'Each request sends the conversation and the structure of the connected database to Anthropic. It does not send rows, passwords, or connection settings. The application does not run the SQL of an answer.'

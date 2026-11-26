@@ -48,7 +48,7 @@ export function Composer(props: {
           ref={inputRef}
           rows={3}
           value={draft}
-          placeholder="Describe the SQL that you need"
+          placeholder="Describe the statement that you need"
           onChange={(event) => session().setDraft(event.target.value)}
           onKeyDown={onKeyDown}
         />

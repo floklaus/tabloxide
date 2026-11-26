@@ -48,6 +48,12 @@ service Connector {
   // Returns a statement that reads a maximum of `limit` rows of a table or view.
   // The statement has the identifiers in the quotes of the engine.
   rpc SampleStatement(SampleStatementRequest) returns (SampleStatementResponse);
+
+  // Reads the execution plan of one statement. With `run`, the engine runs the
+  // statement to measure it. Tabloxide sends `run` only for a statement that reads
+  // data. A connector without plans answers with the status UNIMPLEMENTED.
+  // Since minor version 2.
+  rpc ReadPlan(ReadPlanRequest) returns (ReadPlanResponse);
 }
 
 message Empty {}
@@ -374,4 +380,18 @@ message SampleStatementRequest {
 
 message SampleStatementResponse {
   string statement = 1;
+}
+
+message ReadPlanRequest {
+  uint64 session_id = 1;
+  string statement = 2;
+  bool run = 3;
+}
+
+message ReadPlanResponse {
+  // The plan, for example a JSON document.
+  string text = 1;
+  // What the engine ran to make the plan, for the user.
+  string statement = 2;
+  optional QueryError error = 3;
 }

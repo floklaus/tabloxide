@@ -39,7 +39,7 @@ impl DbAdapter for MongoAdapter {
                 cancel: true,
                 unix_socket: false,
                 file_database: false,
-                explain_plan: false,
+                explain_plan: true,
             },
         }
     }

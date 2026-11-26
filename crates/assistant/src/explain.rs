@@ -2,7 +2,7 @@
 
 use serde::Serialize;
 use tabloxide_core::sql::{first_keyword, has_word, is_pageable, split_statements};
-use tabloxide_core::{Engine, Row};
+use tabloxide_core::{Engine, QueryLanguage, Row};
 
 /// Why the application does not read a plan.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, thiserror::Error)]
@@ -27,6 +27,45 @@ pub enum ExplainRejection {
     AnalyzeChangesData,
     #[error("The application shows a plan only for PostgreSQL and DuckDB.")]
     NotSupported,
+    #[error(
+        "A plan with measured times runs the statement. Thus it is available only for a \
+         statement that reads data. Read the plan without measured times."
+    )]
+    MeasureChangesData,
+    #[error("The engine of this connection gives no execution plan.")]
+    NoPlan,
+}
+
+/// Returns the one statement of `text` for the plan read of a connector.
+///
+/// The connector runs the statement for `measure`. Thus `measure` is permitted only
+/// for a statement that the language marks as a read.
+///
+/// # Errors
+///
+/// Returns the reason if `text` does not have exactly one statement, or if `measure`
+/// would run a statement that changes data.
+pub fn plan_statement(
+    language: QueryLanguage,
+    text: &str,
+    measure: bool,
+) -> Result<String, ExplainRejection> {
+    let spans = language.split(text);
+    let statement = match spans.as_slice() {
+        [] => return Err(ExplainRejection::NoStatement),
+        [span] => text[span.start..span.end]
+            .trim()
+            .trim_end_matches(';')
+            .trim(),
+        _ => return Err(ExplainRejection::ManyStatements),
+    };
+    if statement.is_empty() {
+        return Err(ExplainRejection::NoStatement);
+    }
+    if measure && !language.is_pageable(statement) {
+        return Err(ExplainRejection::MeasureChangesData);
+    }
+    Ok(statement.to_owned())
 }
 
 /// First keywords of the statements for which the application reads a plan.
@@ -128,6 +167,33 @@ pub fn plan_text(rows: &[Row]) -> String {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn a_connector_plan_reads_one_statement_and_measures_only_a_read() {
+        let mongo = QueryLanguage::MongodbShell;
+
+        assert_eq!(
+            plan_statement(mongo, "db.users.find({ a: 1 });", true),
+            Ok("db.users.find({ a: 1 })".to_owned())
+        );
+        assert_eq!(
+            plan_statement(mongo, "db.users.deleteMany({ a: 1 })", false),
+            Ok("db.users.deleteMany({ a: 1 })".to_owned())
+        );
+        assert_eq!(
+            plan_statement(mongo, "db.users.deleteMany({ a: 1 })", true),
+            Err(ExplainRejection::MeasureChangesData)
+        );
+        assert_eq!(
+            plan_statement(mongo, "db.a.find()\ndb.b.find()", false),
+            Err(ExplainRejection::ManyStatements)
+        );
+        assert_eq!(
+            plan_statement(mongo, "  ", false),
+            Err(ExplainRejection::NoStatement)
+        );
+    }
+
     use super::*;
 
     #[test]

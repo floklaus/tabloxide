@@ -9,9 +9,9 @@ use tabloxide_connector_protocol::v1::connector_server::Connector;
 use tabloxide_connector_protocol::v1::{
     self, ConnectResponse, Connected, DescribeRelationRequest, DescribeRelationResponse,
     DescribeRequest, DescribeResponse, Empty, ExecuteEvent, ExecuteRequest, ListRelationsRequest,
-    ListRelationsResponse, ListSchemasResponse, OpenSessionRequest, ResultStart,
-    SampleStatementRequest, SampleStatementResponse, SessionRequest, StatusResponse,
-    TestConnectionRequest, connect_response, execute_event,
+    ListRelationsResponse, ListSchemasResponse, OpenSessionRequest, ReadPlanRequest,
+    ReadPlanResponse, ResultStart, SampleStatementRequest, SampleStatementResponse, SessionRequest,
+    StatusResponse, TestConnectionRequest, connect_response, execute_event,
 };
 use tabloxide_core::{CancelHandle, DbAdapter, QueryError, ResultStream, Secret, Session};
 use tokio::sync::mpsc;
@@ -357,5 +357,31 @@ impl Connector for ConnectorService {
             .sample_statement(&request.schema, &request.relation, request.limit)
             .await;
         Ok(Response::new(SampleStatementResponse { statement }))
+    }
+
+    async fn read_plan(
+        &self,
+        request: Request<ReadPlanRequest>,
+    ) -> Result<Response<ReadPlanResponse>, Status> {
+        let request = request.into_inner();
+        let slot = self.slot(request.session_id)?;
+        let result = slot
+            .session
+            .lock()
+            .await
+            .read_plan(&request.statement, request.run)
+            .await;
+        Ok(Response::new(match result {
+            Ok(plan) => ReadPlanResponse {
+                text: plan.text,
+                statement: plan.statement,
+                error: None,
+            },
+            Err(error) => ReadPlanResponse {
+                text: String::new(),
+                statement: String::new(),
+                error: Some(convert::query_error_to_wire(&error)),
+            },
+        }))
     }
 }

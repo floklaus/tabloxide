@@ -11,10 +11,10 @@ use std::sync::{Arc, Mutex, PoisonError};
 use tabloxide_assistant::{
     AssistantError, AssistantErrorKind, ChatMessage, ChatOutcome, ChatProvider, Database,
     ExplainRejection, MAX_DETAILED_RELATIONS, SchemaContext, SchemaCount, Task, TextSink,
-    chat_request, check_rows, collect_schema, explain_statement, plan_text, read_relations,
-    sent_summary,
+    chat_request, check_rows, collect_schema, explain_statement, plan_statement, plan_text,
+    read_relations, sent_summary,
 };
-use tabloxide_core::{Environment, QueryError, QuerySession, Secret};
+use tabloxide_core::{Environment, QueryError, QueryLanguage, QuerySession, Secret};
 use tabloxide_workspace::AssistantPreferences;
 use tauri::ipc::Channel;
 use tauri::{AppHandle, State};
@@ -376,6 +376,35 @@ pub fn assistant_cancel(state: State<'_, AppState>, id: AskId) {
 }
 
 /// Reads the plan of the one statement in `sql`.
+/// Reads the plan of a connector engine with `read_plan`. The check of the statement
+/// comes from its language.
+async fn read_connector_plan(entry: &SessionEntry, text: &str, measure: bool) -> ExplainResult {
+    if !entry.info.capabilities.explain_plan {
+        let reason = ExplainRejection::NoPlan;
+        return ExplainResult::Rejected {
+            reason,
+            message: reason.to_string(),
+        };
+    }
+    let statement = match plan_statement(entry.info.language, text, measure) {
+        Ok(statement) => statement,
+        Err(reason) => {
+            return ExplainResult::Rejected {
+                reason,
+                message: reason.to_string(),
+            };
+        }
+    };
+    match entry.session.read_plan(&statement, measure).await {
+        Ok(plan) => ExplainResult::Plan {
+            statement: plan.statement,
+            plan: plan.text,
+            is_truncated: false,
+        },
+        Err(error) => ExplainResult::Failed { error },
+    }
+}
+
 async fn read_plan(session: &QuerySession, sql: &str, analyze: bool) -> ExplainResult {
     let statement = match explain_statement(sql, analyze) {
         Ok(statement) => statement,
@@ -409,8 +438,14 @@ pub async fn assistant_explain(
     sql: String,
     analyze: bool,
 ) -> Result<ExplainResult, CommandError> {
-    let session = state.session(session_id)?;
-    Ok(read_plan(&session, &sql, analyze).await)
+    let entry = state.session_entry(session_id)?;
+    // The SQL engines read the plan with EXPLAIN. A different engine gives its plan
+    // through its connector.
+    if entry.info.language == QueryLanguage::Sql {
+        Ok(read_plan(&entry.session, &sql, analyze).await)
+    } else {
+        Ok(read_connector_plan(&entry, &sql, analyze).await)
+    }
 }
 
 #[cfg(test)]
@@ -683,6 +718,69 @@ mod tests {
         let message = failure_of(&state, &rows_request(id, 101)).await;
 
         assert!(message.contains("Preferences permit 100 rows"), "{message}");
+    }
+
+    fn mongodb_entry(explain_plan: bool) -> SessionEntry {
+        let (scripted, _) = ScriptedSession::new(vec![]);
+        SessionEntry {
+            session: Arc::new(QuerySession::new(
+                Box::new(scripted),
+                QueryLanguage::MongodbShell,
+            )),
+            connection_id: tabloxide_core::ConnectionId::from("m1"),
+            connection_name: "Users".to_owned(),
+            engine: tabloxide_core::Engine::new("mongodb"),
+            info: tabloxide_core::EngineInfo {
+                engine: tabloxide_core::Engine::new("mongodb"),
+                display_name: "MongoDB".to_owned(),
+                language: QueryLanguage::MongodbShell,
+                default_port: Some(27017),
+                capabilities: tabloxide_core::Capabilities {
+                    cancel: true,
+                    unix_socket: false,
+                    file_database: false,
+                    explain_plan,
+                },
+            },
+        }
+    }
+
+    #[tokio::test]
+    async fn a_connector_plan_needs_the_capability() {
+        let result = read_connector_plan(&mongodb_entry(false), "db.users.find()", false).await;
+
+        assert!(matches!(
+            result,
+            ExplainResult::Rejected {
+                reason: ExplainRejection::NoPlan,
+                ..
+            }
+        ));
+    }
+
+    #[tokio::test]
+    async fn a_connector_plan_with_measured_times_is_only_for_a_read() {
+        let result =
+            read_connector_plan(&mongodb_entry(true), "db.users.deleteMany({ a: 1 })", true).await;
+
+        assert!(matches!(
+            result,
+            ExplainResult::Rejected {
+                reason: ExplainRejection::MeasureChangesData,
+                ..
+            }
+        ));
+    }
+
+    #[tokio::test]
+    async fn a_connector_plan_goes_to_the_session_of_the_engine() {
+        // The scripted session has no plan. Its default answer proves the call.
+        let result = read_connector_plan(&mongodb_entry(true), "db.users.find()", true).await;
+
+        let ExplainResult::Failed { error } = result else {
+            panic!("{result:?}");
+        };
+        assert!(error.message.contains("gives no execution plan"));
     }
 
     #[test]

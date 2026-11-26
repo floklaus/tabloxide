@@ -60,7 +60,7 @@ export const DEFAULT_ENGINES: EngineEntry_Serialize[] = [
       displayName: 'MongoDB',
       language: 'mongodb-shell',
       defaultPort: 27017,
-      capabilities: { ...capabilities(false, false), explainPlan: false },
+      capabilities: { ...capabilities(false, false), explainPlan: true },
     },
     source: { type: 'available' },
   },

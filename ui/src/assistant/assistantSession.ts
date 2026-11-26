@@ -6,6 +6,7 @@ import {
   type ActionContext,
   type AssistantEvent,
   type Environment,
+  type QueryLanguage_Serialize as QueryLanguage,
   type Role,
   type Task,
 } from '../bindings'
@@ -173,15 +174,21 @@ export function planRequest(
   plan: string,
   isAnalyzed: boolean,
   isTruncated: boolean,
+  language: QueryLanguage = 'sql',
 ): string {
-  const source = isAnalyzed
-    ? 'Plan from EXPLAIN ANALYZE (measured times):'
-    : 'Plan from EXPLAIN (estimates only):'
+  const isMongo = language === 'mongodb-shell'
+  const source = isMongo
+    ? isAnalyzed
+      ? 'Plan from explain("executionStats") (measured times):'
+      : 'Plan from explain("queryPlanner") (estimates only):'
+    : isAnalyzed
+      ? 'Plan from EXPLAIN ANALYZE (measured times):'
+      : 'Plan from EXPLAIN (estimates only):'
   const lines = [
     'Analyze the execution plan of this statement. Suggest improvements.',
     '',
     'Statement:',
-    '```sql',
+    isMongo ? '```mongodb' : language === 'sql' ? '```sql' : '```text',
     statement,
     '```',
     '',
@@ -515,7 +522,13 @@ export function createSession(): SessionStore {
         } else {
           const { plan, is_truncated } = result.data
           await ask(
-            planRequest(statement.trim(), plan, analyze, is_truncated),
+            planRequest(
+              statement.trim(),
+              plan,
+              analyze,
+              is_truncated,
+              connectionLanguage(tab.connectionId),
+            ),
             'plan',
             tab,
           )

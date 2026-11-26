@@ -9,12 +9,13 @@ use std::sync::Arc;
 use tabloxide_connector_protocol::convert;
 use tabloxide_connector_protocol::v1::{
     self, DescribeRelationRequest, ExecuteRequest, ListRelationsRequest, OpenSessionRequest,
-    SampleStatementRequest, SessionRequest, TestConnectionRequest, connect_response, execute_event,
+    ReadPlanRequest, SampleStatementRequest, SessionRequest, TestConnectionRequest,
+    connect_response, execute_event,
 };
 use tabloxide_core::{
     CancelHandle, Column, Completion, ConnectError, ConnectErrorKind, ConnectionProfile, DbAdapter,
-    EngineInfo, Page, QueryError, QueryErrorKind, RelationDetail, RelationInfo, ResultStream, Row,
-    SchemaInfo, Secret, ServerInfo, Session,
+    EngineInfo, Page, PlanText, QueryError, QueryErrorKind, RelationDetail, RelationInfo,
+    ResultStream, Row, SchemaInfo, Secret, ServerInfo, Session,
 };
 use tonic::{Code, Status, Streaming};
 
@@ -321,6 +322,30 @@ impl Session for RemoteSession {
             .await
             .map(|response| response.into_inner().statement)
             .unwrap_or_default()
+    }
+
+    async fn read_plan(&mut self, statement: &str, run: bool) -> Result<PlanText, QueryError> {
+        let request = ReadPlanRequest {
+            session_id: self.id,
+            statement: statement.to_owned(),
+            run,
+        };
+        let response = match self.client.read_plan(request).await {
+            Ok(response) => response.into_inner(),
+            // A connector of minor version 1 has no plans.
+            Err(status) if status.code() == Code::Unimplemented => {
+                return Err(QueryError::new(
+                    QueryErrorKind::Other,
+                    "The connector of this engine gives no execution plan.",
+                ));
+            }
+            Err(status) => return Err(lost(&status)),
+        };
+        response_error(response.error.as_ref())?;
+        Ok(PlanText {
+            text: response.text,
+            statement: response.statement,
+        })
     }
 }
 

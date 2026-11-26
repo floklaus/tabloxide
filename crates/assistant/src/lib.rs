@@ -35,7 +35,8 @@ pub use context::{
 };
 pub use error::{AssistantError, AssistantErrorKind};
 pub use explain::{
-    ExplainRejection, explain_json_statement, explain_statement, plan_json, plan_text,
+    ExplainRejection, explain_json_statement, explain_statement, plan_json, plan_statement,
+    plan_text,
 };
 pub use model_list::{MODEL_LIST_MAX_AGE_SECS, ModelList, ModelsResult, ModelsUpdate, load_models};
 pub use models::{ModelFeatures, ModelInfo, ModelLister};
