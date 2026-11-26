@@ -4,8 +4,6 @@ description: Connect Tabloxide to a new database engine with a separate program.
 protocol: v1
 ---
 
-# Build a connector
-
 A connector is a separate program that connects Tabloxide to one database engine. Tabloxide starts the program, talks to it with gRPC on the loopback address, and stops it. You can write a connector in any programming language. Tabloxide does not need a change for a new connector.
 
 This guide is for people who build a connector. It has these parts:
