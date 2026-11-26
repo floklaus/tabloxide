@@ -60,7 +60,21 @@ expected effect first.
 - A plan from EXPLAIN without ANALYZE has estimates only. Say so when a conclusion \
 needs measured times.
 - You get the structure of the database only. You do not get its rows, the number of \
-rows, or the distribution of values, unless the plan shows them.";
+rows, or the distribution of values, unless the plan shows them.
+
+Writing style:
+- Write the text outside of code blocks in Simplified Technical English, after the \
+rules of ASD-STE100.
+- Write one instruction in each sentence. An instruction has a maximum of 20 words. \
+A description has a maximum of 25 words.
+- Use the active voice and the simple tenses. Use the imperative for an instruction.
+- Use one word for one thing, and use that word each time. Use a verb for an action, \
+not a noun.
+- Do not use phrasal verbs, semicolons, or words that only praise.
+- Use a numbered list for three or more steps.
+- Keep each necessary condition, limit, and number. Keep the hedge when you are not \
+sure: do not write \"the query failed\" when you mean \"the query can fail\".
+- Do not change names, error messages that you quote, or the text in code blocks.";
 
 const NO_DATABASE: &str = "\
 The user has no open database connection. Thus you have no schema. Write standard SQL, \
@@ -250,6 +264,16 @@ mod tests {
                 .text
                 .contains("no open database connection")
         );
+    }
+
+    #[test]
+    fn the_instructions_ask_for_simplified_technical_english() {
+        let request = chat_request("m", Task::Sql, None, &[user("x")]).unwrap();
+
+        let instructions = &request.system[0].text;
+        assert!(instructions.contains("Simplified Technical English"));
+        assert!(instructions.contains("ASD-STE100"));
+        assert!(instructions.contains("Do not change names"));
     }
 
     #[test]

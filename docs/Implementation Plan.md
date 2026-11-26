@@ -412,6 +412,7 @@ The product owner made these decisions on 2026-11-25:
 | Number of rows | A preference sets the number: 1 to 1000, default 100. |
 | Production | A production connection never sends rows to the AI service. No setting changes this. |
 | Git console | Git commands only. No shell. |
+| Writing style | Each text of the AI is in Simplified Technical English, after the rules of ASD-STE100. Code and names do not change. |
 
 The rules on the design canvas apply to each AI action:
 
@@ -442,6 +443,10 @@ Changes in `crates/assistant`:
 * A new type `ActionContext` holds the data of one action. Examples are the statement, the error, the selection, the diff, the conflict block, the Git output, and the rows. `ActionContext::render` makes the text that goes to the AI service. `ActionContext::summary` makes the "Sent:" text.
 * `chat_request` adds a third system part with the instructions of the task. The instructions and the schema stay the first two parts. Thus the service can keep them for the next request.
 * Each task sets its effort. `Plan` and `Conflict` use `High`. The other tasks use `Medium`.
+* The writing style is part of the first system part, so it applies to each task. Since 2026-11-25, the instructions tell the AI service to write in Simplified Technical English, after ASD-STE100.
+  * The style applies to the explanations, the commit message, the explanation of a conflict, and the explanation of Git output.
+  * The style does not apply to code, names, and quoted error messages.
+  * A commit message keeps the subject limit of 72 characters. Its body follows the sentence limits of the style.
 * Size limits: 60 000 characters for a diff, 20 000 characters for Git output, and 500 characters for each value of a row. A text that is longer than its limit gets a clear marker where the cut is. The summary tells the user about the cut.
 
 Changes in `src-tauri`:
@@ -606,7 +611,7 @@ M21 removes these assumptions. The actions of M19 then work for each engine, in 
 **1. The language of the request.**
 
 * `chat_request` gets the engine and the query language from `EngineInfo`, not the name "PostgreSQL" or "DuckDB".
-* The instructions have two parts. The first part is the same for each engine. The second part is the guide of the language.
+* The instructions have two parts. The first part is the same for each engine. It has the writing style of ASD-STE100. The second part is the guide of the language.
 * The core has a guide for each language that it knows:
   * `sql`, with the dialect of the engine.
   * `mongodb-shell`, with the subset of section 10.2 of `Connector Design.md`. The guide tells the AI service that the application runs no JavaScript. Thus an answer must use only the forms of that subset.
@@ -671,7 +676,7 @@ M21 removes these assumptions. The actions of M19 then work for each engine, in 
 Completion criteria:
 
 * Each action of M19 works with PostgreSQL, DuckDB, and the MongoDB connector, or it is not shown, as the table above tells.
-* Tests with the test provider record each request. They check the guide, the words of the structure text, and the tag of the code blocks for each of the three engines.
+* Tests with the test provider record each request. They check the guide, the writing style, the words of the structure text, and the tag of the code blocks for each of the three engines.
 * A test with a scripted connector proves that a structure text has no values, also when the connector sends fields from a sample.
 * A test proves that a plan read with `run` is refused for a statement that the classifier does not mark as a read.
 

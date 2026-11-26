@@ -113,4 +113,5 @@ A request of a session uses the last SQL tab, also when the tab of the session i
 - The model can make mistakes. Examine each statement before you run it, most of all a statement that changes or removes data.
 - The model does not see rows, the number of rows, or the distribution of values, unless a plan shows them.
 - A long answer can stop at the maximum length. The panel shows a note for such an answer.
+- The assistant writes its text in Simplified Technical English, after the rules of ASD-STE100: short sentences, the active voice, and one word for one thing. Names, quoted error messages, and code stay as they are.
 - **Stop** ends a request. The service can charge for the part that it made before the stop.
