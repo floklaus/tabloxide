@@ -206,27 +206,32 @@ function RepositoryView({ repository }: { repository: Repository }) {
         <p className="pane__hint">No changes in the working tree.</p>
       )}
       <form className="git__commit" onSubmit={(event) => void submit(event)}>
+        <label className="git__message-field">
+          <span className="git__message-label">Message</span>
+          <textarea
+            className="git__message"
+            aria-label="Commit message"
+            placeholder={mergeMessage || 'Commit message'}
+            rows={3}
+            value={message}
+            onChange={(event) => setMessage(event.target.value)}
+          />
+        </label>
         <CommitMessageAi
           message={message}
           onMessage={setMessage}
           disabled={busy !== null || staged.length === 0}
+          commitButton={
+            <button
+              type="submit"
+              className="button button--small button--primary"
+              disabled={busy !== null || !canCommit || !effectiveMessage.trim()}
+            >
+              {isMerging ? 'Commit the merge' : 'Commit'}{' '}
+              {staged.length > 0 ? `(${staged.length})` : ''}
+            </button>
+          }
         />
-        <textarea
-          className="git__message"
-          aria-label="Commit message"
-          placeholder={mergeMessage || 'Commit message'}
-          rows={3}
-          value={message}
-          onChange={(event) => setMessage(event.target.value)}
-        />
-        <button
-          type="submit"
-          className="button button--small button--primary"
-          disabled={busy !== null || !canCommit || !effectiveMessage.trim()}
-        >
-          {isMerging ? 'Commit the merge' : 'Commit'}{' '}
-          {staged.length > 0 ? `(${staged.length})` : ''}
-        </button>
       </form>
       <CommitHistory />
       {isAborting && (

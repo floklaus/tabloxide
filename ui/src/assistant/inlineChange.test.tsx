@@ -137,6 +137,10 @@ describe('AI change of the selection', () => {
     expect(
       await screen.findByRole('button', { name: 'Accept' }),
     ).toBeInTheDocument()
+    // The instruction stays visible next to the buttons, as in the design.
+    expect(
+      screen.getByRole('region', { name: 'Change the selection with AI' }),
+    ).toHaveTextContent('Only the large orders.')
     expect(editor.dataset.proposal).toBe(CHANGED)
     expect(editor).toHaveValue(SQL)
     expect(screen.getByText(/Ctrl\+Enter accepts/)).toHaveTextContent(

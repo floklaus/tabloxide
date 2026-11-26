@@ -102,7 +102,13 @@ describe('AI actions of Git', () => {
     expect(screen.getByText(/The AI wrote this message/)).toHaveTextContent(
       'Sent: your request and the staged diff.',
     )
-    expect(screen.getByRole('button', { name: 'Write again' })).toBeEnabled()
+    const again = screen.getByRole('button', { name: 'Write again' })
+    expect(again).toBeEnabled()
+    // As in the design, the AI button and Commit are in one row.
+    expect(again.parentElement).toContainElement(
+      screen.getByRole('button', { name: /^Commit/ }),
+    )
+    expect(screen.getByText('Message')).toBeVisible()
     expect(
       useAssistantStore.getState().sessions[0].store.getState().messages,
     ).toHaveLength(0)
@@ -207,6 +213,7 @@ describe('AI actions of Git', () => {
       name: 'Proposed resolution',
     })
     expect(proposal).toHaveTextContent('select mine, incoming')
+    expect(proposal).toHaveTextContent('Both changes.')
     await user.click(screen.getByRole('button', { name: 'Accept' }))
     await user.click(screen.getByRole('button', { name: 'Mark as resolved' }))
 

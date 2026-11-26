@@ -177,6 +177,11 @@ describe('Explain and fix of a query error', () => {
       name: 'Replace in the editor',
     })
     expect(replace).toBeEnabled()
+    expect(
+      screen.getByText(
+        'Replace in the editor changes the text only. Run the statement yourself.',
+      ),
+    ).toBeInTheDocument()
     await user.click(replace)
 
     expect(input).toHaveValue(`select 1;\n${FIX}`)

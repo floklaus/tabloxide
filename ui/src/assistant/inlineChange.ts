@@ -194,7 +194,8 @@ export const useInlineChange = create<InlineState>((set, get) => {
         proposal,
         sent: request?.sent ?? null,
         risk: null,
-        instruction: '',
+        // The instruction stays visible next to the buttons of the proposal.
+        instruction: text,
       })
       // The user sees the risk of the proposal before the accept.
       const tab = useTabsStore.getState().tabs.find((item) => item.id === tabId)
@@ -224,7 +225,12 @@ export const useInlineChange = create<InlineState>((set, get) => {
       if (get().phase !== 'preview') return
       unlock()
       activeEditor()?.setLocked(true)
-      set({ phase: 'instruction', proposal: null, error: null })
+      set({
+        phase: 'instruction',
+        proposal: null,
+        error: null,
+        instruction: '',
+      })
     },
 
     close: () => {

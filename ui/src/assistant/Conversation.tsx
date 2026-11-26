@@ -116,6 +116,12 @@ function CodeBlock(props: {
           >
             {copied ? 'Copied' : 'Copy'}
           </button>
+          {replace && fits && (
+            <span className="assistant__block-note assistant__block-note--line">
+              Replace in the editor changes the text only. Run the statement
+              yourself.
+            </span>
+          )}
         </div>
       )}
     </div>

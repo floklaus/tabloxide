@@ -1,7 +1,7 @@
 import { MergeView } from '@codemirror/merge'
 import { useEffect, useRef, useState } from 'react'
 import { AiAction } from '../assistant/AiAction'
-import { onlyCodeBlock } from '../assistant/answerSegments'
+import { onlyCodeBlock, splitAnswer } from '../assistant/answerSegments'
 import type { SessionStore } from '../assistant/assistantStore'
 import type { ConflictSides_Serialize as ConflictSides } from '../bindings'
 import { DIFF_BASE, readOnlySide, sideLabel } from './diffExtensions'
@@ -24,7 +24,7 @@ function TwoSides({ path, ours, theirs }: TwoSidesProps) {
   const viewRef = useRef<MergeView | null>(null)
   /** The result that the AI proposes, or a note if the answer has none. */
   const [proposal, setProposal] = useState<
-    { text: string } | { note: string } | null
+    { text: string; explanation: string[] } | { note: string } | null
   >(null)
 
   const receive = (session: SessionStore) => {
@@ -37,7 +37,13 @@ function TwoSides({ path, ours, theirs }: TwoSidesProps) {
         ? {
             note: 'The answer has no result that the application can use. Read it in the assistant panel.',
           }
-        : { text },
+        : {
+            text,
+            // The text outside the code block explains the proposal.
+            explanation: splitAnswer(answer.text).flatMap((segment) =>
+              segment.type === 'text' ? [segment.text] : [],
+            ),
+          },
     )
   }
 
@@ -128,8 +134,16 @@ function TwoSides({ path, ours, theirs }: TwoSidesProps) {
       {proposal && 'text' in proposal && (
         <section
           className="conflict__proposal"
-          aria-label="Proposed resolution"
+          aria-labelledby="conflict-proposal-title"
         >
+          <h4 id="conflict-proposal-title" className="conflict__proposal-title">
+            Proposed resolution
+          </h4>
+          {proposal.explanation.map((paragraph, index) => (
+            <p key={index} className="conflict__explanation">
+              {paragraph}
+            </p>
+          ))}
           <pre className="conflict__kept">{proposal.text}</pre>
           <div className="git__row">
             <button
@@ -155,8 +169,9 @@ function TwoSides({ path, ours, theirs }: TwoSidesProps) {
             </button>
           </div>
           <p className="results__status">
+            The request sent the three versions of this file to Anthropic.
             Accept puts the text into the result. You still mark the file as
-            resolved. The explanation is in the assistant panel.
+            resolved.
           </p>
         </section>
       )}

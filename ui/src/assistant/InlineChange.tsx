@@ -107,7 +107,8 @@ export function InlineChange() {
         <div className="inline-change__row">
           <Icon name="sparkle" size={16} />
           <span className="inline-change__status">
-            The editor shows the proposed text below the removed text.
+            <span className="visually-hidden">Your instruction: </span>
+            <q className="inline-change__instruction">{state.instruction}</q>
           </span>
           <button
             ref={acceptRef}
