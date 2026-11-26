@@ -67,6 +67,8 @@ These items are not for one kind. Most items of the other groups need them.
 | F15 | **Build and licences.** A Cargo feature for each engine. A check of the licence of each driver. A measurement of the installer size and the build time for each new driver.                                                   | Should   | M    |
 | F16 | **Documents.** `docs/user/install.md`, `docs/user/troubleshooting.md`, and `README.md` for each new engine: the fields, the limits, the known problems.                                                                       | Should   | S    |
 
+Status on 2026-11-25: item F13 has a plan. It is milestone M21 in `Implementation Plan.md`.
+
 ## 5. Relational (R)
 
 Relational engines use the structure that exists. They need F1, F2, F3, F5, F10, and F15.

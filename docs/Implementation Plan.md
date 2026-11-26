@@ -581,6 +581,112 @@ Completion criteria of M20:
 * A shortcut for the Git console. The proposal is ``Ctrl+` ``, if the shortcut list does not use it.
 * The design canvas also has AI connections for more than one service. M19 does not need them. The texts say "Anthropic" until the AI connections exist. After that, the texts use the name of the service of the selected connection.
 
+### M21 — AI for each database engine
+
+Status on 2026-11-25: the product owner asked that the AI actions also work for the engines of connectors. The first connector is MongoDB (`Connector Design.md`, section 10). This milestone is item F13 of `Database Kinds Backlog.md`. No code exists yet.
+
+M19 assumes SQL in four places:
+
+* The instructions of the assistant name SQL and tell the AI service to write SQL blocks.
+* The schema text names tables and columns.
+* The plan read uses `EXPLAIN` of PostgreSQL and DuckDB.
+* The editor actions find the statement at the cursor with the SQL reader of the completion.
+
+M21 removes these assumptions. The actions of M19 then work for each engine, in the language of the engine.
+
+#### What does not change
+
+* The schema text already comes from the catalog of the `Session` trait. A connector implements the same catalog with `ListSchemas`, `ListRelations`, and `DescribeRelation`. Thus the assistant gets the structure of a MongoDB database through the connector host with no new protocol operation.
+* The rules of M19 stay. The backend builds each context. Only "Ask about these rows" sends rows. A production connection never sends rows. The application never runs a statement from an answer.
+* The Git actions and the Git console do not depend on the engine.
+* The assistant stays in the core. A connector cannot send text to the AI service, and it cannot read an answer.
+
+#### Design
+
+**1. The language of the request.**
+
+* `chat_request` gets the engine and the query language from `EngineInfo`, not the name "PostgreSQL" or "DuckDB".
+* The instructions have two parts. The first part is the same for each engine. The second part is the guide of the language.
+* The core has a guide for each language that it knows:
+  * `sql`, with the dialect of the engine.
+  * `mongodb-shell`, with the subset of section 10.2 of `Connector Design.md`. The guide tells the AI service that the application runs no JavaScript. Thus an answer must use only the forms of that subset.
+* A language that the core does not know gets a short general guide. The panel tells the user that the answers for this language can be less exact.
+* A connector does not send a guide. The text of a connector from a different source would go into each request without a check.
+
+**2. The code blocks of an answer.**
+
+* The guide tells the AI service the tag of its code blocks, for example `sql` or `mongodb`.
+* The buttons "Insert", "Replace in the editor", and "Accept" use only a block with the tag of the language of the tab. A block with a different tag gets "Copy" only.
+* Before "Accept" or "Replace in the editor", the UI shows the risk of the block. The risk comes from the classifier of the language. An example is "This statement drops the collection orders." A language without a classifier shows "The application cannot check this statement."
+
+**3. The structure text for each engine.**
+
+* The schema text uses the words of the engine. MongoDB has databases, collections, views, and fields. The relational engines keep schemas, tables, views, and columns.
+* `DescribeRelation` gets a field `columns_from_sample`. It is `true` when the fields come from a sample of documents, as for a MongoDB collection. This is a minor change of protocol `v1`.
+* The schema text then says that the field list can be incomplete.
+* The structure text has names and types only. It has no values from the sample. A test of the connector conformance set (item F14) checks this for each connector.
+
+**4. The plan read as an operation of the connector.**
+
+* The protocol gets the operation `ReadPlan(session, statement, run)`. The answer has the plan text, the format (`json` or `text`), and the statement that the engine ran.
+* The capability `explain_plan` gets a second field `plan_runs_statement`. It tells if the plan read with `run` runs the statement, as `EXPLAIN ANALYZE` does.
+* The core keeps the check: `run` is permitted only for a statement that the classifier of the language marks as a read. For a language without a classifier, `run` is not available.
+* MongoDB: the connector uses `explain("queryPlanner")` without `run`, and `explain("executionStats")` with `run`.
+* The guide of each language tells the AI service how to read a plan of that engine.
+* The plan tree view of M15 stays for PostgreSQL and DuckDB. Another engine shows its plan as text, with the analysis of the assistant.
+
+**5. The statement at the cursor.**
+
+* For a language other than SQL, the editor gets the statement at the cursor from the splitter of the language in the core (item F4). A new command `statement_at(language, text, offset)` returns its range.
+* The completion keeps its SQL reader, because it needs an answer without a call to the backend.
+
+**6. The values in "Ask about these rows".**
+
+* A document or a list is a cell of the kind JSON (item F7). The request sends it as relaxed Extended JSON.
+* The limit of 500 characters applies to each cell. A document that is longer gets a marker at the cut.
+
+#### Each action and what it needs from the engine
+
+| Action | Needs from the engine | Without it |
+|---|---|---|
+| Ask the assistant | A guide of the language in the core | The general guide, and a note in the panel |
+| Explain and fix a query error | The error message and its position | Always available |
+| Change or explain the selection | The splitter of the language, for the statement at the cursor | The user must select the text |
+| Explain the table, write a starter query | The catalog | The menu items are not shown |
+| Analyze the plan | `explain_plan` | The button is not shown |
+| Ask about these rows | Nothing more | Always available, except for production |
+| Commit message, diff, conflict, Git output | Nothing | Always available |
+
+#### Stages
+
+| Stage | Content | Size | Needs first |
+|---|---|---|---|
+| 1 | The two parts of the instructions. The guides for `sql` and `mongodb-shell`. The general guide. The tag of the code blocks and the buttons for each language. | 1 week | M19 stage 1 |
+| 2 | The words of the engine in the structure text. `columns_from_sample`. The conformance test without values. | 0.5 weeks | Connector stage 4. Decision 7 of the backlog. |
+| 3 | `ReadPlan`, `plan_runs_statement`, and the MongoDB plan read. The plan as text in the panel. | 1.5 weeks | Connector stage 4 |
+| 4 | The risk of an answer before "Accept". `statement_at` for the editor actions. | 1 week | Item F4 for the language |
+| 5 | The JSON values in "Ask about these rows". | 0.5 weeks | M19 stage 6. Item F7. |
+| 6 | The documents. `docs/user/assistant.md` tells what each engine sends. The guide for connector authors tells how the assistant uses the catalog and the plan. | 0.5 weeks | Stages 1 to 5 |
+
+Completion criteria:
+
+* Each action of M19 works with PostgreSQL, DuckDB, and the MongoDB connector, or it is not shown, as the table above tells.
+* Tests with the test provider record each request. They check the guide, the words of the structure text, and the tag of the code blocks for each of the three engines.
+* A test with a scripted connector proves that a structure text has no values, also when the connector sends fields from a sample.
+* A test proves that a plan read with `run` is refused for a statement that the classifier does not mark as a read.
+
+#### Decision for the product owner
+
+Decision 7 of `Database Kinds Backlog.md` is still open: can the assistant send field names that come from a sample of documents? Stage 2 needs the answer.
+
+The recommendation is yes, with these limits:
+
+* The request sends the names and the types of the fields, and never a value.
+* The schema text and the "Sent:" line tell the user that the fields come from a sample.
+* The rule is the same for a production connection, because the names are structure, not data.
+
+If the answer is no, the structure text of MongoDB has the collections, the indexes, and the validation rules only. Then the answers of the assistant for MongoDB are less exact.
+
 ## 7. Tests
 
 | Level | Tool | Scope |
