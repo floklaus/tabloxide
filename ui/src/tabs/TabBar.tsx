@@ -113,7 +113,7 @@ export function TabBar() {
               <button
                 type="button"
                 role="tab"
-                className="tabs__title"
+                className={`tabs__title ${tab.isPreview ? 'tabs__title--preview' : ''}`.trim()}
                 ref={(element) => {
                   if (element) tabElements.current.set(tab.id, element)
                   else tabElements.current.delete(tab.id)
@@ -125,6 +125,10 @@ export function TabBar() {
                   .filter(Boolean)
                   .join(' · ')}
                 onClick={() => activate(tab.id)}
+                // A double click keeps a preview tab, as in other editors.
+                onDoubleClick={() => {
+                  if (tab.isPreview) useTabsStore.getState().keepTab(tab.id)
+                }}
                 onKeyDown={(event) => onTabKeyDown(event, index)}
               >
                 <TabTitle tab={tab} />

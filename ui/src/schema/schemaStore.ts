@@ -8,7 +8,6 @@ import {
 } from '../bindings'
 import { invalidateCatalog } from '../completion/catalogCache'
 import { toMessage } from '../lib/errors'
-import { useResultsViewStore } from '../results/resultsViewStore'
 import {
   relationKey,
   schemaKey,
@@ -203,7 +202,6 @@ export const useSchemaStore = create<SchemaState>((set, get) => {
       const { session } = get()
       if (!session) return
       set({ selected: { schema, name }, sample: { status: 'loading' } })
-      useResultsViewStore.getState().setView('table')
       const isSelected = () => {
         const { selected } = get()
         return selected?.schema === schema && selected.name === name

@@ -3,7 +3,6 @@ import type { ActionRequest } from '../assistant/assistantStore'
 import { DiffView } from '../git/DiffView'
 import { GitConsole } from '../git/GitConsole'
 import { PlanView } from '../plan/PlanView'
-import { HistoryPanel } from '../history/HistoryPanel'
 import {
   activeQueryStore,
   MAX_LOADED_ROWS,
@@ -11,7 +10,6 @@ import {
 } from '../query/queryStore'
 import type { QueryError, StatementReport } from '../query/queryStore'
 import type { Location } from '../bindings'
-import { TableDetail } from '../schema/TableDetail'
 import { sqlTabForTools } from '../tabs/tabsStore'
 import { AskAboutRows } from './AskAboutRows'
 import { ResultGrid } from './ResultGrid'
@@ -308,8 +306,6 @@ export function ResultsPane() {
   const setView = useResultsViewStore((state) => state.setView)
   const views: { id: ResultsView; label: string }[] = [
     { id: 'results', label: 'Results' },
-    { id: 'history', label: 'History' },
-    { id: 'table', label: 'Table' },
     { id: 'plan', label: 'Plan' },
     { id: 'diff', label: 'Diff' },
     { id: 'console', label: 'Git console' },
@@ -333,10 +329,6 @@ export function ResultsPane() {
       </div>
       <div className="results__content">
         {view === 'results' && <Results />}
-        {view === 'history' && (
-          <HistoryPanel onRun={() => setView('results')} />
-        )}
-        {view === 'table' && <TableDetail />}
         {view === 'plan' && <PlanView />}
         {view === 'diff' && <DiffView />}
         {view === 'console' && <GitConsole />}

@@ -15,10 +15,33 @@ export type Tab = {
   connectionId: string | null
   /** The assistant session that the tab shows. Only an assistant tab has it. */
   assistantSessionId?: string
+  /** The detail that the tab shows, for example a table. Only a detail tab has it. */
+  detail?: Detail
+  /**
+   * `true` for a preview tab. The next selection in a side view replaces it. Enter,
+   * a double click on the tab, or an edit keeps it.
+   */
+  isPreview?: boolean
+}
+
+/** The detail of a row of a side view, in a tab of the editor area. */
+export type Detail = { kind: 'table'; schema: string; name: string }
+
+/** A key that is the same for the same detail. */
+export function detailKey(detail: Detail): string {
+  switch (detail.kind) {
+    case 'table':
+      return `table:${detail.schema}.${detail.name}`
+  }
 }
 
 export function isAssistantTab(tab: Tab | undefined): boolean {
   return tab?.assistantSessionId !== undefined
+}
+
+/** `true` for a tab with SQL text, not an assistant tab and not a detail tab. */
+export function isSqlTab(tab: Tab | undefined): boolean {
+  return tab !== undefined && !isAssistantTab(tab) && tab.detail === undefined
 }
 
 type TabsState = {
@@ -39,6 +62,16 @@ type TabsState = {
   activate: (id: string) => void
   /** Shows the assistant session in its tab. Opens the tab if necessary. */
   openAssistantTab: (sessionId: string) => void
+  /**
+   * Shows a detail in a tab. A tab with the same detail becomes active. Else the
+   * preview tab gets the detail, or a new preview tab opens. With `keep`, the tab
+   * stays: the next selection does not replace it.
+   */
+  openDetail: (detail: Detail, title: string, keep?: boolean) => void
+  /** The tab stays open: the next selection does not replace it. */
+  keepTab: (id: string) => void
+  /** Closes the preview tab, if there is one. */
+  closePreview: () => void
   setContent: (id: string, content: string) => void
   setConnection: (id: string, connectionId: string | null) => void
   /** Saves a tab. A buffer without a file gets a file from the save dialog. */
@@ -54,7 +87,7 @@ type TabsState = {
 }
 
 export function isDirty(tab: Tab): boolean {
-  if (isAssistantTab(tab)) return false
+  if (!isSqlTab(tab)) return false
   return tab.path === null
     ? tab.content !== ''
     : tab.content !== tab.savedContent
@@ -72,7 +105,7 @@ function fileName(path: string): string {
 
 function nextTitle(tabs: Tab[]): string {
   const used = new Set(
-    tabs.filter((tab) => !isAssistantTab(tab)).map((tab) => tab.title),
+    tabs.filter((tab) => isSqlTab(tab)).map((tab) => tab.title),
   )
   let number = 1
   while (used.has(`Query ${number}`)) number += 1
@@ -98,7 +131,7 @@ export function toUiState(
   tabs: Tab[],
   activeId: string | null,
 ): UiState_Serialize {
-  const sqlTabs = tabs.filter((tab) => !isAssistantTab(tab))
+  const sqlTabs = tabs.filter((tab) => isSqlTab(tab))
   return {
     active_tab: sqlTabs.some((tab) => tab.id === activeId) ? activeId : null,
     tabs: sqlTabs.map((tab) => ({
@@ -150,7 +183,7 @@ const INITIAL = {
 /** The state change that makes the tab `id` active. */
 function activation(tabs: Tab[], id: string, sqlId: string | null) {
   const tab = tabs.find((item) => item.id === id)
-  return { activeId: id, sqlId: tab && !isAssistantTab(tab) ? id : sqlId }
+  return { activeId: id, sqlId: tab && isSqlTab(tab) ? id : sqlId }
 }
 
 export const useTabsStore = create<TabsState>((set, get) => {
@@ -260,6 +293,57 @@ export const useTabsStore = create<TabsState>((set, get) => {
       set({ tabs: [...tabs, tab], activeId: tab.id })
     },
 
+    openDetail: (detail, title, keep = false) => {
+      const { tabs, activeId, sqlId } = get()
+      const key = detailKey(detail)
+      const same = tabs.find(
+        (tab) => tab.detail && detailKey(tab.detail) === key,
+      )
+      if (same) {
+        const next = tabs.map((tab) =>
+          tab.id === same.id && keep ? { ...tab, isPreview: false } : tab,
+        )
+        set({ tabs: next, ...activation(next, same.id, sqlId) })
+        return
+      }
+      const preview = tabs.find((tab) => tab.isPreview)
+      if (preview) {
+        const next = tabs.map((tab) =>
+          tab.id === preview.id
+            ? { ...tab, detail, title, isPreview: !keep }
+            : tab,
+        )
+        set({ tabs: next, ...activation(next, preview.id, sqlId) })
+        return
+      }
+      const tab: Tab = {
+        id: `detail-${crypto.randomUUID()}`,
+        title,
+        path: null,
+        content: '',
+        savedContent: null,
+        connectionId: null,
+        detail,
+        isPreview: !keep,
+      }
+      // The new tab opens next to the active tab.
+      const index = tabs.findIndex((item) => item.id === activeId)
+      const next = [...tabs.slice(0, index + 1), tab, ...tabs.slice(index + 1)]
+      set({ tabs: next, ...activation(next, tab.id, sqlId) })
+    },
+
+    keepTab: (id) =>
+      set({
+        tabs: get().tabs.map((tab) =>
+          tab.id === id ? { ...tab, isPreview: false } : tab,
+        ),
+      }),
+
+    closePreview: () => {
+      const preview = get().tabs.find((tab) => tab.isPreview)
+      if (preview) get().close(preview.id)
+    },
+
     setContent: (id, content) => update(id, { content }),
     setConnection: (id, connectionId) => update(id, { connectionId }),
 
@@ -289,13 +373,13 @@ export const useTabsStore = create<TabsState>((set, get) => {
       if (index < 0) return
       const remaining = tabs.filter((tab) => tab.id !== id)
       // The editor always has a minimum of one SQL tab.
-      const next = remaining.some((tab) => !isAssistantTab(tab))
+      const next = remaining.some((tab) => isSqlTab(tab))
         ? remaining
         : [...remaining, makeTab([])]
       const neighbour = next[Math.min(index, next.length - 1)]
       const nextActive =
         activeId === id ? neighbour.id : (activeId ?? neighbour.id)
-      const sqlTabs = next.filter((tab) => !isAssistantTab(tab))
+      const sqlTabs = next.filter((tab) => isSqlTab(tab))
       const nextSql =
         sqlId !== id && sqlTabs.some((tab) => tab.id === sqlId)
           ? sqlId
@@ -389,7 +473,7 @@ export function persistTabs(): () => void {
 export function sqlTabOf(
   state: Pick<TabsState, 'tabs' | 'activeId' | 'sqlId'>,
 ): Tab | undefined {
-  const sqlTabs = state.tabs.filter((tab) => !isAssistantTab(tab))
+  const sqlTabs = state.tabs.filter((tab) => isSqlTab(tab))
   return (
     sqlTabs.find((tab) => tab.id === state.sqlId) ??
     sqlTabs.find((tab) => tab.id === state.activeId) ??

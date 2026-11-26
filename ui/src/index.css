@@ -3613,3 +3613,15 @@ body {
   display: inline-flex;
   color: var(--color-accent);
 }
+
+/* A preview tab: the next selection in a side view replaces it. */
+.tabs__title--preview {
+  font-style: italic;
+}
+
+.detail-tab {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.75rem;
+}

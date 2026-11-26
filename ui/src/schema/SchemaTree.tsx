@@ -54,10 +54,16 @@ function relationItems(
   ]
 }
 
+/** Shows a table in a detail tab of the editor area. */
+function showTable(schema: string, name: string, keep: boolean): void {
+  useTabsStore
+    .getState()
+    .openDetail({ kind: 'table', schema, name }, name, keep)
+}
+
 function Row({ row }: { row: TreeRow }) {
   const toggleSchema = useSchemaStore((state) => state.toggleSchema)
   const toggleRelation = useSchemaStore((state) => state.toggleRelation)
-  const selectRelation = useSchemaStore((state) => state.selectRelation)
   const arrow = (isOpen: boolean) => (
     <span aria-hidden="true">{isOpen ? '▾' : '▸'} </span>
   )
@@ -92,7 +98,9 @@ function Row({ row }: { row: TreeRow }) {
             type="button"
             className="schema__button"
             title={`Show the ${kindLabel(row.kind)} ${row.schema}.${row.name}`}
-            onClick={() => void selectRelation(row.schema, row.name)}
+            // A click shows the table in the preview tab. A double click keeps it.
+            onClick={() => showTable(row.schema, row.name, false)}
+            onDoubleClick={() => showTable(row.schema, row.name, true)}
           >
             {row.name}{' '}
             {row.kind !== 'table' && (
@@ -105,10 +113,8 @@ function Row({ row }: { row: TreeRow }) {
             className="schema__menu"
             isFloating
             items={() =>
-              relationItems(
-                row.schema,
-                row.name,
-                () => void selectRelation(row.schema, row.name),
+              relationItems(row.schema, row.name, () =>
+                showTable(row.schema, row.name, true),
               )
             }
           >

@@ -1,6 +1,7 @@
 import { engineLanguage, serverLabel } from '../engines/engineStore'
 import { useEffect, useRef, useState } from 'react'
 import { AssistantSessionView } from '../assistant/AssistantSessionView'
+import { DetailView } from '../tabs/DetailView'
 import { InlineChange } from '../assistant/InlineChange'
 import {
   explainSelection,
@@ -38,6 +39,9 @@ export function QueryEditor() {
   const assistantSessionId = useTabsStore(
     (state) =>
       state.tabs.find((item) => item.id === state.activeId)?.assistantSessionId,
+  )
+  const detail = useTabsStore(
+    (state) => state.tabs.find((item) => item.id === state.activeId)?.detail,
   )
   const setContent = useTabsStore((state) => state.setContent)
   const saveTab = useTabsStore((state) => state.save)
@@ -82,7 +86,11 @@ export function QueryEditor() {
       {assistantSessionId !== undefined && (
         <AssistantSessionView sessionId={assistantSessionId} />
       )}
-      <div className="query__sql" hidden={assistantSessionId !== undefined}>
+      {detail && <DetailView detail={detail} />}
+      <div
+        className="query__sql"
+        hidden={assistantSessionId !== undefined || detail !== undefined}
+      >
         <div className="query__bar">
           <button
             type="button"

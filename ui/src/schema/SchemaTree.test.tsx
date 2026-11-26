@@ -16,7 +16,7 @@ import { useTabsStore } from '../tabs/tabsStore'
 import { useWorkspaceStore } from '../workspace/workspaceStore'
 import { SchemaTree } from './SchemaTree'
 import { useSchemaStore } from './schemaStore'
-import { TableDetail } from './TableDetail'
+import { DetailView } from '../tabs/DetailView'
 
 vi.mock('../bindings', async () =>
   (await import('../test/mockBindings')).createBindingsMock(),
@@ -110,6 +110,14 @@ const detail = {
   columns_from_sample: false,
 }
 
+/** The detail tab of the editor area that is active, as the editor shows it. */
+function ActiveDetail() {
+  const detail = useTabsStore(
+    (state) => state.tabs.find((tab) => tab.id === state.activeId)?.detail,
+  )
+  return detail ? <DetailView detail={detail} /> : null
+}
+
 async function connect() {
   useWorkspaceStore.setState({ workspace: makeWorkspace([makeProfile()]) })
   sessionOpen.mockResolvedValue(
@@ -132,7 +140,7 @@ async function connect() {
   render(
     <>
       <SchemaTree />
-      <TableDetail />
+      <ActiveDetail />
     </>,
   )
   const user = userEvent.setup()
@@ -257,6 +265,12 @@ describe('SchemaTree', () => {
     expect(
       await screen.findByRole('heading', { name: 'public.orders' }),
     ).toBeInTheDocument()
+    // A click opens the table in a preview tab. A double click keeps the tab.
+    const opened = () =>
+      useTabsStore.getState().tabs.find((tab) => tab.detail?.kind === 'table')
+    expect(opened()?.isPreview).toBe(true)
+    await user.dblClick(screen.getByRole('button', { name: 'orders' }))
+    expect(opened()?.isPreview).toBe(false)
     expect(
       await screen.findByRole('table', { name: 'Columns' }),
     ).toHaveTextContent('note' + 'text' + 'yes' + "'x'::text")
@@ -268,7 +282,8 @@ describe('SchemaTree', () => {
     ).toHaveTextContent('CheckCHECK (id > 0)')
     expect(await screen.findByText(/The first 2 rows/)).toBeInTheDocument()
     expect(schemaSample).toHaveBeenCalledWith(3, 'public', 'orders')
-    expect(useResultsViewStore.getState().view).toBe('table')
+    // The detail goes to a tab of the editor area. The results pane does not change.
+    expect(useResultsViewStore.getState().view).toBe('results')
   })
 
   test('shows the error of a failed row sample', async () => {

@@ -140,7 +140,7 @@ The request sends the text, the instruction, and the structure of the database. 
 
 ## 8. Explain a table, or write a starter query
 
-Each table and view in the schema browser has a menu (**…**) with two AI actions. The **Table** view of the results pane has the same actions after you select a table. The menu does not read rows of the table.
+Each table and view in the schema browser has a menu (**…**) with two AI actions. When you select a table, its detail opens in a tab of the editor area, and that tab has the same actions. The menu does not read rows of the table.
 
 - **Explain the table** explains in the assistant panel what one row is, the key, the references, and the indexes.
 - **Write a starter query** writes a first query for the table. The query opens in a new tab with the name "*table*: starter query" and the connection of your tab. Tabloxide does not run it. The answer also stays in the panel.
