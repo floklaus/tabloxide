@@ -1,0 +1,130 @@
+# A tag such as connector-mongodb-v0.1.0 builds the packages of one connector for
+# each platform, adds them to a GitHub release, and writes an index without a
+# signature. Section 10.5 of docs/Connector Design.md gives the rules.
+#
+# After the run:
+#   1. Download the artifact "connector-index".
+#   2. Sign it on your own machine: minisign -S -s <key> -m index.json
+#   3. Copy index.json and index.json.minisig to public/connectors/v1/ of the
+#      website repository, and push. The site then serves the new index.
+#
+# The private key never goes into this workflow.
+
+name: Connectors
+
+on:
+  push:
+    tags: ['connector-*-v*']
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-22.04
+    outputs:
+      engine: ${{ steps.read.outputs.engine }}
+      version: ${{ steps.read.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read the engine and the version from the tag
+        id: read
+        run: |
+          tag="${GITHUB_REF_NAME#connector-}"
+          engine="${tag%-v*}"
+          version="${tag##*-v}"
+          manifest="connectors/$engine/connector.toml"
+          [ -f "$manifest" ] || { echo "No connector $engine."; exit 1; }
+          grep -qx "version = \"$version\"" "$manifest" \
+            || { echo "The tag version $version is not the version in $manifest."; exit 1; }
+          echo "engine=$engine" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: tag
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: macos-13
+            target: x86_64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+    runs-on: ${{ matrix.os }}
+    env:
+      ENGINE: ${{ needs.tag.outputs.engine }}
+      VERSION: ${{ needs.tag.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build the connector
+        run: cargo build --release --locked -p "tabloxide-connector-$ENGINE" --target ${{ matrix.target }}
+
+      - name: Make the package
+        shell: bash
+        run: |
+          program="tabloxide-connector-$ENGINE"
+          [ "$RUNNER_OS" = Windows ] && program="$program.exe"
+          mkdir -p package out
+          cp "connectors/$ENGINE/connector.toml" package/
+          cp "target/${{ matrix.target }}/release/$program" package/
+          tar -czf "out/tabloxide-connector-$ENGINE-$VERSION-${{ matrix.target }}.tar.gz" -C package .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-${{ matrix.target }}
+          path: out/*.tar.gz
+
+  publish:
+    needs: [tag, build]
+    runs-on: ubuntu-22.04
+    env:
+      ENGINE: ${{ needs.tag.outputs.engine }}
+      VERSION: ${{ needs.tag.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: package-*
+          merge-multiple: true
+          path: packages
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      # `--latest=false`: the updater of the application reads the latest release.
+      # A connector release must not replace it.
+      - name: Add the packages to the release
+        run: |
+          gh release create "$GITHUB_REF_NAME" packages/*.tar.gz \
+            --latest=false \
+            --title "Connector $ENGINE $VERSION" \
+            --notes "Connector packages. Tabloxide downloads them through the signed index at tabloxide.org." \
+            || gh release upload "$GITHUB_REF_NAME" packages/*.tar.gz --clobber
+
+      - name: Write the index without a signature
+        run: |
+          curl -fsSL https://tabloxide.org/connectors/v1/index.json -o current.json || echo '{}' > current.json
+          node scripts/connector-index.mjs \
+            --dir packages \
+            --manifest "connectors/$ENGINE/connector.toml" \
+            --base-url "https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}" \
+            --current current.json > index.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: connector-index
+          path: index.json

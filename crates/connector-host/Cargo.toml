@@ -7,13 +7,18 @@ rust-version.workspace = true
 
 [dependencies]
 async-trait = "0.1"
+flate2 = "1.1.11"
 minisign-verify = "0.3.0"
+reqwest = { version = "0.13.5", default-features = false, features = ["rustls-no-provider", "http2", "system-proxy"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 semver = "1.0.28"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
+sha2 = "0.10.9"
 specta = { version = "=2.0.0-rc.28", features = ["derive"], optional = true }
 tabloxide-connector-protocol = { version = "0.1.0", path = "../connector-protocol" }
 tabloxide-core = { version = "0.1.0", path = "../core" }
+tar = "0.4.46"
 thiserror = "2.0.21"
 tokio = { version = "1", features = ["fs", "io-util", "macros", "process", "rt", "sync", "time"] }
 toml = "1.2.1"

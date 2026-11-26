@@ -45,6 +45,25 @@ pub enum EngineSource {
     /// A connector from the development folder `TABLOXIDE_CONNECTOR_DIR`.
     #[serde(rename_all = "camelCase")]
     Development { version: String, folder: String },
+    /// An official connector that is not installed. The user can download it.
+    Available,
+}
+
+/// The official connectors. The application knows them without a network request, so
+/// that the engine list can show them before the user agrees to a download.
+fn official_connectors() -> Vec<EngineInfo> {
+    vec![EngineInfo {
+        engine: Engine::new("mongodb"),
+        display_name: "MongoDB".to_owned(),
+        language: tabloxide_core::QueryLanguage::MongodbShell,
+        default_port: Some(27017),
+        capabilities: tabloxide_core::Capabilities {
+            cancel: true,
+            unix_socket: false,
+            file_database: false,
+            explain_plan: false,
+        },
+    }]
 }
 
 /// One engine that the application can use now.
@@ -219,27 +238,31 @@ impl EngineRegistry {
         found
     }
 
-    /// Returns the engines that the application can use now: first the built-in
-    /// engines, then the connectors in the sequence of their names.
+    /// Returns the engines: first the built-in engines, then the installed connectors
+    /// in the sequence of their names, then the official connectors to download.
     #[must_use]
     pub fn list(&self) -> Vec<EngineEntry> {
         let builtin = self.builtin.iter().map(|adapter| EngineEntry {
             info: adapter.info(),
             source: EngineSource::BuiltIn,
         });
-        let connectors = self.connectors().into_values().map(|found| EngineEntry {
+        let found = self.connectors();
+        let available: Vec<EngineEntry> = official_connectors()
+            .into_iter()
+            .filter(|info| {
+                !found.contains_key(info.engine.as_str())
+                    && self.builtin(info.engine.as_str()).is_none()
+            })
+            .map(|info| EngineEntry {
+                info,
+                source: EngineSource::Available,
+            })
+            .collect();
+        let connectors = found.into_values().map(|found| EngineEntry {
             info: found.manifest.engine_info(),
             source: found.source,
         });
-        builtin.chain(connectors).collect()
-    }
-
-    /// Returns the engine `engine`, if the application can use it.
-    #[must_use]
-    pub fn find(&self, engine: &Engine) -> Option<EngineEntry> {
-        self.list()
-            .into_iter()
-            .find(|entry| entry.info.engine == *engine)
+        builtin.chain(connectors).chain(available).collect()
     }
 
     /// Returns the adapter of `engine`. The first call for a connector starts its
@@ -363,7 +386,11 @@ mod tests {
 
         let list = registry(dir.path(), None).list();
 
-        assert_eq!(list.len(), 2);
+        assert_eq!(
+            list.len(),
+            2,
+            "MongoDB is installed, so it is not in the list to download"
+        );
         assert_eq!(list[0].source, EngineSource::BuiltIn);
         assert_eq!(list[1].info.engine.as_str(), "mongodb");
         assert!(matches!(
@@ -423,7 +450,7 @@ mod tests {
 
         registry.remove(&Engine::new("mongodb")).await.unwrap();
 
-        assert_eq!(registry.list().len(), 1);
+        assert_eq!(registry.list()[1].source, EngineSource::Available);
         assert!(!dir.path().join("mongodb").exists());
     }
 }

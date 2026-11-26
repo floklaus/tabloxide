@@ -11,7 +11,7 @@ use minisign_verify::{PublicKey, Signature};
 /// the old one.
 const TRUSTED_KEYS: &[&str] = &[include_str!("../keys/tabloxide-connectors.pub")];
 
-#[derive(Debug, PartialEq, Eq, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum SignatureError {
     #[error("A public key of the application is not valid: {0}")]
     InvalidKey(String),

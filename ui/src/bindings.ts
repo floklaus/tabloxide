@@ -61,10 +61,26 @@ export const commands = {
 	 */
 	connectionTest: (profile: ConnectionProfile_Deserialize, password: string | null, options?: InvokeOptions) => typedError<ConnectionTestResult, CommandError>(__TAURI_INVOKE("connection_test", { profile, password }, options)),
 	/**
-	 *  Returns the engines that the application can use now: the built-in engines and the
-	 *  installed connectors.
+	 *  Returns the built-in engines, the installed connectors, and the official
+	 *  connectors that the user can download. This command makes no network request.
 	 */
 	engineList: (options?: InvokeOptions) => typedError<EngineEntry_Serialize[], CommandError>(__TAURI_INVOKE("engine_list", undefined, options)),
+	/**
+	 *  Downloads and installs the official connector of an engine. The UI calls it only
+	 *  after the user agreed. This is the first network request for connectors.
+	 */
+	connectorDownload: (engine: Engine, onEvent: Channel<DownloadEvent>, options?: InvokeOptions) => typedError<InstallResult_Serialize, CommandError>(__TAURI_INVOKE("connector_download", { engine, onEvent }, options)),
+	/**
+	 *  Reads a connector package file and tells what it is, and if it has the signature
+	 *  of the project. It installs nothing.
+	 */
+	connectorInspectFile: (path: string, options?: InvokeOptions) => typedError<InstallResult_Serialize, CommandError>(__TAURI_INVOKE("connector_inspect_file", { path }, options)),
+	/**
+	 *  Installs a connector package file. `sha256` is the checksum that
+	 *  `connector_inspect_file` gave. `confirmed` is `true` after the user confirmed a
+	 *  package without the signature of the project.
+	 */
+	connectorInstallFile: (path: string, sha256: string, confirmed: boolean, options?: InvokeOptions) => typedError<InstallResult_Serialize, CommandError>(__TAURI_INVOKE("connector_install_file", { path, sha256, confirmed }, options)),
 	/**
 	 *  Removes the installed connector of an engine. Sessions that are open keep their
 	 *  connector process until they close.
@@ -614,6 +630,15 @@ export type ConstraintInfo = {
 
 export type ConstraintKind = "primary-key" | "foreign-key" | "unique" | "check" | "exclusion" | "other";
 
+/**  The steps of a download, for the progress in the UI. */
+export type DownloadEvent = 
+/**  Tabloxide loads and checks the list of connectors. */
+{ type: "loading-index" } | 
+/**  The download of the package starts. */
+{ type: "downloading"; version: string; size: number | null } | { type: "progress"; received: number | null } | 
+/**  Tabloxide checks and unpacks the package. */
+{ type: "checking" };
+
 export type EditorPreferences = EditorPreferences_Serialize | EditorPreferences_Deserialize;
 
 export type EditorPreferences_Deserialize = {
@@ -692,7 +717,9 @@ export type EngineSource_Deserialize =
 /**  An installed connector. */
 { type: "installed"; version: string; isOfficial: boolean; publisher?: string | null } | 
 /**  A connector from the development folder `TABLOXIDE_CONNECTOR_DIR`. */
-{ type: "development"; version: string; folder: string };
+{ type: "development"; version: string; folder: string } | 
+/**  An official connector that is not installed. The user can download it. */
+{ type: "available" };
 
 /**  Where an engine comes from. */
 export type EngineSource_Serialize = 
@@ -701,7 +728,9 @@ export type EngineSource_Serialize =
 /**  An installed connector. */
 { type: "installed"; version: string; isOfficial: boolean; publisher: string | null } | 
 /**  A connector from the development folder `TABLOXIDE_CONNECTOR_DIR`. */
-{ type: "development"; version: string; folder: string };
+{ type: "development"; version: string; folder: string } | 
+/**  An official connector that is not installed. The user can download it. */
+{ type: "available" };
 
 /**  Environment marker. The UI shows it before the user runs SQL. */
 export type Environment = "development" | "staging" | "production";
@@ -908,6 +937,19 @@ export type IndexInfo = {
 	is_primary: boolean,
 };
 
+/**  The result of an install. A failure is a normal result, not a command error. */
+export type InstallResult = InstallResult_Serialize | InstallResult_Deserialize;
+
+/**  The result of an install. A failure is a normal result, not a command error. */
+export type InstallResult_Deserialize = { status: "installed"; package: PackageInfo_Deserialize } | 
+/**  The package has no signature of the project. The user must confirm the install. */
+{ status: "needs-confirmation"; package: PackageInfo_Deserialize } | { status: "failed"; message: string };
+
+/**  The result of an install. A failure is a normal result, not a command error. */
+export type InstallResult_Serialize = { status: "installed"; package: PackageInfo_Serialize } | 
+/**  The package has no signature of the project. The user must confirm the install. */
+{ status: "needs-confirmation"; package: PackageInfo_Serialize } | { status: "failed"; message: string };
+
 /**
  *  A position in a script. `offset` is in UTF-16 code units and starts at 0.
  *  `line` and `column` start at 1. `column` is in characters.
@@ -1051,6 +1093,33 @@ total_rows: number | null } |
 { type: "command"; affected_rows: number } | 
 /**  The statement failed. `location` is the error position in the script. */
 { type: "failed"; error: QueryError_Serialize; location: Location | null };
+
+/**  What a package is. The UI shows it before the install. */
+export type PackageInfo = PackageInfo_Serialize | PackageInfo_Deserialize;
+
+/**  What a package is. The UI shows it before the install. */
+export type PackageInfo_Deserialize = {
+	engine: string,
+	displayName: string,
+	version: string,
+	publisher?: string | null,
+	/**  `true` if the package has a signature of the Tabloxide project. */
+	isOfficial: boolean,
+	/**  The SHA-256 checksum of the package file, in hexadecimal. */
+	sha256: string,
+};
+
+/**  What a package is. The UI shows it before the install. */
+export type PackageInfo_Serialize = {
+	engine: string,
+	displayName: string,
+	version: string,
+	publisher: string | null,
+	/**  `true` if the package has a signature of the Tabloxide project. */
+	isOfficial: boolean,
+	/**  The SHA-256 checksum of the package file, in hexadecimal. */
+	sha256: string,
+};
 
 /**  Result of a plan read. A statement that fails is a normal result, not a command error. */
 export type PlanRead = PlanRead_Serialize | PlanRead_Deserialize;

@@ -3,12 +3,15 @@
 //! `docs/Connector Design.md` gives the design. For the other parts of the core, a
 //! connector is a `DbAdapter`, the same as a built-in adapter.
 
+pub mod index;
+mod install;
 mod manifest;
 mod process;
 mod registry;
 mod remote;
 mod signature;
 
+pub use install::{InstallError, PackageInfo, download, inspect_file, install_file};
 pub use manifest::{MANIFEST_FILE, Manifest, ManifestError};
 pub use process::{Client, ConnectorProcess, StartError, connect_client, describe};
 pub use registry::{
