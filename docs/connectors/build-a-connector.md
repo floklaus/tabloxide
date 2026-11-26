@@ -43,6 +43,7 @@ The file [`connector.proto`](https://tabloxide.org/connectors/v1/connector.proto
 | `Cancel` | Stops the active statement of a session. |
 | `ListSchemas`, `ListRelations`, `DescribeRelation` | The catalog. |
 | `SampleStatement` | The statement that reads the first rows of a table, with the quotes of the engine. |
+| `ReadPlan` | Gives the execution plan of one statement as text. With `run`, the engine runs the statement to measure it. Since minor version 2. A connector without plans answers with the status `UNIMPLEMENTED`, and sets the capability `explain_plan` to false. |
 
 Obey these rules:
 
@@ -50,6 +51,15 @@ Obey these rules:
 - **A failed statement is a normal answer.** Send an `ExecuteEvent` with `error`: the kind, the message, and the position. Use a gRPC error status only for a defect of the connector.
 - **Keep the password secret.** The password comes in `TestConnection` and `OpenSession`. Do not write it to a log, to a file, or into an error message.
 - **Read-only connections.** When `read_only` is true, refuse each statement that changes data or the structure.
+
+### The AI assistant and your connector
+
+The assistant of Tabloxide uses the data of your connector. Your connector never talks to the AI service, and it never sees an answer.
+
+- **The catalog is the structure that the AI gets.** The assistant reads `ListSchemas`, `ListRelations`, and `DescribeRelation`, and sends the names, the types, the indexes, and the constraints. Do not put values of rows into the catalog. A column has no default value in the text for the AI.
+- **Columns from a sample.** If your engine has no fixed structure, you can make the columns from a sample of documents. Then set `columns_from_sample` in `RelationDetail` (since minor version 2). Give the names and the types of the fields only, never a value. Tabloxide tells the AI and the user that the list can be incomplete.
+- **The plan.** If the capability `explain_plan` is true, the assistant asks `ReadPlan` for its plan analysis. Tabloxide sends `run` only for a statement that its check of the language marks as a read. For a language that Tabloxide does not know, `run` is never true. Give the plan as text that a person can read, for example JSON.
+- **The language guide.** The assistant has a guide for `sql` and for `mongodb-shell`. For a different language it uses a general guide, and the user sees that the answers can be less exact. A connector cannot send its own guide, because Tabloxide does not send text of a connector to the AI service as instructions.
 
 ### Query languages
 

@@ -755,6 +755,7 @@ Status of stages 1 and 2 on 2026-11-26: complete in code.
 * "Analyze plan" in the assistant panel works for MongoDB. The plan tree of M15 stays for the SQL engines: its commands need the language `sql`, because the tree reads the JSON of `EXPLAIN`. Another engine sends its plan as text to the assistant.
 * Stage 5: the rows of "Ask about these rows" are already text. A document of MongoDB is relaxed Extended JSON in its cell, and the limit of 500 characters applies to each cell. No change was necessary.
 * A test against a real MongoDB server for the plan read is not done. The tests check the explain command without a server, and the path through the host with a scripted session.
+* Stage 6 on 2026-11-26: `docs/user/assistant.md` tells what each engine sends and how the plan of MongoDB works. `docs/connectors/build-a-connector.md` tells connector authors how the assistant uses the catalog, `columns_from_sample`, and `ReadPlan`. M21 is complete in code.
 * The statement at the cursor needs no new command `statement_at`. The command `query_preview` already takes the language, and the editor actions use it.
 
 ## 7. Tests

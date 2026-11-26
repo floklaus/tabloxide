@@ -93,6 +93,20 @@ Do not use **Measure the times** in these conditions. For a full protection, use
 
 A plan read closes an open result of the tab. The results pane then tells you that the assistant closed the result.
 
+For a MongoDB connection, Tabloxide reads the plan with the MongoDB command `explain`. The plan is available for `find`, `aggregate`, `count`, `distinct`, `update`, `delete`, and `findAndModify`. Without **Measure the times**, the verbosity is `queryPlanner`, and MongoDB does not run the statement. With **Measure the times**, the verbosity is `executionStats`, and MongoDB runs the statement. Thus Tabloxide permits it only for `find`, and for `aggregate` without `$out` and `$merge`. The plan tree of the results pane is only for PostgreSQL and DuckDB.
+
+### The AI and the engine of the connection
+
+The assistant writes in the query language of the connection of the tab. The structure that it gets depends on the engine:
+
+| Engine | Language of the answers | Structure that a request sends |
+| --- | --- | --- |
+| PostgreSQL, DuckDB | SQL in the dialect of the engine | Schemas, tables, views, columns with their types, indexes, and constraints |
+| MongoDB | The MongoDB shell syntax of Tabloxide. Tabloxide runs no JavaScript. | Databases, collections, views, indexes, and validation rules. The fields of a collection come from a sample of 100 documents: their names and types, never a value. A collection can have more fields. The **Sent:** line tells you this. |
+| A different engine of a connector | Tabloxide has no guide for the language. The panel tells you that the answers can be less exact. | The catalog of the connector |
+
+**Insert** and **Replace in the editor** are only on a code block in the language of the tab. A block in a different language, for example SQL for a MongoDB tab, has only **Copy**. Before you insert or accept a statement, the block shows its risk, for example "Before you run it: The statement deletes all documents of the collection."
+
 ## 6. Explain and fix a query error
 
 When a statement fails, the results pane shows the error. For an error of the database, the error has the button **Explain and fix**.
