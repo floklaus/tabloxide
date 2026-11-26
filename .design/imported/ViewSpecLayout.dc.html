@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>View standards: anatomy, sizes, type, status, icons</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit}
+table{border-collapse:collapse}
+</style>
+</helmet>
+<div style="width: 1440px; min-height: 2040px; background: #ffffff; color: #1b1f27; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.45; padding: 56px 64px; display: flex; flex-direction: column; gap: 48px">
+
+<header style="display: flex; flex-direction: column; gap: 8px; max-width: 900px">
+<p style="margin: 0; color: #5b6472; font-size: 12px; font-weight: 600">Standard · part 1 of 3</p>
+<h1 style="margin: 0; font-size: 32px; font-weight: 700">View standards</h1>
+<p style="margin: 0; color: #5b6472">These rules apply to each side view: Schema, Connections, Git, Files, History, and Snippets. Each view uses the same parts in the same order. Each part has the same size in each view. The Schema view is the reference.</p>
+</header>
+
+<section aria-labelledby="s-anatomy" style="display: flex; flex-direction: column; gap: 20px">
+<h2 id="s-anatomy" style="margin: 0; font-size: 20px; font-weight: 700">1. Anatomy</h2>
+<div style="display: flex; gap: 48px; align-items: flex-start">
+
+<div style="display: flex; gap: 12px; align-items: flex-start">
+<div style="width: 300px; border: 1px solid #e1e4ea; border-radius: 10px; background: #ffffff; overflow: hidden; font-size: 13px">
+<div style="height: 44px; display: flex; align-items: center; gap: 6px; padding: 0 8px 0 12px; position: relative; background: #f6f3ff">
+<span style="font-size: 14px; font-weight: 600">Schema</span>
+<span style="color: #5b6472; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Local shop › shop</span>
+<span style="flex-grow: 1"></span>
+<span style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; background: #ffffff; border: 1px solid #d5d9e0"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7 M20 4v7h-7" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
+<span style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M5 12h.01 M12 12h.01 M19 12h.01" stroke="#5b6472" stroke-width="2.5" fill="none" stroke-linecap="round"></path></svg></span>
+</div>
+<div style="height: 40px; display: flex; align-items: center; gap: 4px; padding: 0 12px; background: #eef4ff">
+<span style="flex-grow: 1; height: 32px; display: flex; align-items: center; gap: 6px; padding: 0 8px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #5b6472"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M20 20l-4-4" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round"></path></svg>Filter</span>
+</div>
+<div style="display: flex; flex-direction: column; padding: 4px 0; background: #f2fbf5">
+<div style="height: 28px; display: flex; align-items: center; gap: 4px; padding-left: 8px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg><span>public</span></div>
+<div style="height: 28px; display: flex; align-items: center; gap: 4px; padding-left: 24px; padding-right: 12px; background: #dfe9fb"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M4 5h16v14H4z M4 10h16 M10 10v9" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg><span style="flex-grow: 1">customer_item</span><span style="color: #5b6472; font-size: 12px">6</span></div>
+<div style="height: 28px; display: flex; align-items: center; gap: 8px; padding-left: 60px; padding-right: 12px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M8 12a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M10.5 13.5L20 4 M17 7l2 2" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg><span style="flex-grow: 1">customer_item_id</span><span style="font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 12px; color: #5b6472">bigint</span></div>
+<div style="height: 28px; display: flex; align-items: center; gap: 8px; padding-left: 60px; padding-right: 12px"><span style="width: 14px"></span><span style="flex-grow: 1">note</span><span style="font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 12px; color: #5b6472">text?</span></div>
+</div>
+<div style="height: 28px; display: flex; align-items: center; padding: 0 12px; border-top: 1px solid #e1e4ea; color: #5b6472; font-size: 12px; background: #fff7ed">14 tables · read 2 min ago</div>
+</div>
+<div aria-hidden="true" style="display: flex; flex-direction: column; font-size: 12px; color: #6d28d9; font-weight: 600">
+<span style="height: 44px; display: flex; align-items: center; border-left: 2px solid #6d28d9; padding-left: 6px">44 / 36</span>
+<span style="height: 40px; display: flex; align-items: center; border-left: 2px solid #6d28d9; padding-left: 6px">40 / 32</span>
+<span style="height: 4px"></span>
+<span style="height: 28px; display: flex; align-items: center; border-left: 2px solid #6d28d9; padding-left: 6px">28 / 24</span>
+<span style="height: 28px; display: flex; align-items: center; padding-left: 8px; color: #5b6472; font-weight: 400">indent 16</span>
+<span style="height: 60px"></span>
+<span style="height: 28px; display: flex; align-items: center; border-left: 2px solid #6d28d9; padding-left: 6px">28 / 24</span>
+</div>
+</div>
+
+<ol style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 32px; flex-grow: 1">
+<li style="display: flex; gap: 12px"><span style="width: 14px; height: 14px; margin-top: 3px; flex-shrink: 0; border-radius: 3px; background: #ddd2fd"></span><div><strong>Header row.</strong> The view title, then the scope (connection › database, workspace, or branch). The scope opens a menu that changes the scope. On the right: one primary action as an icon button, then the overflow menu (⋯). Each other action goes into the overflow menu and into the context menu.</div></li>
+<li style="display: flex; gap: 12px"><span style="width: 14px; height: 14px; margin-top: 3px; flex-shrink: 0; border-radius: 3px; background: #cfe0fe"></span><div><strong>Toolbar.</strong> The filter field comes first and fills the width. A filter menu can follow it. A view with more than one mode (Git: Changes · History · Branches) shows a tab row between the header and the toolbar. The filter applies to the current mode. Do not show a mode that does not exist yet.</div></li>
+<li style="display: flex; gap: 12px"><span style="width: 14px; height: 14px; margin-top: 3px; flex-shrink: 0; border-radius: 3px; background: #c9efd6"></span><div><strong>Body.</strong> One tree or one list. Rows have one height. Group headers divide a list (by day, by environment, by state). The body is the only part that scrolls.</div></li>
+<li style="display: flex; gap: 12px"><span style="width: 14px; height: 14px; margin-top: 3px; flex-shrink: 0; border-radius: 3px; background: #ffe2bf"></span><div><strong>Status line.</strong> Optional. It shows the count and the age of the data, or a pending operation. It never shows an error: an error goes to the top of the body.</div></li>
+<li style="display: flex; gap: 12px"><span style="width: 14px; height: 14px; margin-top: 3px; flex-shrink: 0; border-radius: 3px; background: #dfe9fb"></span><div><strong>Selection.</strong> A selected row has a filled background. The text weight does not change, so the row does not move. A focused row also has a 2 px focus ring.</div></li>
+<li style="display: flex; gap: 12px"><span style="width: 14px; height: 14px; margin-top: 3px; flex-shrink: 0; border-radius: 3px; border: 2px solid #1b1f27"></span><div><strong>Detail.</strong> The detail of the selected row opens as a preview tab in the editor area (see the layout below). It does not open in a modal dialog or in a panel on top of the view.</div></li>
+</ol>
+</div>
+
+<div style="display: flex; gap: 48px; align-items: flex-start">
+<div aria-label="Layout of the window with a preview tab" role="img" style="width: 520px; height: 220px; flex-shrink: 0; display: flex; gap: 6px; padding: 8px; border-radius: 10px; background: #eceef2; font-size: 11px; color: #5b6472">
+<div style="width: 22px; border-radius: 6px; background: #ffffff"></div>
+<div style="width: 130px; border-radius: 6px; background: #ffffff; border: 2px solid #2563eb; padding: 6px; display: flex; flex-direction: column; gap: 4px"><span style="font-weight: 600; color: #1b1f27">Side view</span><span>220–480 px</span><span>default 280 px</span></div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px">
+<div style="flex: 3; border-radius: 6px; background: #ffffff; display: flex; flex-direction: column; overflow: hidden">
+<div style="display: flex; gap: 2px; padding: 4px 4px 0; background: #f4f5f7"><span style="padding: 2px 8px; border-radius: 4px 4px 0 0; background: #eceef2">items.sql</span><span style="padding: 2px 8px; border-radius: 4px 4px 0 0; background: #ffffff; color: #1b1f27; font-style: italic; border: 2px solid #2563eb; border-bottom: 0">customer_item</span></div>
+<div style="padding: 6px; color: #1b1f27">Preview tab: the detail of the selected row. The next selection replaces it. Enter or an edit keeps it open.</div>
+</div>
+<div style="flex: 2; border-radius: 6px; background: #ffffff; padding: 6px">Results</div>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px; max-width: 640px">
+<h3 style="margin: 0; font-size: 15px; font-weight: 600">Why a preview tab and not a panel that slides in</h3>
+<p style="margin: 0">The side view is 220 to 480 px wide. A detail panel in it covers the tree, or it makes the tree too narrow. The editor area has the width for the columns of a table and for a diff. The tab gives the keys that you know (Ctrl+Tab, Ctrl+W) and a back history. Today the app already shows a table and a diff as tabs.</p>
+<p style="margin: 0; color: #5b6472">A preview tab has an italic title. A single click or Space shows the detail and keeps the focus in the view. Enter shows the detail, keeps the tab, and moves the focus into it.</p>
+</div>
+</div>
+</section>
+
+<section aria-labelledby="s-sizes" style="display: flex; gap: 48px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 16px; width: 640px">
+<h2 id="s-sizes" style="margin: 0; font-size: 20px; font-weight: 700">2. Sizes for each density</h2>
+<p style="margin: 0; color: #5b6472">One density setting changes all views (View › Density). All sizes are on a 4 px grid. Spaces between groups are on an 8 px grid.</p>
+<table style="font-size: 13px; width: 100%; font-variant-numeric: tabular-nums">
+<thead><tr><th style="text-align: left; padding: 6px 8px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px">Part</th><th style="text-align: right; padding: 6px 8px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px">Comfortable</th><th style="text-align: right; padding: 6px 8px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px">Compact</th></tr></thead>
+<tbody>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Header row</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; text-align: right">44</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; text-align: right">36</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Toolbar</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; text-align: right">40</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; text-align: right">32</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Control (button, field)</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; text-align: right">32</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; text-align: right">28</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Tree row, list row, group header</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; text-align: right">28</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; text-align: right">24</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Two-line row (connection, commit, history)</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; text-align: right">48</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; text-align: right">40</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Status line</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; text-align: right">28</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; text-align: right">24</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Side padding of the view</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; text-align: right">12</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; text-align: right">8</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Indent for each tree level</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; text-align: right">16</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; text-align: right">16</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Icon in a row · gap icon to text</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; text-align: right">16 · 8</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; text-align: right">16 · 4</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Corner radius: view · control · row</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; text-align: right">10 · 6 · 6</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; text-align: right">10 · 6 · 4</td></tr>
+</tbody>
+</table>
+<p style="margin: 0; color: #5b6472; font-size: 12px">Values are in CSS px. The tree in the code today uses 24 px rows. Comfortable changes this to 28 px.</p>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 16px; flex-grow: 1">
+<h2 style="margin: 0; font-size: 20px; font-weight: 700">3. Type</h2>
+<table style="font-size: 13px; width: 100%">
+<thead><tr><th style="text-align: left; padding: 6px 8px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px">Role</th><th style="text-align: left; padding: 6px 8px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px">Style</th><th style="text-align: left; padding: 6px 8px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px">Example</th></tr></thead>
+<tbody>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">View title</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; color: #5b6472">UI 14 / 600</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; font-size: 14px; font-weight: 600">Schema</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Row label, object name</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; color: #5b6472">UI 13 / 400</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">customer_item</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Secondary text, scope, count</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; color: #5b6472">UI 12 / 400, muted</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; font-size: 12px; color: #5b6472">Local shop › shop</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Group header</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; color: #5b6472">UI 12 / 600, muted, sentence case</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; font-size: 12px; font-weight: 600; color: #5b6472">Yesterday</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Code: type, SQL, hash, value, default</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; color: #5b6472">Mono 12 / 400</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 12px">timestamptz · 3f9a2c1</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Number in a column</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; color: #5b6472">UI 12, tabular figures, right</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; font-size: 12px; font-variant-numeric: tabular-nums; text-align: right">1 042</td></tr>
+</tbody>
+</table>
+<ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px">
+<li>Use monospace for code only: types, SQL, default values, index definitions, commit hashes, cell values.</li>
+<li>Object names (tables, columns, collections, files, branches) use the UI font in all places. They are labels.</li>
+<li>Do not use bold to show the selection. Use the selection background.</li>
+<li>Do not use capital letters for headers. Use sentence case.</li>
+<li>Cut long text at the end with an ellipsis. The tooltip shows the full text. For a path, cut the start: …/reports/runs_by_day.sql.</li>
+</ul>
+</div>
+</section>
+
+<section aria-labelledby="s-status" style="display: flex; gap: 48px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 16px; width: 640px">
+<h2 id="s-status" style="margin: 0; font-size: 20px; font-weight: 700">4. Status</h2>
+<p style="margin: 0; color: #5b6472">One scale for all views. Each state has a colour and a shape. The shape stays the same in each theme, so a person who does not see the colour can see the state.</p>
+<table style="font-size: 13px; width: 100%">
+<thead><tr><th style="text-align: left; padding: 6px 8px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px">State</th><th style="text-align: left; padding: 6px 8px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px">Shape</th><th style="text-align: left; padding: 6px 8px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px">Light · Dark</th><th style="text-align: left; padding: 6px 8px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px">Used for</th></tr></thead>
+<tbody>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">OK</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea"><svg role="img" aria-label="Filled circle" width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5" fill="#15803d"></circle></svg></td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px">#15803d · #4ade80</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Connected, query ran, branch in sync</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Busy</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea"><svg role="img" aria-label="Open arc" width="12" height="12" viewBox="0 0 12 12"><path d="M6 1a5 5 0 1 1-5 5" stroke="#2563eb" stroke-width="2" fill="none" stroke-linecap="round"></path></svg></td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px">#2563eb · #60a5fa</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Testing, running, pushing (the arc turns)</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Neutral</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea"><svg role="img" aria-label="Ring" width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.25" stroke="#5b6472" stroke-width="1.5" fill="none"></circle></svg></td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px">#5b6472 · #9aa3b2</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Not tested, not connected, cancelled</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Warning</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea"><svg role="img" aria-label="Triangle" width="12" height="12" viewBox="0 0 12 12"><path d="M6 1l5 10H1z" fill="#a16207"></path></svg></td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px">#a16207 · #facc15</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Old data, branch behind, mixed field types</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Error</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea"><svg role="img" aria-label="Diamond" width="12" height="12" viewBox="0 0 12 12"><path d="M6 0.5l5.5 5.5L6 11.5 0.5 6z" fill="#b91c1c"></path></svg></td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px">#b91c1c · #f87171</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Failed, conflict, cannot read</td></tr>
+</tbody>
+</table>
+<ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px">
+<li>Put the status mark before the label. Put the status text after the label, or in the tooltip.</li>
+<li>The environment badge (Development, Staging, Production) is not a status. It is a pill with text. Its colours stay as they are today.</li>
+<li>The accent colour (#b45309) marks the active tool and AI actions only. It does not mark a status.</li>
+<li>Neon and High contrast colours: see part 3, Colour themes.</li>
+</ul>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 16px; flex-grow: 1">
+<h2 style="margin: 0; font-size: 20px; font-weight: 700">5. Icons</h2>
+<p style="margin: 0; color: #5b6472">One set: stroke icons on a 24 grid, stroke 1.75, round ends. Size 16 in rows and buttons, 18 in the tool strip. Colour: muted text colour. The active tool and AI actions use the accent colour.</p>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; font-size: 12px">
+<div style="display: flex; align-items: center; gap: 8px; padding: 8px; border: 1px solid #e1e4ea; border-radius: 6px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linejoin="round"></path></svg>Schema, database</div>
+<div style="display: flex; align-items: center; gap: 8px; padding: 8px; border: 1px solid #e1e4ea; border-radius: 6px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M4 5h16v14H4z M4 10h16 M10 10v9" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linejoin="round"></path></svg>Table</div>
+<div style="display: flex; align-items: center; gap: 8px; padding: 8px; border: 1px solid #e1e4ea; border-radius: 6px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M4 5h16v14H4z M4 10h16" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linejoin="round" stroke-dasharray="3 2.5"></path></svg>View</div>
+<div style="display: flex; align-items: center; gap: 8px; padding: 8px; border: 1px solid #e1e4ea; border-radius: 6px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M8 4c-2 0-3 1-3 3v2c0 1-1 2-2 3 1 1 2 2 2 3v2c0 2 1 3 3 3 M16 4c2 0 3 1 3 3v2c0 1 1 2 2 3-1 1-2 2-2 3v2c0 2-1 3-3 3" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round"></path></svg>Collection</div>
+<div style="display: flex; align-items: center; gap: 8px; padding: 8px; border: 1px solid #e1e4ea; border-radius: 6px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M8 12a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M10.5 13.5L20 4 M17 7l2 2 M15 9l2 2" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>Primary key</div>
+<div style="display: flex; align-items: center; gap: 8px; padding: 8px; border: 1px solid #e1e4ea; border-radius: 6px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1 M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round"></path></svg>Foreign key</div>
+<div style="display: flex; align-items: center; gap: 8px; padding: 8px; border: 1px solid #e1e4ea; border-radius: 6px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" stroke="#b45309" stroke-width="1.75" fill="none" stroke-linejoin="round"></path></svg>AI action</div>
+<div style="display: flex; align-items: center; gap: 8px; padding: 8px; border: 1px solid #e1e4ea; border-radius: 6px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M5 12h.01 M12 12h.01 M19 12h.01" stroke="#5b6472" stroke-width="2.5" fill="none" stroke-linecap="round"></path></svg>More actions</div>
+</div>
+<ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px">
+<li>One icon has one meaning in all views. Do not use the table icon for a file.</li>
+<li>An icon-only button has an accessible name and a tooltip. The tooltip shows the shortcut: "Read the schema again (F5)".</li>
+<li>Row actions show on hover and on keyboard focus. The overflow and the context menu always show all actions.</li>
+<li>Do not use emoji or text arrows (▸ ▾). Use the chevron icon.</li>
+</ul>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2040}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

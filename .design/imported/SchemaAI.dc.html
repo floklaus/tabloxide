@@ -21,12 +21,12 @@ button,input,select,textarea{font:inherit}
 <div style="padding: 3px 8px; font-weight: 600">public</div>
 <div style="padding: 3px 8px 3px 24px">customer</div>
 <div style="padding: 3px 8px 3px 24px">item</div>
-<div style="padding: 3px 8px 3px 24px; border-radius: 6px; background: #f1f3f6; font-weight: 600">orders</div>
+<div style="padding: 3px 8px 3px 24px; border-radius: 6px; background: #f1f3f6; font-weight: 600; display: flex; align-items: center">orders<span style="flex-grow: 1"></span><button type="button" aria-label="Actions for orders" aria-expanded="true" style="width: 24px; height: 20px; padding: 0; border: 1px solid #d5d9e0; border-radius: 4px; background: #ffffff; color: #1b1f27; font-size: 12px; line-height: 1">…</button></div>
 <div style="padding: 3px 8px 3px 24px">order_line</div>
 <div style="padding: 3px 8px 3px 24px">payment</div>
 
-<div role="menu" aria-label="Actions for the table orders" style="position: absolute; top: 150px; left: 110px; width: 260px; padding: 6px; border: 1px solid #d5d9e0; border-radius: 10px; background: #ffffff; box-shadow: 0 12px 32px rgba(27, 31, 39, 0.18); display: flex; flex-direction: column; gap: 2px; z-index: 1">
-<button type="button" role="menuitem" style="height: 32px; padding: 0 10px; border: 0; border-radius: 6px; background: none; color: #1b1f27; font-size: 13px; text-align: left">Show the first 100 rows</button>
+<div role="menu" aria-label="Actions for public.orders" style="position: absolute; top: 150px; left: 200px; width: 260px; padding: 6px; border: 1px solid #d5d9e0; border-radius: 10px; background: #ffffff; box-shadow: 0 12px 32px rgba(27, 31, 39, 0.18); display: flex; flex-direction: column; gap: 2px; z-index: 1">
+<button type="button" role="menuitem" style="height: 32px; padding: 0 10px; border: 0; border-radius: 6px; background: none; color: #1b1f27; font-size: 13px; text-align: left">Show the table</button>
 <button type="button" role="menuitem" style="height: 32px; padding: 0 10px; border: 0; border-radius: 6px; background: none; color: #1b1f27; font-size: 13px; text-align: left">Copy the name</button>
 <span aria-hidden="true" style="height: 1px; margin: 4px 0; background: #e1e4ea"></span>
 <button type="button" role="menuitem" style="height: 32px; padding: 0 10px; border: 0; border-radius: 6px; background: #f1f3f6; color: #1b1f27; font-size: 13px; text-align: left; display: flex; align-items: center; gap: 8px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"></path></svg>Explain the table</button>
@@ -58,6 +58,7 @@ button,input,select,textarea{font:inherit}
 <h2 style="margin: 0; font-size: 14px; font-weight: 600">Assistant</h2>
 <div style="align-self: flex-end; max-width: 92%; padding: 10px 12px; border-radius: 10px; background: #f1f3f6">
 <p style="margin: 0">Explain the table public.orders.</p>
+<p style="margin: 6px 0 0; font-size: 12px; color: #5b6472">Sent: your request, the structure of public.orders, and the structure of 5 tables and views.</p>
 </div>
 <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px">
 <p style="margin: 0">Each row is one order of one customer.</p>

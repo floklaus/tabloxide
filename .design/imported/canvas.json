@@ -214,10 +214,130 @@
     },
     "RowsConfirm.dc.html": {
       "x": 3840,
-      "y": 9540,
+      "y": 9840,
       "w": 560,
-      "h": 440,
+      "h": 560,
       "title": "Confirm: send rows to the AI"
+    },
+    "ConnectorEngineSelect.dc.html": {
+      "x": 0,
+      "y": 10820,
+      "w": 720,
+      "h": 760,
+      "title": "1. New connection: select the engine"
+    },
+    "ConnectorDownload.dc.html": {
+      "x": 800,
+      "y": 10820,
+      "w": 600,
+      "h": 560,
+      "title": "2. Ask before the download"
+    },
+    "ConnectorProgress.dc.html": {
+      "x": 1480,
+      "y": 10820,
+      "w": 1500,
+      "h": 440,
+      "title": "3. Download, check, installed"
+    },
+    "ConnectorErrors.dc.html": {
+      "x": 0,
+      "y": 11700,
+      "w": 1500,
+      "h": 480,
+      "title": "4. Errors: network, checksum or signature, list of connectors"
+    },
+    "ConnectionMongo.dc.html": {
+      "x": 1580,
+      "y": 11700,
+      "w": 720,
+      "h": 820,
+      "title": "5. MongoDB connection after the install"
+    },
+    "ConnectorUnsigned.dc.html": {
+      "x": 2380,
+      "y": 11700,
+      "w": 620,
+      "h": 600,
+      "title": "6. Install from a file: no project signature"
+    },
+    "PreferencesConnectors.dc.html": {
+      "x": 3080,
+      "y": 11700,
+      "w": 820,
+      "h": 660,
+      "title": "7. Preferences › Connectors",
+      "is_interactive": true
+    },
+    "ViewSpecLayout.dc.html": {
+      "x": 0,
+      "y": 13100,
+      "w": 1440,
+      "h": 2040,
+      "title": "View standards 1: anatomy, sizes, type, status, icons"
+    },
+    "ViewSpecKeys.dc.html": {
+      "x": 1520,
+      "y": 13100,
+      "w": 1440,
+      "h": 2040,
+      "title": "View standards 2: keyboard, states, do and do not"
+    },
+    "SchemaViewPg.dc.html": {
+      "x": 0,
+      "y": 15260,
+      "w": 1280,
+      "h": 800,
+      "title": "Schema view (reference): PostgreSQL"
+    },
+    "SchemaViewMongo.dc.html": {
+      "x": 1360,
+      "y": 15260,
+      "w": 1280,
+      "h": 800,
+      "title": "Schema view (reference): MongoDB"
+    },
+    "SchemaViewStates.dc.html": {
+      "x": 2720,
+      "y": 15260,
+      "w": 1440,
+      "h": 680,
+      "title": "Schema view: empty, loading, error"
+    },
+    "ConnectionsView.dc.html": {
+      "x": 0,
+      "y": 16180,
+      "w": 1280,
+      "h": 800,
+      "title": "Connections view"
+    },
+    "GitView.dc.html": {
+      "x": 1360,
+      "y": 16180,
+      "w": 1600,
+      "h": 800,
+      "title": "Git view: history with diff, changes"
+    },
+    "HistoryView.dc.html": {
+      "x": 3040,
+      "y": 16180,
+      "w": 1280,
+      "h": 800,
+      "title": "History view"
+    },
+    "ViewSpecThemes.dc.html": {
+      "x": 3580,
+      "y": 13100,
+      "w": 1440,
+      "h": 2100,
+      "title": "View standards 3: colour themes"
+    },
+    "RowsButton.dc.html": {
+      "x": 3840,
+      "y": 9540,
+      "w": 760,
+      "h": 220,
+      "title": "Results bar: Ask about these rows"
     }
   },
   "order": [
@@ -249,13 +369,30 @@
     "QueryErrorAI.dc.html",
     "EditorAI.dc.html",
     "SchemaAI.dc.html",
-    "RowsConfirm.dc.html"
+    "RowsButton.dc.html",
+    "RowsConfirm.dc.html",
+    "ConnectorEngineSelect.dc.html",
+    "ConnectorDownload.dc.html",
+    "ConnectorProgress.dc.html",
+    "ConnectorErrors.dc.html",
+    "ConnectionMongo.dc.html",
+    "ConnectorUnsigned.dc.html",
+    "PreferencesConnectors.dc.html",
+    "ViewSpecLayout.dc.html",
+    "ViewSpecKeys.dc.html",
+    "SchemaViewPg.dc.html",
+    "SchemaViewMongo.dc.html",
+    "SchemaViewStates.dc.html",
+    "ConnectionsView.dc.html",
+    "GitView.dc.html",
+    "HistoryView.dc.html",
+    "ViewSpecThemes.dc.html"
   ],
   "notes": {
     "aieach": {
       "x": 0,
       "y": 8340,
-      "text": "AI in each feature, and the Git console (proposal)",
+      "text": "AI in each feature, and the Git console",
       "kind": "title1",
       "maxW": 4400
     },
@@ -263,7 +400,7 @@
       "x": 3840,
       "y": 8620,
       "w": 400,
-      "text": "Rules for the AI actions:\n\n1. A sparkle icon in the accent colour marks each AI action.\n2. An answer goes to the assistant panel, as a step of the current session. Exception: the commit message goes into the message field, and a change of the selection shows as a diff in the editor.\n3. The application never runs SQL and never runs a Git command from an answer. You accept each change.\n4. A request sends no rows. Only 'Ask about these rows' sends rows, after a confirmation. Preferences sets the number of rows. A production connection never sends rows.\n5. The Git console accepts git commands only. It runs no shell.",
+      "text": "Rules for the AI actions:\n\n1. A sparkle icon in the accent colour marks each AI action.\n2. An answer goes to the assistant panel, as a step of the current session. Exception: the commit message goes into the message field, and a change of the selection shows as a diff in the editor.\n3. The application never runs SQL and never runs a Git command from an answer. You accept each change.\n4. A request sends no rows. Only 'Ask about these rows' sends rows, after a confirmation. Preferences sets the number of rows. A production connection never sends rows.\n5. The Git console accepts git commands only. It runs no shell.\n\nBuilt on 2026-11-26 (M19 to M21). Changes to the first proposal: the conflict view resolves the whole file, the Ctrl+I box is at the bottom of the editor, and the rows dialog asks for the question.",
       "color": "orange"
     },
     "title": {
@@ -307,6 +444,34 @@
       "text": "AI connections and model selection (proposal)",
       "kind": "title1",
       "maxW": 2520
+    },
+    "connectors": {
+      "x": 0,
+      "y": 10540,
+      "text": "Load a new database engine: connectors (proposal)",
+      "kind": "title1",
+      "maxW": 3900
+    },
+    "connectorrules": {
+      "x": 3060,
+      "y": 10820,
+      "w": 400,
+      "color": "orange",
+      "text": "Rules for connectors:\n\n1. PostgreSQL and DuckDB are built in. Each other engine is a connector: a separate program.\n2. Tabloxide sends no request for connectors before the user selects Download.\n3. Tabloxide checks the SHA-256 checksum and the signature of the list (minisign key of the project). If a check fails, it keeps nothing.\n4. The files go into connectors/<engine>/<version>/ in the application data folder.\n5. The connector starts on the first connection and stops with the application.\n\nText in [brackets] is a placeholder value. The product owner must confirm it."
+    },
+    "viewstd": {
+      "x": 0,
+      "y": 12820,
+      "text": "View standards and view redesign (proposal)",
+      "kind": "title1",
+      "maxW": 5020
+    },
+    "viewstdnote": {
+      "x": 3040,
+      "y": 13100,
+      "w": 460,
+      "color": "blue",
+      "text": "View standards: decisions\n\n1. Each side view has the same parts: header (title, scope, one primary action, overflow), mode tabs if needed, filter, one tree or list, status line.\n2. Two densities: rows 28 or 24 px, header 44 or 36, toolbar 40 or 32. 4 px grid.\n3. The detail opens as a preview tab in the editor area, not in a panel in the side view. Reason: the side view is too narrow for columns or a diff, and tabs give known keys.\n4. Monospace is for code only (types, SQL, hashes, values). Object names use the UI font. Reason: names are labels; mono makes them wider and cuts them sooner.\n5. One status scale with a shape for each state: OK, busy, neutral, warning, error.\n6. Git: Changes, History, and Branches are tabs under the header. History groups commits by day.\n\nOpen questions:\na. Preview tab in the editor area: OK? Then the 'Table' tab of the lower panel goes away.\nb. Nullable column: 'text?' in the tree. OK, or other mark?\nc. Is a diagram mode for the schema planned? If not, no view switch.\nd. Warning colour equals the accent (#b45309). Keep, with the shape as the difference?\ne. Connections grouped by environment, production first: OK?\nf. MongoDB sample size: [1 000] documents?"
     }
   },
   "designSystems": []

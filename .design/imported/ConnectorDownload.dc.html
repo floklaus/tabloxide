@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Download the MongoDB connector?</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit}
+</style>
+</helmet>
+<div style="width: 600px; height: 560px; padding: 24px; background: rgba(27, 31, 39, 0.35); font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.4; display: flex; align-items: center; justify-content: center">
+<div role="dialog" aria-label="Download the MongoDB connector?" style="width: 100%; padding: 24px; border-radius: 14px; background: #ffffff; color: #1b1f27; box-shadow: 0 12px 32px rgba(27, 31, 39, 0.18); display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; align-items: flex-start; gap: 12px">
+<span aria-hidden="true" style="width: 36px; height: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #eaf1fe"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M12 4v11 M7 10l5 5 5-5 M5 20h14" stroke="#1d4ed8" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600">Download the MongoDB connector?</h2>
+<p style="margin: 0">MongoDB is not built in. A connector is a separate program that connects Tabloxide to MongoDB.</p>
+</div>
+</div>
+<dl style="margin: 0; padding: 12px; border: 1px solid #e1e4ea; border-radius: 8px; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; font-size: 13px">
+<dt style="color: #5b6472">Engine</dt><dd style="margin: 0">MongoDB</dd>
+<dt style="color: #5b6472">Version</dt><dd style="margin: 0">[0.1.0]</dd>
+<dt style="color: #5b6472">Size</dt><dd style="margin: 0">[14 MB]</dd>
+<dt style="color: #5b6472">Source</dt><dd style="margin: 0">The list of connectors at tabloxide.org. The file comes from the GitHub releases of the Tabloxide project.</dd>
+<dt style="color: #5b6472">Check</dt><dd style="margin: 0">Tabloxide checks the checksum and the signature before it keeps the file.</dd>
+</dl>
+<div style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 10px; background: #fdf3e7; border: 1px solid #f0d2a8; font-size: 13px">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" style="flex-shrink: 0; margin-top: 2px"><path d="M12 8v5 M12 16.5h.01 M10.3 3.9L2.6 17.5A2 2 0 0 0 4.3 20.5h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" stroke="#92400e" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+<span>The connector runs as a program with your permissions. It gets the address and the password of each MongoDB connection.</span>
+</div>
+<p style="margin: 0; color: #5b6472; font-size: 12px">Tabloxide sends no request for connectors before you select Download.</p>
+<div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px">
+<button type="button" style="height: 32px; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 1px solid #d5d9e0; background: #ffffff; color: #1b1f27">Cancel</button>
+<button type="button" style="height: 32px; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 1px solid #2563eb; background: #2563eb; color: #ffffff; font-weight: 600">Download [14 MB]</button>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":600,"height":560}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

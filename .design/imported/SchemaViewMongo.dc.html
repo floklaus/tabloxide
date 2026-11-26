@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Schema view: MongoDB</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit}
+table{border-collapse:collapse}
+kbd{display:inline-block;padding:0 5px;border:1px solid #d5d9e0;border-radius:4px;background:#fafbfc;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:11px;line-height:16px;color:#5b6472}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; display: flex; gap: 8px; padding: 8px; background: #eceef2; color: #1b1f27; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px; line-height: 1.4; overflow: hidden">
+
+<nav aria-label="Left tool strip" style="display: flex; flex-direction: column; gap: 4px">
+<button type="button" aria-label="Files" title="Files" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: none"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z M14 3v4h4" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-label="Connections" title="Connections" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: none"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3z M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6 M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-label="Schema" title="Schema" aria-pressed="true" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: #ffffff"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M4 5h16v14H4z M4 10h16 M10 10v9" stroke="{{accent}}" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-label="Git" title="Git" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: none"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M6 3v12 M6 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M18 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M18 9c0 5-12 2-12 6" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<span style="flex-grow: 1"></span>
+<button type="button" aria-label="History" title="History" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: none"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5 M12 7v5l3 2" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+</nav>
+
+<section aria-label="Schema" style="width: 300px; flex-shrink: 0; display: flex; flex-direction: column; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; overflow: hidden">
+<div style="height: {{d.hdr}}; flex-shrink: 0; display: flex; align-items: center; gap: 4px; padding: 0 {{d.pad8}} 0 {{d.pad}}">
+<h2 style="margin: 0; font-size: 14px; font-weight: 600">Schema</h2>
+<button type="button" aria-haspopup="menu" aria-label="Scope: Events cluster. Change the scope" style="min-width: 0; height: {{d.ctl}}; display: inline-flex; align-items: center; gap: 2px; padding: 0 6px; border: 0; border-radius: 6px; background: none; color: #5b6472; font-size: 12px; white-space: nowrap"><span style="overflow: hidden; text-overflow: ellipsis">Events cluster</span><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="#5b6472" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<span style="flex-grow: 1"></span>
+<button type="button" aria-label="Read the databases again" title="Read the databases again (F5)" style="width: {{d.ctl}}; height: {{d.ctl}}; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: none"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7 M20 4v7h-7" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-haspopup="menu" aria-label="More schema actions" title="More schema actions" style="width: {{d.ctl}}; height: {{d.ctl}}; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: none"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M5 12h.01 M12 12h.01 M19 12h.01" stroke="#5b6472" stroke-width="2.5" fill="none" stroke-linecap="round"></path></svg></button>
+</div>
+<div style="height: {{d.bar}}; flex-shrink: 0; display: flex; align-items: center; padding: 0 {{d.pad}}">
+<label style="flex-grow: 1; height: {{d.ctl}}; display: flex; align-items: center; gap: 6px; padding: 0 8px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M20 20l-4-4" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round"></path></svg><input type="search" aria-label="Filter the collections and fields" placeholder="Filter collections and fields" style="flex-grow: 1; min-width: 0; border: 0; background: none; color: #1b1f27; font-size: 13px; outline-offset: 4px"><kbd>/</kbd></label>
+</div>
+<div role="tree" aria-label="Databases of Events cluster" style="flex-grow: 1; min-height: 0; overflow: auto; padding: 4px 0">
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="18">
+<div role="treeitem" aria-level="{{r.level}}" aria-selected="{{r.selected}}" title="{{r.tip}}" style="height: {{d.row}}; display: flex; align-items: center; gap: {{d.ig}}; padding-left: {{r.indent}}; padding-right: {{d.pad}}; margin: 0 4px; border-radius: 6px; background: {{r.bg}}; outline: {{r.outline}}; outline-offset: -2px; color: {{r.color}}">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" style="flex-shrink: 0"><path d="{{r.chevron}}" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" style="flex-shrink: 0"><path d="{{r.icon}}" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+<span style="flex-grow: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{r.label}}</span>
+<svg aria-hidden="true" width="10" height="10" viewBox="0 0 12 12" style="flex-shrink: 0"><path d="{{r.warn}}" fill="#b45309"></path></svg>
+<span style="flex-shrink: 0; color: #5b6472; font-size: 12px; font-family: {{r.metaFont}}">{{r.meta}}</span>
+</div>
+</sc-for>
+</div>
+<div role="status" style="height: {{d.row}}; flex-shrink: 0; display: flex; align-items: center; gap: 6px; padding: 0 {{d.pad}}; border-top: 1px solid #e1e4ea; color: #5b6472; font-size: 12px"><svg aria-hidden="true" width="10" height="10" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5" fill="#15803d"></circle></svg>Fields from 1 000 sampled documents</div>
+</section>
+
+<section aria-label="Editor" style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; overflow: hidden">
+<div role="tablist" aria-label="Open tabs" style="display: flex; align-items: flex-end; gap: 2px; padding: 4px 8px 0; background: #f4f5f7; border-bottom: 1px solid #e1e4ea">
+<button type="button" role="tab" aria-selected="false" style="height: {{d.ctl}}; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: none; color: #5b6472; font-size: 13px">open_orders.js</button>
+<button type="button" role="tab" aria-selected="true" title="Preview tab. Enter or a double click keeps it open." style="height: {{d.ctl}}; padding: 0 10px 0 12px; display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 8px 8px 0 0; background: #ffffff; color: #1b1f27; font-size: 13px; font-style: italic"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M8 4c-2 0-3 1-3 3v2c0 1-1 2-2 3 1 1 2 2 2 3v2c0 2 1 3 3 3 M16 4c2 0 3 1 3 3v2c0 1 1 2 2 3-1 1-2 2-2 3v2c0 2-1 3-3 3" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round"></path></svg>orders<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M6 6l12 12 M18 6L6 18" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round"></path></svg></button>
+</div>
+
+<div style="flex-grow: 1; min-height: 0; overflow: auto; padding: 16px 24px 24px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<nav aria-label="Path" style="color: #5b6472; font-size: 12px">Events cluster › shop › orders</nav>
+<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+<h1 style="margin: 0; font-size: 18px; font-weight: 600">orders</h1>
+<span style="padding: 0 8px; border-radius: 999px; background: #f1f3f6; color: #5b6472; font-size: 12px">collection</span>
+<span style="color: #5b6472; font-size: 12px">about 2.1 million documents</span>
+<span style="flex-grow: 1"></span>
+<button type="button" style="height: {{d.ctl}}; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid #2563eb; border-radius: 6px; background: #2563eb; color: #ffffff; font-size: 13px; font-weight: 600"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z" fill="#ffffff"></path></svg>Find the documents<span style="font-weight: 400; font-size: 12px">Ctrl+Enter</span></button>
+<button type="button" style="height: {{d.ctl}}; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; font-size: 13px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" stroke="{{accent}}" stroke-width="1.75" fill="none" stroke-linejoin="round"></path></svg>Explain</button>
+<button type="button" aria-haspopup="menu" aria-label="More collection actions" style="width: {{d.ctl}}; height: {{d.ctl}}; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: none"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M5 12h.01 M12 12h.01 M19 12h.01" stroke="#5b6472" stroke-width="2.5" fill="none" stroke-linecap="round"></path></svg></button>
+</div>
+</div>
+
+<div role="tablist" aria-label="Collection detail" style="display: flex; gap: 16px; border-bottom: 1px solid #e1e4ea">
+<button type="button" role="tab" aria-selected="true" style="padding: 6px 0; border: 0; border-bottom: 2px solid #1b1f27; background: none; font-size: 13px; font-weight: 600">Structure</button>
+<button type="button" role="tab" aria-selected="false" style="padding: 6px 0; border: 0; border-bottom: 2px solid transparent; background: none; color: #5b6472; font-size: 13px">Documents</button>
+<button type="button" role="tab" aria-selected="false" style="padding: 6px 0; border: 0; border-bottom: 2px solid transparent; background: none; color: #5b6472; font-size: 13px">Validation</button>
+</div>
+
+<section aria-labelledby="m-fields" style="display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; align-items: center; gap: 8px">
+<h2 id="m-fields" style="margin: 0; font-size: 12px; font-weight: 600; color: #5b6472">Fields <span style="font-weight: 400">11, from a sample of 1 000 documents</span></h2>
+<span style="flex-grow: 1"></span>
+<button type="button" style="height: 24px; padding: 0 8px; border: 0; border-radius: 6px; background: none; color: #2563eb; font-size: 12px">Sample again</button>
+</div>
+<table style="width: 100%; font-size: 13px">
+<thead><tr>
+<th style="text-align: left; padding: 4px 8px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px; font-weight: 600">Field</th>
+<th style="text-align: left; padding: 4px 8px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px; font-weight: 600">Types</th>
+<th style="text-align: left; padding: 4px 8px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px; font-weight: 600; width: 160px">In documents</th>
+</tr></thead>
+<tbody>
+<sc-for list="{{fields}}" as="f" hint-placeholder-count="11">
+<tr style="height: {{d.row}}">
+<th scope="row" style="text-align: left; padding: 0 8px 0 {{f.indent}}; border-bottom: 1px solid #e1e4ea; font-weight: 400">{{f.name}}</th>
+<td style="padding: 0 8px; border-bottom: 1px solid #e1e4ea"><span style="display: inline-flex; align-items: center; gap: 6px"><svg role="img" aria-label="{{f.warnLabel}}" width="10" height="10" viewBox="0 0 12 12"><path d="{{f.warn}}" fill="#b45309"></path></svg><span style="font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 12px">{{f.types}}</span></span></td>
+<td style="padding: 0 8px; border-bottom: 1px solid #e1e4ea"><span style="display: flex; align-items: center; gap: 8px"><span aria-hidden="true" style="width: 64px; height: 4px; border-radius: 2px; background: #e1e4ea; overflow: hidden"><span style="display: block; height: 4px; width: {{f.pct}}; background: #5b6472"></span></span><span style="font-size: 12px; color: #5b6472; font-variant-numeric: tabular-nums">{{f.pct}}</span></span></td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</section>
+
+<section aria-labelledby="m-idx" style="display: flex; flex-direction: column; gap: 6px">
+<h2 id="m-idx" style="margin: 0; font-size: 12px; font-weight: 600; color: #5b6472">Indexes <span style="font-weight: 400">3</span></h2>
+<table style="width: 100%; font-size: 13px">
+<tbody>
+<tr style="height: {{d.row}}"><th scope="row" style="text-align: left; padding: 0 8px; border-bottom: 1px solid #e1e4ea; font-weight: 400; width: 260px">_id_</th><td style="padding: 0 8px; border-bottom: 1px solid #e1e4ea; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px">{ _id: 1 }</td><td style="padding: 0 8px; border-bottom: 1px solid #e1e4ea; text-align: right"><span style="padding: 0 6px; border: 1px solid #d5d9e0; border-radius: 4px; color: #5b6472; font-size: 11px">unique</span></td></tr>
+<tr style="height: {{d.row}}"><th scope="row" style="text-align: left; padding: 0 8px; border-bottom: 1px solid #e1e4ea; font-weight: 400">customer_id_1_created_at_-1</th><td style="padding: 0 8px; border-bottom: 1px solid #e1e4ea; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px">{ customer_id: 1, created_at: -1 }</td><td style="padding: 0 8px; border-bottom: 1px solid #e1e4ea"></td></tr>
+<tr style="height: {{d.row}}"><th scope="row" style="text-align: left; padding: 0 8px; border-bottom: 1px solid #e1e4ea; font-weight: 400">status_1</th><td style="padding: 0 8px; border-bottom: 1px solid #e1e4ea; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px">{ status: 1 }</td><td style="padding: 0 8px; border-bottom: 1px solid #e1e4ea"></td></tr>
+</tbody>
+</table>
+</section>
+
+<section aria-labelledby="m-val" style="display: flex; flex-direction: column; gap: 6px">
+<h2 id="m-val" style="margin: 0; font-size: 12px; font-weight: 600; color: #5b6472">Validation</h2>
+<p style="margin: 0; padding: 0 8px; color: #5b6472">The collection has no validator. The fields above come from a sample. They are not rules.</p>
+</section>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#b45309","options":["#b45309","#2563eb","#0f766e","#7c3aed"]},"density":{"editor":"enum","default":"comfortable","options":["comfortable","compact"]},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+const compact = this.props.density === 'compact';
+const d = compact
+? { hdr: '36px', bar: '32px', ctl: '28px', row: '24px', pad: '8px', pad8: '4px', ig: '4px', step: 16, base: 4 }
+: { hdr: '44px', bar: '40px', ctl: '32px', row: '28px', pad: '12px', pad8: '8px', ig: '6px', step: 16, base: 8 };
+const I = {
+open: 'M6 9l6 6 6-6', closed: 'M9 6l6 6-6 6',
+db: 'M3 7h6l2 2h10v10H3z',
+coll: 'M8 4c-2 0-3 1-3 3v2c0 1-1 2-2 3 1 1 2 2 2 3v2c0 2 1 3 3 3 M16 4c2 0 3 1 3 3v2c0 1 1 2 2 3-1 1-2 2-2 3v2c0 2-1 3-3 3',
+pk: 'M8 12a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M10.5 13.5L20 4 M17 7l2 2 M15 9l2 2'
+};
+const tri = 'M6 1l5 10H1z';
+const mono = "ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace";
+const raw = [
+{ level: 1, label: 'shop', chevron: I.open, icon: I.db, meta: '5' },
+{ level: 2, label: 'carts', chevron: I.closed, icon: I.coll },
+{ level: 2, label: 'customers', chevron: I.closed, icon: I.coll },
+{ level: 2, label: 'orders', chevron: I.open, icon: I.coll, selected: true },
+{ level: 3, label: '_id', icon: I.pk, meta: 'objectId', code: true },
+{ level: 3, label: 'customer_id', meta: 'objectId', code: true },
+{ level: 3, label: 'status', meta: 'string', code: true },
+{ level: 3, label: 'items', chevron: I.open, meta: 'array', code: true },
+{ level: 4, label: 'sku', meta: 'string', code: true },
+{ level: 4, label: 'qty', meta: 'int', code: true },
+{ level: 4, label: 'price', meta: 'decimal', code: true },
+{ level: 3, label: 'total', meta: 'decimal', code: true },
+{ level: 3, label: 'created_at', meta: 'date', code: true },
+{ level: 3, label: 'shipped_at', meta: 'mixed', code: true, warn: true, tip: 'shipped_at: date in 61%, string in 4%, missing in 35%' },
+{ level: 3, label: 'coupon', meta: 'string 12%', code: true, tip: 'coupon: in 12% of the sampled documents' },
+{ level: 2, label: 'sessions', chevron: I.closed, icon: I.coll },
+{ level: 1, label: 'System databases', chevron: I.closed, icon: I.db, meta: '3', muted: true }
+];
+const rows = raw.map((r) => ({
+level: r.level,
+label: r.label,
+chevron: r.chevron || '',
+icon: r.icon || '',
+meta: r.meta || '',
+metaFont: r.code ? mono : 'inherit',
+warn: r.warn ? tri : '',
+tip: r.tip || r.label,
+selected: r.selected ? 'true' : 'false',
+indent: (d.base + (r.level - 1) * d.step) + 'px',
+bg: r.selected ? '#f1f3f6' : 'transparent',
+outline: r.selected ? '2px solid #2563eb' : 'none',
+color: r.muted ? '#5b6472' : '#1b1f27'
+}));
+const f = (name, types, pct, depth, warn) => ({
+name, types, pct,
+indent: (8 + (depth || 0) * 16) + 'px',
+warn: warn ? tri : '',
+warnLabel: warn ? 'More than one type' : 'One type'
+});
+const fields = [
+f('_id', 'objectId', '100%'),
+f('customer_id', 'objectId', '100%'),
+f('status', 'string', '100%'),
+f('items', 'array of object', '100%'),
+f('items.sku', 'string', '100%', 1),
+f('items.qty', 'int', '100%', 1),
+f('items.price', 'decimal', '100%', 1),
+f('total', 'decimal', '100%'),
+f('created_at', 'date', '100%'),
+f('shipped_at', 'date 61% · string 4%', '65%', 0, true),
+f('coupon', 'string', '12%')
+];
+return { accent: this.props.accent ?? '#b45309', d, rows, fields };
+}
+}
+</script>
+</body>
+</html>

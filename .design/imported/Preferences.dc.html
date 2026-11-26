@@ -121,6 +121,49 @@ button,input,select,textarea{font:inherit}
 </div>
 </fieldset>
 </sc-if>
+<sc-if value="{{ isConnectors }}" hint-placeholder-val="{{ false }}">
+<fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 10px">
+<legend style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap">Connectors</legend>
+<p style="margin: 0; color: #5b6472; font-size: 12px">A connector is a separate program for one database engine. PostgreSQL and DuckDB are built in and need no connector.</p>
+<div style="border: 1px solid #e1e4ea; border-radius: 10px; overflow: hidden">
+<table style="width: 100%; border-collapse: collapse; font-size: 13px">
+<thead>
+<tr style="background: #fafbfc; color: #5b6472; font-size: 12px; text-align: left">
+<th scope="col" style="padding: 8px 12px; font-weight: 600">Engine</th>
+<th scope="col" style="padding: 8px 12px; font-weight: 600">Version</th>
+<th scope="col" style="padding: 8px 12px; font-weight: 600">Source</th>
+<th scope="col" style="padding: 8px 12px; font-weight: 600; width: 96px"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap">Action</span></th>
+</tr>
+</thead>
+<tbody>
+<tr style="border-top: 1px solid #e1e4ea">
+<td style="padding: 8px 12px; font-weight: 600">MongoDB</td>
+<td style="padding: 8px 12px">[0.1.0]</td>
+<td style="padding: 8px 12px"><span style="padding: 0 8px; border-radius: 999px; background: #eef8f1; color: #15803d; font-size: 12px; font-weight: 600">Official</span></td>
+<td style="padding: 4px 12px; text-align: right"><button type="button" aria-label="Remove the MongoDB connector 0.1.0" style="height: 28px; padding: 0 10px; border: 0; border-radius: 6px; background: none; color: #b91c1c; font-size: 12px">Remove</button></td>
+</tr>
+<tr style="border-top: 1px solid #e1e4ea">
+<td style="padding: 8px 12px; font-weight: 600">MongoDB</td>
+<td style="padding: 8px 12px">[0.2.0]</td>
+<td style="padding: 8px 12px"><span style="display: inline-flex; flex-direction: column; gap: 2px"><span style="align-self: flex-start; padding: 0 8px; border-radius: 999px; background: #fdf1e3; color: #92400e; font-size: 12px; font-weight: 600">Other publisher</span><span style="color: #5b6472; font-size: 12px">[Example Labs]. You confirmed this version.</span></span></td>
+<td style="padding: 4px 12px; text-align: right"><button type="button" aria-label="Remove the MongoDB connector 0.2.0" style="height: 28px; padding: 0 10px; border: 0; border-radius: 6px; background: none; color: #b91c1c; font-size: 12px">Remove</button></td>
+</tr>
+<tr style="border-top: 1px solid #e1e4ea">
+<td style="padding: 8px 12px; font-weight: 600">[engine]</td>
+<td style="padding: 8px 12px">[0.0.1-dev]</td>
+<td style="padding: 8px 12px"><span style="display: inline-flex; flex-direction: column; gap: 2px"><span style="align-self: flex-start; padding: 0 8px; border-radius: 999px; background: #f1f3f6; color: #1b1f27; font-size: 12px; font-weight: 600">Development</span><span style="color: #5b6472; font-size: 12px">From TABLOXIDE_CONNECTOR_DIR. No signature check.</span></span></td>
+<td style="padding: 8px 12px; color: #5b6472; font-size: 12px; text-align: right">Not removable</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div style="display: flex; align-items: center; gap: 12px">
+<button type="button" style="height: 32px; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 1px solid #d5d9e0; background: #ffffff; color: #1b1f27"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z M14 3v4h4" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>Install from a file…</button>
+<span style="color: #5b6472; font-size: 12px">Select a .tar.gz package. A package without the signature of the Tabloxide project needs a confirmation.</span>
+</div>
+<p style="margin: 0; color: #5b6472; font-size: 12px">An open session continues with its version. Remove deletes the version folder in the application data folder.</p>
+</fieldset>
+</sc-if>
 </div>
 <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px">
 <button type="button" style="height: 32px; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 1px solid #d5d9e0; background: #ffffff; color: #1b1f27">Cancel</button>
@@ -129,15 +172,16 @@ button,input,select,textarea{font:inherit}
 </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":820,"height":660}}'>
+<script type="text/x-dc" data-dc-script data-props='{"tab":{"editor":"enum","default":"appearance","options":["appearance","editor","confirm","assistant","connectors","updates"]},"$preview":{"width":820,"height":660}}'>
 class Component extends DCLogic {
 renderVals() {
-const tab = (this.state && this.state.tab) || 'appearance';
+const tab = (this.state && this.state.tab) || this.props.tab || 'appearance';
 const groups = [
 ['appearance', 'Appearance'],
 ['editor', 'Editor'],
 ['confirm', 'Ask before a run'],
 ['assistant', 'AI assistant'],
+['connectors', 'Connectors'],
 ['updates', 'Updates'],
 ];
 const base = 'margin-bottom: -1px; padding: 8px 14px; border: 0; border-bottom: 2px solid transparent; background: none; font-size: 13px; cursor: pointer; ';
@@ -158,6 +202,7 @@ isAppearance: tab === 'appearance',
 isEditor: tab === 'editor',
 isConfirm: tab === 'confirm',
 isAssistant: tab === 'assistant',
+isConnectors: tab === 'connectors',
 isUpdates: tab === 'updates',
 };
 }

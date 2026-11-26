@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>View standards: keyboard, states, do and do not</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit}
+table{border-collapse:collapse}
+kbd{display:inline-block;padding:0 6px;border:1px solid #d5d9e0;border-radius:4px;background:#fafbfc;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:12px;line-height:18px;white-space:nowrap}
+</style>
+</helmet>
+<div style="width: 1440px; min-height: 2040px; background: #ffffff; color: #1b1f27; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.45; padding: 56px 64px; display: flex; flex-direction: column; gap: 48px">
+
+<header style="display: flex; flex-direction: column; gap: 8px; max-width: 900px">
+<p style="margin: 0; color: #5b6472; font-size: 12px; font-weight: 600">Standard · part 2 of 3</p>
+<h1 style="margin: 0; font-size: 32px; font-weight: 700">Keyboard, states, and examples</h1>
+<p style="margin: 0; color: #5b6472">A person can do each task in a view with the keyboard only. The keys are the same in each view. The trees and lists follow the WAI-ARIA tree and listbox patterns.</p>
+</header>
+
+<section aria-labelledby="k-keys" style="display: flex; gap: 48px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 16px; width: 760px">
+<h2 id="k-keys" style="margin: 0; font-size: 20px; font-weight: 700">6. Keys in a tree or a list</h2>
+<table style="font-size: 13px; width: 100%">
+<thead><tr><th style="text-align: left; padding: 6px 8px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px; width: 200px">Key</th><th style="text-align: left; padding: 6px 8px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px">Action</th></tr></thead>
+<tbody>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea"><kbd>↑</kbd> <kbd>↓</kbd></td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Move the focus one row. The detail does not change.</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea"><kbd>→</kbd></td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Open a closed node. On an open node: move to its first child.</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea"><kbd>←</kbd></td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Close an open node. On a closed node or a leaf: move to the parent.</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea"><kbd>Home</kbd> <kbd>End</kbd> <kbd>PgUp</kbd> <kbd>PgDn</kbd></td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Move to the first row, the last row, or one page.</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea"><kbd>Space</kbd></td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Show the detail in the preview tab. The focus stays in the view. In a row with a check box (Git changes), Space sets or clears the check box.</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea"><kbd>Enter</kbd></td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Do the primary action of the row: open the table, connect, open the file, open the diff. The tab stays open and gets the focus.</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea"><kbd>Ctrl</kbd>+<kbd>Enter</kbd></td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Do the second action: query the first 100 rows, run the history entry again, commit.</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea"><kbd>F2</kbd></td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Rename in place: file, snippet, connection, branch. Enter keeps the name. Esc cancels. Views without rename ignore F2.</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea"><kbd>Delete</kbd></td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Delete or discard the row. A confirmation names the object and the result. Focus then goes to the next row.</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea"><kbd>F5</kbd></td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Read the data of the view again.</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea"><kbd>Shift</kbd>+<kbd>F10</kbd> or Menu key</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Open the context menu. It has the same actions as the overflow menu, with their shortcuts.</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Letters, digits</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Type-ahead: move to the next visible row that starts with the typed text. The buffer clears after 0.5 s. Type-ahead does not filter.</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea"><kbd>Ctrl</kbd>+<kbd>F</kbd> or <kbd>/</kbd></td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Move to the filter field of the view. <kbd>↓</kbd> moves back to the first match.</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea"><kbd>Esc</kbd></td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">In the filter: clear the text. A second Esc moves the focus to the list. In the list: close the preview tab.</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea"><kbd>Shift</kbd>+<kbd>↑↓</kbd>, <kbd>Ctrl</kbd>+click</td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Select more than one row, where the view supports it (Git changes, files, history).</td></tr>
+<tr><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea"><kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>K</kbd></td><td style="padding: 6px 8px; border-bottom: 1px solid #e1e4ea">Open the command palette from any place. <kbd>@</kbd> finds schema objects. Each view action is also a palette command.</td></tr>
+</tbody>
+</table>
+<p style="margin: 0; color: #5b6472; font-size: 12px">On macOS, Ctrl is ⌘ in each shortcut above. Mouse: a single click is Space. A double click is Enter.</p>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 16px; flex-grow: 1">
+<h2 style="margin: 0; font-size: 20px; font-weight: 700">7. Focus order</h2>
+<p style="margin: 0; color: #5b6472">Tab moves between parts. Each part is one Tab stop. In a list, the arrow keys move between rows (roving tab index).</p>
+<ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px">
+<li style="display: flex; gap: 12px; align-items: center; padding: 10px 12px; border: 1px solid #e1e4ea; border-radius: 8px"><span style="width: 24px; height: 24px; border-radius: 50%; background: #1b1f27; color: #ffffff; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center">1</span>Scope menu</li>
+<li style="display: flex; gap: 12px; align-items: center; padding: 10px 12px; border: 1px solid #e1e4ea; border-radius: 8px"><span style="width: 24px; height: 24px; border-radius: 50%; background: #1b1f27; color: #ffffff; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center">2</span>Primary action, then overflow menu</li>
+<li style="display: flex; gap: 12px; align-items: center; padding: 10px 12px; border: 1px solid #e1e4ea; border-radius: 8px"><span style="width: 24px; height: 24px; border-radius: 50%; background: #1b1f27; color: #ffffff; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center">3</span>Mode tabs (if the view has modes), then the filter field</li>
+<li style="display: flex; gap: 12px; align-items: center; padding: 10px 12px; border: 2px solid #2563eb; border-radius: 8px"><span style="width: 24px; height: 24px; border-radius: 50%; background: #2563eb; color: #ffffff; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center">4</span>Tree or list: the last focused row</li>
+<li style="display: flex; gap: 12px; align-items: center; padding: 10px 12px; border: 1px solid #e1e4ea; border-radius: 8px"><span style="width: 24px; height: 24px; border-radius: 50%; background: #1b1f27; color: #ffffff; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center">5</span>Bottom box, if the view has one (commit message)</li>
+</ol>
+<ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px">
+<li>When a view opens, the focus goes to part 4.</li>
+<li><kbd>F6</kbd> moves to the next area of the window: side view, editor, lower panel, assistant.</li>
+<li>When a row goes away (delete, filter), the focus goes to the next row, else to the previous row.</li>
+<li>The focus ring is 2 px, colour #2563eb (dark: #60a5fa), 2 px from the row. Never remove it. Neon and High contrast: see part 3.</li>
+</ul>
+</div>
+</section>
+
+<section aria-labelledby="k-states" style="display: flex; flex-direction: column; gap: 20px">
+<h2 id="k-states" style="margin: 0; font-size: 20px; font-weight: 700">8. Empty, loading, and error states</h2>
+<p style="margin: 0; color: #5b6472; max-width: 900px">Each view defines these four states. The header and the toolbar stay in their place in each state. Only the body changes. The Schema states artboard shows them in full.</p>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px">
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px solid #e1e4ea; border-radius: 10px">
+<h3 style="margin: 0; font-size: 15px; font-weight: 600">Empty: no source</h3>
+<p style="margin: 0">The view has nothing to show yet. Say why in one sentence. Give one button that fixes it.</p>
+<p style="margin: 0; padding: 12px; border-radius: 8px; background: #f4f5f7; font-size: 13px">The tab has no connection.<br><span style="display: inline-block; margin-top: 8px; padding: 4px 12px; border-radius: 6px; background: #2563eb; color: #ffffff; font-weight: 600">Select a connection</span></p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px solid #e1e4ea; border-radius: 10px">
+<h3 style="margin: 0; font-size: 15px; font-weight: 600">Empty: no match</h3>
+<p style="margin: 0">The filter hides all rows. Show the filter text. Give a button that clears the filter.</p>
+<p style="margin: 0; padding: 12px; border-radius: 8px; background: #f4f5f7; font-size: 13px">No table contains "invoice".<br><span style="display: inline-block; margin-top: 8px; color: #2563eb; text-decoration: underline">Clear the filter</span></p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px solid #e1e4ea; border-radius: 10px">
+<h3 style="margin: 0; font-size: 15px; font-weight: 600">Loading</h3>
+<p style="margin: 0">Wait 300 ms. Then show skeleton rows at the row height. The status line says what loads. Rows that are already there stay.</p>
+<div aria-hidden="true" style="display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 8px; background: #f4f5f7"><span style="height: 8px; width: 70%; border-radius: 4px; background: #d5d9e0"></span><span style="height: 8px; width: 55%; border-radius: 4px; background: #d5d9e0"></span><span style="height: 8px; width: 62%; border-radius: 4px; background: #d5d9e0"></span></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px solid #e1e4ea; border-radius: 10px">
+<h3 style="margin: 0; font-size: 15px; font-weight: 600">Error</h3>
+<p style="margin: 0">Show the error at the top of the body. Say what failed and what to do. Give Try again. Keep old data, and mark it as old.</p>
+<p style="margin: 0; padding: 12px; border-radius: 8px; background: #fdf2f2; border: 1px solid #f3c7c7; font-size: 13px; color: #7f1d1d">Cannot read the schema. The server closed the connection.<br><span style="display: inline-block; margin-top: 8px; color: #b91c1c; font-weight: 600; text-decoration: underline">Try again</span></p>
+</div>
+</div>
+<ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px">
+<li>A node that loads or fails shows one inline row under that node. The rest of the tree stays usable.</li>
+<li>An error has role="alert". A loading message has role="status". Do not use a toast for an error that needs an action.</li>
+</ul>
+</section>
+
+<section aria-labelledby="k-do" style="display: flex; flex-direction: column; gap: 20px">
+<h2 id="k-do" style="margin: 0; font-size: 20px; font-weight: 700">9. Do and do not</h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px">
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 8px; border-top: 4px solid #15803d; background: #f6fbf8"><strong style="color: #15803d">Do</strong>
+<div style="height: 28px; display: flex; align-items: center; gap: 8px; padding: 0 8px; background: #ffffff; border-radius: 6px; font-size: 13px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M8 12a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M10.5 13.5L20 4 M17 7l2 2" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round"></path></svg><span style="flex-grow: 1">item_id</span><span style="font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; color: #5b6472">bigint</span></div>
+<span style="font-size: 12px">Name first. Type quiet and on the right. Key as an icon.</span></div>
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 8px; border-top: 4px solid #b91c1c; background: #fdf6f6"><strong style="color: #b91c1c">Do not</strong>
+<div style="height: 28px; display: flex; align-items: center; gap: 8px; padding: 0 8px; background: #ffffff; border-radius: 6px; font-size: 13px"><span>item_id bigint, primary key, not null</span></div>
+<span style="font-size: 12px">Raw text after the name. The name and the type compete.</span></div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 8px; border-top: 4px solid #15803d; background: #f6fbf8"><strong style="color: #15803d">Do</strong>
+<div style="height: 28px; display: flex; align-items: center; gap: 8px; padding: 0 8px; background: #ffffff; border-radius: 6px; font-size: 13px"><svg aria-hidden="true" width="10" height="10" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5" fill="#15803d"></circle></svg><span style="flex-grow: 1">Local shop</span><span style="font-size: 12px; color: #5b6472">⋯</span></div>
+<span style="font-size: 12px">One status mark. Actions in the overflow and on hover or focus.</span></div>
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 8px; border-top: 4px solid #b91c1c; background: #fdf6f6"><strong style="color: #b91c1c">Do not</strong>
+<div style="min-height: 28px; display: flex; align-items: center; gap: 8px; padding: 0 8px; background: #ffffff; border-radius: 6px; font-size: 12px; color: #2563eb; flex-wrap: wrap"><span>Test</span><span>Edit</span><span>Duplicate</span><span style="color: #b91c1c">Delete</span></div>
+<span style="font-size: 12px">Four links on each card. The list gets long and loud.</span></div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 8px; border-top: 4px solid #15803d; background: #f6fbf8"><strong style="color: #15803d">Do</strong>
+<span style="font-size: 13px">Show the detail of a table in a preview tab. The view stays visible.</span></div>
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 8px; border-top: 4px solid #b91c1c; background: #fdf6f6"><strong style="color: #b91c1c">Do not</strong>
+<span style="font-size: 13px">Show read-only detail in a modal dialog. A modal blocks the work and hides the list.</span></div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 8px; border-top: 4px solid #15803d; background: #f6fbf8"><strong style="color: #15803d">Do</strong>
+<span style="font-size: 13px">Put an error at the top of the body with Try again. Keep it until the person acts.</span></div>
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 8px; border-top: 4px solid #b91c1c; background: #fdf6f6"><strong style="color: #b91c1c">Do not</strong>
+<span style="font-size: 13px">Show an error only in a toast that closes after some seconds.</span></div>
+</div>
+</div>
+</section>
+
+<section aria-labelledby="k-ref" style="display: flex; flex-direction: column; gap: 16px">
+<h2 id="k-ref" style="margin: 0; font-size: 20px; font-weight: 700">10. What we take from other tools</h2>
+<table style="font-size: 13px; width: 100%">
+<thead><tr><th style="text-align: left; padding: 6px 8px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px; width: 180px">Tool</th><th style="text-align: left; padding: 6px 8px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px">We take</th><th style="text-align: left; padding: 6px 8px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px">We avoid</th></tr></thead>
+<tbody>
+<tr><td style="padding: 8px; border-bottom: 1px solid #e1e4ea; font-weight: 600">VS Code side bar</td><td style="padding: 8px; border-bottom: 1px solid #e1e4ea">Same title row in each view. Preview tabs. F2, Delete, type-ahead in the explorer. Context menu equals the overflow menu.</td><td style="padding: 8px; border-bottom: 1px solid #e1e4ea">Icon actions that show on hover only. A keyboard user cannot find them.</td></tr>
+<tr><td style="padding: 8px; border-bottom: 1px solid #e1e4ea; font-weight: 600">DataGrip explorer</td><td style="padding: 8px; border-bottom: 1px solid #e1e4ea">Quiet grey types after the column name. Key icons. Speed search. Quick documentation without a focus change.</td><td style="padding: 8px; border-bottom: 1px solid #e1e4ea">Folders for each object kind at each level. The tree gets deep. Many icon variants.</td></tr>
+<tr><td style="padding: 8px; border-bottom: 1px solid #e1e4ea; font-weight: 600">TablePlus</td><td style="padding: 8px; border-bottom: 1px solid #e1e4ea">Structure as one page: columns, then indexes, then constraints. Environment colour on each connection.</td><td style="padding: 8px; border-bottom: 1px solid #e1e4ea">Colour as the only sign of the environment.</td></tr>
+<tr><td style="padding: 8px; border-bottom: 1px solid #e1e4ea; font-weight: 600">Linear</td><td style="padding: 8px; border-bottom: 1px solid #e1e4ea">Space to peek. Group headers with counts. Status marks with a shape. Each action is also a command.</td><td style="padding: 8px; border-bottom: 1px solid #e1e4ea">Single-letter shortcuts. They conflict with type-ahead.</td></tr>
+<tr><td style="padding: 8px; border-bottom: 1px solid #e1e4ea; font-weight: 600">GitHub Desktop</td><td style="padding: 8px; border-bottom: 1px solid #e1e4ea">Changes and History as two modes. Check boxes to stage. Commit box at the bottom. Diff in the main area.</td><td style="padding: 8px; border-bottom: 1px solid #e1e4ea">A fixed two-pane window that does not fit a narrow side view.</td></tr>
+<tr><td style="padding: 8px; border-bottom: 1px solid #e1e4ea; font-weight: 600">Raycast</td><td style="padding: 8px; border-bottom: 1px solid #e1e4ea">Enter for the primary action, Ctrl+Enter for the second action. One action list for each row.</td><td style="padding: 8px; border-bottom: 1px solid #e1e4ea">A search field as the only way to navigate.</td></tr>
+</tbody>
+</table>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2040}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

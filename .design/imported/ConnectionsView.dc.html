@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Connections view</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit}
+kbd{display:inline-block;padding:0 5px;border:1px solid #d5d9e0;border-radius:4px;background:#fafbfc;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:11px;line-height:16px;color:#5b6472}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; display: flex; gap: 8px; padding: 8px; background: #eceef2; color: #1b1f27; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px; line-height: 1.4; overflow: hidden">
+
+<nav aria-label="Left tool strip" style="display: flex; flex-direction: column; gap: 4px">
+<button type="button" aria-label="Files" title="Files" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: none"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z M14 3v4h4" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-label="Connections" title="Connections" aria-pressed="true" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: #ffffff"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3z M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6 M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" stroke="{{accent}}" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-label="Schema" title="Schema" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: none"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M4 5h16v14H4z M4 10h16 M10 10v9" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-label="Git" title="Git" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: none"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M6 3v12 M6 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M18 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M18 9c0 5-12 2-12 6" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<span style="flex-grow: 1"></span>
+<button type="button" aria-label="History" title="History" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: none"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5 M12 7v5l3 2" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+</nav>
+
+<section aria-label="Connections" style="width: 300px; flex-shrink: 0; display: flex; flex-direction: column; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; overflow: hidden">
+<div style="height: {{d.hdr}}; flex-shrink: 0; display: flex; align-items: center; gap: 4px; padding: 0 {{d.pad8}} 0 {{d.pad}}">
+<h2 style="margin: 0; font-size: 14px; font-weight: 600">Connections</h2>
+<span style="color: #5b6472; font-size: 12px; padding: 0 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">sql-project</span>
+<span style="flex-grow: 1"></span>
+<button type="button" aria-label="New connection" title="New connection" style="width: {{d.ctl}}; height: {{d.ctl}}; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: none"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M12 5v14 M5 12h14" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round"></path></svg></button>
+<button type="button" aria-haspopup="menu" aria-label="More connection actions" title="More connection actions" style="width: {{d.ctl}}; height: {{d.ctl}}; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: none"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M5 12h.01 M12 12h.01 M19 12h.01" stroke="#5b6472" stroke-width="2.5" fill="none" stroke-linecap="round"></path></svg></button>
+</div>
+<div style="height: {{d.bar}}; flex-shrink: 0; display: flex; align-items: center; padding: 0 {{d.pad}}">
+<label style="flex-grow: 1; height: {{d.ctl}}; display: flex; align-items: center; gap: 6px; padding: 0 8px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M20 20l-4-4" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round"></path></svg><input type="search" aria-label="Filter the connections" placeholder="Filter connections" style="flex-grow: 1; min-width: 0; border: 0; background: none; color: #1b1f27; font-size: 13px; outline-offset: 4px"><kbd>/</kbd></label>
+</div>
+<div role="listbox" aria-label="Connections of sql-project" style="flex-grow: 1; min-height: 0; overflow: auto; padding: 4px 0">
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="3">
+<div role="group" aria-label="{{g.name}}">
+<div style="height: {{d.row}}; display: flex; align-items: center; gap: 6px; padding: 0 {{d.pad}}; font-size: 12px; font-weight: 600; color: #5b6472"><span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 2px; background: {{g.color}}"></span>{{g.name}}<span style="font-weight: 400">{{g.count}}</span></div>
+<sc-for list="{{g.items}}" as="c" hint-placeholder-count="2">
+<div role="option" aria-selected="{{c.selected}}" style="height: {{d.row2}}; display: flex; align-items: center; gap: 8px; margin: 0 4px; padding: 0 {{d.pad8}} 0 {{d.pad}}; border-radius: 6px; background: {{c.bg}}; outline: {{c.outline}}; outline-offset: -2px">
+<svg role="img" aria-label="{{c.statusText}}" width="10" height="10" viewBox="0 0 12 12" style="flex-shrink: 0"><path d="{{c.shape}}" fill="{{c.fill}}" stroke="{{c.stroke}}" stroke-width="1.5" stroke-linecap="round"></path></svg>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column">
+<span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{c.name}}</span>
+<span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: {{c.subColor}}; font-size: 12px">{{c.sub}}</span>
+</div>
+<sc-if value="{{c.showActions}}" hint-placeholder-val="{{ false }}">
+<button type="button" aria-label="Test {{c.name}}" title="Test the connection" style="width: 28px; height: 28px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: none"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M9 3v5 M15 3v5 M6 8h12v3a6 6 0 0 1-12 0z M12 17v4" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-label="Edit {{c.name}}" title="Edit the connection (F2 renames)" style="width: 28px; height: 28px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: none"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</sc-for>
+</div>
+<div role="status" style="height: {{d.row}}; flex-shrink: 0; display: flex; align-items: center; padding: 0 {{d.pad}}; border-top: 1px solid #e1e4ea; color: #5b6472; font-size: 12px">5 connections · 1 connected</div>
+</section>
+
+<section aria-label="Editor" style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; overflow: hidden">
+<div role="tablist" aria-label="Open tabs" style="display: flex; align-items: flex-end; gap: 2px; padding: 4px 8px 0; background: #f4f5f7; border-bottom: 1px solid #e1e4ea">
+<button type="button" role="tab" aria-selected="false" style="height: {{d.ctl}}; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: none; color: #5b6472; font-size: 13px">items.sql</button>
+<button type="button" role="tab" aria-selected="true" style="height: {{d.ctl}}; padding: 0 10px 0 12px; display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 8px 8px 0 0; background: #ffffff; color: #1b1f27; font-size: 13px; font-style: italic"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3z M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round"></path></svg>Shop staging<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M6 6l12 12 M18 6L6 18" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round"></path></svg></button>
+</div>
+<div style="flex-grow: 1; min-height: 0; overflow: auto; padding: 16px 24px 24px; display: flex; flex-direction: column; gap: 16px; max-width: 760px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<nav aria-label="Path" style="color: #5b6472; font-size: 12px">sql-project › Connections › Shop staging</nav>
+<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+<h1 style="margin: 0; font-size: 18px; font-weight: 600">Shop staging</h1>
+<span style="padding: 0 8px; border-radius: 999px; background: #fff4e5; color: #92400e; font-size: 12px; font-weight: 600">Staging</span>
+<span style="flex-grow: 1"></span>
+<button type="button" style="height: {{d.ctl}}; padding: 0 12px; border: 1px solid #2563eb; border-radius: 6px; background: #2563eb; color: #ffffff; font-size: 13px; font-weight: 600">Edit</button>
+<button type="button" style="height: {{d.ctl}}; padding: 0 12px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; font-size: 13px">Test again</button>
+<button type="button" aria-haspopup="menu" aria-label="More actions for Shop staging" style="width: {{d.ctl}}; height: {{d.ctl}}; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: none"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M5 12h.01 M12 12h.01 M19 12h.01" stroke="#5b6472" stroke-width="2.5" fill="none" stroke-linecap="round"></path></svg></button>
+</div>
+</div>
+<div role="alert" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; border: 1px solid #f3c7c7; border-radius: 8px; background: #fdf2f2; color: #7f1d1d">
+<p style="margin: 0; display: flex; align-items: center; gap: 6px; font-weight: 600"><svg aria-hidden="true" width="10" height="10" viewBox="0 0 12 12"><path d="M6 0.5l5.5 5.5L6 11.5 0.5 6z" fill="#b91c1c"></path></svg>The test failed 2 min ago.</p>
+<p style="margin: 0; font-size: 12px">The server refused the password for user shop_app. Edit the connection and enter the password again.</p>
+<p style="margin: 0; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px">FATAL: password authentication failed for user "shop_app"</p>
+</div>
+<dl style="margin: 0; display: grid; grid-template-columns: 180px minmax(0, 1fr); row-gap: 0; font-size: 13px">
+<dt style="padding: 6px 0; border-bottom: 1px solid #e1e4ea; color: #5b6472">Engine</dt><dd style="margin: 0; padding: 6px 0; border-bottom: 1px solid #e1e4ea">PostgreSQL</dd>
+<dt style="padding: 6px 0; border-bottom: 1px solid #e1e4ea; color: #5b6472">Server</dt><dd style="margin: 0; padding: 6px 0; border-bottom: 1px solid #e1e4ea; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px">db-staging.internal:5432</dd>
+<dt style="padding: 6px 0; border-bottom: 1px solid #e1e4ea; color: #5b6472">Database</dt><dd style="margin: 0; padding: 6px 0; border-bottom: 1px solid #e1e4ea">shop</dd>
+<dt style="padding: 6px 0; border-bottom: 1px solid #e1e4ea; color: #5b6472">User</dt><dd style="margin: 0; padding: 6px 0; border-bottom: 1px solid #e1e4ea">shop_app</dd>
+<dt style="padding: 6px 0; border-bottom: 1px solid #e1e4ea; color: #5b6472">Password</dt><dd style="margin: 0; padding: 6px 0; border-bottom: 1px solid #e1e4ea">Credential store of the operating system</dd>
+<dt style="padding: 6px 0; border-bottom: 1px solid #e1e4ea; color: #5b6472">TLS</dt><dd style="margin: 0; padding: 6px 0; border-bottom: 1px solid #e1e4ea">Verify full (encrypt and verify the certificate)</dd>
+<dt style="padding: 6px 0; border-bottom: 1px solid #e1e4ea; color: #5b6472">Used by</dt><dd style="margin: 0; padding: 6px 0; border-bottom: 1px solid #e1e4ea">No open tab</dd>
+</dl>
+<p style="margin: 0; color: #5b6472; font-size: 12px">Enter in the list connects the current tab to the selected connection. Ctrl+Enter tests it. Delete asks before it removes the connection and its stored password.</p>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#b45309","options":["#b45309","#2563eb","#0f766e","#7c3aed"]},"density":{"editor":"enum","default":"comfortable","options":["comfortable","compact"]},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+const compact = this.props.density === 'compact';
+const d = compact
+? { hdr: '36px', bar: '32px', ctl: '28px', row: '24px', row2: '40px', pad: '8px', pad8: '4px' }
+: { hdr: '44px', bar: '40px', ctl: '32px', row: '28px', row2: '48px', pad: '12px', pad8: '8px' };
+const S = {
+ok: { shape: 'M6 1a5 5 0 1 1 0 10 5 5 0 1 1 0-10z', fill: '#15803d', stroke: 'none' },
+idle: { shape: 'M6 1.75a4.25 4.25 0 1 1 0 8.5 4.25 4.25 0 1 1 0-8.5z', fill: 'none', stroke: '#5b6472' },
+busy: { shape: 'M6 1a5 5 0 1 1-5 5', fill: 'none', stroke: '#2563eb' },
+error: { shape: 'M6 0.5l5.5 5.5L6 11.5 0.5 6z', fill: '#b91c1c', stroke: 'none' }
+};
+const item = (name, sub, status, statusText, opts) => {
+const o = opts || {};
+const s = S[status];
+return {
+name, sub, statusText,
+shape: s.shape, fill: s.fill, stroke: s.stroke,
+subColor: status === 'error' ? '#b91c1c' : '#5b6472',
+selected: o.selected ? 'true' : 'false',
+showActions: !!o.selected,
+bg: o.selected ? '#f1f3f6' : 'transparent',
+outline: o.selected ? '2px solid #2563eb' : 'none'
+};
+};
+const groups = [
+{ name: 'Production', count: '1', color: '#b91c1c', items: [
+item('Shop production', 'PostgreSQL · db-prod.internal/shop', 'idle', 'Not tested')
+] },
+{ name: 'Staging', count: '1', color: '#b45309', items: [
+item('Shop staging', 'Failed: password refused', 'error', 'Failed', { selected: true })
+] },
+{ name: 'Development', count: '3', color: '#15803d', items: [
+item('Local shop', 'PostgreSQL 17.2 · localhost/shop', 'ok', 'Connected'),
+item('Analytics', 'DuckDB · ~/data/analytics.duckdb', 'idle', 'Not tested'),
+item('Events cluster', 'MongoDB · testing…', 'busy', 'Testing')
+] }
+];
+return { accent: this.props.accent ?? '#b45309', d, groups };
+}
+}
+</script>
+</body>
+</html>

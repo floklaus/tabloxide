@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Schema view: PostgreSQL</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit}
+table{border-collapse:collapse}
+kbd{display:inline-block;padding:0 5px;border:1px solid #d5d9e0;border-radius:4px;background:#fafbfc;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:11px;line-height:16px;color:#5b6472}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; display: flex; gap: 8px; padding: 8px; background: #eceef2; color: #1b1f27; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px; line-height: 1.4; overflow: hidden">
+
+<nav aria-label="Left tool strip" style="display: flex; flex-direction: column; gap: 4px">
+<button type="button" aria-label="Files" title="Files" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: none"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z M14 3v4h4" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-label="Connections" title="Connections" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: none"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3z M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6 M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-label="Schema" title="Schema" aria-pressed="true" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: #ffffff"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M4 5h16v14H4z M4 10h16 M10 10v9" stroke="{{accent}}" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-label="Git" title="Git" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: none"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M6 3v12 M6 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M18 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M18 9c0 5-12 2-12 6" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<span style="flex-grow: 1"></span>
+<button type="button" aria-label="History" title="History" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: none"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5 M12 7v5l3 2" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+</nav>
+
+<section aria-label="Schema" style="width: 300px; flex-shrink: 0; display: flex; flex-direction: column; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; overflow: hidden">
+<div style="height: {{d.hdr}}; flex-shrink: 0; display: flex; align-items: center; gap: 4px; padding: 0 {{d.pad8}} 0 {{d.pad}}">
+<h2 style="margin: 0; font-size: 14px; font-weight: 600">Schema</h2>
+<button type="button" aria-haspopup="menu" aria-label="Scope: Local shop, database shop. Change the scope" style="min-width: 0; height: {{d.ctl}}; display: inline-flex; align-items: center; gap: 2px; padding: 0 6px; border: 0; border-radius: 6px; background: none; color: #5b6472; font-size: 12px; white-space: nowrap"><span style="overflow: hidden; text-overflow: ellipsis">Local shop › shop</span><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="#5b6472" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<span style="flex-grow: 1"></span>
+<button type="button" aria-label="Read the schema again" title="Read the schema again (F5)" style="width: {{d.ctl}}; height: {{d.ctl}}; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: none"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7 M20 4v7h-7" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-haspopup="menu" aria-label="More schema actions" title="More schema actions" style="width: {{d.ctl}}; height: {{d.ctl}}; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: none"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M5 12h.01 M12 12h.01 M19 12h.01" stroke="#5b6472" stroke-width="2.5" fill="none" stroke-linecap="round"></path></svg></button>
+</div>
+<div style="height: {{d.bar}}; flex-shrink: 0; display: flex; align-items: center; padding: 0 {{d.pad}}">
+<label style="flex-grow: 1; height: {{d.ctl}}; display: flex; align-items: center; gap: 6px; padding: 0 8px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M20 20l-4-4" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round"></path></svg><input type="search" aria-label="Filter the tables and columns" placeholder="Filter tables and columns" style="flex-grow: 1; min-width: 0; border: 0; background: none; color: #1b1f27; font-size: 13px; outline-offset: 4px"><kbd>/</kbd></label>
+</div>
+<div role="tree" aria-label="Database objects of shop" style="flex-grow: 1; min-height: 0; overflow: auto; padding: 4px 0">
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="16">
+<div role="treeitem" aria-level="{{r.level}}" aria-expanded="{{r.expanded}}" aria-selected="{{r.selected}}" style="height: {{d.row}}; display: flex; align-items: center; gap: {{d.ig}}; padding-left: {{r.indent}}; padding-right: {{d.pad}}; margin: 0 4px; border-radius: 6px; background: {{r.bg}}; outline: {{r.outline}}; outline-offset: -2px; color: {{r.color}}">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" style="flex-shrink: 0"><path d="{{r.chevron}}" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" style="flex-shrink: 0"><path d="{{r.icon}}" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="{{r.dash}}"></path></svg>
+<span style="flex-grow: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{r.label}}</span>
+<span style="flex-shrink: 0; color: #5b6472; font-size: 12px; font-family: {{r.metaFont}}">{{r.meta}}</span>
+</div>
+</sc-for>
+</div>
+<div role="status" style="height: {{d.row}}; flex-shrink: 0; display: flex; align-items: center; gap: 6px; padding: 0 {{d.pad}}; border-top: 1px solid #e1e4ea; color: #5b6472; font-size: 12px"><svg aria-hidden="true" width="10" height="10" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5" fill="#15803d"></circle></svg>14 tables, 2 views · read 2 min ago</div>
+</section>
+
+<section aria-label="Editor" style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; overflow: hidden">
+<div role="tablist" aria-label="Open tabs" style="display: flex; align-items: flex-end; gap: 2px; padding: 4px 8px 0; background: #f4f5f7; border-bottom: 1px solid #e1e4ea">
+<button type="button" role="tab" aria-selected="false" style="height: {{d.ctl}}; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: none; color: #5b6472; font-size: 13px">items.sql</button>
+<button type="button" role="tab" aria-selected="true" title="Preview tab. Enter or a double click keeps it open." style="height: {{d.ctl}}; padding: 0 10px 0 12px; display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 8px 8px 0 0; background: #ffffff; color: #1b1f27; font-size: 13px; font-style: italic"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M4 5h16v14H4z M4 10h16 M10 10v9" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linejoin="round"></path></svg>customer_item<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M6 6l12 12 M18 6L6 18" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round"></path></svg></button>
+</div>
+
+<div style="flex-grow: 1; min-height: 0; overflow: auto; padding: 16px 24px 24px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<nav aria-label="Path" style="color: #5b6472; font-size: 12px">Local shop › shop › public › customer_item</nav>
+<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+<h1 style="margin: 0; font-size: 18px; font-weight: 600">customer_item</h1>
+<span style="padding: 0 8px; border-radius: 999px; background: #f1f3f6; color: #5b6472; font-size: 12px">table</span>
+<span style="color: #5b6472; font-size: 12px">about 12 400 rows</span>
+<span style="flex-grow: 1"></span>
+<button type="button" style="height: {{d.ctl}}; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid #2563eb; border-radius: 6px; background: #2563eb; color: #ffffff; font-size: 13px; font-weight: 600"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z" fill="#ffffff"></path></svg>Query the rows<span style="font-weight: 400; font-size: 12px">Ctrl+Enter</span></button>
+<button type="button" style="height: {{d.ctl}}; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; font-size: 13px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" stroke="{{accent}}" stroke-width="1.75" fill="none" stroke-linejoin="round"></path></svg>Explain</button>
+<button type="button" style="height: {{d.ctl}}; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; font-size: 13px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" stroke="{{accent}}" stroke-width="1.75" fill="none" stroke-linejoin="round"></path></svg>Write a starter query</button>
+<button type="button" aria-haspopup="menu" aria-label="More table actions" style="width: {{d.ctl}}; height: {{d.ctl}}; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: none"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M5 12h.01 M12 12h.01 M19 12h.01" stroke="#5b6472" stroke-width="2.5" fill="none" stroke-linecap="round"></path></svg></button>
+</div>
+</div>
+
+<div role="tablist" aria-label="Table detail" style="display: flex; gap: 16px; border-bottom: 1px solid #e1e4ea">
+<button type="button" role="tab" aria-selected="true" style="padding: 6px 0; border: 0; border-bottom: 2px solid #1b1f27; background: none; font-size: 13px; font-weight: 600">Structure</button>
+<button type="button" role="tab" aria-selected="false" style="padding: 6px 0; border: 0; border-bottom: 2px solid transparent; background: none; color: #5b6472; font-size: 13px">Rows</button>
+<button type="button" role="tab" aria-selected="false" style="padding: 6px 0; border: 0; border-bottom: 2px solid transparent; background: none; color: #5b6472; font-size: 13px">DDL</button>
+</div>
+
+<section aria-labelledby="pg-cols" style="display: flex; flex-direction: column; gap: 6px">
+<h2 id="pg-cols" style="margin: 0; font-size: 12px; font-weight: 600; color: #5b6472">Columns <span style="font-weight: 400">6</span></h2>
+<table style="width: 100%; font-size: 13px">
+<thead><tr>
+<th style="width: 28px; border-bottom: 1px solid #d5d9e0"><span style="position: absolute; left: -9999px">Key</span></th>
+<th style="text-align: left; padding: 4px 8px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px; font-weight: 600">Name</th>
+<th style="text-align: left; padding: 4px 8px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px; font-weight: 600">Type</th>
+<th style="text-align: left; padding: 4px 8px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px; font-weight: 600">Null</th>
+<th style="text-align: left; padding: 4px 8px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px; font-weight: 600">Default</th>
+<th style="text-align: left; padding: 4px 8px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px; font-weight: 600">References</th>
+</tr></thead>
+<tbody>
+<sc-for list="{{cols}}" as="c" hint-placeholder-count="6">
+<tr style="height: {{d.row}}">
+<td style="padding: 0 0 0 8px; border-bottom: 1px solid #e1e4ea"><svg role="img" aria-label="{{c.keyLabel}}" width="14" height="14" viewBox="0 0 24 24"><path d="{{c.keyIcon}}" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></td>
+<th scope="row" style="text-align: left; padding: 0 8px; border-bottom: 1px solid #e1e4ea; font-weight: 400">{{c.name}}</th>
+<td style="padding: 0 8px; border-bottom: 1px solid #e1e4ea; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 12px">{{c.type}}</td>
+<td style="padding: 0 8px; border-bottom: 1px solid #e1e4ea; color: #5b6472; font-size: 12px">{{c.nullable}}</td>
+<td style="padding: 0 8px; border-bottom: 1px solid #e1e4ea; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 12px; color: #5b6472">{{c.def}}</td>
+<td style="padding: 0 8px; border-bottom: 1px solid #e1e4ea"><a href="#ref" style="color: #2563eb">{{c.ref}}</a></td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</section>
+
+<section aria-labelledby="pg-idx" style="display: flex; flex-direction: column; gap: 6px">
+<h2 id="pg-idx" style="margin: 0; font-size: 12px; font-weight: 600; color: #5b6472">Indexes <span style="font-weight: 400">3</span></h2>
+<table style="width: 100%; font-size: 13px">
+<tbody>
+<tr style="height: {{d.row}}"><th scope="row" style="text-align: left; padding: 0 8px; border-bottom: 1px solid #e1e4ea; font-weight: 400; width: 260px">customer_item_pkey</th><td style="padding: 0 8px; border-bottom: 1px solid #e1e4ea; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px">btree (customer_item_id)</td><td style="padding: 0 8px; border-bottom: 1px solid #e1e4ea; text-align: right"><span style="padding: 0 6px; border: 1px solid #d5d9e0; border-radius: 4px; color: #5b6472; font-size: 11px">unique</span></td></tr>
+<tr style="height: {{d.row}}"><th scope="row" style="text-align: left; padding: 0 8px; border-bottom: 1px solid #e1e4ea; font-weight: 400">customer_item_customer_idx</th><td style="padding: 0 8px; border-bottom: 1px solid #e1e4ea; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px">btree (customer_id)</td><td style="padding: 0 8px; border-bottom: 1px solid #e1e4ea"></td></tr>
+<tr style="height: {{d.row}}"><th scope="row" style="text-align: left; padding: 0 8px; border-bottom: 1px solid #e1e4ea; font-weight: 400">customer_item_item_idx</th><td style="padding: 0 8px; border-bottom: 1px solid #e1e4ea; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px">btree (item_id)</td><td style="padding: 0 8px; border-bottom: 1px solid #e1e4ea"></td></tr>
+</tbody>
+</table>
+</section>
+
+<section aria-labelledby="pg-con" style="display: flex; flex-direction: column; gap: 6px">
+<h2 id="pg-con" style="margin: 0; font-size: 12px; font-weight: 600; color: #5b6472">Constraints <span style="font-weight: 400">4</span></h2>
+<table style="width: 100%; font-size: 13px">
+<tbody>
+<tr style="height: {{d.row}}"><th scope="row" style="text-align: left; padding: 0 8px; border-bottom: 1px solid #e1e4ea; font-weight: 400; width: 260px">customer_item_pkey</th><td style="padding: 0 8px; border-bottom: 1px solid #e1e4ea; color: #5b6472; font-size: 12px; width: 110px">Primary key</td><td style="padding: 0 8px; border-bottom: 1px solid #e1e4ea; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px">PRIMARY KEY (customer_item_id)</td></tr>
+<tr style="height: {{d.row}}"><th scope="row" style="text-align: left; padding: 0 8px; border-bottom: 1px solid #e1e4ea; font-weight: 400">customer_item_customer_fk</th><td style="padding: 0 8px; border-bottom: 1px solid #e1e4ea; color: #5b6472; font-size: 12px">Foreign key</td><td style="padding: 0 8px; border-bottom: 1px solid #e1e4ea; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px">REFERENCES customer (customer_id) ON DELETE CASCADE</td></tr>
+<tr style="height: {{d.row}}"><th scope="row" style="text-align: left; padding: 0 8px; border-bottom: 1px solid #e1e4ea; font-weight: 400">customer_item_item_fk</th><td style="padding: 0 8px; border-bottom: 1px solid #e1e4ea; color: #5b6472; font-size: 12px">Foreign key</td><td style="padding: 0 8px; border-bottom: 1px solid #e1e4ea; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px">REFERENCES item (item_id)</td></tr>
+<tr style="height: {{d.row}}"><th scope="row" style="text-align: left; padding: 0 8px; border-bottom: 1px solid #e1e4ea; font-weight: 400">customer_item_quantity_check</th><td style="padding: 0 8px; border-bottom: 1px solid #e1e4ea; color: #5b6472; font-size: 12px">Check</td><td style="padding: 0 8px; border-bottom: 1px solid #e1e4ea; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px">CHECK (quantity &gt; 0)</td></tr>
+</tbody>
+</table>
+</section>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#b45309","options":["#b45309","#2563eb","#0f766e","#7c3aed"]},"density":{"editor":"enum","default":"comfortable","options":["comfortable","compact"]},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+const compact = this.props.density === 'compact';
+const d = compact
+? { hdr: '36px', bar: '32px', ctl: '28px', row: '24px', pad: '8px', pad8: '4px', ig: '4px', step: 16, base: 4 }
+: { hdr: '44px', bar: '40px', ctl: '32px', row: '28px', pad: '12px', pad8: '8px', ig: '6px', step: 16, base: 8 };
+const I = {
+open: 'M6 9l6 6 6-6', closed: 'M9 6l6 6-6 6',
+schema: 'M3 7h6l2 2h10v10H3z',
+table: 'M4 5h16v14H4z M4 10h16 M10 10v9',
+view: 'M4 5h16v14H4z M4 10h16',
+pk: 'M8 12a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M10.5 13.5L20 4 M17 7l2 2 M15 9l2 2',
+fk: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1 M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1'
+};
+const mono = "ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace";
+const ui = 'inherit';
+const raw = [
+{ level: 1, label: 'public', chevron: I.open, icon: I.schema, meta: '16', expanded: 'true' },
+{ level: 2, label: 'customer', chevron: I.closed, icon: I.table, meta: '', expanded: 'false' },
+{ level: 2, label: 'customer_item', chevron: I.open, icon: I.table, meta: '', expanded: 'true', selected: true },
+{ level: 3, label: 'customer_item_id', icon: I.pk, meta: 'bigint', code: true },
+{ level: 3, label: 'customer_id', icon: I.fk, meta: 'bigint', code: true },
+{ level: 3, label: 'item_id', icon: I.fk, meta: 'bigint', code: true },
+{ level: 3, label: 'quantity', icon: '', meta: 'integer', code: true },
+{ level: 3, label: 'added_at', icon: '', meta: 'timestamptz', code: true },
+{ level: 3, label: 'note', icon: '', meta: 'text?', code: true },
+{ level: 2, label: 'item', chevron: I.closed, icon: I.table, meta: '', expanded: 'false' },
+{ level: 2, label: 'order_line', chevron: I.closed, icon: I.table, meta: '', expanded: 'false' },
+{ level: 2, label: 'orders', chevron: I.closed, icon: I.table, meta: '', expanded: 'false' },
+{ level: 2, label: 'daily_sales', chevron: I.closed, icon: I.view, meta: 'materialized view', expanded: 'false', dash: '3 2.5' },
+{ level: 2, label: 'open_orders', chevron: I.closed, icon: I.view, meta: 'view', expanded: 'false', dash: '3 2.5' },
+{ level: 1, label: 'reporting', chevron: I.closed, icon: I.schema, meta: '6', expanded: 'false' },
+{ level: 1, label: 'System schemas', chevron: I.closed, icon: I.schema, meta: '2', expanded: 'false', muted: true }
+];
+const rows = raw.map((r) => ({
+level: r.level,
+label: r.label,
+chevron: r.chevron || '',
+icon: r.icon,
+dash: r.dash || 'none',
+meta: r.meta,
+metaFont: r.code ? mono : ui,
+expanded: r.expanded || null,
+selected: r.selected ? 'true' : 'false',
+indent: (d.base + (r.level - 1) * d.step) + 'px',
+bg: r.selected ? '#f1f3f6' : 'transparent',
+outline: r.selected ? '2px solid #2563eb' : 'none',
+color: r.muted ? '#5b6472' : '#1b1f27'
+}));
+const cols = [
+{ name: 'customer_item_id', type: 'bigint', nullable: '', def: 'generated always as identity', ref: '', keyIcon: I.pk, keyLabel: 'Primary key' },
+{ name: 'customer_id', type: 'bigint', nullable: '', def: '', ref: 'customer.customer_id', keyIcon: I.fk, keyLabel: 'Foreign key' },
+{ name: 'item_id', type: 'bigint', nullable: '', def: '', ref: 'item.item_id', keyIcon: I.fk, keyLabel: 'Foreign key' },
+{ name: 'quantity', type: 'integer', nullable: '', def: '1', ref: '', keyIcon: '', keyLabel: 'No key' },
+{ name: 'added_at', type: 'timestamptz', nullable: '', def: 'now()', ref: '', keyIcon: '', keyLabel: 'No key' },
+{ name: 'note', type: 'text', nullable: 'nullable', def: '', ref: '', keyIcon: '', keyLabel: 'No key' }
+];
+return { accent: this.props.accent ?? '#b45309', d, rows, cols };
+}
+}
+</script>
+</body>
+</html>
