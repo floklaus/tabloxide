@@ -1,0 +1,95 @@
+# Copies the connector guide and the protocol file to the website repository and
+# opens a pull request there. The app repository owns this content. The website
+# renders it at https://tabloxide.org/connectors/build.
+#
+# Files that this workflow writes in the website repository:
+#   src/content/connectors/*.md          from docs/connectors/*.md
+#   src/content/connectors/source.json   the commit and the version of the copy
+#   public/connectors/v1/connector.proto from the connector-protocol crate
+#
+# The signed index (public/connectors/v1/index.json) is not part of this sync. The
+# maintainer signs it on their own machine. Refer to .github/workflows/connectors.yml.
+#
+# Setup: add the secret WEBSITE_SYNC_TOKEN, a fine-grained token with "Contents:
+# read and write" and "Pull requests: read and write" on the website repository only.
+# Without the secret, the workflow stops with a notice.
+
+name: Website sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - docs/connectors/**
+      - crates/connector-protocol/proto/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: website-sync
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-22.04
+    env:
+      WEBSITE_REPOSITORY: ${{ github.repository_owner }}/tabloxide-website
+      HAS_TOKEN: ${{ secrets.WEBSITE_SYNC_TOKEN != '' }}
+    steps:
+      - name: Check the token
+        if: env.HAS_TOKEN != 'true'
+        run: echo "::notice::The secret WEBSITE_SYNC_TOKEN is not set. Nothing was synced."
+
+      - uses: actions/checkout@v4
+        if: env.HAS_TOKEN == 'true'
+        with:
+          path: app
+
+      - uses: actions/checkout@v4
+        if: env.HAS_TOKEN == 'true'
+        with:
+          repository: ${{ env.WEBSITE_REPOSITORY }}
+          token: ${{ secrets.WEBSITE_SYNC_TOKEN }}
+          path: website
+
+      - name: Copy the files
+        if: env.HAS_TOKEN == 'true'
+        run: |
+          mkdir -p website/src/content/connectors website/public/connectors/v1
+          rm -f website/src/content/connectors/*.md
+          cp app/docs/connectors/*.md website/src/content/connectors/
+          cp app/crates/connector-protocol/proto/tabloxide/connector/v1/connector.proto \
+            website/public/connectors/v1/connector.proto
+          version="$(sed -n 's/^version = "\(.*\)"/\1/p' app/Cargo.toml | head -1)"
+          printf '{\n  "repository": "%s",\n  "commit": "%s",\n  "version": "%s"\n}\n' \
+            "$GITHUB_REPOSITORY" "$GITHUB_SHA" "$version" \
+            > website/src/content/connectors/source.json
+
+      - name: Open a pull request in the website repository
+        if: env.HAS_TOKEN == 'true'
+        working-directory: website
+        env:
+          GH_TOKEN: ${{ secrets.WEBSITE_SYNC_TOKEN }}
+        run: |
+          if git diff --quiet && [ -z "$(git status --porcelain)" ]; then
+            echo "The website has the current content."
+            exit 0
+          fi
+          # Only source.json changed: the content is the same.
+          if [ "$(git status --porcelain)" = " M src/content/connectors/source.json" ]; then
+            echo "Only the commit changed. No pull request."
+            exit 0
+          fi
+          branch="sync/app-${GITHUB_SHA::7}"
+          git config user.name "tabloxide-sync"
+          git config user.email "tabloxide-sync@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add src/content/connectors public/connectors/v1/connector.proto
+          git commit -m "docs: sync the connector guide from the app (${GITHUB_SHA::7})"
+          git push --force origin "$branch"
+          gh pr create --repo "$WEBSITE_REPOSITORY" --head "$branch" \
+            --title "docs: sync the connector guide from the app" \
+            --body "Copied from $GITHUB_REPOSITORY at $GITHUB_SHA by the workflow Website sync." \
+            || echo "A pull request for this branch exists."

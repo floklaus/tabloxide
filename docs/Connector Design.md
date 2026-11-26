@@ -122,9 +122,9 @@ Limits that the design does not remove:
 | 1     | The protocol file, the generated code, and its tests.                                                                                                        | Nothing                                       | Complete    |
 | 2     | The SDK and the connector host. A scripted connector process runs the adapter operations through the host. MongoDB, not DuckDB, is the first connector (section 10). | Nothing | Complete |
 | 3     | A measurement: the installer size and the speed of a large result, with DuckDB built in and as a connector. The result decides if the design continues.      | Nothing                                       | Not started |
-| 4     | The core without DuckDB. `Engine` as a name. The connection form and the preferences for connectors. | Nothing | `Engine` as a name is complete. The rest is in progress. |
-| 5     | The index file, the download, the checksum, the signature, and the install from a file.                                                                      | A signature key and a place for the downloads | Not started |
-| 6     | The confirmation for connectors from a different source. A guide for people who build a connector.                                                           | Nothing                                       | Not started |
+| 4     | The core without DuckDB. `Engine` as a name. The connection form and the preferences for connectors. | Nothing | Complete, except the removal of DuckDB, which waits for stage 3. |
+| 5     | The index file, the download, the checksum, the signature, and the install from a file. | A signature key and a place for the downloads | Complete. The first signed index is open. |
+| 6     | The confirmation for connectors from a different source. A guide for people who build a connector. | Nothing | The confirmation and the guide are complete. The website page waits for the approval of its design. |
 
 ## 9. Open points
 
@@ -191,3 +191,10 @@ Only `find` and `aggregate` without `$out` and `$merge` give results that the gr
 - A package is `tabloxide-connector-<engine>-<version>-<target>.tar.gz`. It holds the program and `connector.toml` (the engine, the version, the protocol, and the program name).
 - The index has `issued` and `expires`. Tabloxide refuses an index that is older than the last index that it accepted, and an index after its expiry date.
 - A tag `connector-<engine>-v<version>` starts the CI job. The job builds the packages, adds them to a GitHub release, and writes an index without a signature. The maintainer signs the index on their own machine and copies it to the website repository.
+
+### 10.6 Guide and website
+
+- The guide for connector authors is `docs/connectors/build-a-connector.md`. The app repository owns it, because it changes with the protocol.
+- The workflow `website-sync.yml` copies the guide and `connector.proto` to the website repository on each change on `main`, and opens a pull request there. It writes `src/content/connectors/` and `public/connectors/v1/connector.proto`, and `source.json` with the commit and the version.
+- The website renders the guide at `https://tabloxide.org/connectors/build`. The signed index is not part of the sync. The maintainer adds it by hand after the signature.
+
