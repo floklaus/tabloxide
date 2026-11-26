@@ -1,0 +1,119 @@
+# The steps of CI after the checkout. Each job of ci.yml uses them, so that the
+# jobs can have a fixed runs-on value. Refer to the comment in ci.yml.
+name: Build and test
+description: Lint, test, and build the application, and upload the installers.
+
+inputs:
+  artifact-name:
+    description: Name of the artifact with the installers
+    required: true
+  executable:
+    description: Path of the built program for the smoke test
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # The self-hosted runner has these libraries. Its user has no sudo.
+    - name: Install Linux system libraries
+      if: runner.os == 'Linux' && runner.environment == 'github-hosted'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev \
+          librsvg2-dev libssl-dev libxdo-dev build-essential curl file xvfb
+
+    - uses: pnpm/action-setup@v4
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version-file: .nvmrc
+        cache: pnpm
+
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
+
+    - uses: Swatinem/rust-cache@v2
+
+    - name: Install Node dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile
+
+    - name: Check format
+      if: runner.os == 'Linux'
+      shell: bash
+      run: pnpm format:check
+
+    - name: Lint and type check the UI
+      shell: bash
+      run: |
+        pnpm --dir ui lint
+        pnpm typecheck
+
+    - name: Test the UI
+      shell: bash
+      run: pnpm --dir ui test
+
+    - name: Test the release scripts
+      shell: bash
+      run: node --test scripts/*.test.mjs
+
+    - name: Build the UI
+      shell: bash
+      run: pnpm --dir ui build
+
+    - name: Lint Rust
+      shell: bash
+      run: cargo clippy --workspace --all-targets -- -D warnings
+
+    - name: Test Rust
+      shell: bash
+      run: cargo test --workspace
+
+    # The Linux runners have Docker. The macOS and Windows runners do not run these tests.
+    - name: Test the PostgreSQL adapter against a real server
+      if: runner.os == 'Linux'
+      shell: bash
+      run: cargo test -p tabloxide-adapter-postgres -- --ignored
+
+    - name: Test the MongoDB connector against a real server
+      if: runner.os == 'Linux'
+      shell: bash
+      run: cargo test -p tabloxide-connector-mongodb -- --ignored
+
+    - name: Check that the TypeScript bindings are current
+      shell: bash
+      run: git diff --exit-code -- ui/src/bindings.ts
+
+    - name: Build the application
+      shell: bash
+      run: pnpm tauri build
+
+    - name: Smoke test (Linux)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: xvfb-run -a node scripts/smoke-start.mjs "$EXECUTABLE"
+      env:
+        EXECUTABLE: ${{ inputs.executable }}
+
+    - name: Smoke test (macOS and Windows)
+      if: runner.os != 'Linux'
+      shell: bash
+      run: node scripts/smoke-start.mjs "$EXECUTABLE"
+      env:
+        EXECUTABLE: ${{ inputs.executable }}
+
+    - name: Upload installers
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: |
+          target/release/bundle/**/*.deb
+          target/release/bundle/**/*.rpm
+          target/release/bundle/**/*.AppImage
+          target/release/bundle/**/*.dmg
+          target/release/bundle/**/*.msi
+          target/release/bundle/**/*-setup.exe
+        if-no-files-found: error
