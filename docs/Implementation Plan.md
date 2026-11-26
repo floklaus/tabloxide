@@ -758,6 +758,38 @@ Status of stages 1 and 2 on 2026-11-26: complete in code.
 * Stage 6 on 2026-11-26: `docs/user/assistant.md` tells what each engine sends and how the plan of MongoDB works. `docs/connectors/build-a-connector.md` tells connector authors how the assistant uses the catalog, `columns_from_sample`, and `ReadPlan`. M21 is complete in code.
 * The statement at the cursor needs no new command `statement_at`. The command `query_preview` already takes the language, and the editor actions use it.
 
+### M22 — View standards in all side views
+
+Status on 2026-11-26: the product owner asked to apply the view standards of the design canvas to each screen before the release. The standards are the artboards "View standards 1 to 3" in the section "View standards and view redesign". The reference views are Schema (PostgreSQL and MongoDB), Connections, Git, and History.
+
+#### Decisions of the product owner
+
+| Question of the design | Answer |
+|---|---|
+| a. The detail of a row opens as a preview tab in the editor area | Yes. The tabs "Table" and "History" of the results pane go away. History is a side view. |
+| b. A nullable column in the tree | `text?`: a question mark after the type |
+| c. A diagram mode of the schema | Not planned. Thus the schema view has no view switch. |
+| d. Warning and accent colours | Part 3 of the standards answers it: warning is `#a16207` (light) and `#facc15` (dark). |
+| e. Connections in groups | By environment: Production, Staging, Development |
+| f. The sample size of MongoDB | 100 documents, as now |
+
+#### Phases
+
+Each phase is one commit or more. The application works after each phase.
+
+| Phase | Content |
+|---|---|
+| 1. Foundation | The tokens of part 3 for the four themes: selected row, focus ring, status colours. The sizes of the two densities. The parts of a side view: header with title, scope menu, primary action, and overflow menu; toolbar with the filter; body; status line. The status mark with its five shapes. The icons of part 1. The states: no source, no match, loading (skeleton after 300 ms), and error with "Try again". |
+| 2. Keys | One hook for trees and lists: roving focus, the arrow keys, Home, End, PgUp, PgDn, Space, Enter, Ctrl+Enter, F2, Delete, F5, the context menu (Shift+F10, Menu key), type-ahead, Ctrl+F and `/` to the filter, Esc. F6 moves between the areas of the window. |
+| 3. Preview tabs | A tab can show a detail: a table, a connection, a commit, or a history entry. A preview tab has an italic title, and the next selection replaces it. Enter or an edit keeps it. The tabs "Table" and "History" of the results pane go away. |
+| 4. Schema | The reference view for PostgreSQL, DuckDB, and MongoDB. The detail tab of a table has Structure, Rows, and DDL. |
+| 5. Connections | Groups by environment, the status mark of each connection, and the detail tab. |
+| 6. History | The side view with groups by day, the scope menu of the connections, the filter of the results, and the detail tab of an entry. |
+| 7. Git | The modes Changes, History, and Branches. Check boxes to stage. The commit box at the bottom. The detail tab of a commit. |
+| 8. Files, sessions, and the rest | The same anatomy, keys, and states for the files and the assistant sessions. The user guide and the shortcut list. |
+
+The tests of each phase use the keys and the states of the standard. A test of each view checks the four states.
+
 ## 7. Tests
 
 | Level | Tool | Scope |
