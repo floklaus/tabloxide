@@ -33,6 +33,7 @@ const detail: RelationDetail = {
     },
   ],
   constraints: [],
+  columns_from_sample: false,
 }
 
 function input(overrides: Partial<TreeInput> = {}): TreeInput {

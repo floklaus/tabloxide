@@ -68,7 +68,12 @@ function setup() {
     details: {
       [relationKey('sales', 'orders')]: {
         status: 'loaded',
-        data: { columns: [], indexes: [], constraints: [] },
+        data: {
+          columns: [],
+          indexes: [],
+          constraints: [],
+          columns_from_sample: false,
+        },
       },
     },
   })

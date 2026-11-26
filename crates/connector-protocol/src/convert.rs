@@ -391,6 +391,7 @@ pub fn detail_to_wire(detail: &RelationDetail) -> v1::RelationDetail {
                 definition: constraint.definition.clone(),
             })
             .collect(),
+        columns_from_sample: detail.columns_from_sample,
     }
 }
 
@@ -434,6 +435,7 @@ pub fn detail_from_wire(detail: &v1::RelationDetail) -> RelationDetail {
                 }
             })
             .collect(),
+        columns_from_sample: detail.columns_from_sample,
     }
 }
 

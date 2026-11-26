@@ -474,6 +474,8 @@ pub struct SchemaCount {
     pub relations: usize,
     /// The number of tables and views with their columns.
     pub detailed: usize,
+    /// The number of collections whose fields come from a sample of documents.
+    pub sampled: usize,
 }
 
 /// Joins the parts as a list in a sentence: "a", "a and b", or "a, b, and c".
@@ -512,6 +514,13 @@ pub fn sent_summary(
         } else {
             format!("the structure of {} tables and views", schema.relations)
         });
+        if schema.sampled > 0 {
+            parts.push(format!(
+                "the names and types of the fields of {} collections, from a sample of \
+                 documents, without values",
+                schema.sampled
+            ));
+        }
     }
     format!("Sent: {}.", join_parts(&parts))
 }
@@ -574,6 +583,25 @@ mod tests {
     }
 
     #[test]
+    fn the_summary_tells_that_fields_come_from_a_sample() {
+        let summary = sent_summary(
+            false,
+            None,
+            Some(SchemaCount {
+                relations: 3,
+                detailed: 3,
+                sampled: 3,
+            }),
+        );
+
+        assert_eq!(
+            summary,
+            "Sent: your request, the structure of 3 tables and views, and the names and \
+             types of the fields of 3 collections, from a sample of documents, without values."
+        );
+    }
+
+    #[test]
     fn a_long_git_output_gets_a_cut_and_the_summary_tells_it() {
         let short = ActionContext::GitOutput {
             command: "status".to_owned(),
@@ -611,7 +639,8 @@ mod tests {
                 Some(&query_error()),
                 Some(SchemaCount {
                     relations: 12,
-                    detailed: 12
+                    detailed: 12,
+                    sampled: 0,
                 })
             ),
             "Sent: your request, the statement, the error message, and the structure \
@@ -623,7 +652,8 @@ mod tests {
                 None,
                 Some(SchemaCount {
                     relations: 250,
-                    detailed: 200
+                    detailed: 200,
+                    sampled: 0,
                 })
             ),
             "Sent: your request, the earlier messages of the session, and the names of \

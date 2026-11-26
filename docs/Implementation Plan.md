@@ -735,15 +735,21 @@ Completion criteria:
 
 #### Decision for the product owner
 
-Decision 7 of `Database Kinds Backlog.md` is still open: can the assistant send field names that come from a sample of documents? Stage 2 needs the answer.
+Decision 7 of `Database Kinds Backlog.md`: can the assistant send field names that come from a sample of documents?
 
-The recommendation is yes, with these limits:
+The product owner decided on 2026-11-26: yes, names and types only. The limits:
 
 * The request sends the names and the types of the fields, and never a value.
 * The schema text and the "Sent:" line tell the user that the fields come from a sample.
 * The rule is the same for a production connection, because the names are structure, not data.
 
-If the answer is no, the structure text of MongoDB has the collections, the indexes, and the validation rules only. Then the answers of the assistant for MongoDB are less exact.
+Status of stages 1 and 2 on 2026-11-26: complete in code.
+
+* The instructions have a part for all engines, and a guide for each language in the second system part, with the structure of the database. The guides are for `sql` (with the dialect of the engine), for `mongodb-shell`, and a general guide for a language without a guide. The code block tags are `sql`, `mongodb`, and `text`.
+* "Insert" and "Replace in the editor" are only on a block with a tag of the language of the tab, or without a tag. A different block gets "Copy" only. For a language without a guide, the panel shows a note.
+* The structure text says "collection" and "fields" for MongoDB. `RelationDetail` has the field `columns_from_sample`, in the core and in the protocol. The protocol minor version is now 2. The MongoDB connector sets the field.
+* The structure text and the "Sent:" line tell that the fields come from a sample. A test of the MongoDB connector proves that the fields of a sample have no values.
+* The statement at the cursor needs no new command `statement_at`. The command `query_preview` already takes the language, and the editor actions use it.
 
 ## 7. Tests
 

@@ -77,4 +77,8 @@ pub struct RelationDetail {
     pub columns: Vec<ColumnInfo>,
     pub indexes: Vec<IndexInfo>,
     pub constraints: Vec<ConstraintInfo>,
+    /// `true` if the columns come from a sample of documents, as for a MongoDB
+    /// collection. Then the list can be incomplete. A column has a name and a type,
+    /// and no value of the sample.
+    pub columns_from_sample: bool,
 }

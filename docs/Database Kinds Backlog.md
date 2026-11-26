@@ -69,6 +69,8 @@ These items are not for one kind. Most items of the other groups need them.
 
 Status on 2026-11-25: item F13 has a plan. It is milestone M21 in `Implementation Plan.md`.
 
+Status on 2026-11-26: the product owner answered decision 7 (section 9). The assistant can send the names and the types of fields from a sample of documents, and never a value.
+
 ## 5. Relational (R)
 
 Relational engines use the structure that exists. They need F1, F2, F3, F5, F10, and F15.

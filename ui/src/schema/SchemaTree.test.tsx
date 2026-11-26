@@ -107,6 +107,7 @@ const detail = {
       definition: 'CHECK (id > 0)',
     },
   ],
+  columns_from_sample: false,
 }
 
 async function connect() {

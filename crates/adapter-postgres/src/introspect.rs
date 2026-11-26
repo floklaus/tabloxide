@@ -162,6 +162,7 @@ pub(crate) async fn relation_detail(
         columns,
         indexes,
         constraints,
+        columns_from_sample: false,
     })
 }
 

@@ -5,7 +5,8 @@
 
 use std::fmt::Write as _;
 use tabloxide_core::{
-    ConstraintKind, QueryError, QuerySession, RelationDetail, RelationInfo, RelationKind,
+    ConstraintKind, QueryError, QueryLanguage, QuerySession, RelationDetail, RelationInfo,
+    RelationKind,
 };
 
 /// The context has the columns of this number of tables and views at most.
@@ -33,8 +34,9 @@ pub struct SchemaContext {
     pub schemas: Vec<SchemaGroup>,
 }
 
-fn kind_word(kind: RelationKind) -> &'static str {
+fn kind_word(kind: RelationKind, language: QueryLanguage) -> &'static str {
     match kind {
+        RelationKind::Table if language == QueryLanguage::MongodbShell => "collection",
         RelationKind::Table => "table",
         RelationKind::View => "view",
         RelationKind::MaterializedView => "materialized view",
@@ -54,6 +56,11 @@ fn constraint_word(kind: ConstraintKind) -> &'static str {
 }
 
 fn render_detail(out: &mut String, detail: &RelationDetail) {
+    if detail.columns_from_sample {
+        out.push_str(
+            "  (The fields come from a sample of documents. The object can have more fields.)\n",
+        );
+    }
     for column in &detail.columns {
         let _ = write!(out, "  {} {}", column.name, column.data_type);
         if !column.is_nullable {
@@ -102,6 +109,21 @@ impl SchemaContext {
         self.schemas.iter().map(|s| s.relations.len()).sum()
     }
 
+    /// Number of tables, collections, and views whose columns come from a sample.
+    #[must_use]
+    pub fn sampled_count(&self) -> usize {
+        self.schemas
+            .iter()
+            .flat_map(|schema| &schema.relations)
+            .filter(|relation| {
+                relation
+                    .detail
+                    .as_ref()
+                    .is_some_and(|detail| detail.columns_from_sample)
+            })
+            .count()
+    }
+
     /// Number of tables and views for which the context has the columns.
     #[must_use]
     pub fn detailed_count(&self) -> usize {
@@ -112,16 +134,22 @@ impl SchemaContext {
             .count()
     }
 
-    /// Returns the text for the AI service.
+    /// Returns the text for the AI service, with the words of `language`: tables and
+    /// columns for SQL, collections and fields for MongoDB.
     #[must_use]
-    pub fn render(&self) -> String {
+    pub fn render(&self, language: QueryLanguage) -> String {
+        let missing = if language == QueryLanguage::MongodbShell {
+            " (fields not included)\n"
+        } else {
+            " (columns not included)\n"
+        };
         let mut out = String::new();
         for schema in &self.schemas {
             for relation in &schema.relations {
                 let _ = write!(
                     out,
                     "{} {}.{}",
-                    kind_word(relation.kind),
+                    kind_word(relation.kind, language),
                     schema.name,
                     relation.name
                 );
@@ -130,7 +158,7 @@ impl SchemaContext {
                         out.push('\n');
                         render_detail(&mut out, detail);
                     }
-                    None => out.push_str(" (columns not included)\n"),
+                    None => out.push_str(missing),
                 }
             }
         }
@@ -237,6 +265,7 @@ mod tests {
                     definition: "FOREIGN KEY (customer_id) REFERENCES customer(id)".to_owned(),
                 },
             ],
+            columns_from_sample: false,
         };
         SchemaContext {
             schemas: vec![SchemaGroup {
@@ -259,7 +288,7 @@ mod tests {
 
     #[test]
     fn the_text_has_the_columns_the_indexes_and_the_constraints() {
-        let text = sample().render();
+        let text = sample().render(QueryLanguage::Sql);
 
         assert_eq!(
             text,
@@ -283,7 +312,7 @@ mod tests {
     #[test]
     fn an_empty_database_gives_a_sentence() {
         assert_eq!(
-            SchemaContext::default().render(),
+            SchemaContext::default().render(QueryLanguage::Sql),
             "The database has no tables and no views in its user schemas.\n"
         );
     }

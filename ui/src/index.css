@@ -3516,3 +3516,8 @@ body {
   color: var(--color-text-muted);
   font-size: 12px;
 }
+
+.assistant__block-note {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}

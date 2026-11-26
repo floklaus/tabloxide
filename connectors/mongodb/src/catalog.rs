@@ -186,6 +186,7 @@ pub async fn relation_detail(
             })
             .into_iter()
             .collect(),
+        columns_from_sample: true,
     })
 }
 
@@ -208,6 +209,35 @@ pub fn sample_statement(current: &str, database: &str, collection: &str, limit: 
 mod tests {
     use super::*;
     use tabloxide_core::mongo::parse_statement;
+
+    #[test]
+    fn the_fields_of_the_sample_have_names_and_types_and_no_values() {
+        let sample = [
+            doc! { "_id": 1, "email": "ada@example.com", "card": { "number": "4111-1111" } },
+            doc! { "_id": 2, "email": "bob@example.com", "score": 99.5 },
+        ];
+
+        let columns = columns_of(&sample);
+        let text = column_text(&columns);
+
+        for value in ["ada@example.com", "bob@example.com", "4111-1111", "99.5"] {
+            assert!(!text.contains(value), "{text}");
+        }
+        assert!(columns.iter().all(|column| column.default.is_none()));
+        assert_eq!(
+            columns.iter().map(|c| c.name.as_str()).collect::<Vec<_>>(),
+            ["_id", "email", "card", "score"]
+        );
+    }
+
+    /// All text of the columns, as the assistant can get it.
+    fn column_text(columns: &[ColumnInfo]) -> String {
+        columns
+            .iter()
+            .map(|column| format!("{} {} {:?}", column.name, column.data_type, column.default))
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
 
     #[test]
     fn the_columns_come_from_the_sample_with_their_types() {

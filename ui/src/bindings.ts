@@ -1492,6 +1492,12 @@ export type RelationDetail_Deserialize = {
 	columns: ColumnInfo_Deserialize[],
 	indexes: IndexInfo[],
 	constraints: ConstraintInfo[],
+	/**
+	 *  `true` if the columns come from a sample of documents, as for a MongoDB
+	 *  collection. Then the list can be incomplete. A column has a name and a type,
+	 *  and no value of the sample.
+	 */
+	columns_from_sample: boolean,
 };
 
 /**  The structure of one table or view. */
@@ -1499,6 +1505,12 @@ export type RelationDetail_Serialize = {
 	columns: ColumnInfo_Serialize[],
 	indexes: IndexInfo[],
 	constraints: ConstraintInfo[],
+	/**
+	 *  `true` if the columns come from a sample of documents, as for a MongoDB
+	 *  collection. Then the list can be incomplete. A column has a name and a type,
+	 *  and no value of the sample.
+	 */
+	columns_from_sample: boolean,
 };
 
 /**  One table or view. */

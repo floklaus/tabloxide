@@ -354,6 +354,10 @@ message RelationDetail {
   repeated ColumnInfo columns = 1;
   repeated IndexInfo indexes = 2;
   repeated ConstraintInfo constraints = 3;
+  // `true` if the columns come from a sample of documents. Then the list can be
+  // incomplete. A column has a name and a type, and no value of the sample.
+  // Since minor version 2.
+  bool columns_from_sample = 4;
 }
 
 message DescribeRelationResponse {

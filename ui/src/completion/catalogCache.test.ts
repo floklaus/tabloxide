@@ -62,6 +62,7 @@ beforeEach(() => {
       ],
       indexes: [],
       constraints: [],
+      columns_from_sample: false,
     },
   })
 })

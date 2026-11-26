@@ -192,6 +192,7 @@ fn summary_of(request: &AskRequest, database: Option<&Database<'_>>) -> String {
     let schema = database.map(|database| SchemaCount {
         relations: database.schema.relation_count(),
         detailed: database.schema.detailed_count(),
+        sampled: database.schema.sampled_count(),
     });
     let context = request
         .messages

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { activeEditor } from '../editor/editorBridge'
 import { sqlTabIdOf, useTabsStore } from '../tabs/tabsStore'
 import { splitAnswer } from './answerSegments'
+import { fitsLanguage, KNOWN_LANGUAGES, useTabLanguage } from './codeLanguage'
 import type {
   AssistantMessage,
   AssistantStatus,
@@ -48,13 +49,18 @@ function useReplaceBlock(target: ReplaceTarget | undefined): string | null {
 
 function CodeBlock(props: {
   code: string
+  /** The tag after the opening fence, for example `sql`. */
+  tag: string
   canInsert: boolean
   isComplete: boolean
   replace?: ReplaceTarget
 }) {
-  const { code, canInsert, isComplete, replace } = props
+  const { code, tag, canInsert, isComplete, replace } = props
   const [copied, setCopied] = useState(false)
   const replaceBlock = useReplaceBlock(replace)
+  const language = useTabLanguage()
+  // Only a block in the language of the tab can go into the editor.
+  const fits = fitsLanguage(tag, language)
   return (
     <div className="assistant__block">
       {/* The block can scroll. The keyboard needs the focus to scroll it. */}
@@ -63,7 +69,12 @@ function CodeBlock(props: {
       </pre>
       {canInsert && (
         <div className="assistant__block-actions">
-          {replace && (
+          {!fits && (
+            <span className="assistant__block-note">
+              This block is not in the language of the tab. You can copy it.
+            </span>
+          )}
+          {replace && fits && (
             <button
               type="button"
               className="button button--small"
@@ -79,15 +90,17 @@ function CodeBlock(props: {
               Replace in the editor
             </button>
           )}
-          <button
-            type="button"
-            className="button button--small"
-            disabled={!isComplete}
-            title="Insert the SQL at the cursor of the editor. The application does not run it."
-            onClick={() => activeEditor()?.insertText(`${code}\n`)}
-          >
-            Insert
-          </button>
+          {fits && (
+            <button
+              type="button"
+              className="button button--small"
+              disabled={!isComplete}
+              title="Insert the statement at the cursor of the editor. The application does not run it."
+              onClick={() => activeEditor()?.insertText(`${code}\n`)}
+            >
+              Insert
+            </button>
+          )}
           <button
             type="button"
             className="button button--small"
@@ -125,6 +138,7 @@ function Message({
           <CodeBlock
             key={index}
             code={segment.code}
+            tag={segment.language}
             canInsert={isAssistant}
             isComplete={segment.isComplete}
             replace={isAssistant ? replace : undefined}
@@ -148,6 +162,7 @@ export function Conversation(props: {
   const messages = useSession((state) => state.messages)
   const answer = useSession((state) => state.answer)
   const status = useSession((state) => state.status)
+  const language = useTabLanguage()
   const schema = useSession((state) => state.schema)
   const refreshesSchema = useSession((state) => state.refreshesSchema)
   const error = useSession((state) => state.error)
@@ -193,6 +208,12 @@ export function Conversation(props: {
         ))}
       </div>
 
+      {hasConversation && !KNOWN_LANGUAGES.includes(language) && (
+        <p className="assistant__note">
+          Tabloxide has no guide of the AI for the query language of this
+          connection. The answers can be less exact.
+        </p>
+      )}
       {hasConversation && (
         <p className="assistant__schema">
           {schemaText(schema)}{' '}

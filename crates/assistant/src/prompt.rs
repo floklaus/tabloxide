@@ -22,43 +22,56 @@ pub struct Database<'a> {
     pub schema: &'a SchemaContext,
 }
 
-/// The rules for the MongoDB syntax of Tabloxide. The application runs no JavaScript,
+/// The guide of the SQL language. `{engine}` is the name of the engine.
+const SQL_GUIDE: &str = "Query language: SQL in the dialect of {engine}. Put each \
+statement in a code block with the tag `sql`. A plan from EXPLAIN without ANALYZE has \
+estimates only. Say so when a conclusion needs measured times.";
+
+/// The guide of the MongoDB syntax of Tabloxide. The application runs no JavaScript,
 /// so the assistant must not write it.
-const MONGODB_SHELL_NOTE: &str = "\n\nQuery language: the MongoDB shell syntax of \
-Tabloxide, not SQL. Write one statement per line: `db.<collection>.<method>(…)` with \
-chained calls such as `.sort()` and `.limit()`, `db.getCollection(\"name\")`, \
-`use <database>`, `show collections`, or a command document `{ \"count\": \"users\" }`. \
-Values are JSON with ObjectId(), ISODate(), NumberLong(), NumberDecimal(), and UUID(). \
-The application runs no JavaScript: do not use variables, functions, loops, or `let`. \
-In the schema, a schema is a database and a table is a collection. Use a code block \
-with the language `javascript`.";
+const MONGODB_GUIDE: &str = "Query language: the MongoDB shell syntax of Tabloxide, \
+not SQL. Write one statement per line: `db.<collection>.<method>(…)` with chained calls \
+such as `.sort()` and `.limit()`, `db.getCollection(\"name\")`, `use <database>`, \
+`show collections`, or a command document `{ \"count\": \"users\" }`. Values are JSON \
+with ObjectId(), ISODate(), NumberLong(), NumberDecimal(), and UUID(). The application \
+runs no JavaScript: do not use variables, functions, loops, or `let`. Put each statement \
+in a code block with the tag `mongodb`. In the schema, a schema is a database, a \
+collection is a table, and a field is a column. The fields of a collection come from a \
+sample of documents. Thus a collection can have more fields. A plan from \
+explain(\"queryPlanner\") has estimates only. A plan from explain(\"executionStats\") \
+has measured times.";
+
+/// The guide of a language that the application does not know.
+const GENERAL_GUIDE: &str = "Query language: the language of {engine}. Tabloxide has no \
+guide for this language. Write a statement only when you know the syntax of {engine}, \
+and tell the user when you are not sure. Put each statement in a code block with the \
+tag `text`.";
 
 const INSTRUCTIONS: &str = "\
-You are the SQL assistant of Tabloxide, a desktop SQL client. The user is a developer \
-who writes SQL for the database that this prompt describes.
+You are the database assistant of Tabloxide, a desktop database client. The user is a \
+developer who writes statements for the database that this prompt describes. The \
+language guide below the instructions names the query language.
 
 How the application uses your answer:
 - The user reads the answer in a narrow side panel. Give the result first. Keep the \
 explanation short.
-- Put each SQL statement that the user can run in a fenced code block with the \
-language `sql`. The panel gives each block an Insert button, which copies the block \
-into the SQL editor. The application never runs your SQL. The user reads it and runs it.
+- Put each statement that the user can run in a fenced code block with the tag that \
+the language guide gives. The panel gives such a block an Insert button, which copies \
+the block into the editor. The application never runs your statements. The user reads \
+them and runs them.
 - Outside of code blocks, write plain text. The panel does not render Markdown \
 headings, tables, or bold text.
-- Write SQL in the dialect of the database engine of the user.
-- Use only the tables and the columns of the schema below. If the request needs an \
-object that the schema does not have, say that, and do not invent a name.
+- Write statements in the query language and the dialect of the language guide.
+- Use only the objects of the schema below. If the request needs an object that the \
+schema does not have, say that, and do not invent a name.
 - For a statement that changes or removes data or structure, say in one sentence what \
-it changes. Mention a table lock or a table rewrite when that is important for a \
-large table.
+it changes. Mention a lock or a rewrite when that is important for a large table or \
+collection.
 
 Execution plans:
 - When the user sends an execution plan, name the steps that cost the most, give the \
-cause, and suggest specific improvements: an index as a complete CREATE INDEX \
-statement, a changed query, or new statistics. Put the improvement with the largest \
-expected effect first.
-- A plan from EXPLAIN without ANALYZE has estimates only. Say so when a conclusion \
-needs measured times.
+cause, and suggest specific improvements: an index as a complete statement, a changed \
+query, or new statistics. Put the improvement with the largest expected effect first.
 - You get the structure of the database only. You do not get its rows, the number of \
 rows, or the distribution of values, unless the plan shows them or the user sends rows \
 between the tags <rows>.
@@ -108,16 +121,17 @@ statement that changes data, or a statement that can be slow on a large table."
         }
         Task::ExplainTable => {
             "\
-Task: explain the table or the view that the user names. Use the schema only. Tell \
-what one row is, the key, the references in the two directions, and the indexes. Give \
+Task: explain the table, collection, or view that the user names. Use the schema only. \
+Tell what one row or document is, the key, the references in the two directions, and \
+the indexes. Give \
 the values of a column only when a constraint gives them. Say that the explanation \
 comes from the structure, not from the rows."
         }
         Task::StarterQuery => {
             "\
-Task: write one query that reads the table or the view that the user names. Use the \
-most useful columns, the references to other tables when they help, an order, and a \
-limit of 100 rows. Start the query with a short comment that tells what it reads. \
+Task: write one query that reads the table, collection, or view that the user names. \
+Use the most useful columns or fields, the references to other tables when they help, \
+an order, and a limit of 100 rows or documents. Start the query with a short comment that tells what it reads. \
 Give the query in exactly one code block."
         }
         Task::CommitMessage => {
@@ -160,10 +174,21 @@ only these rows. Say when the answer needs more rows than the message has."
 
 const NO_DATABASE: &str = "\
 The user has no open database connection. Thus you have no schema. Write standard SQL, \
-and tell the user which table and column names you assumed.";
+and tell the user which table and column names you assumed. Put each statement in a \
+code block with the tag `sql`.";
 
 const NO_DATABASE_FOR_GIT: &str = "\
 This request is about Git. It has no structure of a database.";
+
+/// Returns the guide of the query language for the engine `engine`.
+#[must_use]
+pub fn language_guide(language: QueryLanguage, engine: &str) -> String {
+    match language {
+        QueryLanguage::Sql => SQL_GUIDE.replace("{engine}", engine),
+        QueryLanguage::MongodbShell => MONGODB_GUIDE.to_owned(),
+        QueryLanguage::Unknown => GENERAL_GUIDE.replace("{engine}", engine),
+    }
+}
 
 fn database_part(database: &Database<'_>) -> String {
     let total = database.schema.relation_count();
@@ -171,21 +196,18 @@ fn database_part(database: &Database<'_>) -> String {
     let limit_note = if detailed < total {
         format!(
             "\nThe schema is large. This prompt has the columns of {detailed} of {total} \
-             tables and views. For the others it has the name only. Ask the user for the \
-             columns of such a table when you need them."
+             tables, collections, and views. For the others it has the name only. Ask the \
+             user for the columns of such an object when you need them."
         )
     } else {
         String::new()
     };
-    let language_note = match database.language {
-        QueryLanguage::MongodbShell => MONGODB_SHELL_NOTE,
-        QueryLanguage::Sql | QueryLanguage::Unknown => "",
-    };
     format!(
-        "Database engine: {} {}{limit_note}{language_note}\n\n<schema>\n{}</schema>",
+        "Database engine: {} {}\n{}{limit_note}\n\n<schema>\n{}</schema>",
         database.engine,
         database.version,
-        database.schema.render()
+        language_guide(database.language, database.engine),
+        database.schema.render(database.language)
     )
 }
 
@@ -338,10 +360,13 @@ mod tests {
         assert_eq!(request.system.len(), 2);
         assert!(!request.system[0].is_cache_end);
         assert!(request.system[1].is_cache_end);
+        assert!(request.system[1].text.starts_with(
+            "Database engine: PostgreSQL 17.2\nQuery language: SQL in the dialect of PostgreSQL."
+        ));
         assert!(
             request.system[1]
                 .text
-                .starts_with("Database engine: PostgreSQL 17.2\n\n<schema>\ntable public.item\n")
+                .contains("\n\n<schema>\ntable public.item\n")
         );
         assert!(!request.system[1].text.contains("The schema is large"));
         assert_eq!(request.messages, vec![user("List the items.")]);
@@ -362,7 +387,7 @@ mod tests {
         assert!(
             request.system[1]
                 .text
-                .contains("has the columns of 0 of 1 tables and views")
+                .contains("has the columns of 0 of 1 tables, collections, and views")
         );
     }
 
@@ -466,6 +491,63 @@ mod tests {
         assert!(instructions.contains("Simplified Technical English"));
         assert!(instructions.contains("ASD-STE100"));
         assert!(instructions.contains("Do not change names"));
+    }
+
+    #[test]
+    fn each_language_has_its_guide_and_its_tag() {
+        let sql = language_guide(QueryLanguage::Sql, "DuckDB");
+        let mongo = language_guide(QueryLanguage::MongodbShell, "MongoDB");
+        let other = language_guide(QueryLanguage::Unknown, "Neo4j");
+
+        assert!(sql.starts_with("Query language: SQL in the dialect of DuckDB."));
+        assert!(sql.contains("the tag `sql`"));
+        assert!(mongo.contains("the tag `mongodb`"));
+        assert!(mongo.contains("runs no JavaScript"));
+        assert!(mongo.contains("sample of documents"));
+        assert!(other.contains("Tabloxide has no guide"));
+        assert!(other.contains("syntax of Neo4j"));
+        assert!(other.contains("the tag `text`"));
+    }
+
+    #[test]
+    fn a_mongodb_request_has_the_guide_and_the_words_of_mongodb() {
+        let schema = SchemaContext {
+            schemas: vec![SchemaGroup {
+                name: "shop".to_owned(),
+                relations: vec![RelationContext {
+                    name: "users".to_owned(),
+                    kind: RelationKind::Table,
+                    detail: Some(tabloxide_core::RelationDetail {
+                        columns: vec![tabloxide_core::ColumnInfo {
+                            name: "_id".to_owned(),
+                            data_type: "objectId".to_owned(),
+                            is_nullable: false,
+                            default: None,
+                            is_primary_key: true,
+                        }],
+                        columns_from_sample: true,
+                        ..Default::default()
+                    }),
+                }],
+            }],
+        };
+        let database = Database {
+            engine: "MongoDB",
+            version: "8.0",
+            language: QueryLanguage::MongodbShell,
+            schema: &schema,
+        };
+
+        let request =
+            chat_request("m", Task::Sql, Some(&database), &[user("Find users.")]).unwrap();
+
+        let text = &request.system[1].text;
+        assert!(text.contains("Query language: the MongoDB shell syntax"));
+        assert!(text.contains(
+            "collection shop.users\n  (The fields come from a sample of documents. The \
+             object can have more fields.)\n  _id objectId NOT NULL PRIMARY KEY\n"
+        ));
+        assert!(!request.system[0].text.contains("SQL assistant"));
     }
 
     #[test]
