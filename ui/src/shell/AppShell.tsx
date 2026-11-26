@@ -34,6 +34,7 @@ import { CommandPalette } from './palette/CommandPalette'
 import { applyDensity, applyZoom, useShellStore } from './shellStore'
 import { handleShortcut } from './shortcuts'
 import { Sidebar } from './Sidebar'
+import { handleAreaKey, rememberFocus } from './areas'
 import { StatusBar } from './StatusBar'
 import { BranchWidget, ConnectionWidget, ProjectWidget } from './TitleWidgets'
 import { LeftToolStrip, RightToolStrip } from './ToolStrip'
@@ -281,10 +282,16 @@ function useWorkspaceLifetime() {
   useEffect(() => {
     applyZoom(useShellStore.getState().zoom)
     applyDensity(useShellStore.getState().density)
-    const onKeyDown = (event: KeyboardEvent) =>
+    const onKeyDown = (event: KeyboardEvent) => {
+      handleAreaKey(event)
       handleShortcut(event, buildCommands())
+    }
     window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
+    document.addEventListener('focusin', rememberFocus)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('focusin', rememberFocus)
+    }
   }, [])
 }
 

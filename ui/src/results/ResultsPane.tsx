@@ -316,7 +316,7 @@ export function ResultsPane() {
   ]
 
   return (
-    <section className="pane results" aria-label="Results">
+    <section className="pane results" aria-label="Results" data-area="results">
       <div className="results__views" role="tablist" aria-label="Results views">
         {views.map((item) => (
           <button

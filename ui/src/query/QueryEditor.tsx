@@ -63,7 +63,10 @@ export function QueryEditor() {
     activeQueryStore().getState().setJumpTo(null)
   }, [jumpTo])
 
-  if (!tab) return <section className="pane query" aria-label="Editor" />
+  if (!tab)
+    return (
+      <section className="pane query" aria-label="Editor" data-area="editor" />
+    )
 
   const active = connections.find((c) => c.id === tab.connectionId)
   const language = engineLanguage(active?.engine ?? 'postgres')
@@ -74,7 +77,7 @@ export function QueryEditor() {
     void requestRun(tab.content, target)
   }
   return (
-    <section className="pane query" aria-label="Editor">
+    <section className="pane query" aria-label="Editor" data-area="editor">
       <TabBar />
       {assistantSessionId !== undefined && (
         <AssistantSessionView sessionId={assistantSessionId} />

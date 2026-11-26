@@ -20,7 +20,11 @@ const LABELS = {
 export function Sidebar() {
   const view = useShellStore((state) => state.sidebarView)
   return (
-    <nav className="pane sidebar" aria-label={`Sidebar: ${LABELS[view]}`}>
+    <nav
+      className="pane sidebar"
+      aria-label={`Sidebar: ${LABELS[view]}`}
+      data-area="side"
+    >
       {view === 'files' && <FileTree />}
       {view === 'connections' && <ConnectionList />}
       {view === 'schema' && <SchemaTree />}

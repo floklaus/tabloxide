@@ -23,7 +23,11 @@ function PanelBody() {
   )
 
   return (
-    <section className="pane assistant" aria-label="Assistant">
+    <section
+      className="pane assistant"
+      aria-label="Assistant"
+      data-area="assistant"
+    >
       <div className="assistant__bar">
         <h2 className="pane__title">Assistant</h2>
         <span className="title-bar__spacer" />
