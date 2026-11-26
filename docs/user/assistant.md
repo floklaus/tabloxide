@@ -183,8 +183,12 @@ Tabloxide sends the first rows of the result that the grid has loaded. **Prefere
 Each conversation is a session. Two or more sessions can run at the same time. The sessions stay until you close the workspace. Tabloxide does not store them on disk.
 
 - To start a new session, select **+** (New conversation) in the panel. The earlier session continues.
-- To see all sessions, select **Assistant sessions** in the left tool strip. Each session shows its state: Running, Waiting for you, or Done. Waiting for you means that a plan read waits for your confirmation.
-- To open a session in an editor tab, select it in the list, or select **Open the session in a tab** in the panel.
+- To see all sessions, select **Assistant sessions** in the left tool strip. The Sessions view shows the newest session first. A status mark before each title shows the state: Running, Waiting for you, Done, Stopped, Failed, or New. Waiting for you means that a plan read waits for your confirmation. The filter field shows only the sessions whose title contains the text.
+- To open a session in an editor tab, click it in the list, or press **Space** or **Enter** on it. You can also select **Open the session in a tab** in the panel.
+- To show a session in the assistant panel, press **Ctrl+Enter** on it in the list.
+- To stop the request of a session, press **Shift+F10** on it in the list and select **Stop the request**.
+
+The Sessions view uses the keys of all side views. Refer to [Side views](side-views.md).
 
 The tab of a session shows these parts:
 

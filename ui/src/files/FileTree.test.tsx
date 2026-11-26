@@ -87,21 +87,193 @@ describe('FileTree', () => {
     })
   })
 
-  test('shows the error when a directory does not load', async () => {
+  test('the error of the root has Try again, and the header stays', async () => {
+    const user = userEvent.setup()
     fileList.mockResolvedValue({
       status: 'error',
       error: {
         kind: 'workspace',
-        message: 'Cannot read the folder.',
+        message: 'Permission denied.',
         issues: [],
       },
     })
 
     render(<FileTree />)
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Cannot read the folder.',
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Cannot read the workspace folder.')
+    expect(alert).toHaveTextContent('Permission denied.')
+    expect(screen.getByRole('heading', { name: 'Files' })).toBeInTheDocument()
+    fileList.mockImplementation(async (directory) => ({
+      status: 'ok',
+      data: listings[directory] ?? [],
+    }))
+    await user.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(
+      await screen.findByRole('treeitem', { name: 'readme.md' }),
+    ).toBeInTheDocument()
+  })
+
+  test('shows the error of a folder in the tree', async () => {
+    const user = userEvent.setup()
+    fileList.mockImplementation(async (directory) =>
+      directory === 'queries'
+        ? {
+            status: 'error',
+            error: {
+              kind: 'workspace',
+              message: 'Cannot read the folder.',
+              issues: [],
+            },
+          }
+        : { status: 'ok', data: listings[directory] ?? [] },
     )
+    render(<FileTree />)
+
+    await user.click(await screen.findByRole('treeitem', { name: /queries/ }))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Cannot read the folder queries.')
+    expect(alert).toHaveTextContent('Cannot read the folder.')
+  })
+
+  test('while the root loads, the view shows the loading state', async () => {
+    fileList.mockReturnValue(new Promise(() => {}))
+
+    render(<FileTree />)
+
+    expect(
+      screen.getByRole('status', {
+        name: 'Reading the files of the workspace…',
+      }),
+    ).toBeInTheDocument()
+  })
+
+  test('an empty workspace folder says so and gives one action', async () => {
+    listings = { '': [] }
+
+    render(<FileTree />)
+
+    expect(
+      await screen.findByText('The workspace folder is empty.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getAllByRole('button', { name: 'Read the files again' }),
+    ).toHaveLength(2)
+  })
+
+  test('filters the loaded files and shows the folders that contain them', async () => {
+    const user = userEvent.setup()
+    render(<FileTree />)
+    await user.click(await screen.findByRole('treeitem', { name: /queries/ }))
+    await screen.findByRole('treeitem', { name: 'a.sql' })
+    await user.click(screen.getByRole('treeitem', { name: /queries/ }))
+
+    await user.type(
+      screen.getByRole('searchbox', { name: 'Filter the files' }),
+      'a.s',
+    )
+
+    expect(screen.getByRole('treeitem', { name: /queries/ })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    )
+    expect(screen.getByRole('treeitem', { name: 'a.sql' })).toBeInTheDocument()
+    expect(
+      screen.queryByRole('treeitem', { name: 'readme.md' }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('1 folder, 1 file')
+  })
+
+  test('a filter without a match says so and clears the filter', async () => {
+    const user = userEvent.setup()
+    render(<FileTree />)
+    await screen.findByRole('treeitem', { name: 'readme.md' })
+
+    await user.type(
+      screen.getByRole('searchbox', { name: 'Filter the files' }),
+      'invoice',
+    )
+    expect(screen.getByText('No files contain “invoice”.')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Clear the filter' }))
+
+    expect(
+      screen.getByRole('treeitem', { name: 'readme.md' }),
+    ).toBeInTheDocument()
+  })
+
+  test('Space opens a file, and the file of the active tab is selected', async () => {
+    const user = userEvent.setup()
+    fileRead.mockResolvedValue({ status: 'ok', data: 'text' })
+    render(<FileTree />)
+    const file = await screen.findByRole('treeitem', { name: 'readme.md' })
+    file.focus()
+
+    await user.keyboard(' ')
+
+    await vi.waitFor(() =>
+      expect(file).toHaveAttribute('aria-selected', 'true'),
+    )
+    expect(fileRead).toHaveBeenCalledTimes(1)
+    expect(file).toHaveFocus()
+  })
+
+  test('a double click opens a file in one tab only', async () => {
+    const user = userEvent.setup()
+    fileRead.mockResolvedValue({ status: 'ok', data: 'text' })
+    render(<FileTree />)
+
+    await user.dblClick(
+      await screen.findByRole('treeitem', { name: 'readme.md' }),
+    )
+
+    await vi.waitFor(() => expect(useTabsStore.getState().tabs).toHaveLength(1))
+    expect(fileRead).toHaveBeenCalledTimes(1)
+  })
+
+  test('type-ahead moves to a file, and / moves to the filter', async () => {
+    const user = userEvent.setup()
+    render(<FileTree />)
+    const directory = await screen.findByRole('treeitem', { name: /queries/ })
+    directory.focus()
+
+    await user.keyboard('r')
+    expect(screen.getByRole('treeitem', { name: 'readme.md' })).toHaveFocus()
+
+    await user.keyboard('/')
+    expect(
+      screen.getByRole('searchbox', { name: 'Filter the files' }),
+    ).toHaveFocus()
+  })
+
+  test('F5 reads the open folders again', async () => {
+    const user = userEvent.setup()
+    render(<FileTree />)
+    const file = await screen.findByRole('treeitem', { name: 'readme.md' })
+    file.focus()
+    fileList.mockClear()
+
+    await user.keyboard('{F5}')
+
+    expect(fileList).toHaveBeenCalledWith('')
+  })
+
+  test('Shift+F10 opens the context menu of a file', async () => {
+    const user = userEvent.setup()
+    const writeText = vi
+      .spyOn(navigator.clipboard, 'writeText')
+      .mockResolvedValue()
+    render(<FileTree />)
+    const file = await screen.findByRole('treeitem', { name: 'readme.md' })
+    file.focus()
+
+    await user.keyboard('{Shift>}{F10}{/Shift}')
+    expect(
+      screen.getByRole('menuitem', { name: /Open the file/ }),
+    ).toBeInTheDocument()
+    await user.click(screen.getByRole('menuitem', { name: 'Copy the path' }))
+
+    expect(writeText).toHaveBeenCalledWith('readme.md')
   })
 
   test('loads the open directories again with the refresh button', async () => {
@@ -110,7 +282,9 @@ describe('FileTree', () => {
     await screen.findByRole('treeitem', { name: 'readme.md' })
     listings[''] = [{ name: 'new.sql', path: 'new.sql', is_directory: false }]
 
-    await user.click(screen.getByRole('button', { name: 'Refresh' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Read the files again' }),
+    )
 
     expect(
       await screen.findByRole('treeitem', { name: 'new.sql' }),

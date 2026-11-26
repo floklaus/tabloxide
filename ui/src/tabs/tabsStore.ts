@@ -203,6 +203,9 @@ function activation(tabs: Tab[], id: string, sqlId: string | null) {
   return { activeId: id, sqlId: tab && isSqlTab(tab) ? id : sqlId }
 }
 
+/** The files that open now, by path. */
+const opening = new Map<string, Promise<void>>()
+
 export const useTabsStore = create<TabsState>((set, get) => {
   const update = (id: string, change: Partial<Tab>) =>
     set({
@@ -225,6 +228,32 @@ export const useTabsStore = create<TabsState>((set, get) => {
       return null
     }
     return relative.data
+  }
+
+  /** Reads a file of the workspace and opens it in a new tab. */
+  const readIntoTab = async (path: string): Promise<void> => {
+    try {
+      const file = await commands.fileRead(path)
+      if (file.status === 'error') {
+        set({ error: file.error.message })
+        return
+      }
+      const tab: Tab = {
+        ...makeTab(get().tabs),
+        title: fileName(path),
+        path,
+        content: file.data,
+        savedContent: file.data,
+      }
+      set({
+        tabs: [...get().tabs, tab],
+        activeId: tab.id,
+        sqlId: tab.id,
+        error: null,
+      })
+    } catch (error) {
+      set({ error: toMessage(error) })
+    }
   }
 
   return {
@@ -262,27 +291,21 @@ export const useTabsStore = create<TabsState>((set, get) => {
         set({ activeId: open.id, sqlId: open.id })
         return
       }
+      // A double click starts a second open before the first read ends. The second
+      // open waits for the first, and then shows its tab.
+      const pending = opening.get(path)
+      if (pending) {
+        await pending
+        const tab = get().tabs.find((item) => item.path === path)
+        if (tab) set({ activeId: tab.id, sqlId: tab.id })
+        return
+      }
+      const read = readIntoTab(path)
+      opening.set(path, read)
       try {
-        const file = await commands.fileRead(path)
-        if (file.status === 'error') {
-          set({ error: file.error.message })
-          return
-        }
-        const tab: Tab = {
-          ...makeTab(get().tabs),
-          title: fileName(path),
-          path,
-          content: file.data,
-          savedContent: file.data,
-        }
-        set({
-          tabs: [...get().tabs, tab],
-          activeId: tab.id,
-          sqlId: tab.id,
-          error: null,
-        })
-      } catch (error) {
-        set({ error: toMessage(error) })
+        await read
+      } finally {
+        opening.delete(path)
       }
     },
 

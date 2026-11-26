@@ -1,22 +1,25 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type KeyboardEvent,
-} from 'react'
-import { commands, type FileEntry } from '../bindings'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { commands } from '../bindings'
 import { toMessage } from '../lib/errors'
-import { useWorkspaceChangeStore } from '../workspace/watch'
+import { Icon } from '../shell/icons'
+import type { MenuItem } from '../shell/menu/menuModel'
 import { useTabsStore } from '../tabs/tabsStore'
+import { SideView } from '../view/SideView'
+import { useViewKeys, type KeyRow } from '../view/useViewKeys'
+import { EmptyState, Loading, NoMatch, ViewError } from '../view/ViewState'
+import { useWorkspaceChangeStore } from '../workspace/watch'
+import { useWorkspaceStore } from '../workspace/workspaceStore'
+import {
+  buildFileRows,
+  fileStatus,
+  ROOT,
+  type FileRow,
+  type Listing,
+} from './fileModel'
 
-type Listing =
-  | { status: 'loading' }
-  | { status: 'loaded'; entries: FileEntry[] }
-  | { status: 'failed'; message: string }
+const INDENT_PX = 16
 
-const ROOT = ''
-const INDENT_REM = 0.9
+type EntryRow = Extract<FileRow, { type: 'entry' }>
 
 async function list(directory: string): Promise<Listing> {
   try {
@@ -29,40 +32,73 @@ async function list(directory: string): Promise<Listing> {
   }
 }
 
-/** Returns the path of the directory that contains `path`. */
-function parentOf(path: string): string {
-  const end = path.lastIndexOf('/')
-  return end < 0 ? ROOT : path.slice(0, end)
+function copyPath(path: string): void {
+  void navigator.clipboard.writeText(path).catch(() => {})
 }
 
-/** The note that shows in place of the tree while the root has no entry to show. */
-function renderRootNote(listing: Listing | undefined) {
-  if (!listing || listing.status === 'loading') {
-    return <p className="files__note">Loading…</p>
-  }
-  if (listing.status === 'failed') {
+function RowContent({
+  row,
+  onToggle,
+}: {
+  row: FileRow
+  /** Opens or closes the folder. A click on the chevron does only this. */
+  onToggle: () => void
+}) {
+  if (row.type === 'note') {
     return (
-      <p className="files__note files__note--error" role="alert">
-        {listing.message}
-      </p>
+      // A tree can contain only tree items. The error also shows at the top of the body.
+      <span
+        className={
+          row.isError ? 'schema__note schema__note--error' : 'schema__note'
+        }
+      >
+        {row.text}
+      </span>
     )
   }
-  if (listing.entries.length === 0) {
-    return <p className="files__note">The workspace folder is empty.</p>
-  }
-  return null
+  const { entry } = row
+  return (
+    <>
+      {entry.is_directory ? (
+        <span
+          className="view-row__chevron"
+          aria-hidden="true"
+          onClick={(event) => {
+            event.stopPropagation()
+            onToggle()
+          }}
+        >
+          <Icon name={row.isOpen ? 'chevron' : 'chevron-right'} size={16} />
+        </span>
+      ) : (
+        <span className="files__spacer" aria-hidden="true" />
+      )}
+      <Icon name={entry.is_directory ? 'folder' : 'files'} size={16} />
+      <span className="view-row__label" title={entry.path}>
+        {entry.name}
+      </span>
+    </>
+  )
 }
 
-/** The files of the workspace. The tree loads a directory only when the user opens it. */
+/**
+ * The Files view after the view standards: the files of the workspace as a tree.
+ * The tree loads a folder only when the user opens it.
+ */
 export function FileTree() {
   const [listings, setListings] = useState<Record<string, Listing>>({})
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set([ROOT]))
+  const [filter, setFilter] = useState('')
+  const filterRef = useRef<HTMLInputElement>(null)
+  const workspaceName = useWorkspaceStore(
+    (state) => state.workspace?.name ?? '',
+  )
   const openFile = useTabsStore((state) => state.openFile)
   const activePath = useTabsStore(
     (state) => state.tabs.find((tab) => tab.id === state.activeId)?.path,
   )
 
-  // A directory without a listing shows as "Loading…".
+  // A folder without a listing shows as "Loading…".
   const load = useCallback(async (directory: string) => {
     const listing = await list(directory)
     setListings((current) => ({ ...current, [directory]: listing }))
@@ -78,34 +114,19 @@ export function FileTree() {
     }
   }, [])
 
-  // Only one tree item is in the Tab key sequence. The arrow keys move between the items.
-  const [focusPath, setFocusPath] = useState<string | null>(null)
-  const visiblePaths = (directory: string): string[] => {
-    const listing = listings[directory]
-    if (listing?.status !== 'loaded') return []
-    return listing.entries.flatMap((entry) =>
-      entry.is_directory && expanded.has(entry.path)
-        ? [entry.path, ...visiblePaths(entry.path)]
-        : [entry.path],
-    )
-  }
-  const visible = visiblePaths(ROOT)
-  const tabStop =
-    focusPath !== null && visible.includes(focusPath) ? focusPath : visible[0]
-
-  const refresh = () => {
-    for (const directory of expanded) void load(directory)
-  }
-  // A different program changed files. Read the open directories again.
-  const changeCount = useWorkspaceChangeStore((state) => state.count)
   const expandedRef = useRef(expanded)
   useEffect(() => {
     expandedRef.current = expanded
   }, [expanded])
-  useEffect(() => {
-    if (changeCount === 0) return
+  const refresh = useCallback(() => {
     for (const directory of expandedRef.current) void load(directory)
-  }, [changeCount, load])
+  }, [load])
+  // A different program changed files. Read the open folders again.
+  const changeCount = useWorkspaceChangeStore((state) => state.count)
+  useEffect(() => {
+    if (changeCount > 0) refresh()
+  }, [changeCount, refresh])
+
   const toggle = (directory: string) => {
     const next = new Set(expanded)
     if (!next.delete(directory)) {
@@ -115,126 +136,192 @@ export function FileTree() {
     setExpanded(next)
   }
 
-  /** The keyboard behaviour of the ARIA tree view pattern. */
-  const onTreeKeyDown = (event: KeyboardEvent<HTMLUListElement>) => {
-    const items = Array.from(
-      event.currentTarget.querySelectorAll<HTMLElement>('[role="treeitem"]'),
-    )
-    const index = items.indexOf(event.target as HTMLElement)
-    if (index < 0) return
-    const item = items[index]
-    const path = item.dataset.path ?? ROOT
-    const isOpen = item.getAttribute('aria-expanded')
-    const focusPathItem = (target: string) =>
-      items.find((candidate) => candidate.dataset.path === target)?.focus()
-    const actions: Record<string, (() => void) | undefined> = {
-      ArrowDown: () => items[index + 1]?.focus(),
-      ArrowUp: () => items[index - 1]?.focus(),
-      Home: () => items[0].focus(),
-      End: () => items[items.length - 1].focus(),
-      ArrowRight: () => {
-        if (isOpen === 'false') toggle(path)
-        else if (isOpen === 'true') {
-          // An open folder can have no visible entry. Then the focus stays.
-          const next = visible[visible.indexOf(path) + 1]
-          if (next?.startsWith(`${path}/`)) focusPathItem(next)
+  const rows = useMemo(
+    () => buildFileRows({ listings, expanded, filter }),
+    [listings, expanded, filter],
+  )
+  const keyRows: KeyRow[] = useMemo(
+    () =>
+      rows.flatMap((row) =>
+        row.type === 'entry'
+          ? [
+              {
+                key: row.key,
+                label: row.entry.name,
+                level: row.level,
+                isExpandable: row.entry.is_directory,
+                isExpanded: row.isOpen,
+                parentKey: row.parentKey,
+              },
+            ]
+          : [],
+      ),
+    [rows],
+  )
+  const byKey = new Map<string, EntryRow>()
+  for (const row of rows) if (row.type === 'entry') byKey.set(row.key, row)
+
+  /** A folder opens or closes. A file opens in a tab, or its tab shows. */
+  const activate = (key: string) => {
+    const row = byKey.get(key)
+    if (!row) return
+    if (row.entry.is_directory) toggle(key)
+    else void openFile(key)
+  }
+
+  const itemsOf = (key: string): MenuItem[] => {
+    const row = byKey.get(key)
+    if (!row) return []
+    const first: MenuItem = row.entry.is_directory
+      ? {
+          kind: 'action',
+          label: row.isOpen ? 'Close the folder' : 'Open the folder',
+          shortcut: row.isOpen ? 'Left' : 'Right',
+          run: () => toggle(key),
         }
-      },
-      ArrowLeft: () => {
-        if (isOpen === 'true') toggle(path)
-        else focusPathItem(parentOf(path))
-      },
-    }
-    const action = actions[event.key]
-    if (!action) return
-    event.preventDefault()
-    action()
+      : {
+          kind: 'action',
+          label: 'Open the file',
+          shortcut: 'Enter',
+          run: () => void openFile(key),
+        }
+    return [
+      first,
+      { kind: 'action', label: 'Copy the path', run: () => copyPath(key) },
+    ]
   }
 
-  const renderDirectory = (directory: string, depth: number) => {
-    const listing = listings[directory]
-    const indent = { paddingLeft: `${depth * INDENT_REM}rem` }
-    // A tree can contain only tree items. Thus a note is a presentation item.
-    if (!listing || listing.status === 'loading') {
+  const keys = useViewKeys({
+    kind: 'tree',
+    rows: keyRows,
+    selectedKey: activePath ?? null,
+    filterRef,
+    onToggle: (key, expand) => {
+      const row = byKey.get(key)
+      if (row?.entry.is_directory && expanded.has(key) !== expand) toggle(key)
+    },
+    // Tabloxide has no preview tab for a file. Space and a click open the file in
+    // a tab, as Enter does. The focus stays in the view.
+    onSelect: activate,
+    onOpen: activate,
+    onRefresh: refresh,
+    onEscape: () => useTabsStore.getState().closePreview(),
+    contextItems: itemsOf,
+  })
+
+  const root = listings[ROOT]
+  const body = () => {
+    if (!root || root.status === 'loading') {
+      return <Loading text="Reading the files of the workspace…" />
+    }
+    if (root.status === 'failed') {
       return (
-        <li className="files__note" style={indent} role="none">
-          Loading…
-        </li>
+        <ViewError
+          title="Cannot read the workspace folder."
+          detail={root.message}
+          onRetry={() => void load(ROOT)}
+        />
       )
     }
-    if (listing.status === 'failed') {
+    if (root.entries.length === 0) {
       return (
-        <li
-          className="files__note files__note--error"
-          style={indent}
-          role="none"
-        >
-          <span role="alert">{listing.message}</span>
-        </li>
+        <EmptyState
+          text="The workspace folder is empty."
+          action={{ label: 'Read the files again', run: refresh }}
+        />
       )
     }
-    return listing.entries.map((entry) => {
-      const isOpen = expanded.has(entry.path)
+    if (keyRows.length === 0) {
       return (
-        <li key={entry.path} role="none">
-          {entry.is_directory ? (
-            <button
-              type="button"
-              role="treeitem"
-              className="files__item"
-              style={indent}
-              data-path={entry.path}
-              tabIndex={entry.path === tabStop ? 0 : -1}
-              onFocus={() => setFocusPath(entry.path)}
-              aria-expanded={isOpen}
-              onClick={() => toggle(entry.path)}
-            >
-              <span aria-hidden="true">{isOpen ? '▾' : '▸'}</span> {entry.name}
-            </button>
-          ) : (
-            <button
-              type="button"
-              role="treeitem"
-              className="files__item"
-              style={indent}
-              data-path={entry.path}
-              tabIndex={entry.path === tabStop ? 0 : -1}
-              onFocus={() => setFocusPath(entry.path)}
-              aria-current={entry.path === activePath}
-              onClick={() => void openFile(entry.path)}
-            >
-              {entry.name}
-            </button>
-          )}
-          {entry.is_directory && isOpen && (
-            <ul role="group">{renderDirectory(entry.path, depth + 1)}</ul>
-          )}
-        </li>
+        <NoMatch noun="files" filter={filter} onClear={() => setFilter('')} />
       )
-    })
-  }
-
-  // A tree without a tree item is not valid. Thus a note replaces the tree.
-  const rootNote = renderRootNote(listings[ROOT])
-
-  return (
-    <section className="files" aria-label="Files">
-      <div className="connections__header">
-        <h2 className="pane__title">Files</h2>
-        <button type="button" className="link-button" onClick={refresh}>
-          Refresh
-        </button>
-      </div>
-      {rootNote ?? (
-        <ul
-          className="files__tree"
+    }
+    const failed = [...expanded].find(
+      (directory) =>
+        directory !== ROOT && listings[directory]?.status === 'failed',
+    )
+    const failure = failed === undefined ? undefined : listings[failed]
+    return (
+      <>
+        {failed !== undefined && failure?.status === 'failed' && (
+          <ViewError
+            title={`Cannot read the folder ${failed}.`}
+            detail={failure.message}
+            onRetry={() => void load(failed)}
+          />
+        )}
+        <div
           role="tree"
-          aria-label="Workspace files"
-          onKeyDown={onTreeKeyDown}
+          aria-label={`Files of ${workspaceName || 'the workspace'}`}
+          className="view-list"
         >
-          {renderDirectory(ROOT, 0)}
-        </ul>
-      )}
-    </section>
+          {rows.map((row) => {
+            const index = keyRows.findIndex((keyRow) => keyRow.key === row.key)
+            const props =
+              index >= 0
+                ? keys.rowProps(keyRows[index], index)
+                : { role: 'none' }
+            return (
+              <div
+                key={row.key}
+                {...props}
+                className="view-row"
+                style={{ paddingLeft: `${6 + (row.level - 1) * INDENT_PX}px` }}
+              >
+                <RowContent row={row} onToggle={() => toggle(row.key)} />
+              </div>
+            )
+          })}
+        </div>
+      </>
+    )
+  }
+
+  const hasEntries = root?.status === 'loaded' && root.entries.length > 0
+  return (
+    <SideView
+      title="Files"
+      scope={
+        workspaceName
+          ? { text: workspaceName, label: `Workspace ${workspaceName}` }
+          : undefined
+      }
+      primary={{
+        icon: 'refresh',
+        label: 'Read the files again',
+        shortcut: 'F5',
+        run: refresh,
+      }}
+      overflow={() => [
+        {
+          kind: 'action',
+          label: 'Read the files again',
+          shortcut: 'F5',
+          run: refresh,
+        },
+        {
+          kind: 'action',
+          label: 'Close all folders',
+          disabled: expanded.size <= 1,
+          run: () => setExpanded(new Set([ROOT])),
+        },
+      ]}
+      filter={
+        hasEntries
+          ? {
+              value: filter,
+              onChange: setFilter,
+              label: 'Filter the files',
+              placeholder: 'Filter  /',
+              inputRef: filterRef,
+              onLeave: () => keys.focusRow(),
+            }
+          : undefined
+      }
+      status={hasEntries ? fileStatus(rows) : null}
+    >
+      {body()}
+      {keys.contextMenu}
+    </SideView>
   )
 }

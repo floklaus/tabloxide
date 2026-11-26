@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react'
+import { useMemo, useSyncExternalStore } from 'react'
 import { useAssistantStore } from './assistantStore'
 
 function subscribeAll(onChange: () => void): () => void {
@@ -29,4 +29,20 @@ function runningCount(): number {
 /** The number of assistant sessions with a request in progress. */
 export function useRunningSessions(): number {
   return useSyncExternalStore(subscribeAll, runningCount)
+}
+
+const SEPARATOR = '\u0000'
+
+/** The titles of all sessions as one text. A text is stable for the store snapshot. */
+function titlesText(): string {
+  return useAssistantStore
+    .getState()
+    .sessions.map((entry) => entry.store.getState().title ?? '')
+    .join(SEPARATOR)
+}
+
+/** The title of each session, in the sequence of the sessions. `''` for no title. */
+export function useSessionTitles(): string[] {
+  const text = useSyncExternalStore(subscribeAll, titlesText)
+  return useMemo(() => text.split(SEPARATOR), [text])
 }

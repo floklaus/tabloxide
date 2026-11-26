@@ -790,6 +790,40 @@ Each phase is one commit or more. The application works after each phase.
 
 The tests of each phase use the keys and the states of the standard. A test of each view checks the four states.
 
+#### Status
+
+Status on 2026-11-26: phases 1 to 8 are done. M22 is complete.
+
+| Phase | Commit |
+|---|---|
+| 1. Foundation | d934042 |
+| 2. Keys | 487f26b |
+| 3. Preview tabs | 10306fe |
+| 4. Schema | e2b737f |
+| 5. Connections | 2e464e5 |
+| 6. History | 869c021 |
+| 7. Git | fdba47c |
+| 8. Files, sessions, and the rest | The commit "build the Files and sessions views after the view standards" |
+
+Phase 8 has these results:
+
+* The Files view is a tree after the standard. It has a filter of the loaded folders, a status line with the number of folders and files, and a context menu with "Copy the path".
+* The Sessions view is a list after the standard. Each session has a status mark. Ctrl+Enter shows the session in the assistant panel. The context menu can stop the request of a session.
+* The user guide has a new document, `docs/user/side-views.md`. The shortcut list has the groups "Areas of the window" and "Side views".
+
+#### Known differences from the design
+
+| Difference | Reason |
+|---|---|
+| The commit tab of Git has no AI action and no line counts. | The backend gives no line counts for a commit. |
+| Git changes have no selection of more than one row (Shift+arrow keys, Ctrl+click). | Not done in this milestone. |
+| The schema detail has no DDL for each engine, no nested fields, and no field shares. | The backend does not give these data yet. |
+| MongoDB has no plan analysis. | It needs a new release of the MongoDB connector. |
+| Files and sessions have no preview tab. Space and a click open the file or the session in its own tab. | A file tab and a session tab are not detail tabs. A preview tab for them needs a change of the tab model. |
+| The Files view has no F2 and no Delete. | The backend has no command that renames or deletes a file. |
+| The Sessions view has no F2, no Delete, no F5, no loading state, and no error state. | The sessions are only in memory. Nothing loads and nothing can fail. |
+| The Files view has no selection of more than one row. | Not done in this milestone. |
+
 ## 7. Tests
 
 | Level | Tool | Scope |

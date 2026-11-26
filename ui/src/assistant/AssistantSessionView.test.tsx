@@ -208,9 +208,11 @@ describe('assistant sessions', () => {
     const user = setup()
     await sendRequest(user, 'Count the items')
     await screen.findByText('Use this query.')
-    const list = screen.getByRole('region', { name: 'Assistant sessions' })
+    const list = screen.getByRole('region', { name: 'Sessions' })
 
-    const item = within(list).getByRole('button', { name: /Count the items/ })
+    const item = within(list).getByRole('option', {
+      name: 'Count the items, Done',
+    })
     expect(item).toHaveTextContent('Done · just now')
     await user.click(item)
 
@@ -222,6 +224,6 @@ describe('assistant sessions', () => {
     expect(
       screen.getByRole('tab', { name: 'Assistant: New conversation' }),
     ).toHaveAttribute('aria-selected', 'true')
-    expect(within(list).getAllByRole('listitem')).toHaveLength(2)
+    expect(within(list).getAllByRole('option')).toHaveLength(2)
   })
 })

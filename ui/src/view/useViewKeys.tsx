@@ -174,7 +174,9 @@ export function useViewKeys(options: ViewKeysOptions) {
     else if (event.key === 'PageUp') focusIndex(index - page)
     else if (event.key === 'ArrowRight' && kind === 'tree') {
       if (row.isExpandable && !row.isExpanded) o.onToggle?.(row.key, true)
-      else if (row.isExpanded) focusIndex(index + 1)
+      // An open node without a visible child keeps the focus.
+      else if (row.isExpanded && o.rows[index + 1]?.parentKey === row.key)
+        focusIndex(index + 1)
     } else if (event.key === 'ArrowLeft' && kind === 'tree') {
       if (row.isExpanded) o.onToggle?.(row.key, false)
       else if (row.parentKey) focusKey(row.parentKey)

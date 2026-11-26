@@ -70,6 +70,8 @@ describe('shortcutGroups', () => {
       'Editor',
       'Editor tabs',
       'Result grid',
+      'Areas of the window',
+      'Side views',
       'Lists and menus',
       'Assistant',
     ])
@@ -84,6 +86,29 @@ describe('shortcutGroups', () => {
       keys: ['Ctrl+O'],
       description: 'Open file',
     })
+  })
+
+  test('lists the keys of the side views', () => {
+    const keys = find('Side views')?.shortcuts.flatMap(
+      (shortcut) => shortcut.keys,
+    )
+
+    for (const key of [
+      'Space',
+      'Enter',
+      'Ctrl+Enter',
+      'F2',
+      'Delete',
+      'F5',
+      'Escape',
+      'Shift+F10',
+      'Ctrl+F',
+      '/',
+      'Letters',
+    ]) {
+      expect(keys).toContain(key)
+    }
+    expect(find('Areas of the window')?.shortcuts[0].keys).toContain('F6')
   })
 
   test('each shortcut of a command is different', () => {

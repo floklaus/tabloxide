@@ -76,15 +76,82 @@ export const PART_SHORTCUTS: ShortcutGroup[] = [
     ],
   },
   {
+    title: 'Areas of the window',
+    shortcuts: [
+      {
+        keys: ['F6', 'Shift+F6'],
+        description:
+          'Move the focus to the next or the previous area: side view, editor, lower panel, assistant.',
+      },
+    ],
+  },
+  {
+    title: 'Side views',
+    shortcuts: [
+      {
+        keys: ['Up', 'Down', 'Home', 'End', 'Page Up', 'Page Down'],
+        description: 'Move the focus between the rows.',
+      },
+      {
+        keys: ['Right', 'Left'],
+        description:
+          'Open or close a node of a tree. On a closed node, Left moves to the parent.',
+      },
+      {
+        keys: ['Space'],
+        description:
+          'Show the detail of the row in the preview tab. The focus stays in the view. In Git changes, stage or unstage the file.',
+      },
+      {
+        keys: ['Enter'],
+        description:
+          'Do the primary action of the row: open the table, the file, or the diff, or connect.',
+      },
+      {
+        keys: ['Ctrl+Enter'],
+        description:
+          'Do the second action of the row: query the first 100 rows, test the connection, or run the statement again.',
+      },
+      {
+        keys: ['F2'],
+        description: 'Rename or edit the row, where the view supports it.',
+      },
+      {
+        keys: ['Delete'],
+        description:
+          'Delete or discard the row after a confirmation, where the view supports it.',
+      },
+      { keys: ['F5'], description: 'Read the data of the view again.' },
+      {
+        keys: ['Shift+F10', 'Menu'],
+        description: 'Open the context menu of the row.',
+      },
+      {
+        keys: ['Ctrl+F', '/'],
+        description: 'Move the focus to the filter of the view.',
+      },
+      {
+        keys: ['Escape'],
+        description:
+          'In the filter: clear the text. A second Escape moves the focus to the rows. In the rows: close the preview tab.',
+      },
+      {
+        keys: ['Letters', 'Digits'],
+        description:
+          'Type-ahead: move to the next row that starts with the typed text.',
+      },
+    ],
+  },
+  {
     title: 'Lists and menus',
     shortcuts: [
       {
         keys: ['Arrow keys', 'Home', 'End'],
-        description: 'Move in a menu, the file tree, or the command palette.',
+        description: 'Move in a menu or the command palette.',
       },
       {
         keys: ['Right', 'Left'],
-        description: 'Open or close a submenu or a folder.',
+        description: 'Open or close a submenu.',
       },
       { keys: ['Enter'], description: 'Run the selected item.' },
       {

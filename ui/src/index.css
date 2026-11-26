@@ -1086,49 +1086,11 @@ body {
   color: var(--syntax-type);
 }
 
-/* File tree */
+/* File tree. A file has a space in place of the chevron of a folder. */
 
-.files {
-  margin-bottom: 1rem;
-}
-
-.files__tree,
-.files__tree ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.files__item {
-  display: block;
-  width: 100%;
-  padding: 0.15rem 0.4rem;
-  overflow: hidden;
-  border: 0;
-  border-radius: 3px;
-  background: none;
-  color: inherit;
-  font: inherit;
-  font-size: 0.85rem;
-  text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.files__item:hover,
-.files__item[aria-current='true'] {
-  background: var(--color-surface);
-}
-
-.files__note {
-  padding: 0.15rem 0.4rem;
-  color: var(--color-text-muted);
-  font-size: 0.85rem;
-}
-
-.files__note--error {
-  color: var(--color-danger);
+.files__spacer {
+  flex: none;
+  width: 16px;
 }
 
 /* Results views and history */
