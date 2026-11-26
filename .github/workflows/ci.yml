@@ -42,7 +42,7 @@ jobs:
       - uses: ./.github/actions/build-and-test
         with:
           artifact-name: tabloxide-linux
-          executable: target/release/tabloxide
+          executable: release/tabloxide
 
   linux-fork:
     name: Build and test (Linux, pull request from a fork)
@@ -54,7 +54,7 @@ jobs:
       - uses: ./.github/actions/build-and-test
         with:
           artifact-name: tabloxide-linux
-          executable: target/release/tabloxide
+          executable: release/tabloxide
 
   macos:
     name: Build and test (macOS)
@@ -65,7 +65,7 @@ jobs:
       - uses: ./.github/actions/build-and-test
         with:
           artifact-name: tabloxide-macos
-          executable: target/release/tabloxide
+          executable: release/tabloxide
 
   windows:
     name: Build and test (Windows)
@@ -76,4 +76,4 @@ jobs:
       - uses: ./.github/actions/build-and-test
         with:
           artifact-name: tabloxide-windows
-          executable: target/release/tabloxide.exe
+          executable: release/tabloxide.exe

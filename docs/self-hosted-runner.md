@@ -25,6 +25,21 @@ The macOS minutes count 10 times and the Windows minutes count 2 times on a priv
 - **A job uses the CPU and the memory of the server.** The service of the runner has limits: by default 3 CPU cores and 8 GB of memory, with a lower priority than the other processes. A Rust build can be slow with these limits.
 - **The disk fills.** The runner keeps its work folder, the Rust toolchains, the Cargo cache, and the images of the test databases. Keep at least 30 GB free. The debug build and the release build of the workspace are large.
 
+## Rust build cache
+
+The runner keeps the Rust build between jobs in `~gha-runner/.cache/tabloxide-ci/target`. A job thus compiles only the crates that changed, not all the dependencies. The GitHub-hosted runners use the GitHub cache (`Swatinem/rust-cache`) instead.
+
+The step "Choose the Cargo target folder" of `.github/actions/build-and-test` controls the folder:
+
+- When the Rust version changes, the step deletes the folder. The old build files are of no use then.
+- When the folder is larger than 40 GB, the step deletes it. The next job then compiles everything again. To change the limit, change `TARGET_LIMIT_GB` in the step.
+
+To clear the cache by hand, run this on the server as root:
+
+```sh
+rm -rf /home/gha-runner/.cache/tabloxide-ci
+```
+
 If the repository becomes public, think again about the runner. Then the GitHub-hosted runners cost nothing, and the risks of the runner are not necessary.
 
 ## Install

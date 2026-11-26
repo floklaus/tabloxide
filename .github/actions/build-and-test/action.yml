@@ -8,7 +8,7 @@ inputs:
     description: Name of the artifact with the installers
     required: true
   executable:
-    description: Path of the built program for the smoke test
+    description: Path of the built program for the smoke test, relative to the Cargo target folder
     required: true
 
 runs:
@@ -35,7 +35,46 @@ runs:
       with:
         components: rustfmt, clippy
 
+    # A GitHub-hosted runner starts empty. It gets the Rust build from the GitHub cache.
     - uses: Swatinem/rust-cache@v2
+      if: runner.environment == 'github-hosted'
+
+    # The self-hosted runner keeps the Rust build between jobs, in a folder outside
+    # the workspace. actions/checkout cleans the workspace and would delete target/.
+    # One runner does one job at a time. Cargo also locks the folder during a build.
+    # The step clears the folder when the Rust version changes, or when the folder
+    # is larger than the limit, because old build files stay in it.
+    - name: Choose the Cargo target folder
+      shell: bash
+      run: |
+        if [ "$RUNNER_ENVIRONMENT" != self-hosted ]; then
+          echo "TARGET_DIR=target" >> "$GITHUB_ENV"
+          exit 0
+        fi
+        dir="$HOME/.cache/tabloxide-ci/target"
+        stamp="$HOME/.cache/tabloxide-ci/rustc-version"
+        version="$(rustc -vV)"
+        if [ -d "$dir" ] && [ "$(cat "$stamp" 2>/dev/null)" != "$version" ]; then
+          echo "The Rust version changed. Clearing $dir."
+          rm -rf "$dir"
+        fi
+        if [ -d "$dir" ]; then
+          size_gb="$(du -s --block-size=1G "$dir" | cut -f1)"
+          echo "The Cargo target folder has $size_gb GB."
+          if [ "$size_gb" -gt "$TARGET_LIMIT_GB" ]; then
+            echo "The folder is larger than $TARGET_LIMIT_GB GB. Clearing $dir."
+            rm -rf "$dir"
+          fi
+        fi
+        mkdir -p "$dir"
+        printf '%s' "$version" > "$stamp"
+        {
+          echo "CARGO_TARGET_DIR=$dir"
+          echo "TARGET_DIR=$dir"
+          echo "CARGO_INCREMENTAL=0"
+        } >> "$GITHUB_ENV"
+      env:
+        TARGET_LIMIT_GB: '40'
 
     - name: Install Node dependencies
       shell: bash
@@ -94,14 +133,14 @@ runs:
     - name: Smoke test (Linux)
       if: runner.os == 'Linux'
       shell: bash
-      run: xvfb-run -a node scripts/smoke-start.mjs "$EXECUTABLE"
+      run: xvfb-run -a node scripts/smoke-start.mjs "$TARGET_DIR/$EXECUTABLE"
       env:
         EXECUTABLE: ${{ inputs.executable }}
 
     - name: Smoke test (macOS and Windows)
       if: runner.os != 'Linux'
       shell: bash
-      run: node scripts/smoke-start.mjs "$EXECUTABLE"
+      run: node scripts/smoke-start.mjs "$TARGET_DIR/$EXECUTABLE"
       env:
         EXECUTABLE: ${{ inputs.executable }}
 
@@ -110,10 +149,10 @@ runs:
       with:
         name: ${{ inputs.artifact-name }}
         path: |
-          target/release/bundle/**/*.deb
-          target/release/bundle/**/*.rpm
-          target/release/bundle/**/*.AppImage
-          target/release/bundle/**/*.dmg
-          target/release/bundle/**/*.msi
-          target/release/bundle/**/*-setup.exe
+          ${{ env.TARGET_DIR }}/release/bundle/**/*.deb
+          ${{ env.TARGET_DIR }}/release/bundle/**/*.rpm
+          ${{ env.TARGET_DIR }}/release/bundle/**/*.AppImage
+          ${{ env.TARGET_DIR }}/release/bundle/**/*.dmg
+          ${{ env.TARGET_DIR }}/release/bundle/**/*.msi
+          ${{ env.TARGET_DIR }}/release/bundle/**/*-setup.exe
         if-no-files-found: error
