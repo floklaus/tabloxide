@@ -255,6 +255,8 @@ export type ActionContext = ActionContext_Serialize | ActionContext_Deserialize;
 export type ActionContext_Deserialize = 
 /**  A statement that failed, and the error of the database. */
 { type: "query-error"; statement: string; message: string; 
+/**  More text of the database about the error. */
+detail?: string | null; 
 /**
  *  The position of the error in the statement: the number of the character,
  *  from 1.
@@ -273,6 +275,8 @@ code?: string | null } |
 export type ActionContext_Serialize = 
 /**  A statement that failed, and the error of the database. */
 { type: "query-error"; statement: string; message: string; 
+/**  More text of the database about the error. */
+detail: string | null; 
 /**
  *  The position of the error in the statement: the number of the character,
  *  from 1.

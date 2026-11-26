@@ -35,6 +35,7 @@ const ERROR: ActionContext = {
   type: 'query-error',
   statement: 'select o.totl from orders o',
   message: 'column o.totl does not exist',
+  detail: null,
   position: 8,
   hint: null,
   code: '42703',

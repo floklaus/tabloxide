@@ -493,6 +493,7 @@ mod tests {
             context: Some(tabloxide_assistant::ActionContext::QueryError {
                 statement: "select".to_owned(),
                 message: "syntax error".to_owned(),
+                detail: None,
                 position: None,
                 hint: None,
                 code: None,

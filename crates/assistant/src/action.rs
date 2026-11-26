@@ -19,6 +19,8 @@ pub enum ActionContext {
     QueryError {
         statement: String,
         message: String,
+        /// More text of the database about the error.
+        detail: Option<String>,
         /// The position of the error in the statement: the number of the character,
         /// from 1.
         position: Option<u32>,
@@ -49,6 +51,7 @@ impl ActionContext {
             Self::QueryError {
                 statement,
                 message,
+                detail,
                 position,
                 hint,
                 code,
@@ -59,6 +62,9 @@ impl ActionContext {
                     statement.clone(),
                     format!("Error message: {message}"),
                 ];
+                if let Some(detail) = detail {
+                    lines.push(format!("Detail: {detail}"));
+                }
                 if let Some(position) = position {
                     lines.push(format!("Position: character {position} of the statement"));
                 }
@@ -173,6 +179,7 @@ mod tests {
         ActionContext::QueryError {
             statement: "select o.totl from orders o".to_owned(),
             message: "column o.totl does not exist".to_owned(),
+            detail: Some("The table orders has no such column.".to_owned()),
             position: Some(8),
             hint: Some("Perhaps you meant to reference the column \"o.total\".".to_owned()),
             code: Some("42703".to_owned()),
@@ -187,6 +194,7 @@ mod tests {
             text,
             "<query_error>\nStatement:\nselect o.totl from orders o\n\
              Error message: column o.totl does not exist\n\
+             Detail: The table orders has no such column.\n\
              Position: character 8 of the statement\n\
              Hint of the database: Perhaps you meant to reference the column \"o.total\".\n\
              Error code: 42703\n</query_error>"
@@ -198,6 +206,7 @@ mod tests {
         let context = ActionContext::QueryError {
             statement: "x".to_owned(),
             message: "syntax error".to_owned(),
+            detail: None,
             position: None,
             hint: None,
             code: None,

@@ -485,6 +485,12 @@ Status of stage 1 on 2026-11-25: stage 1 is complete in code.
 * The answer goes to the panel. Its SQL block gets "Replace in the editor". This replaces the text of the statement that failed. The UI keeps the range of that statement with the error.
 * If the editor text in that range changed after the error, "Replace in the editor" is not available. Then "Copy" stays available.
 
+Status of stage 2 on 2026-11-25: stage 2 is complete in code.
+
+* "Explain and fix" is on an error of the kind `database` or `other`. A cancel, a timeout, or a lost connection does not get it.
+* The request also sends the detail of the error.
+* "Replace in the editor" is available only while all text of the tab is the same as at the run. A check of the range of the statement only is not sufficient, because text after the statement does not change the range.
+
 **Stage 3: editor (1.5 weeks).**
 
 * `Ctrl+I` opens an instruction field at the selection. Without a selection, the statement at the cursor is the selection. The UI finds it with the statement reader of the completion.

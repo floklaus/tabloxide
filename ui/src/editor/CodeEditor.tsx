@@ -49,6 +49,11 @@ export type CodeEditorHandle = {
   focusAt: (offset: number) => void
   /** Replaces the selection with `text` and gives the focus to the editor. */
   insertText: (text: string) => void
+  /**
+   * Replaces the text from `from` to `to` with `text`, selects the new text, and
+   * gives the focus to the editor. The undo history keeps the change.
+   */
+  replaceRange: (from: number, to: number, text: string) => void
   /** Formats the selection, or all text if there is no selection. */
   format: () => void
   /** The selection, or all text if there is no selection. */
@@ -323,6 +328,20 @@ export function CodeEditor(props: CodeEditorProps) {
         ...view.state.replaceSelection(text),
         scrollIntoView: true,
         userEvent: 'input.paste',
+      })
+      view.focus()
+    },
+    replaceRange: (from, to, text) => {
+      const view = viewRef.current
+      if (!view) return
+      const length = view.state.doc.length
+      const start = Math.min(from, length)
+      const end = Math.min(to, length)
+      view.dispatch({
+        changes: { from: start, to: end, insert: text },
+        selection: { anchor: start, head: start + text.length },
+        scrollIntoView: true,
+        userEvent: 'input.replace',
       })
       view.focus()
     },

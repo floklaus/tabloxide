@@ -23,6 +23,8 @@ export type AssistantMessage = {
   context?: ActionContext
   /** What the request of this message sent, for example "Sent: your request." */
   sent?: string
+  /** The text in the editor that a code block of the answer can replace. */
+  replace?: ReplaceTarget
   /** A remark of the application about the message, for example that it is not complete. */
   note?: string
 }
@@ -222,12 +224,28 @@ export function usesSchema(task: RequestTask): boolean {
   return PHASES[task].includes('reading-schema')
 }
 
+/**
+ * A text of a tab that a code block of the answer can replace, for example the
+ * statement that failed. The replace is possible only while all text of the tab
+ * is the same as `document`. A change at a different place can move the range.
+ */
+export type ReplaceTarget = {
+  tabId: string
+  tabTitle: string
+  from: number
+  to: number
+  /** All text of the tab, for which `from` and `to` are correct. */
+  document: string
+}
+
 /** A request of an AI action, for example "Explain and fix" of a query error. */
 export type ActionRequest = {
   task: RequestTask
   /** The request text. The panel shows it as the message of the user. */
   text: string
   context?: ActionContext
+  /** The text that the answer can replace. It does not go to the AI service. */
+  replace?: ReplaceTarget
 }
 
 const MAX_TITLE = 48
@@ -338,6 +356,7 @@ export function createSession(): SessionStore {
       task: Task,
       tab: Tab | undefined,
       context?: ActionContext,
+      replace?: ReplaceTarget,
     ) => {
       const id = nextAskId++
       activeAskId = id
@@ -359,7 +378,12 @@ export function createSession(): SessionStore {
       set((state) => ({
         messages: [
           ...state.messages,
-          { role: 'user', text, ...(context ? { context } : {}) },
+          {
+            role: 'user',
+            text,
+            ...(context ? { context } : {}),
+            ...(replace ? { replace } : {}),
+          },
         ],
         answer: '',
         status: 'waiting',
@@ -513,15 +537,11 @@ export function createSession(): SessionStore {
         await ask(text, 'sql', activeTab())
       },
 
-      runAction: async ({ task, text, context }) => {
+      runAction: async ({ task, text, context, replace }) => {
         if (get().status !== 'idle') return false
         // A Git task needs no database. Thus it does not connect the tab.
-        await ask(
-          text,
-          task,
-          usesSchema(task) ? activeTab() : undefined,
-          context,
-        )
+        const tab = usesSchema(task) ? activeTab() : undefined
+        await ask(text, task, tab, context, replace)
         return true
       },
 

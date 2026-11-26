@@ -1,3 +1,5 @@
+import { AiAction } from '../assistant/AiAction'
+import type { ActionRequest } from '../assistant/assistantStore'
 import { DiffView } from '../git/DiffView'
 import { PlanView } from '../plan/PlanView'
 import { HistoryPanel } from '../history/HistoryPanel'
@@ -9,6 +11,7 @@ import {
 import type { QueryError, StatementReport } from '../query/queryStore'
 import type { Location } from '../bindings'
 import { TableDetail } from '../schema/TableDetail'
+import { sqlTabForTools } from '../tabs/tabsStore'
 import { ResultGrid } from './ResultGrid'
 import { useResultsViewStore, type ResultsView } from './resultsViewStore'
 
@@ -49,9 +52,52 @@ const ERROR_TITLES: Record<QueryError['kind'], string> = {
   other: 'The statement failed',
 }
 
-function ErrorMessage(props: { error: QueryError; location: Location | null }) {
-  const { error, location } = props
+/** The errors that the AI can explain. A cancel or a lost connection is not one. */
+const FIXABLE: ReadonlySet<QueryError['kind']> = new Set(['database', 'other'])
+
+/** Makes the request of "Explain and fix" for the statement that failed. */
+function fixRequest(
+  error: QueryError,
+  range: StatementReport['range'],
+): ActionRequest {
+  const sql = activeQueryStore().getState().ranSql
+  const original = sql.slice(range.from, range.to)
+  const tab = sqlTabForTools()
+  return {
+    task: 'query-error',
+    text: 'Explain the error and fix the statement.',
+    context: {
+      type: 'query-error',
+      statement: original,
+      message: error.message,
+      detail: error.detail,
+      position: error.position,
+      hint: error.hint,
+      code: error.code,
+    },
+    ...(tab
+      ? {
+          replace: {
+            tabId: tab.id,
+            tabTitle: tab.title,
+            from: range.from,
+            to: range.to,
+            document: sql,
+          },
+        }
+      : {}),
+  }
+}
+
+function ErrorMessage(props: {
+  error: QueryError
+  location: Location | null
+  /** The statement that failed. Without it, the AI action is not available. */
+  range?: StatementReport['range']
+}) {
+  const { error, location, range } = props
   const setJumpTo = useQuery((state) => state.setJumpTo)
+  const canFix = range !== undefined && FIXABLE.has(error.kind)
   return (
     <div className="message message--error" role="alert">
       <p className="message__title">{ERROR_TITLES[error.kind]}</p>
@@ -61,14 +107,25 @@ function ErrorMessage(props: { error: QueryError; location: Location | null }) {
       {error.code && (
         <p className="message__detail">Error code: {error.code}</p>
       )}
-      {location && (
-        <button
-          type="button"
-          className="link-button"
-          onClick={() => setJumpTo(location.offset)}
-        >
-          Go to line {location.line}, column {location.column}
-        </button>
+      {(location || canFix) && (
+        <div className="message__actions">
+          {canFix && (
+            <AiAction
+              label="Explain and fix"
+              title="The AI explains the error and proposes a fix. The request sends the statement, the error, and the structure of the database. It sends no rows."
+              request={() => fixRequest(error, range)}
+            />
+          )}
+          {location && (
+            <button
+              type="button"
+              className="link-button"
+              onClick={() => setJumpTo(location.offset)}
+            >
+              Go to line {location.line}, column {location.column}
+            </button>
+          )}
+        </div>
       )}
     </div>
   )
@@ -119,7 +176,13 @@ function StatementView(props: { statement: StatementReport; index: number }) {
   const { outcome } = statement
 
   if (outcome.type === 'failed') {
-    return <ErrorMessage error={outcome.error} location={outcome.location} />
+    return (
+      <ErrorMessage
+        error={outcome.error}
+        location={outcome.location}
+        range={statement.range}
+      />
+    )
   }
   if (outcome.type === 'command') {
     return (

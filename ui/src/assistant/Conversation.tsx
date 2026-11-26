@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { activeEditor } from '../editor/editorBridge'
+import { sqlTabIdOf, useTabsStore } from '../tabs/tabsStore'
 import { splitAnswer } from './answerSegments'
-import type { AssistantMessage, AssistantStatus } from './assistantSession'
+import type {
+  AssistantMessage,
+  AssistantStatus,
+  ReplaceTarget,
+} from './assistantSession'
 import { useSession, useSessionStore } from './sessionContext'
 import { schemaText } from './sessionText'
 
@@ -23,13 +28,33 @@ async function copyText(text: string): Promise<boolean> {
   }
 }
 
+/**
+ * Tells why the answer cannot replace the text of `target`, or `null` if it can.
+ * The tab must be the SQL tab of the editor, and its text must not have changed.
+ */
+function useReplaceBlock(target: ReplaceTarget | undefined): string | null {
+  return useTabsStore((state) => {
+    if (!target) return null
+    if (sqlTabIdOf(state) !== target.tabId) {
+      return `Open the tab ${target.tabTitle} to replace the statement.`
+    }
+    const tab = state.tabs.find((item) => item.id === target.tabId)
+    if (tab?.content !== target.document) {
+      return 'The text in the editor changed after the run. Copy the SQL.'
+    }
+    return null
+  })
+}
+
 function CodeBlock(props: {
   code: string
   canInsert: boolean
   isComplete: boolean
+  replace?: ReplaceTarget
 }) {
-  const { code, canInsert, isComplete } = props
+  const { code, canInsert, isComplete, replace } = props
   const [copied, setCopied] = useState(false)
+  const replaceBlock = useReplaceBlock(replace)
   return (
     <div className="assistant__block">
       {/* The block can scroll. The keyboard needs the focus to scroll it. */}
@@ -38,6 +63,22 @@ function CodeBlock(props: {
       </pre>
       {canInsert && (
         <div className="assistant__block-actions">
+          {replace && (
+            <button
+              type="button"
+              className="button button--small"
+              disabled={!isComplete || replaceBlock !== null}
+              title={
+                replaceBlock ??
+                'Replace the statement in the editor. The application does not run it.'
+              }
+              onClick={() =>
+                activeEditor()?.replaceRange(replace.from, replace.to, code)
+              }
+            >
+              Replace in the editor
+            </button>
+          )}
           <button
             type="button"
             className="button button--small"
@@ -61,7 +102,14 @@ function CodeBlock(props: {
   )
 }
 
-function Message({ message }: { message: AssistantMessage }) {
+function Message({
+  message,
+  replace,
+}: {
+  message: AssistantMessage
+  /** The text that a code block of the answer can replace. */
+  replace?: ReplaceTarget
+}) {
   const isAssistant = message.role === 'assistant'
   return (
     <div className={`assistant__message assistant__message--${message.role}`}>
@@ -79,6 +127,7 @@ function Message({ message }: { message: AssistantMessage }) {
             code={segment.code}
             canInsert={isAssistant}
             isComplete={segment.isComplete}
+            replace={isAssistant ? replace : undefined}
           />
         ),
       )}
@@ -135,7 +184,12 @@ export function Conversation(props: {
       >
         {!hasConversation && <p className="pane__hint">{emptyHint}</p>}
         {shown.map((message, index) => (
-          <Message key={index} message={message} />
+          <Message
+            key={index}
+            message={message}
+            // An answer can replace the text of the request before it.
+            replace={shown[index - 1]?.replace}
+          />
         ))}
       </div>
 

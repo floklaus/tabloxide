@@ -93,7 +93,19 @@ Do not use **Measure the times** in these conditions. For a full protection, use
 
 A plan read closes an open result of the tab. The results pane then tells you that the assistant closed the result.
 
-## 6. Use sessions
+## 6. Explain and fix a query error
+
+When a statement fails, the results pane shows the error. For an error of the database, the error has the button **Explain and fix**.
+
+1. Select **Explain and fix**. The assistant panel opens.
+2. Read the explanation and the corrected statement.
+3. Select **Replace in the editor** to put the corrected statement in place of the statement that failed. Tabloxide does not run it.
+
+The request sends the statement, the error message, the details of the error, and the structure of the database. It sends no rows.
+
+**Replace in the editor** is available only while the tab of the statement is open and its text is the same as at the run. After a change of the text, use **Copy**.
+
+## 7. Use sessions
 
 Each conversation is a session. Two or more sessions can run at the same time. The sessions stay until you close the workspace. Tabloxide does not store them on disk.
 
@@ -110,7 +122,7 @@ The tab of a session shows these parts:
 
 A request of a session uses the last SQL tab, also when the tab of the session is active. The status bar shows the number of sessions that run.
 
-## 7. Limits
+## 8. Limits
 
 - The model can make mistakes. Examine each statement before you run it, most of all a statement that changes or removes data.
 - The model does not see rows, the number of rows, or the distribution of values, unless a plan shows them.

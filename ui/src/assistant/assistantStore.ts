@@ -12,6 +12,7 @@ import {
 
 export type {
   ActionRequest,
+  ReplaceTarget,
   AssistantMessage,
   AssistantStatus,
   PendingAnalyze,

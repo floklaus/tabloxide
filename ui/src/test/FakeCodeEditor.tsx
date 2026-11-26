@@ -37,6 +37,10 @@ export function CodeEditor(props: CodeEditorProps) {
       onChange(value.slice(0, from) + text + value.slice(to))
       input.focus()
     },
+    replaceRange: (from, to, text) => {
+      onChange(value.slice(0, from) + text + value.slice(to))
+      inputRef.current?.focus()
+    },
   }))
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
