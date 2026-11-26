@@ -28,6 +28,8 @@ type SchemaState = {
   isConnecting: boolean
   error: string | null
   schemas: Load<SchemaInfo[]> | null
+  /** The time of the last read of the schemas, in seconds since 1970. */
+  readAt: number | null
   relations: Record<string, Load<RelationInfo[]>>
   details: Record<string, Load<RelationDetail>>
   expanded: ReadonlySet<string>
@@ -50,6 +52,7 @@ type SchemaState = {
 
 const EMPTY = {
   schemas: null,
+  readAt: null,
   relations: {},
   details: {},
   expanded: new Set<string>(),
@@ -94,7 +97,12 @@ export const useSchemaStore = create<SchemaState>((set, get) => {
     await read(
       id,
       () => commands.schemaList(id),
-      (schemas) => set({ schemas }),
+      (schemas) =>
+        set({
+          schemas,
+          readAt:
+            schemas.status === 'loaded' ? Date.now() / 1000 : get().readAt,
+        }),
     )
   }
 

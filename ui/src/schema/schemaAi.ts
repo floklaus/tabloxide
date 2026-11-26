@@ -4,6 +4,9 @@ import {
   type ActionRequest,
   type SessionStore,
 } from '../assistant/assistantStore'
+import type { QueryLanguage_Serialize as QueryLanguage } from '../bindings'
+import { connectionLanguage } from '../engines/engineStore'
+import { requestRun } from '../query/runConfirm'
 import { sqlTabForTools, useTabsStore } from '../tabs/tabsStore'
 
 type Relation = { schema: string; name: string }
@@ -55,4 +58,34 @@ export async function explainTable(relation: Relation): Promise<void> {
 export async function writeStarterQuery(relation: Relation): Promise<void> {
   const session = await runAiAction(starterQueryRequest(relation))
   if (session) openStarterQuery(relation, session)
+}
+
+/** An SQL identifier in double quotes. A quote in the name doubles. */
+function quoteIdentifier(name: string): string {
+  return `"${name.replace(/"/g, '""')}"`
+}
+
+/** The statement that reads the first 100 rows, in the language of the engine. */
+export function firstRowsStatement(
+  { schema, name }: Relation,
+  language: QueryLanguage,
+): string {
+  if (language === 'mongodb-shell') {
+    return `db.getSiblingDB(${JSON.stringify(schema)}).getCollection(${JSON.stringify(name)}).find().limit(100)`
+  }
+  return `select * from ${quoteIdentifier(schema)}.${quoteIdentifier(name)} limit 100;`
+}
+
+/**
+ * Ctrl+Enter: opens a new tab with the statement that reads the first 100 rows,
+ * and runs it. The run confirmation of the environment applies.
+ */
+export async function queryRows(relation: Relation): Promise<void> {
+  const source = sqlTabForTools()
+  const connectionId = source?.connectionId ?? null
+  const text = firstRowsStatement(relation, connectionLanguage(connectionId))
+  const tabs = useTabsStore.getState()
+  const id = tabs.newTab(`${text}\n`, `${relation.name}: first 100 rows`)
+  tabs.setConnection(id, connectionId)
+  if (connectionId) await requestRun(`${text}\n`, { type: 'all' })
 }

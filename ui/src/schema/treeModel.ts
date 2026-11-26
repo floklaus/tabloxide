@@ -20,6 +20,8 @@ export type TreeRow =
       schema: string
       isSystem: boolean
       isOpen: boolean
+      /** The number of tables and views, after the read. */
+      count: number | null
     }
   | {
       type: 'relation'
@@ -29,8 +31,17 @@ export type TreeRow =
       kind: RelationKind
       isOpen: boolean
     }
-  | { type: 'group'; key: string; label: string }
-  | { type: 'item'; key: string; label: string; detail: string }
+  | {
+      type: 'column'
+      key: string
+      schema: string
+      relation: string
+      name: string
+      /** The type, with `?` for a column that can be NULL, for example `text?`. */
+      typeText: string
+      isPrimaryKey: boolean
+      isForeignKey: boolean
+    }
   | { type: 'note'; key: string; depth: number; text: string; isError: boolean }
 
 export type TreeInput = {
@@ -76,40 +87,65 @@ function note<T>(
   return null
 }
 
-function detailRows(key: string, detail: RelationDetail): TreeRow[] {
-  const item = (group: string, label: string, text: string): TreeRow => ({
-    type: 'item',
-    key: `${key}/${group}/${label}`,
-    label,
-    detail: text,
-  })
-  const group = (label: string, rows: TreeRow[]): TreeRow[] =>
-    rows.length === 0
-      ? []
-      : [{ type: 'group', key: `${key}/${label}`, label }, ...rows]
-  const columns = detail.columns.map((column) => {
-    const flags = [
-      column.data_type,
-      column.is_primary_key ? 'primary key' : '',
-      column.is_nullable ? '' : 'not null',
-    ]
-    return item('c', column.name, flags.filter(Boolean).join(', '))
-  })
-  return [
-    ...columns,
-    ...group(
-      'Indexes',
-      detail.indexes.map((index) =>
-        item('i', index.name, index.is_unique ? 'unique' : ''),
-      ),
-    ),
-    ...group(
-      'Constraints',
-      detail.constraints.map((constraint) =>
-        item('k', constraint.name, constraint.definition),
-      ),
-    ),
-  ]
+/**
+ * Returns the columns of the foreign keys of a relation. A definition starts with
+ * `FOREIGN KEY (a, b)`.
+ */
+export function foreignKeyColumns(detail: RelationDetail): Set<string> {
+  const columns = new Set<string>()
+  for (const constraint of detail.constraints) {
+    if (constraint.kind !== 'foreign-key') continue
+    const match = /FOREIGN KEY\s*\(([^)]*)\)/i.exec(constraint.definition)
+    for (const name of match?.[1].split(',') ?? []) {
+      columns.add(name.trim().replace(/^"|"$/g, ''))
+    }
+  }
+  return columns
+}
+
+/**
+ * Returns the target of the foreign key of each column, for example
+ * `customer (customer_id)`, from definitions such as
+ * `FOREIGN KEY (customer_id) REFERENCES customer(customer_id) ON DELETE CASCADE`.
+ */
+export function foreignKeyTargets(detail: RelationDetail): Map<string, string> {
+  const targets = new Map<string, string>()
+  for (const constraint of detail.constraints) {
+    if (constraint.kind !== 'foreign-key') continue
+    const match =
+      /FOREIGN KEY\s*\(([^)]*)\)\s*REFERENCES\s+([^\s(]+)\s*\(([^)]*)\)/i.exec(
+        constraint.definition,
+      )
+    if (!match) continue
+    const columns = match[1].split(',').map((name) => name.trim())
+    const targetColumns = match[3].split(',').map((name) => name.trim())
+    columns.forEach((column, index) => {
+      targets.set(
+        column.replace(/^"|"$/g, ''),
+        `${match[2]} (${targetColumns[index] ?? targetColumns[0]})`,
+      )
+    })
+  }
+  return targets
+}
+
+function columnRows(
+  key: string,
+  schema: string,
+  relation: string,
+  detail: RelationDetail,
+): TreeRow[] {
+  const foreign = foreignKeyColumns(detail)
+  return detail.columns.map((column) => ({
+    type: 'column',
+    key: `${key}/c/${column.name}`,
+    schema,
+    relation,
+    name: column.name,
+    typeText: `${column.data_type}${column.is_nullable && !column.is_primary_key ? '?' : ''}`,
+    isPrimaryKey: column.is_primary_key,
+    isForeignKey: foreign.has(column.name),
+  }))
 }
 
 function relationRows(input: TreeInput, schema: string): TreeRow[] {
@@ -149,7 +185,7 @@ function relationRows(input: TreeInput, schema: string): TreeRow[] {
     const detailPending = note(`${key}/note`, 2, detail)
     if (detailPending) return [row, detailPending]
     return detail?.status === 'loaded'
-      ? [row, ...detailRows(key, detail.data)]
+      ? [row, ...columnRows(key, schema, relation.name, detail.data)]
       : [row]
   })
 }
@@ -163,12 +199,14 @@ export function buildRows(input: TreeInput): TreeRow[] {
   return input.schemas.data.flatMap((schema) => {
     const key = schemaKey(schema.name)
     const isOpen = input.expanded.has(key)
+    const relations = input.relations[schema.name]
     const row: TreeRow = {
       type: 'schema',
       key,
       schema: schema.name,
       isSystem: schema.is_system,
       isOpen,
+      count: relations?.status === 'loaded' ? relations.data.length : null,
     }
     return isOpen ? [row, ...relationRows(input, schema.name)] : [row]
   })

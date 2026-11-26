@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'vitest'
 import {
   buildRows,
+  foreignKeyColumns,
+  foreignKeyTargets,
   relationKey,
   schemaKey,
   type RelationDetail,
@@ -68,10 +70,8 @@ function labels(rows: ReturnType<typeof buildRows>): string[] {
         return `schema ${row.schema}`
       case 'relation':
         return `relation ${row.name}`
-      case 'group':
-        return `group ${row.label}`
-      case 'item':
-        return `item ${row.label}: ${row.detail}`
+      case 'column':
+        return `column ${row.name}: ${row.typeText}${row.isPrimaryKey ? ' (primary key)' : ''}${row.isForeignKey ? ' (foreign key)' : ''}`
       case 'note':
         return `note ${row.text}`
     }
@@ -139,7 +139,7 @@ describe('buildRows', () => {
     )
   })
 
-  test('shows the columns and the indexes of an open table', () => {
+  test('shows the columns of an open table, with the type and the keys', () => {
     const key = relationKey('public', 'Item')
     const rows = buildRows(
       input({
@@ -151,13 +151,31 @@ describe('buildRows', () => {
     expect(labels(rows)).toEqual([
       'schema public',
       'relation Item',
-      'item id: integer, primary key, not null',
-      'item note: text',
-      'group Indexes',
-      'item item_pkey: unique',
+      'column id: integer (primary key)',
+      'column note: text?',
       'relation order_view',
       'schema pg_catalog',
     ])
+  })
+
+  test('finds the columns and the targets of the foreign keys', () => {
+    const withKeys: RelationDetail = {
+      ...detail,
+      constraints: [
+        {
+          name: 'item_order_fk',
+          kind: 'foreign-key',
+          definition:
+            'FOREIGN KEY (order_id, line) REFERENCES orders(order_id, line_no) ON DELETE CASCADE',
+        },
+      ],
+    }
+
+    expect([...foreignKeyColumns(withKeys)]).toEqual(['order_id', 'line'])
+    expect(Object.fromEntries(foreignKeyTargets(withKeys))).toEqual({
+      order_id: 'orders (order_id)',
+      line: 'orders (line_no)',
+    })
   })
 
   test('gives each row a different key', () => {
