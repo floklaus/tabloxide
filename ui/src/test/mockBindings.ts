@@ -69,6 +69,13 @@ export function createBindingsMock() {
       gitFetch: vi.fn().mockResolvedValue({ status: 'ok', data: '' }),
       gitPull: vi.fn().mockResolvedValue({ status: 'ok', data: '' }),
       gitPush: vi.fn().mockResolvedValue({ status: 'ok', data: '' }),
+      gitConsoleRun: vi.fn(),
+      gitConsoleCancel: vi.fn().mockResolvedValue(null),
+      gitConsoleHistory: vi.fn().mockResolvedValue({ status: 'ok', data: [] }),
+      gitConsoleNames: vi.fn().mockResolvedValue({
+        status: 'ok',
+        data: { branches: [], remotes: [], tags: [], files: [] },
+      }),
       fileList: vi.fn().mockResolvedValue({ status: 'ok', data: [] }),
       fileRead: vi.fn(),
       fileWrite: vi.fn().mockResolvedValue({ status: 'ok', data: null }),

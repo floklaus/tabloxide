@@ -11,6 +11,7 @@ import { toMessage } from '../lib/errors'
 import { usePlanStore } from '../plan/planStore'
 import { activeQueryStore } from '../query/queryStore'
 import { requestRun } from '../query/runConfirm'
+import { useResultsViewStore } from '../results/resultsViewStore'
 import { useSchemaStore } from '../schema/schemaStore'
 import { isDirty, sqlTabForTools, useTabsStore } from '../tabs/tabsStore'
 import { useThemeStore } from '../theme/themeStore'
@@ -436,6 +437,17 @@ export function buildCommands(): Command[] {
       shortcut: 'Ctrl+R',
       isEnabled: always,
       run: () => shell().togglePanel('results'),
+    },
+    {
+      id: 'view.git-console',
+      label: 'Show the Git console',
+      group: 'View',
+      shortcut: 'Ctrl+`',
+      isEnabled: () => useWorkspaceStore.getState().workspace !== null,
+      run: () => {
+        if (!shell().panels.results) shell().togglePanel('results')
+        useResultsViewStore.getState().setView('console')
+      },
     },
     {
       id: 'view.status-bar',

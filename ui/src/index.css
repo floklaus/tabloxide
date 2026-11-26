@@ -3388,3 +3388,131 @@ body {
   margin: 0;
   overflow-wrap: anywhere;
 }
+
+/* ---------- Git console ---------- */
+
+.console {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.console__bar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  padding: 0.25rem 0;
+}
+
+.console__log {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.5rem 0.25rem;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.console__command {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.console__git {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.console__output {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+}
+
+.console__output--error {
+  color: var(--color-danger);
+}
+
+.console__status {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-family: var(--font-ui);
+}
+
+.console__refused {
+  margin: 0.25rem 0 0;
+  padding: 0.5rem 0.6rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+  color: var(--color-danger);
+  font-family: var(--font-ui);
+}
+
+.console__confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.25rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-family: var(--font-ui);
+}
+
+.console__confirm svg {
+  flex: none;
+  color: var(--color-danger);
+}
+
+.console__effect {
+  flex: 1 1 18rem;
+}
+
+.console__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.console__input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.25rem;
+  padding: 0 0.6rem;
+  border: 1px solid var(--color-control-border);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.console__input input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+}
+
+.console__options {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+
+.console__hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}

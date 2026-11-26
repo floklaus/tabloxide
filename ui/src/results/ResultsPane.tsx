@@ -1,6 +1,7 @@
 import { AiAction } from '../assistant/AiAction'
 import type { ActionRequest } from '../assistant/assistantStore'
 import { DiffView } from '../git/DiffView'
+import { GitConsole } from '../git/GitConsole'
 import { PlanView } from '../plan/PlanView'
 import { HistoryPanel } from '../history/HistoryPanel'
 import {
@@ -311,6 +312,7 @@ export function ResultsPane() {
     { id: 'table', label: 'Table' },
     { id: 'plan', label: 'Plan' },
     { id: 'diff', label: 'Diff' },
+    { id: 'console', label: 'Git console' },
   ]
 
   return (
@@ -337,6 +339,7 @@ export function ResultsPane() {
         {view === 'table' && <TableDetail />}
         {view === 'plan' && <PlanView />}
         {view === 'diff' && <DiffView />}
+        {view === 'console' && <GitConsole />}
       </div>
     </section>
   )

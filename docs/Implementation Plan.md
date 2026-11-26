@@ -614,6 +614,15 @@ Completion criteria of M20:
 * A test proves that no command of the console runs a program other than `git` and the askpass helper.
 * `docs/user/` gets a page about the console, with the commands that it refuses and the reason for each.
 
+Status of M20 on 2026-11-26: M20 is complete in code. The user guide is `docs/user/git-console.md`.
+
+* Correction of the plan: for `push`, `-u` is `--set-upstream`. The console accepts it. Only `clone -u` is `--upload-pack`, and the console refuses it.
+* More refusals than the plan: `rebase --exec`, `submodule foreach`, `bisect run`, and `filter-branch` run shell commands. `clone --template` and `clone -c` can add hooks or programs. `config` refuses keys that name a program, because Git runs that program later.
+* The editor check does not need the askpass helper. `GIT_EDITOR` and `GIT_SEQUENCE_EDITOR` name a program that does not exist, so Git fails at once. A test proves that `commit` without a message fails at once.
+* The history is in the cache of the local state, with the key of the workspace.
+* The shortcut is ``Ctrl+` ``.
+* A test that proves that no program other than `git` runs is not possible with the tests of the crate. The tests prove the parts: the word split without a shell, the refusals, the editor, and the alias.
+
 #### Sequence
 
 | Week | Work |
