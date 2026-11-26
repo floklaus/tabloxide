@@ -60,6 +60,16 @@ export const commands = {
 	 *  If `password` is `null`, the password comes from the source that the profile specifies.
 	 */
 	connectionTest: (profile: ConnectionProfile_Deserialize, password: string | null, options?: InvokeOptions) => typedError<ConnectionTestResult, CommandError>(__TAURI_INVOKE("connection_test", { profile, password }, options)),
+	/**
+	 *  Returns the engines that the application can use now: the built-in engines and the
+	 *  installed connectors.
+	 */
+	engineList: (options?: InvokeOptions) => typedError<EngineEntry_Serialize[], CommandError>(__TAURI_INVOKE("engine_list", undefined, options)),
+	/**
+	 *  Removes the installed connector of an engine. Sessions that are open keep their
+	 *  connector process until they close.
+	 */
+	connectorRemove: (engine: Engine, options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("connector_remove", { engine }, options)),
 	/**  Opens a database session for a saved connection. Each query tab has its own session. */
 	sessionOpen: (connectionId: ConnectionId, options?: InvokeOptions) => typedError<SessionOpenResult, CommandError>(__TAURI_INVOKE("session_open", { connectionId }, options)),
 	/**  Closes a database session. This cancels its open result. */
@@ -68,7 +78,7 @@ export const commands = {
 	 *  Returns the statements that a run would execute, with the risk of each destructive
 	 *  statement. This command does not run a statement.
 	 */
-	queryPreview: (sql: string, target: RunTarget, options?: InvokeOptions) => __TAURI_INVOKE<StatementPreview_Serialize[]>("query_preview", { sql, target }, options),
+	queryPreview: (sql: string, target: RunTarget, language: QueryLanguage_Deserialize, options?: InvokeOptions) => __TAURI_INVOKE<StatementPreview_Serialize[]>("query_preview", { sql, target, language }, options),
 	/**
 	 *  Runs the statements that `target` selects from `sql`, in sequence.
 	 *  The run stops at the first failure. The report has one entry for each statement that ran.
@@ -342,6 +352,16 @@ export type BranchInfo_Serialize = {
 	last_commit: number | null,
 };
 
+/**  Functions that a database engine supports. The UI hides a function that is not supported. */
+export type Capabilities = {
+	cancel: boolean,
+	unixSocket: boolean,
+	/**  The database is a file on the machine of the user, not a server. */
+	fileDatabase: boolean,
+	/**  The engine shows the execution plan of an SQL statement with `EXPLAIN`. */
+	explainPlan: boolean,
+};
+
 export type ChangeKind = "added" | "modified" | "deleted" | "renamed" | "copied" | "type-changed";
 
 /**  One message of the conversation. */
@@ -517,7 +537,9 @@ export type ConnectError = {
 };
 
 /**  Category of a connection failure. */
-export type ConnectErrorKind = "authentication" | "missing-secret" | "database-not-found" | "tls" | "unreachable" | "timeout" | "invalid-configuration" | "other";
+export type ConnectErrorKind = "authentication" | "missing-secret" | "database-not-found" | "tls" | "unreachable" | "timeout" | "invalid-configuration" | 
+/**  No connector for the engine of the profile is installed. */
+"connector-missing" | "other";
 
 /**  Stable identifier of a connection profile. */
 export type ConnectionId = string;
@@ -612,18 +634,80 @@ export type EditorPreferences_Serialize = {
 	word_wrap: boolean,
 };
 
-/**  The database engine of a connection. */
-export type Engine = 
-/**  A PostgreSQL server. */
-"postgres" | 
-/**  A DuckDB database file. `database` of the profile is the path of the file. */
-"duckdb";
+/**
+ *  The name of the database engine of a connection, for example `postgres`.
+ * 
+ *  It is a name and not a fixed list, because a connector can add an engine.
+ *  Lower case letters, digits, and `-`.
+ */
+export type Engine = string;
+
+/**  One engine that the application can use now. */
+export type EngineEntry = EngineEntry_Serialize | EngineEntry_Deserialize;
+
+/**  One engine that the application can use now. */
+export type EngineEntry_Deserialize = {
+	info: EngineInfo_Deserialize,
+	source: EngineSource_Deserialize,
+};
+
+/**  One engine that the application can use now. */
+export type EngineEntry_Serialize = {
+	info: EngineInfo_Serialize,
+	source: EngineSource_Serialize,
+};
+
+/**  What a database engine is and what it can do. */
+export type EngineInfo = EngineInfo_Serialize | EngineInfo_Deserialize;
+
+/**  What a database engine is and what it can do. */
+export type EngineInfo_Deserialize = {
+	engine: Engine,
+	/**  Name of the engine for the user, for example `MongoDB`. */
+	displayName: string,
+	language: QueryLanguage_Deserialize,
+	/**  The port of a new connection. `None` for a file engine. */
+	defaultPort?: number | null,
+	capabilities: Capabilities,
+};
+
+/**  What a database engine is and what it can do. */
+export type EngineInfo_Serialize = {
+	engine: Engine,
+	/**  Name of the engine for the user, for example `MongoDB`. */
+	displayName: string,
+	language: QueryLanguage_Serialize,
+	/**  The port of a new connection. `None` for a file engine. */
+	defaultPort: number | null,
+	capabilities: Capabilities,
+};
+
+/**  Where an engine comes from. */
+export type EngineSource = EngineSource_Serialize | EngineSource_Deserialize;
+
+/**  Where an engine comes from. */
+export type EngineSource_Deserialize = 
+/**  The engine is part of the application. */
+{ type: "built-in" } | 
+/**  An installed connector. */
+{ type: "installed"; version: string; isOfficial: boolean; publisher?: string | null } | 
+/**  A connector from the development folder `TABLOXIDE_CONNECTOR_DIR`. */
+{ type: "development"; version: string; folder: string };
+
+/**  Where an engine comes from. */
+export type EngineSource_Serialize = 
+/**  The engine is part of the application. */
+{ type: "built-in" } | 
+/**  An installed connector. */
+{ type: "installed"; version: string; isOfficial: boolean; publisher: string | null } | 
+/**  A connector from the development folder `TABLOXIDE_CONNECTOR_DIR`. */
+{ type: "development"; version: string; folder: string };
 
 /**  Environment marker. The UI shows it before the user runs SQL. */
 export type Environment = "development" | "staging" | "production";
 
 /**  Why the application does not read a plan. */
-export type ExplainRejection = "no-statement" | "many-statements" | "already-explain" | "not-explainable" | "analyze-changes-data";
+export type ExplainRejection = "no-statement" | "many-statements" | "already-explain" | "not-explainable" | "analyze-changes-data" | "not-supported";
 
 /**  Result of a plan read. A statement that fails is a normal result, not a command error. */
 export type ExplainResult = ExplainResult_Serialize | ExplainResult_Deserialize;
@@ -1059,6 +1143,29 @@ export type QueryError_Serialize = {
 	position: number | null,
 };
 
+/**  The query language of a database engine. */
+export type QueryLanguage = QueryLanguage_Serialize | QueryLanguage_Deserialize;
+
+/**  The query language of a database engine. */
+export type QueryLanguage_Deserialize = "sql" | 
+/**  The subset of the MongoDB shell syntax in `crate::mongo`. */
+"mongodb-shell" | 
+/**
+ *  A language that this version of the application does not know. Each statement
+ *  needs a confirmation, and the history does not record it.
+ */
+string;
+
+/**  The query language of a database engine. */
+export type QueryLanguage_Serialize = "sql" | 
+/**  The subset of the MongoDB shell syntax in `crate::mongo`. */
+"mongodb-shell" | 
+/**
+ *  A language that this version of the application does not know. Each statement
+ *  needs a confirmation, and the history does not record it.
+ */
+"unknown";
+
 /**  A recent workspace with the data that the start screen shows. */
 export type RecentWorkspaceInfo = RecentWorkspaceInfo_Serialize | RecentWorkspaceInfo_Deserialize;
 
@@ -1141,7 +1248,11 @@ export type Risk = "drop" | "truncate" | "alter" |
 /**  `COPY ... TO` and `EXPORT DATABASE` write files on a disk. */
 "write-file" | 
 /**  `INSTALL` and `LOAD` add program code to the database engine. */
-"load-extension";
+"load-extension" | 
+/**  A MongoDB `$out` or `$merge` stage replaces or changes the documents of a collection. */
+"overwrite" | 
+/**  The application does not know the statement, so it cannot check it. */
+"unchecked";
 
 export type Role = "user" | "assistant";
 

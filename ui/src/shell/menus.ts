@@ -1,3 +1,4 @@
+import { engineLabel } from '../engines/engineStore'
 import type { Engine, Environment } from '../bindings'
 import { useConnectionStore } from '../connections/connectionStore'
 import { useGitStore } from '../git/gitStore'
@@ -27,8 +28,6 @@ const ENVIRONMENTS: { value: Environment; label: string }[] = [
   { value: 'staging', label: 'Staging' },
   { value: 'production', label: 'Production' },
 ]
-
-const ENGINE_LABELS = { postgres: 'PostgreSQL', duckdb: 'DuckDB' } as const
 
 function action(command: Command): MenuItem {
   return {
@@ -74,8 +73,8 @@ export function connectionItems(filter = ''): MenuItem[] {
 
 /** The engine, with the server version if the tab is connected. */
 function serverText(engine: Engine, version: string | null): string {
-  if (version === null) return ENGINE_LABELS[engine]
-  return engine === 'duckdb' ? `DuckDB ${version}` : `PostgreSQL ${version}`
+  const label = engineLabel(engine)
+  return version === null ? label : `${label} ${version}`
 }
 
 /** Writes the commits to push and to pull, for example "↑1 ↓2". */

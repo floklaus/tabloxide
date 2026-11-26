@@ -73,6 +73,10 @@ pub enum Risk {
     WriteFile,
     /// `INSTALL` and `LOAD` add program code to the database engine.
     LoadExtension,
+    /// A MongoDB `$out` or `$merge` stage replaces or changes the documents of a collection.
+    Overwrite,
+    /// The application does not know the statement, so it cannot check it.
+    Unchecked,
 }
 
 /// The keywords of `statement` that are not in parentheses, in lower case.

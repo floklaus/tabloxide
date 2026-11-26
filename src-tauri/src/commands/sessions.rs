@@ -43,12 +43,16 @@ pub async fn session_open(
         Ok(secret) => secret,
         Err(error) => return Ok(SessionOpenResult::Failed { error }),
     };
-    let adapter = state.adapter(profile.engine);
+    let adapter = match state.adapter(&profile.engine).await {
+        Ok(adapter) => adapter,
+        Err(error) => return Ok(SessionOpenResult::Failed { error }),
+    };
+    let info = adapter.info();
     let connected = adapter
         .connect(&profile, secret.as_ref(), workspace.root())
         .await;
     let session = match connected {
-        Ok(session) => Arc::new(QuerySession::new(session)),
+        Ok(session) => Arc::new(QuerySession::new(session, info.language)),
         Err(error) => return Ok(SessionOpenResult::Failed { error }),
     };
     let server = session.server_info().clone();
@@ -56,7 +60,8 @@ pub async fn session_open(
         session,
         connection_id: connection_id.clone(),
         connection_name: profile.name.clone(),
-        engine: profile.engine,
+        engine: profile.engine.clone(),
+        info,
     });
     Ok(SessionOpenResult::Connected {
         session: SessionInfo {

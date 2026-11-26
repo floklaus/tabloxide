@@ -97,7 +97,7 @@ impl Session for PgSession {
         introspect::relation_detail(&self.client, schema, relation).await
     }
 
-    fn sample_statement(&self, schema: &str, relation: &str, limit: u32) -> String {
+    async fn sample_statement(&self, schema: &str, relation: &str, limit: u32) -> String {
         introspect::sample_statement(schema, relation, limit)
     }
 }

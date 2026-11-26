@@ -133,7 +133,10 @@ pub async fn connection_test(
     };
 
     let workspace = state.workspace()?;
-    let adapter = state.adapter(profile.engine);
+    let adapter = match state.adapter(&profile.engine).await {
+        Ok(adapter) => adapter,
+        Err(error) => return Ok(ConnectionTestResult::Failed { error }),
+    };
     let tested = adapter
         .test_connection(&profile, secret.as_ref(), workspace.root())
         .await;

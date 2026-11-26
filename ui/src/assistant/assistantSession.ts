@@ -1,3 +1,4 @@
+import { connectionLanguage } from '../engines/engineStore'
 import { Channel } from '@tauri-apps/api/core'
 import { createStore, type StoreApi } from 'zustand/vanilla'
 import {
@@ -382,7 +383,11 @@ export function createSession(): SessionStore {
         })
       try {
         const target = activeEditor()?.getTarget() ?? { type: 'all' }
-        const previews = await commands.queryPreview(tab.content, target)
+        const previews = await commands.queryPreview(
+          tab.content,
+          target,
+          connectionLanguage(tab.connectionId),
+        )
         const first = previews[0]
         const last = previews[previews.length - 1]
         const statement = first

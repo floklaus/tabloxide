@@ -25,6 +25,8 @@ pub enum ExplainRejection {
          that reads data. Use EXPLAIN without ANALYZE for this statement."
     )]
     AnalyzeChangesData,
+    #[error("The application shows a plan only for PostgreSQL and DuckDB.")]
+    NotSupported,
 }
 
 /// First keywords of the statements for which the application reads a plan.
@@ -86,19 +88,20 @@ pub fn explain_statement(sql: &str, analyze: bool) -> Result<String, ExplainReje
 pub fn explain_json_statement(
     sql: &str,
     analyze: bool,
-    engine: Engine,
+    engine: &Engine,
 ) -> Result<String, ExplainRejection> {
     let text = explain_statement(sql, analyze)?;
     // PostgreSQL adds the output columns with VERBOSE, and the block reads of the
     // cache and the disk with BUFFERS. DuckDB does not know these options.
-    let (prefix, options) = match (engine, analyze) {
-        (Engine::Postgres, true) => (
+    let (prefix, options) = match (engine.as_str(), analyze) {
+        (Engine::POSTGRES, true) => (
             "EXPLAIN ANALYZE ",
             "EXPLAIN (ANALYZE, VERBOSE, BUFFERS, FORMAT JSON) ",
         ),
-        (Engine::Postgres, false) => ("EXPLAIN ", "EXPLAIN (VERBOSE, FORMAT JSON) "),
-        (Engine::Duckdb, true) => ("EXPLAIN ANALYZE ", "EXPLAIN (ANALYZE, FORMAT JSON) "),
-        (Engine::Duckdb, false) => ("EXPLAIN ", "EXPLAIN (FORMAT JSON) "),
+        (Engine::POSTGRES, false) => ("EXPLAIN ", "EXPLAIN (VERBOSE, FORMAT JSON) "),
+        (Engine::DUCKDB, true) => ("EXPLAIN ANALYZE ", "EXPLAIN (ANALYZE, FORMAT JSON) "),
+        (Engine::DUCKDB, false) => ("EXPLAIN ", "EXPLAIN (FORMAT JSON) "),
+        _ => return Err(ExplainRejection::NotSupported),
     };
     // `explain_statement` always starts its text with the prefix.
     let statement = text.strip_prefix(prefix).unwrap_or(&text);
@@ -171,15 +174,15 @@ mod tests {
     #[test]
     fn asks_postgres_for_the_plan_as_json_with_all_details() {
         assert_eq!(
-            explain_json_statement("select * from t;", false, Engine::Postgres).unwrap(),
+            explain_json_statement("select * from t;", false, &Engine::postgres()).unwrap(),
             "EXPLAIN (VERBOSE, FORMAT JSON) select * from t"
         );
         assert_eq!(
-            explain_json_statement("select * from t", true, Engine::Postgres).unwrap(),
+            explain_json_statement("select * from t", true, &Engine::postgres()).unwrap(),
             "EXPLAIN (ANALYZE, VERBOSE, BUFFERS, FORMAT JSON) select * from t"
         );
         assert_eq!(
-            explain_json_statement("delete from t", true, Engine::Postgres),
+            explain_json_statement("delete from t", true, &Engine::postgres()),
             Err(ExplainRejection::AnalyzeChangesData)
         );
     }
@@ -187,11 +190,11 @@ mod tests {
     #[test]
     fn asks_duckdb_for_the_plan_as_json_without_postgres_options() {
         assert_eq!(
-            explain_json_statement("select * from t;", false, Engine::Duckdb).unwrap(),
+            explain_json_statement("select * from t;", false, &Engine::duckdb()).unwrap(),
             "EXPLAIN (FORMAT JSON) select * from t"
         );
         assert_eq!(
-            explain_json_statement("select * from t", true, Engine::Duckdb).unwrap(),
+            explain_json_statement("select * from t", true, &Engine::duckdb()).unwrap(),
             "EXPLAIN (ANALYZE, FORMAT JSON) select * from t"
         );
     }

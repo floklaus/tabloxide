@@ -14,6 +14,8 @@ pub enum ConnectErrorKind {
     Unreachable,
     Timeout,
     InvalidConfiguration,
+    /// No connector for the engine of the profile is installed.
+    ConnectorMissing,
     Other,
 }
 
@@ -29,6 +31,7 @@ impl ConnectErrorKind {
             Self::Unreachable => "Check the host, the port, and that the server is running.",
             Self::Timeout => "Check the network, or increase the connection timeout.",
             Self::InvalidConfiguration => "Correct the connection settings.",
+            Self::ConnectorMissing => "Install the connector for this engine.",
             Self::Other => "Read the server message for details.",
         }
     }

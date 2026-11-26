@@ -184,7 +184,7 @@ pub(crate) mod tests {
             connect_timeout_secs: 10,
             query_timeout_secs: Some(30),
             read_only: false,
-            engine: tabloxide_core::Engine::Postgres,
+            engine: tabloxide_core::Engine::postgres(),
             params: BTreeMap::from([("application_name".to_owned(), "tabloxide".to_owned())]),
             secret: SecretSource::EnvVar {
                 name: "APP_DB_PASSWORD".to_owned(),
@@ -222,7 +222,7 @@ pub(crate) mod tests {
                 params: BTreeMap::new(),
                 query_timeout_secs: None,
                 read_only: false,
-                engine: tabloxide_core::Engine::Postgres,
+                engine: tabloxide_core::Engine::postgres(),
                 socket_path: Some("/var/run/postgresql".to_owned()),
                 ..profile("b", "Local")
             })

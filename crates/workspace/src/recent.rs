@@ -47,7 +47,7 @@ impl RecentWorkspaceInfo {
         if let Ok(config) = WorkspaceConfig::load(root) {
             for profile in config.connections() {
                 if !engines.contains(&profile.engine) {
-                    engines.push(profile.engine);
+                    engines.push(profile.engine.clone());
                 }
             }
         }
@@ -277,7 +277,7 @@ user = "u"
         let info = RecentWorkspaceInfo::read(&entry);
         let missing = RecentWorkspaceInfo::read(&gone);
 
-        assert_eq!(info.engines, vec![Engine::Postgres, Engine::Duckdb]);
+        assert_eq!(info.engines, vec![Engine::postgres(), Engine::duckdb()]);
         assert!(info.exists);
         assert_eq!(info.opened_at, Some(5));
         assert!(missing.engines.is_empty());

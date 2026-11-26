@@ -21,7 +21,7 @@ With connectors:
 | Topic            | Decision                                                                                                                                                         |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Protocol         | gRPC on a local socket.                                                                                                                                          |
-| Built-in engines | PostgreSQL only. DuckDB and all new engines are connectors. DuckDB is the first connector.                                                                       |
+| Built-in engines | PostgreSQL only. DuckDB and all new engines are connectors. Changed on 2026-11-25: DuckDB stays built in until the measurement of stage 3. |
 | Delivery         | Tabloxide downloads a connector when the user selects its engine. An install from a local file is also possible.                                                 |
 | Download place   | The signed index is at `https://tabloxide.org/connectors/v1/index.json`. The packages are assets of GitHub releases. The index has the full address of each package. |
 | First connector  | MongoDB. DuckDB stays built in until the measurement of stage 3.                                                                                                  |
@@ -120,9 +120,9 @@ Limits that the design does not remove:
 | Stage | Content                                                                                                                                                      | Needs from the product owner                  | Status      |
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------- | ----------- |
 | 1     | The protocol file, the generated code, and its tests.                                                                                                        | Nothing                                       | Complete    |
-| 2     | The SDK and the connector host. The DuckDB connector runs from the development folder. The adapter tests of DuckDB pass through the connector.               | Nothing                                       | Next        |
+| 2     | The SDK and the connector host. A scripted connector process runs the adapter operations through the host. MongoDB, not DuckDB, is the first connector (section 10). | Nothing | Complete |
 | 3     | A measurement: the installer size and the speed of a large result, with DuckDB built in and as a connector. The result decides if the design continues.      | Nothing                                       | Not started |
-| 4     | The core without DuckDB. `Engine` as a name. The connection form and the preferences for connectors.                                                         | Nothing                                       | Not started |
+| 4     | The core without DuckDB. `Engine` as a name. The connection form and the preferences for connectors. | Nothing | `Engine` as a name is complete. The rest is in progress. |
 | 5     | The index file, the download, the checksum, the signature, and the install from a file.                                                                      | A signature key and a place for the downloads | Not started |
 | 6     | The confirmation for connectors from a different source. A guide for people who build a connector.                                                           | Nothing                                       | Not started |
 

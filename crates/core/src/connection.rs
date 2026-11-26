@@ -40,29 +40,67 @@ impl fmt::Display for ConnectionId {
     }
 }
 
-/// The database engine of a connection.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
+/// The name of the database engine of a connection, for example `postgres`.
+///
+/// It is a name and not a fixed list, because a connector can add an engine.
+/// Lower case letters, digits, and `-`.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
-#[serde(rename_all = "kebab-case")]
-pub enum Engine {
-    /// A PostgreSQL server.
-    #[default]
-    Postgres,
-    /// A DuckDB database file. `database` of the profile is the path of the file.
-    Duckdb,
-}
+#[serde(transparent)]
+pub struct Engine(String);
 
 impl Engine {
+    /// The name of the built-in PostgreSQL engine.
+    pub const POSTGRES: &str = "postgres";
+    /// The name of the built-in DuckDB engine.
+    pub const DUCKDB: &str = "duckdb";
+
+    #[must_use]
+    pub fn new(name: impl Into<String>) -> Self {
+        Self(name.into())
+    }
+
+    #[must_use]
+    pub fn postgres() -> Self {
+        Self::new(Self::POSTGRES)
+    }
+
+    #[must_use]
+    pub fn duckdb() -> Self {
+        Self::new(Self::DUCKDB)
+    }
+
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
     /// Returns `true` for the engine that a profile has when it does not name one.
     #[must_use]
     pub fn is_default(&self) -> bool {
-        *self == Self::default()
+        self.0 == Self::POSTGRES
     }
 
-    /// Returns `true` if the database is a file on this machine and not a server.
+    /// Returns `true` if the name has only lower case letters, digits, and `-`,
+    /// and starts with a letter.
     #[must_use]
-    pub fn is_file(self) -> bool {
-        matches!(self, Self::Duckdb)
+    pub fn is_valid_name(name: &str) -> bool {
+        let mut chars = name.chars();
+        chars.next().is_some_and(|c| c.is_ascii_lowercase())
+            && chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+            && name.len() <= 40
+    }
+}
+
+impl Default for Engine {
+    fn default() -> Self {
+        Self::postgres()
+    }
+}
+
+impl fmt::Display for Engine {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
     }
 }
 
@@ -209,7 +247,7 @@ pub(crate) mod tests {
         ConnectionProfile {
             id: ConnectionId::from("11111111-1111-4111-8111-111111111111"),
             name: "Local".to_owned(),
-            engine: Engine::Postgres,
+            engine: Engine::postgres(),
             environment: Environment::Development,
             host: "localhost".to_owned(),
             port: DEFAULT_PORT,
@@ -271,7 +309,7 @@ pub(crate) mod tests {
         let profile: ConnectionProfile = serde_json::from_str(json).unwrap();
         let written = serde_json::to_string(&profile).unwrap();
 
-        assert_eq!(profile.engine, Engine::Postgres);
+        assert_eq!(profile.engine, Engine::postgres());
         assert!(!written.contains("engine"), "{written}");
     }
 
@@ -282,11 +320,31 @@ pub(crate) mod tests {
         let profile: ConnectionProfile = serde_json::from_str(json).unwrap();
         let written = serde_json::to_string(&profile).unwrap();
 
-        assert_eq!(profile.engine, Engine::Duckdb);
-        assert!(profile.engine.is_file());
+        assert_eq!(profile.engine, Engine::duckdb());
         assert_eq!(profile.user, "");
         assert!(written.contains(r#""engine":"duckdb""#), "{written}");
         assert!(!written.contains(r#""user""#), "{written}");
+    }
+
+    #[test]
+    fn an_unknown_engine_name_reads_and_writes_without_a_change() {
+        let json = r#"{"id":"a","name":"n","engine":"mongodb","database":"app"}"#;
+
+        let profile: ConnectionProfile = serde_json::from_str(json).unwrap();
+        let written = serde_json::to_string(&profile).unwrap();
+
+        assert_eq!(profile.engine.as_str(), "mongodb");
+        assert!(written.contains(r#""engine":"mongodb""#), "{written}");
+    }
+
+    #[test]
+    fn engine_names_have_lower_case_letters_digits_and_dashes() {
+        assert!(Engine::is_valid_name("mongodb"));
+        assert!(Engine::is_valid_name("sql-server-2"));
+        assert!(!Engine::is_valid_name(""));
+        assert!(!Engine::is_valid_name("2db"));
+        assert!(!Engine::is_valid_name("Mongo"));
+        assert!(!Engine::is_valid_name("../evil"));
     }
 
     #[test]

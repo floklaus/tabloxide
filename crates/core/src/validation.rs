@@ -90,7 +90,13 @@ fn required_field_issues(profile: &ConnectionProfile) -> Vec<ValidationIssue> {
             "The port must be between 1 and 65535.",
         ),
         (is_blank(&profile.database), "database", "Enter a database."),
-        (is_blank(&profile.user), "user", "Enter a user."),
+        // Only PostgreSQL needs a user. A different server can allow a connection
+        // without authentication.
+        (
+            profile.engine.is_default() && is_blank(&profile.user),
+            "user",
+            "Enter a user.",
+        ),
     ];
     checks
         .into_iter()
@@ -106,7 +112,7 @@ fn param_issues(profile: &ConnectionProfile) -> Vec<ValidationIssue> {
         .filter_map(|key| {
             if is_blank(key) {
                 Some(issue("params", "A parameter name cannot be empty."))
-            } else if RESERVED_PARAMS.contains(&key.as_str()) {
+            } else if profile.engine.is_default() && RESERVED_PARAMS.contains(&key.as_str()) {
                 Some(issue(
                     "params",
                     format!("Set `{key}` in its own field, not as an extra parameter."),
@@ -131,7 +137,13 @@ fn secret_issue(profile: &ConnectionProfile) -> Option<ValidationIssue> {
 /// Returns all problems in the profile. An empty list means that the profile is valid.
 #[must_use]
 pub fn validate_profile(profile: &ConnectionProfile) -> Vec<ValidationIssue> {
-    if profile.engine.is_file() {
+    if !Engine::is_valid_name(profile.engine.as_str()) {
+        return vec![issue(
+            "engine",
+            "The engine name must have only lower case letters, digits, and dashes.",
+        )];
+    }
+    if profile.engine.as_str() == Engine::DUCKDB {
         return file_engine_issues(profile)
             .into_iter()
             .chain(query_timeout_issue(profile))
@@ -141,7 +153,6 @@ pub fn validate_profile(profile: &ConnectionProfile) -> Vec<ValidationIssue> {
 }
 
 fn server_engine_issues(profile: &ConnectionProfile) -> Vec<ValidationIssue> {
-    debug_assert_eq!(profile.engine, Engine::Postgres);
     required_field_issues(profile)
         .into_iter()
         .chain(timeout_issue(
@@ -245,7 +256,7 @@ mod tests {
 
     fn duckdb_profile() -> ConnectionProfile {
         ConnectionProfile {
-            engine: Engine::Duckdb,
+            engine: Engine::duckdb(),
             database: "data/app.duckdb".to_owned(),
             host: String::new(),
             port: 0,
@@ -277,6 +288,27 @@ mod tests {
             fields(&issues),
             ["name", "database", "secret", "query_timeout_secs"]
         );
+    }
+
+    #[test]
+    fn a_connector_engine_needs_no_user() {
+        let profile = ConnectionProfile {
+            engine: Engine::new("mongodb"),
+            user: String::new(),
+            ..sample_profile()
+        };
+
+        assert!(validate_profile(&profile).is_empty());
+    }
+
+    #[test]
+    fn refuses_an_engine_name_that_is_not_valid() {
+        let profile = ConnectionProfile {
+            engine: Engine::new("../bin"),
+            ..sample_profile()
+        };
+
+        assert_eq!(fields(&validate_profile(&profile)), ["engine"]);
     }
 
     #[test]

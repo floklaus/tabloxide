@@ -1,3 +1,4 @@
+import { connectionLanguage } from '../engines/engineStore'
 import { create } from 'zustand'
 import { commands, type Engine } from '../bindings'
 import { activeEditor } from '../editor/editorBridge'
@@ -29,7 +30,8 @@ const INITIAL = {
 /** The one statement at the cursor, or the selected statements. */
 async function targetStatement(content: string): Promise<string> {
   const target = activeEditor()?.getTarget() ?? { type: 'all' as const }
-  const previews = await commands.queryPreview(content, target)
+  const language = connectionLanguage(sqlTabForTools()?.connectionId)
+  const previews = await commands.queryPreview(content, target, language)
   const first = previews[0]
   const last = previews[previews.length - 1]
   return first ? content.slice(first.range.from, last.range.to) : ''

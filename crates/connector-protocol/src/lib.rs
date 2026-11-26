@@ -10,9 +10,14 @@ pub mod v1 {
     tonic::include_proto!("tabloxide.connector.v1");
 }
 
+pub mod convert;
+
 /// The minor version of the protocol that this crate implements. A connector reports
 /// its own value in `DescribeResponse.protocol_minor`.
-pub const PROTOCOL_MINOR: u32 = 0;
+pub const PROTOCOL_MINOR: u32 = 1;
+
+/// The major version of the protocol. It is the `v1` in the package name.
+pub const PROTOCOL_MAJOR: u32 = 1;
 
 /// The name of the environment variable in which Tabloxide gives the token to a
 /// connector. Each request must have this token in the `authorization` header.

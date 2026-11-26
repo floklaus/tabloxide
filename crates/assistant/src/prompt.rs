@@ -1,5 +1,7 @@
 //! The request text for the AI service.
 
+use tabloxide_core::QueryLanguage;
+
 use crate::{
     AssistantError, AssistantErrorKind, ChatMessage, ChatRequest, Effort, Role, SchemaContext,
     SystemPart, Task,
@@ -16,8 +18,20 @@ pub struct Database<'a> {
     pub engine: &'a str,
     /// Version text of the server.
     pub version: &'a str,
+    pub language: QueryLanguage,
     pub schema: &'a SchemaContext,
 }
+
+/// The rules for the MongoDB syntax of Tabloxide. The application runs no JavaScript,
+/// so the assistant must not write it.
+const MONGODB_SHELL_NOTE: &str = "\n\nQuery language: the MongoDB shell syntax of \
+Tabloxide, not SQL. Write one statement per line: `db.<collection>.<method>(…)` with \
+chained calls such as `.sort()` and `.limit()`, `db.getCollection(\"name\")`, \
+`use <database>`, `show collections`, or a command document `{ \"count\": \"users\" }`. \
+Values are JSON with ObjectId(), ISODate(), NumberLong(), NumberDecimal(), and UUID(). \
+The application runs no JavaScript: do not use variables, functions, loops, or `let`. \
+In the schema, a schema is a database and a table is a collection. Use a code block \
+with the language `javascript`.";
 
 const INSTRUCTIONS: &str = "\
 You are the SQL assistant of Tabloxide, a desktop SQL client. The user is a developer \
@@ -64,8 +78,12 @@ fn database_part(database: &Database<'_>) -> String {
     } else {
         String::new()
     };
+    let language_note = match database.language {
+        QueryLanguage::MongodbShell => MONGODB_SHELL_NOTE,
+        QueryLanguage::Sql | QueryLanguage::Unknown => "",
+    };
     format!(
-        "Database engine: {} {}{limit_note}\n\n<schema>\n{}</schema>",
+        "Database engine: {} {}{limit_note}{language_note}\n\n<schema>\n{}</schema>",
         database.engine,
         database.version,
         database.schema.render()
@@ -178,6 +196,7 @@ mod tests {
         let database = Database {
             engine: "PostgreSQL",
             version: "17.2",
+            language: QueryLanguage::Sql,
             schema: &schema,
         };
 
@@ -209,6 +228,7 @@ mod tests {
         let database = Database {
             engine: "DuckDB",
             version: "1.3",
+            language: QueryLanguage::Sql,
             schema: &schema,
         };
 

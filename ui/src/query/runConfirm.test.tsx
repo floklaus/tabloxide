@@ -74,9 +74,39 @@ describe('requestRun', () => {
 
     await requestRun(SQL, { type: 'all' })
 
-    expect(queryPreview).toHaveBeenCalledWith(SQL, { type: 'all' })
+    expect(queryPreview).toHaveBeenCalledWith(SQL, { type: 'all' }, 'sql')
     expect(queryRun).toHaveBeenCalledWith(7, SQL, { type: 'all' })
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  test('checks the statements in the language of the engine of the connection', async () => {
+    setup()
+    useWorkspaceStore.setState({
+      workspace: makeWorkspace([
+        makeProfile({ id: 'c1', name: 'Docs', engine: 'mongodb' }),
+      ]),
+    })
+    queryPreview.mockResolvedValue([preview(null)])
+
+    await requestRun('db.users.find()', { type: 'all' })
+
+    expect(queryPreview).toHaveBeenCalledWith(
+      'db.users.find()',
+      { type: 'all' },
+      'mongodb-shell',
+    )
+  })
+
+  test('asks before a statement that the application cannot check', async () => {
+    setup()
+    queryPreview.mockResolvedValue([preview('unchecked')])
+
+    await requestRun(SQL, { type: 'all' })
+
+    expect(await screen.findByRole('dialog')).toHaveTextContent(
+      'The application cannot check this statement',
+    )
+    expect(queryRun).not.toHaveBeenCalled()
   })
 
   test('asks before a destructive statement, and runs after the confirmation', async () => {

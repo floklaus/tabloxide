@@ -12,7 +12,7 @@ use tabloxide_assistant::{
     ExplainRejection, MAX_DETAILED_RELATIONS, SchemaContext, Task, TextSink, chat_request,
     collect_schema, explain_statement, plan_text,
 };
-use tabloxide_core::{Engine, QueryError, QuerySession, Secret};
+use tabloxide_core::{QueryError, QuerySession, Secret};
 use tauri::ipc::Channel;
 use tauri::{AppHandle, State};
 use tokio::sync::Notify;
@@ -138,13 +138,6 @@ pub async fn assistant_key_delete(
     clear_model_cache(&app, &state).await
 }
 
-fn engine_name(engine: Engine) -> &'static str {
-    match engine {
-        Engine::Postgres => "PostgreSQL",
-        Engine::Duckdb => "DuckDB",
-    }
-}
-
 fn count(value: usize) -> u32 {
     u32::try_from(value).unwrap_or(u32::MAX)
 }
@@ -244,8 +237,9 @@ async fn answer(
         None => None,
     };
     let database = session.as_ref().map(|(entry, schema)| Database {
-        engine: engine_name(entry.engine),
+        engine: &entry.info.display_name,
         version: &entry.session.server_info().version,
+        language: entry.info.language,
         schema,
     });
     if let Some(database) = &database {
@@ -411,6 +405,7 @@ mod tests {
         let database = Database {
             engine: "PostgreSQL",
             version: "17",
+            language: tabloxide_core::QueryLanguage::Sql,
             schema: &schema,
         };
         let ask = Ask {
@@ -544,7 +539,10 @@ mod tests {
 
     fn session(answers: Vec<Scripted>) -> (QuerySession, Arc<tabloxide_core::testing::Probe>) {
         let (session, probe) = ScriptedSession::new(answers);
-        (QuerySession::new(Box::new(session)), probe)
+        (
+            QuerySession::new(Box::new(session), tabloxide_core::QueryLanguage::Sql),
+            probe,
+        )
     }
 
     #[tokio::test]

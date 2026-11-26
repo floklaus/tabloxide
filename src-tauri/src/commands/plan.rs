@@ -32,7 +32,7 @@ pub enum PlanRead {
     },
 }
 
-async fn read(session: &QuerySession, sql: &str, analyze: bool, engine: Engine) -> PlanRead {
+async fn read(session: &QuerySession, sql: &str, analyze: bool, engine: &Engine) -> PlanRead {
     let statement = match explain_json_statement(sql, analyze, engine) {
         Ok(statement) => statement,
         Err(reason) => {
@@ -74,7 +74,7 @@ pub async fn plan_read(
     analyze: bool,
 ) -> Result<PlanRead, CommandError> {
     let entry = state.session_entry(session_id)?;
-    Ok(read(&entry.session, &sql, analyze, entry.engine).await)
+    Ok(read(&entry.session, &sql, analyze, &entry.engine).await)
 }
 
 #[cfg(test)]
@@ -85,14 +85,17 @@ mod tests {
 
     fn session(answers: Vec<Scripted>) -> (QuerySession, Arc<Probe>) {
         let (session, probe) = ScriptedSession::new(answers);
-        (QuerySession::new(Box::new(session)), probe)
+        (
+            QuerySession::new(Box::new(session), tabloxide_core::QueryLanguage::Sql),
+            probe,
+        )
     }
 
     #[tokio::test]
     async fn runs_explain_as_json_and_returns_the_cell_of_the_plan() {
         let (session, probe) = session(vec![Scripted::Rows(1)]);
 
-        let result = read(&session, "select * from item;", true, Engine::Postgres).await;
+        let result = read(&session, "select * from item;", true, &Engine::postgres()).await;
 
         assert_eq!(
             result,
@@ -113,7 +116,7 @@ mod tests {
     async fn a_result_without_rows_is_a_failure() {
         let (session, _probe) = session(vec![Scripted::Rows(0)]);
 
-        let result = read(&session, "select 1", false, Engine::Postgres).await;
+        let result = read(&session, "select 1", false, &Engine::postgres()).await;
 
         assert!(matches!(result, PlanRead::Failed { .. }));
     }
@@ -122,7 +125,7 @@ mod tests {
     async fn rejects_analyze_for_a_statement_that_changes_data() {
         let (session, probe) = session(vec![]);
 
-        let result = read(&session, "delete from item", true, Engine::Postgres).await;
+        let result = read(&session, "delete from item", true, &Engine::postgres()).await;
 
         assert!(matches!(
             result,

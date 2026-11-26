@@ -4,6 +4,7 @@ pub mod app;
 pub mod assistant;
 pub mod assistant_models;
 pub mod connections;
+pub mod engines;
 pub mod files;
 pub mod git;
 pub mod local;

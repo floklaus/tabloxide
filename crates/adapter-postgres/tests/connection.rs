@@ -133,7 +133,7 @@ async fn closed_port_is_an_unreachable_error() {
         connect_timeout_secs: 2,
         query_timeout_secs: None,
         read_only: false,
-        engine: tabloxide_core::Engine::Postgres,
+        engine: tabloxide_core::Engine::postgres(),
         params: BTreeMap::new(),
         secret: SecretSource::None,
     };

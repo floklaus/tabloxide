@@ -5529,6 +5529,7 @@ dependencies = [
  "tabloxide-adapter-duckdb",
  "tabloxide-adapter-postgres",
  "tabloxide-assistant",
+ "tabloxide-connector-host",
  "tabloxide-core",
  "tabloxide-git",
  "tabloxide-workspace",
@@ -5587,8 +5588,21 @@ dependencies = [
 name = "tabloxide-connector-host"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "minisign-verify",
+ "semver",
+ "serde",
+ "serde_json",
+ "specta",
+ "tabloxide-connector-protocol",
+ "tabloxide-connector-sdk",
+ "tabloxide-core",
+ "tempfile",
  "thiserror 2.0.21",
+ "tokio",
+ "toml 1.2.1+spec-1.1.0",
+ "tonic",
+ "uuid",
 ]
 
 [[package]]
@@ -5597,11 +5611,25 @@ version = "0.1.0"
 dependencies = [
  "prost",
  "protox",
+ "tabloxide-core",
  "tokio",
  "tokio-stream",
  "tonic",
  "tonic-prost",
  "tonic-prost-build",
+]
+
+[[package]]
+name = "tabloxide-connector-sdk"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "tabloxide-connector-protocol",
+ "tabloxide-core",
+ "thiserror 2.0.21",
+ "tokio",
+ "tokio-stream",
+ "tonic",
 ]
 
 [[package]]

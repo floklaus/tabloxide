@@ -3,13 +3,14 @@
 use crate::credentials::CredentialRequests;
 use crate::error::CommandError;
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use tabloxide_adapter_duckdb::DuckDbAdapter;
 use tabloxide_adapter_postgres::PostgresAdapter;
 use tabloxide_assistant::{AnthropicProvider, ChatProvider, ModelLister, SchemaContext};
-use tabloxide_core::{ConnectionId, DbAdapter, Engine, QuerySession};
+use tabloxide_connector_host::EngineRegistry;
+use tabloxide_core::{ConnectError, ConnectionId, DbAdapter, Engine, EngineInfo, QuerySession};
 use tabloxide_git::AskpassServer;
 use tabloxide_workspace::{KeyringStore, LocalState, SecretStore, Workspace, WorkspaceWatcher};
 use tokio::sync::Notify;
@@ -24,14 +25,20 @@ pub struct SessionEntry {
     pub connection_id: ConnectionId,
     pub connection_name: String,
     pub engine: Engine,
+    /// What the engine of the session can do, and its query language.
+    pub info: EngineInfo,
 }
+
+/// The environment variable that names the folder of the development connectors.
+/// Only a development build reads it.
+const CONNECTOR_DIR_ENV: &str = "TABLOXIDE_CONNECTOR_DIR";
 
 pub struct AppState {
     workspace: Mutex<Option<Workspace>>,
     secrets: Arc<dyn SecretStore>,
-    postgres: Arc<dyn DbAdapter>,
-    /// This adapter holds the open database files. Thus the application has only one.
-    duckdb: Arc<dyn DbAdapter>,
+    /// The built-in adapters and the connectors. The DuckDB adapter holds the open
+    /// database files. Thus the application has only one registry.
+    engines: Arc<EngineRegistry>,
     sessions: Mutex<HashMap<SessionId, SessionEntry>>,
     next_session_id: AtomicU32,
     local: Mutex<Option<Arc<LocalState>>>,
@@ -52,12 +59,30 @@ pub struct AppState {
 
 impl Default for AppState {
     fn default() -> Self {
+        Self::new(PathBuf::new())
+    }
+}
+
+impl AppState {
+    /// `connectors_dir` is the folder of the installed connectors.
+    pub fn new(connectors_dir: PathBuf) -> Self {
         let anthropic = Arc::new(AnthropicProvider::default());
+        let development_dir = cfg!(debug_assertions)
+            .then(|| std::env::var_os(CONNECTOR_DIR_ENV))
+            .flatten()
+            .map(PathBuf::from);
+        let builtin: Vec<Arc<dyn DbAdapter>> = vec![
+            Arc::new(PostgresAdapter),
+            Arc::new(DuckDbAdapter::default()),
+        ];
         Self {
             workspace: Mutex::new(None),
             secrets: Arc::new(KeyringStore),
-            postgres: Arc::new(PostgresAdapter),
-            duckdb: Arc::new(DuckDbAdapter::default()),
+            engines: Arc::new(EngineRegistry::new(
+                builtin,
+                connectors_dir,
+                development_dir,
+            )),
             sessions: Mutex::new(HashMap::new()),
             next_session_id: AtomicU32::new(1),
             local: Mutex::new(None),
@@ -70,9 +95,7 @@ impl Default for AppState {
             asks: Mutex::new(HashMap::new()),
         }
     }
-}
 
-impl AppState {
     fn lock(&self) -> MutexGuard<'_, Option<Workspace>> {
         self.workspace
             .lock()
@@ -92,12 +115,22 @@ impl AppState {
         Arc::clone(&self.secrets)
     }
 
-    /// Returns the adapter for a database engine.
-    pub fn adapter(&self, engine: Engine) -> Arc<dyn DbAdapter> {
-        match engine {
-            Engine::Postgres => Arc::clone(&self.postgres),
-            Engine::Duckdb => Arc::clone(&self.duckdb),
-        }
+    pub fn engines(&self) -> Arc<EngineRegistry> {
+        Arc::clone(&self.engines)
+    }
+
+    /// Returns the adapter for a database engine. The first call for a connector
+    /// starts its process.
+    ///
+    /// # Errors
+    ///
+    /// Returns a connection error if no connector is installed for the engine, or if
+    /// the connector does not start.
+    pub async fn adapter(&self, engine: &Engine) -> Result<Arc<dyn DbAdapter>, ConnectError> {
+        self.engines
+            .adapter(engine)
+            .await
+            .map_err(ConnectError::from)
     }
 
     fn lock_sessions(&self) -> MutexGuard<'_, HashMap<SessionId, SessionEntry>> {

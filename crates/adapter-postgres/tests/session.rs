@@ -249,7 +249,7 @@ async fn runs_a_script_and_exports_a_result() {
         buffered_rows: 250,
     };
     let (_container, profile) = start_server(false).await;
-    let session = QuerySession::new(connect(&profile).await);
+    let session = QuerySession::new(connect(&profile).await, tabloxide_core::QueryLanguage::Sql);
 
     // A script runs in sequence. The last statement stays open for paged reads.
     let script = "CREATE TABLE n AS SELECT i FROM generate_series(1, 1000) AS i;\n\
@@ -321,7 +321,7 @@ async fn reads_the_structure_of_the_database() {
     ] {
         run(setup.as_mut(), statement).await.unwrap();
     }
-    let session = QuerySession::new(connect(&profile).await);
+    let session = QuerySession::new(connect(&profile).await, tabloxide_core::QueryLanguage::Sql);
 
     // User schemas are before the system schemas.
     let schemas = session.schemas().await.unwrap();

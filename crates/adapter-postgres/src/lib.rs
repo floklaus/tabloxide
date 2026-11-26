@@ -13,7 +13,8 @@ use async_trait::async_trait;
 use std::path::Path;
 use std::time::Duration;
 use tabloxide_core::{
-    Capabilities, ConnectError, ConnectionProfile, DbAdapter, Secret, ServerInfo, Session,
+    Capabilities, ConnectError, ConnectionProfile, DbAdapter, Engine, EngineInfo, QueryLanguage,
+    Secret, ServerInfo, Session,
 };
 
 /// The PostgreSQL database engine.
@@ -22,10 +23,18 @@ pub struct PostgresAdapter;
 
 #[async_trait]
 impl DbAdapter for PostgresAdapter {
-    fn capabilities(&self) -> Capabilities {
-        Capabilities {
-            cancel: true,
-            unix_socket: cfg!(unix),
+    fn info(&self) -> EngineInfo {
+        EngineInfo {
+            engine: Engine::postgres(),
+            display_name: "PostgreSQL".to_owned(),
+            language: QueryLanguage::Sql,
+            default_port: Some(tabloxide_core::DEFAULT_PORT),
+            capabilities: Capabilities {
+                cancel: true,
+                unix_socket: cfg!(unix),
+                file_database: false,
+                explain_plan: true,
+            },
         }
     }
 

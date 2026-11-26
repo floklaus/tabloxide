@@ -1,10 +1,10 @@
 //! A session for one query tab. It holds the open result between page requests.
 
 use crate::csv::export_csv;
-use crate::sql::is_pageable;
 use crate::{
-    CancelHandle, QueryError, QueryErrorKind, RelationDetail, RelationInfo, ResultStream, Row,
-    RunLimits, RunTarget, SchemaInfo, ServerInfo, Session, StatementReport, run_script,
+    CancelHandle, QueryError, QueryErrorKind, QueryLanguage, RelationDetail, RelationInfo,
+    ResultStream, Row, RunLimits, RunTarget, SchemaInfo, ServerInfo, Session, StatementReport,
+    run_script,
 };
 use serde::Serialize;
 use std::sync::Arc;
@@ -61,15 +61,17 @@ impl Inner {
 /// The session runs one operation at a time. `cancel` does not wait for the active operation.
 pub struct QuerySession {
     info: ServerInfo,
+    language: QueryLanguage,
     cancel: Arc<dyn CancelHandle>,
     inner: Mutex<Inner>,
 }
 
 impl QuerySession {
     #[must_use]
-    pub fn new(session: Box<dyn Session>) -> Self {
+    pub fn new(session: Box<dyn Session>, language: QueryLanguage) -> Self {
         Self {
             info: session.server_info().clone(),
+            language,
             cancel: session.cancel_handle(),
             inner: Mutex::new(Inner {
                 session,
@@ -84,11 +86,17 @@ impl QuerySession {
         &self.info
     }
 
+    /// The query language of the engine of the session.
+    #[must_use]
+    pub fn language(&self) -> QueryLanguage {
+        self.language
+    }
+
     /// Closes the open result, then runs the statements that `target` selects.
     pub async fn run(&self, sql: &str, target: RunTarget, limits: RunLimits) -> RunReport {
         let mut inner = self.inner.lock().await;
         inner.close_open_result().await;
-        let output = run_script(inner.session.as_mut(), sql, target, limits).await;
+        let output = run_script(inner.session.as_mut(), self.language, sql, target, limits).await;
         let open_result = output.open.map(|stream| {
             let id = inner.next_result_id;
             inner.next_result_id = id.wrapping_add(1);
@@ -159,7 +167,7 @@ impl QuerySession {
     where
         W: AsyncWrite + Unpin + Send,
     {
-        if !is_pageable(statement) {
+        if !self.language.is_pageable(statement) {
             return Err(QueryError::new(
                 QueryErrorKind::Other,
                 "The export runs the statement again. Thus it is available only for a statement that reads data.",
@@ -219,13 +227,23 @@ impl QuerySession {
     ) -> Option<StatementReport> {
         let mut inner = self.inner.lock().await;
         inner.close_open_result().await;
-        let statement = inner.session.sample_statement(schema, relation, limit);
+        let statement = inner
+            .session
+            .sample_statement(schema, relation, limit)
+            .await;
         let row_limit = usize::try_from(limit).unwrap_or(usize::MAX);
         let limits = RunLimits {
             page_rows: row_limit.saturating_add(1),
             buffered_rows: row_limit,
         };
-        let output = run_script(inner.session.as_mut(), &statement, RunTarget::All, limits).await;
+        let output = run_script(
+            inner.session.as_mut(),
+            self.language,
+            &statement,
+            RunTarget::All,
+            limits,
+        )
+        .await;
         if let Some(stream) = output.open {
             stream.close().await;
         }
@@ -282,7 +300,10 @@ mod tests {
 
     fn session(answers: Vec<Scripted>) -> (QuerySession, Arc<Probe>) {
         let (session, probe) = ScriptedSession::new(answers);
-        (QuerySession::new(Box::new(session)), probe)
+        (
+            QuerySession::new(Box::new(session), QueryLanguage::Sql),
+            probe,
+        )
     }
 
     async fn run(session: &QuerySession, sql: &str) -> RunReport {

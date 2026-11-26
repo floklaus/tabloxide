@@ -13,7 +13,7 @@ pub fn profile(database: &str) -> ConnectionProfile {
     ConnectionProfile {
         id: ConnectionId::from("duck"),
         name: "Duck".to_owned(),
-        engine: Engine::Duckdb,
+        engine: Engine::duckdb(),
         environment: Environment::Development,
         host: String::new(),
         port: 0,

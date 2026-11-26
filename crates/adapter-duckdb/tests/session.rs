@@ -402,14 +402,19 @@ async fn reads_the_structure_of_the_database() {
     assert_eq!(nothing.columns.len(), 0);
 
     // The sample statement has the identifiers in quotes and runs.
-    let sample = session.sample_statement("other", "it's a \"table\"", 5);
+    let sample = session
+        .sample_statement("other", "it's a \"table\"", 5)
+        .await;
     assert!(run(session, &sample).await.is_ok(), "{sample}");
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn runs_a_script_through_the_query_session_and_exports_csv() {
     let adapter = DuckDbAdapter::default();
-    let session = QuerySession::new(connect(&adapter, &memory(), here()).await);
+    let session = QuerySession::new(
+        connect(&adapter, &memory(), here()).await,
+        tabloxide_core::QueryLanguage::Sql,
+    );
     let limits = RunLimits {
         page_rows: 100,
         buffered_rows: 1000,

@@ -17,8 +17,8 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 use tabloxide_core::{
-    Capabilities, ConnectError, ConnectErrorKind, ConnectionProfile, DbAdapter, Secret, ServerInfo,
-    Session,
+    Capabilities, ConnectError, ConnectErrorKind, ConnectionProfile, DbAdapter, Engine, EngineInfo,
+    QueryLanguage, Secret, ServerInfo, Session,
 };
 use tokio::sync::oneshot;
 
@@ -90,10 +90,18 @@ impl DuckDbAdapter {
 
 #[async_trait]
 impl DbAdapter for DuckDbAdapter {
-    fn capabilities(&self) -> Capabilities {
-        Capabilities {
-            cancel: true,
-            unix_socket: false,
+    fn info(&self) -> EngineInfo {
+        EngineInfo {
+            engine: Engine::duckdb(),
+            display_name: "DuckDB".to_owned(),
+            language: QueryLanguage::Sql,
+            default_port: None,
+            capabilities: Capabilities {
+                cancel: true,
+                unix_socket: false,
+                file_database: true,
+                explain_plan: true,
+            },
         }
     }
 

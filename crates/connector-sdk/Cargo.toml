@@ -1,0 +1,21 @@
+[package]
+name = "tabloxide-connector-sdk"
+description = "Makes a Tabloxide database connector from a DbAdapter"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+async-trait = "0.1"
+tabloxide-connector-protocol = { version = "0.1.0", path = "../connector-protocol" }
+tabloxide-core = { version = "0.1.0", path = "../core" }
+thiserror = "2.0.21"
+tokio = { version = "1", features = ["io-std", "io-util", "macros", "net", "rt-multi-thread", "sync"] }
+tokio-stream = { version = "0.1", features = ["net"] }
+tonic = { version = "0.14.9", default-features = false, features = ["router", "transport", "server"] }
+
+[dev-dependencies]
+tabloxide-core = { version = "0.1.0", path = "../core", features = ["testing"] }
+
+[lints]
+workspace = true

@@ -114,7 +114,7 @@ impl Session for DuckSession {
         .await
     }
 
-    fn sample_statement(&self, schema: &str, relation: &str, limit: u32) -> String {
+    async fn sample_statement(&self, schema: &str, relation: &str, limit: u32) -> String {
         crate::catalog::sample_statement(schema, relation, limit)
     }
 }

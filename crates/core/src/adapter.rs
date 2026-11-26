@@ -1,8 +1,8 @@
 //! The database interface that the other parts of the application use.
 
 use crate::{
-    Column, ConnectError, ConnectionProfile, Page, QueryError, RelationDetail, RelationInfo,
-    SchemaInfo, Secret, ServerInfo,
+    Column, ConnectError, ConnectionProfile, Engine, Page, QueryError, QueryLanguage,
+    RelationDetail, RelationInfo, SchemaInfo, Secret, ServerInfo,
 };
 use async_trait::async_trait;
 use serde::Serialize;
@@ -12,15 +12,34 @@ use std::sync::Arc;
 /// Functions that a database engine supports. The UI hides a function that is not supported.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(rename_all = "camelCase")]
 pub struct Capabilities {
     pub cancel: bool,
     pub unix_socket: bool,
+    /// The database is a file on the machine of the user, not a server.
+    pub file_database: bool,
+    /// The engine shows the execution plan of an SQL statement with `EXPLAIN`.
+    pub explain_plan: bool,
+}
+
+/// What a database engine is and what it can do.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(rename_all = "camelCase")]
+pub struct EngineInfo {
+    pub engine: Engine,
+    /// Name of the engine for the user, for example `MongoDB`.
+    pub display_name: String,
+    pub language: QueryLanguage,
+    /// The port of a new connection. `None` for a file engine.
+    pub default_port: Option<u16>,
+    pub capabilities: Capabilities,
 }
 
 /// A database engine.
 #[async_trait]
 pub trait DbAdapter: Send + Sync {
-    fn capabilities(&self) -> Capabilities;
+    fn info(&self) -> EngineInfo;
 
     /// Opens a connection, reads the server version, and closes the connection.
     ///
@@ -71,7 +90,7 @@ pub trait Session: Send {
 
     /// Returns a statement that reads a maximum of `limit` rows of a table or view.
     /// The statement has the identifiers in quotes.
-    fn sample_statement(&self, schema: &str, relation: &str, limit: u32) -> String;
+    async fn sample_statement(&self, schema: &str, relation: &str, limit: u32) -> String;
 }
 
 /// Cancels the active statement of a session.

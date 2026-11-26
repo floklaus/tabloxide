@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import type { Engine, RecentWorkspaceInfo } from '../bindings'
+import type { RecentWorkspaceInfo } from '../bindings'
+import { engineLabel } from '../engines/engineStore'
 import { relativeTime } from '../lib/relativeTime'
 import { Icon, Logo } from '../shell/icons'
 import { ShortcutsDialog } from '../help/ShortcutsDialog'
@@ -7,16 +8,11 @@ import { ThemeToggle } from '../theme/ThemeToggle'
 import { CloneDialog } from './CloneDialog'
 import { useWorkspaceStore } from './workspaceStore'
 
-const ENGINE_LABELS: Record<Engine, string> = {
-  postgres: 'PostgreSQL',
-  duckdb: 'DuckDB',
-}
-
 /** The engines and the time of the last open, for example "PostgreSQL · 2 hours ago". */
 function recentDetail(entry: RecentWorkspaceInfo): string {
   if (!entry.exists) return 'The folder does not exist'
   return [
-    entry.engines.map((engine) => ENGINE_LABELS[engine]).join(', '),
+    entry.engines.map(engineLabel).join(', '),
     entry.opened_at == null ? null : relativeTime(entry.opened_at),
   ]
     .filter(Boolean)

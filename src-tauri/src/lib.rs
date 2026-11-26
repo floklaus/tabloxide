@@ -6,9 +6,10 @@ mod error;
 mod state;
 
 use commands::{
-    app, assistant, assistant_models, connections, files, git, local, plan, queries, schema,
-    sessions, updates, workspace,
+    app, assistant, assistant_models, connections, engines, files, git, local, plan, queries,
+    schema, sessions, updates, workspace,
 };
+use tauri::Manager;
 use tauri_specta::{Builder, ErrorHandlingMode, collect_commands};
 
 /// Builds the typed command set. The TypeScript bindings come from this builder.
@@ -31,6 +32,8 @@ fn specta_builder() -> Builder<tauri::Wry> {
             connections::connection_delete,
             connections::connection_duplicate,
             connections::connection_test,
+            engines::engine_list,
+            engines::connector_remove,
             sessions::session_open,
             sessions::session_close,
             queries::query_preview,
@@ -109,9 +112,10 @@ pub fn run() {
         app = app.plugin(tauri_plugin_updater::Builder::new().build());
     }
 
-    app.manage(state::AppState::default())
-        .invoke_handler(builder.invoke_handler())
+    app.invoke_handler(builder.invoke_handler())
         .setup(move |app| {
+            let connectors = app.path().app_data_dir()?.join("connectors");
+            app.manage(state::AppState::new(connectors));
             builder.mount_events(app);
             Ok(())
         })

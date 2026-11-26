@@ -1,3 +1,4 @@
+import { engineLanguage } from '../engines/engineStore'
 import { create } from 'zustand'
 import {
   commands,
@@ -22,6 +23,8 @@ const RISK_LABELS: Record<Risk, string> = {
   'update-without-where': 'UPDATE without WHERE changes all rows',
   'write-file': 'The statement writes files on the disk',
   'load-extension': 'The statement adds program code to the database engine',
+  overwrite: 'The statement replaces or changes the documents of a collection',
+  unchecked: 'The application cannot check this statement',
 }
 
 export type RiskyStatement = { text: string; reason: string }
@@ -95,7 +98,11 @@ export async function requestRun(
   }
   let previews: StatementPreview_Serialize[]
   try {
-    previews = await commands.queryPreview(sql, target)
+    previews = await commands.queryPreview(
+      sql,
+      target,
+      engineLanguage(connection.engine ?? 'postgres'),
+    )
   } catch (error) {
     // Without the preview, the application cannot know the risk. It does not run.
     activeQueryStore().getState().setNotice(toMessage(error))

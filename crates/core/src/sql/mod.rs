@@ -9,5 +9,5 @@ mod text;
 pub use classify::{
     Risk, can_contain_password, classify_risk, first_keyword, has_word, is_pageable,
 };
-pub use splitter::{Span, split_statements, statement_at};
+pub use splitter::{Span, span_at, split_statements, statement_at};
 pub use text::{Location, byte_to_utf16, char_to_byte, locate, utf16_to_byte};

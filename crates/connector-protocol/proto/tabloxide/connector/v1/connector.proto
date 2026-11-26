@@ -67,6 +67,12 @@ message DescribeResponse {
   // The minor version of this protocol that the connector implements.
   uint32 protocol_minor = 4;
   Capabilities capabilities = 5;
+  // The query language of the engine. Tabloxide knows `sql` and `mongodb-shell`.
+  // For a different language, Tabloxide asks the user before each run.
+  // Since minor version 1.
+  string query_language = 6;
+  // The port of a new connection. No value for a file engine. Since minor version 1.
+  optional uint32 default_port = 7;
 }
 
 // Functions that the engine supports. The UI hides a function that is not supported.
@@ -77,6 +83,9 @@ message Capabilities {
   bool unix_socket = 2;
   // The database is a file on the machine of the user, not a server.
   bool file_database = 3;
+  // The engine shows the plan of an SQL statement with `EXPLAIN (FORMAT JSON)`.
+  // Since minor version 1.
+  bool explain_plan = 4;
 }
 
 // ---------- Connection ----------

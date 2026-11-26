@@ -6,8 +6,8 @@ use serde::Serialize;
 use specta::Type;
 use std::path::{Path, PathBuf};
 use tabloxide_core::{
-    FetchedPage, QueryError, QueryErrorKind, QuerySession, ResultId, RunLimits, RunReport,
-    RunTarget, StatementPreview, preview_run,
+    FetchedPage, QueryError, QueryErrorKind, QueryLanguage, QuerySession, ResultId, RunLimits,
+    RunReport, RunTarget, StatementPreview, preview_run,
 };
 use tabloxide_workspace::entries_from_report;
 use tauri::{AppHandle, State};
@@ -73,8 +73,12 @@ pub async fn query_run(
 /// statement. This command does not run a statement.
 #[tauri::command]
 #[specta::specta]
-pub fn query_preview(sql: String, target: RunTarget) -> Vec<StatementPreview> {
-    preview_run(&sql, target)
+pub fn query_preview(
+    sql: String,
+    target: RunTarget,
+    language: QueryLanguage,
+) -> Vec<StatementPreview> {
+    preview_run(language, &sql, target)
 }
 
 /// Cancels the active statement of a session. The run or the fetch then returns
@@ -180,7 +184,7 @@ mod tests {
 
     fn session(answers: Vec<Scripted>) -> QuerySession {
         let (session, _) = ScriptedSession::new(answers);
-        QuerySession::new(Box::new(session))
+        QuerySession::new(Box::new(session), tabloxide_core::QueryLanguage::Sql)
     }
 
     fn temp_file(name: &str) -> PathBuf {

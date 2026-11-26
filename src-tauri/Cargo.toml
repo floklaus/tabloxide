@@ -18,6 +18,7 @@ specta = "=2.0.0-rc.28"
 specta-typescript = "0.0.15"
 tabloxide-adapter-duckdb = { version = "0.1.0", path = "../crates/adapter-duckdb" }
 tabloxide-adapter-postgres = { version = "0.1.0", path = "../crates/adapter-postgres" }
+tabloxide-connector-host = { version = "0.1.0", path = "../crates/connector-host", features = ["specta"] }
 tabloxide-assistant = { version = "0.1.0", path = "../crates/assistant", features = ["specta"] }
 tabloxide-core = { version = "0.1.0", path = "../crates/core", features = ["specta"] }
 tabloxide-git = { version = "0.1.0", path = "../crates/git", features = ["specta"] }

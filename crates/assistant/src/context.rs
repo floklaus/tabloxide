@@ -282,7 +282,7 @@ mod tests {
     #[tokio::test]
     async fn collect_reads_the_user_schemas_and_stops_the_detail_at_the_limit() {
         let (scripted, _) = ScriptedSession::new(vec![]);
-        let session = QuerySession::new(Box::new(scripted));
+        let session = QuerySession::new(Box::new(scripted), tabloxide_core::QueryLanguage::Sql);
 
         let all = collect_schema(&session, 100).await.unwrap();
         let limited = collect_schema(&session, 1).await.unwrap();

@@ -1,10 +1,7 @@
 //! Runs the statements of a script in sequence on a session.
 
-use crate::sql::{
-    Location, Risk, Span, byte_to_utf16, char_to_byte, classify_risk, is_pageable, locate,
-    split_statements, statement_at, utf16_to_byte,
-};
-use crate::{Column, QueryError, ResultStream, Row, Session};
+use crate::sql::{Location, Risk, Span, byte_to_utf16, char_to_byte, locate, utf16_to_byte};
+use crate::{Column, QueryError, QueryLanguage, ResultStream, Row, Session};
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 
@@ -81,16 +78,18 @@ pub struct RunOutput {
     pub open: Option<Box<dyn ResultStream>>,
 }
 
-fn target_spans(sql: &str, target: RunTarget) -> Vec<Span> {
+fn target_spans(language: QueryLanguage, sql: &str, target: RunTarget) -> Vec<Span> {
     match target {
-        RunTarget::All => split_statements(sql),
-        RunTarget::At { offset } => statement_at(sql, utf16_to_byte(sql, offset))
+        RunTarget::All => language.split(sql),
+        RunTarget::At { offset } => language
+            .statement_at(sql, utf16_to_byte(sql, offset))
             .into_iter()
             .collect(),
         RunTarget::Range { from, to } => {
             let start = utf16_to_byte(sql, from.min(to));
             let end = utf16_to_byte(sql, from.max(to));
-            split_statements(&sql[start..end])
+            language
+                .split(&sql[start..end])
                 .into_iter()
                 .map(|span| Span {
                     start: span.start + start,
@@ -120,12 +119,12 @@ fn text_range(sql: &str, span: Span) -> TextRange {
 /// Returns the statements that `target` selects from `sql`, with the risk of each.
 /// The function does not run a statement. The UI uses it to ask for a confirmation.
 #[must_use]
-pub fn preview_run(sql: &str, target: RunTarget) -> Vec<StatementPreview> {
-    target_spans(sql, target)
+pub fn preview_run(language: QueryLanguage, sql: &str, target: RunTarget) -> Vec<StatementPreview> {
+    target_spans(language, sql, target)
         .into_iter()
         .map(|span| StatementPreview {
             range: text_range(sql, span),
-            risk: classify_risk(&sql[span.start..span.end]),
+            risk: language.classify_risk(&sql[span.start..span.end]),
         })
         .collect()
 }
@@ -165,7 +164,7 @@ async fn run_statement(
         let (_, affected_rows) = read_all(stream.as_mut(), limits.page_rows, 0).await?;
         return Ok((Outcome::Command { affected_rows }, None));
     };
-    if can_stay_open && is_pageable(statement) {
+    if can_stay_open {
         let page = stream.next_page(limits.page_rows).await?;
         let outcome = Outcome::Rows {
             columns,
@@ -191,18 +190,20 @@ async fn run_statement(
 /// The runner reads each other result to its end and keeps a bounded number of rows.
 pub async fn run_script(
     session: &mut dyn Session,
+    language: QueryLanguage,
     sql: &str,
     target: RunTarget,
     limits: RunLimits,
 ) -> RunOutput {
-    let spans = target_spans(sql, target);
+    let spans = target_spans(language, sql, target);
     let mut statements = Vec::with_capacity(spans.len());
     let mut open = None;
     for (index, span) in spans.iter().enumerate() {
         let is_last = index + 1 == spans.len();
         let statement = &sql[span.start..span.end];
         let start = Instant::now();
-        let result = run_statement(session, statement, is_last, limits).await;
+        let can_stay_open = is_last && language.is_pageable(statement);
+        let result = run_statement(session, statement, can_stay_open, limits).await;
         let is_failure = result.is_err();
         let outcome = match result {
             Ok((outcome, stream)) => {
@@ -239,7 +240,7 @@ mod tests {
 
     async fn run(answers: Vec<Scripted>, sql: &str, target: RunTarget) -> (RunOutput, Vec<String>) {
         let (mut session, probe) = ScriptedSession::new(answers);
-        let output = run_script(&mut session, sql, target, LIMITS).await;
+        let output = run_script(&mut session, QueryLanguage::Sql, sql, target, LIMITS).await;
         let executed = probe.executed.lock().unwrap().clone();
         (output, executed)
     }
@@ -374,8 +375,8 @@ mod tests {
     fn the_preview_gives_the_risk_of_each_selected_statement() {
         let sql = "select 1;\ndrop table ü;\ndelete from t";
 
-        let all = preview_run(sql, RunTarget::All);
-        let one = preview_run(sql, RunTarget::At { offset: 12 });
+        let all = preview_run(QueryLanguage::Sql, sql, RunTarget::All);
+        let one = preview_run(QueryLanguage::Sql, sql, RunTarget::At { offset: 12 });
 
         let risks: Vec<Option<Risk>> = all.iter().map(|p| p.risk).collect();
         assert_eq!(

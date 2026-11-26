@@ -54,7 +54,10 @@ impl Connector for FakeConnector {
                 cancel: true,
                 unix_socket: false,
                 file_database: true,
+                explain_plan: false,
             }),
+            query_language: "sql".to_owned(),
+            default_port: None,
         }))
     }
 

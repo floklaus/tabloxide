@@ -6,8 +6,28 @@ edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+async-trait = "0.1"
 minisign-verify = "0.3.0"
+semver = "1.0.28"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+specta = { version = "=2.0.0-rc.28", features = ["derive"], optional = true }
+tabloxide-connector-protocol = { version = "0.1.0", path = "../connector-protocol" }
+tabloxide-core = { version = "0.1.0", path = "../core" }
 thiserror = "2.0.21"
+tokio = { version = "1", features = ["fs", "io-util", "macros", "process", "rt", "sync", "time"] }
+toml = "1.2.1"
+tonic = { version = "0.14.9", default-features = false, features = ["codegen", "transport", "channel"] }
+uuid = { version = "1.26.1", features = ["v4"] }
+
+[features]
+specta = ["dep:specta", "tabloxide-core/specta"]
+
+[dev-dependencies]
+tabloxide-connector-sdk = { version = "0.1.0", path = "../connector-sdk" }
+tabloxide-core = { version = "0.1.0", path = "../core", features = ["testing"] }
+tempfile = "3"
+tokio = { version = "1", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread", "sync", "time"] }
 
 [lints]
 workspace = true

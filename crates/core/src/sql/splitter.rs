@@ -102,14 +102,20 @@ pub fn split_statements(sql: &str) -> Vec<Span> {
 /// on the same line, or else the next statement.
 #[must_use]
 pub fn statement_at(sql: &str, offset: usize) -> Option<Span> {
-    let spans = split_statements(sql);
+    span_at(sql, &split_statements(sql), offset)
+}
+
+/// Returns the span of `spans` at the byte offset `offset` of `text`, with the rules
+/// of `statement_at`. `spans` are the statements of `text` in sequence.
+#[must_use]
+pub fn span_at(text: &str, spans: &[Span], offset: usize) -> Option<Span> {
     if let Some(span) = spans.iter().find(|s| s.start <= offset && offset <= s.end) {
         return Some(*span);
     }
     let before = spans.iter().rev().find(|s| s.end < offset);
     let after = spans.iter().find(|s| s.start > offset);
     let is_on_cursor_line =
-        |span: &Span| !sql.as_bytes()[span.end..offset.min(sql.len())].contains(&b'\n');
+        |span: &Span| !text.as_bytes()[span.end..offset.min(text.len())].contains(&b'\n');
     match (before, after) {
         (Some(before), _) if is_on_cursor_line(before) => Some(*before),
         (_, Some(after)) => Some(*after),
