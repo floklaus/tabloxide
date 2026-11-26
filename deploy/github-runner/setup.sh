@@ -19,7 +19,7 @@
 #   RUNNER_NAME         default: <host name>-tabloxide
 #   RUNNER_USER         default: gha-runner
 #   RUNNER_MEMORY_MAX   default: 8G    hard memory limit of all jobs
-#   RUNNER_CPU_QUOTA    default: 300%  three CPU cores at most
+#   RUNNER_CPU_QUOTA    default: 600%  six CPU cores at most
 #   RUNNER_VERSION      default: the pinned version below
 #   RUNNER_SHA256       default: the checksum of the pinned version
 set -euo pipefail
@@ -32,7 +32,7 @@ REPOSITORY="${RUNNER_REPOSITORY:-https://github.com/floklaus/tabloxide}"
 RUNNER_USER="${RUNNER_USER:-gha-runner}"
 NAME="${RUNNER_NAME:-$(hostname -s)-tabloxide}"
 MEMORY_MAX="${RUNNER_MEMORY_MAX:-8G}"
-CPU_QUOTA="${RUNNER_CPU_QUOTA:-300%}"
+CPU_QUOTA="${RUNNER_CPU_QUOTA:-600%}"
 VERSION="${RUNNER_VERSION:-$PINNED_VERSION}"
 SHA256="${RUNNER_SHA256:-$PINNED_SHA256}"
 LABELS="tabloxide"

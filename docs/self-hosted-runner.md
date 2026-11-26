@@ -22,7 +22,7 @@ The macOS minutes count 10 times and the Windows minutes count 2 times on a priv
 
 - **The runner user can control the server.** The tests start database containers, so the runner user is in the group `docker`. A member of this group has the same rights as root. A workflow job can thus read the data of the other applications of the server, also the data of Coolify.
 - **Only your own code must run on the runner.** CI sends a pull request from a fork to a GitHub-hosted runner. Also set this in the repository: in Settings › Actions › General, at the approval of fork pull request workflows, select the strictest option (approval for all external contributors).
-- **A job uses the CPU and the memory of the server.** The service of the runner has limits: by default 3 CPU cores and 8 GB of memory, with a lower priority than the other processes. A Rust build can be slow with these limits.
+- **A job uses the CPU and the memory of the server.** The service of the runner has limits: by default 6 CPU cores and 8 GB of memory, with a lower priority than the other processes. On a server with 8 cores, 2 cores stay free for the other applications.
 - **The disk fills.** The runner keeps its work folder, the Rust toolchains, the Cargo cache, and the images of the test databases. Keep at least 30 GB free. The debug build and the release build of the workspace are large.
 
 ## Rust build cache
@@ -64,6 +64,12 @@ The script `deploy/github-runner/setup.sh` installs the runner as a systemd serv
 4. In Settings › Actions › Runners, check that the runner is "Idle".
 
 To change the limits, set them before the install, for example `RUNNER_MEMORY_MAX=12G RUNNER_CPU_QUOTA=400%`.
+
+To change the CPU limit of a runner that is installed, run this as root. The change is immediate and stays after a restart:
+
+```sh
+systemctl set-property github-runner-tabloxide CPUQuota=600%
+```
 
 After each job, the runner removes the containers of the tests (the label `org.testcontainers=true`). It does not touch the containers of Coolify.
 
