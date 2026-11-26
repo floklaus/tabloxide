@@ -69,10 +69,9 @@ kbd{display:inline-block;padding:0 5px;border:1px solid #d5d9e0;border-radius:4p
 <div style="padding: 14px 20px 12px; display: flex; flex-direction: column; gap: 4px; border-bottom: 1px solid #e1e4ea">
 <div style="display: flex; align-items: center; gap: 8px">
 <h1 style="margin: 0; font-size: 16px; font-weight: 600; flex-grow: 1">Add the daily sales report</h1>
-<button type="button" style="height: {{d.ctl}}; padding: 0 12px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; font-size: 13px; display: inline-flex; align-items: center; gap: 6px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" stroke="{{accent}}" stroke-width="1.75" fill="none" stroke-linejoin="round"></path></svg>Explain the diff</button>
 <button type="button" aria-haspopup="menu" aria-label="More commit actions" style="width: {{d.ctl}}; height: {{d.ctl}}; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: none"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M5 12h.01 M12 12h.01 M19 12h.01" stroke="#5b6472" stroke-width="2.5" fill="none" stroke-linecap="round"></path></svg></button>
 </div>
-<p style="margin: 0; color: #5b6472; font-size: 12px">Lena Hoff · today 10:14 · <span style="font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace">3f9a2c1</span> · not pushed · 2 files, +14 −3</p>
+<p style="margin: 0; color: #5b6472; font-size: 12px">Lena Hoff · today 10:14 · <span style="font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace">3f9a2c1</span> · not pushed · 2 files</p>
 </div>
 <div style="flex-grow: 1; min-height: 0; display: flex">
 <ul aria-label="Files of 3f9a2c1" style="margin: 0; padding: 8px 4px; list-style: none; width: 240px; flex-shrink: 0; border-right: 1px solid #e1e4ea">
@@ -108,20 +107,20 @@ kbd{display:inline-block;padding:0 5px;border:1px solid #d5d9e0;border-radius:4p
 <div style="height: {{d.bar}}; flex-shrink: 0; display: flex; align-items: center; padding: 0 {{d.pad}}">
 <label style="flex-grow: 1; height: {{d.ctl}}; display: flex; align-items: center; gap: 6px; padding: 0 8px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M20 20l-4-4" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round"></path></svg><input type="search" aria-label="Filter the changed files" placeholder="Filter changed files" style="flex-grow: 1; min-width: 0; border: 0; background: none; color: #1b1f27; font-size: 13px"></label>
 </div>
-<div role="listbox" aria-label="Changed files" aria-multiselectable="true" style="flex-grow: 1; min-height: 0; overflow: auto; padding: 4px 0">
+<div role="listbox" aria-label="Changed files" style="flex-grow: 1; min-height: 0; overflow: auto; padding: 4px 0">
 <div style="height: {{d.row}}; display: flex; align-items: center; gap: 6px; padding: 0 {{d.pad}}; font-size: 12px; font-weight: 600; color: #5b6472">Staged <span style="font-weight: 400">1</span></div>
 <sc-for list="{{staged}}" as="f" hint-placeholder-count="1">
-<div role="option" aria-selected="{{f.selected}}" style="height: {{d.row}}; display: flex; align-items: center; gap: 8px; margin: 0 4px; padding: 0 {{d.pad8}}; border-radius: 6px; background: {{f.bg}}; outline: {{f.outline}}; outline-offset: -2px"><input type="checkbox" aria-label="Staged: {{f.name}}" checked="{{f.checked}}" style="margin: 0"><span title="{{f.kindText}}" style="width: 12px; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px; font-weight: 700; color: {{f.kindColor}}">{{f.kind}}</span><span style="flex-grow: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{f.name}}</span><span style="color: #5b6472; font-size: 12px">{{f.dir}}</span></div>
+<div role="option" aria-selected="{{f.selected}}" aria-label="{{f.name}}, {{f.state}}" style="height: {{d.row}}; display: flex; align-items: center; gap: 8px; margin: 0 4px; padding: 0 {{d.pad8}}; border-radius: 6px; background: {{f.bg}}; outline: {{f.outline}}; outline-offset: -2px"><span aria-hidden="true" style="width: 14px; height: 14px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid {{f.boxBorder}}; border-radius: 3px; background: {{f.boxBg}}; color: #ffffff; font-size: 10px; line-height: 1">{{f.mark}}</span><span title="{{f.kindText}}" style="width: 12px; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px; font-weight: 700; color: {{f.kindColor}}">{{f.kind}}</span><span style="flex-grow: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{f.name}}</span><span style="color: #5b6472; font-size: 12px">{{f.dir}}</span></div>
 </sc-for>
 <div style="height: {{d.row}}; display: flex; align-items: center; gap: 6px; padding: 0 {{d.pad}}; font-size: 12px; font-weight: 600; color: #5b6472">Changes <span style="font-weight: 400">2</span></div>
 <sc-for list="{{unstaged}}" as="f" hint-placeholder-count="2">
-<div role="option" aria-selected="{{f.selected}}" style="height: {{d.row}}; display: flex; align-items: center; gap: 8px; margin: 0 4px; padding: 0 {{d.pad8}}; border-radius: 6px; background: {{f.bg}}; outline: {{f.outline}}; outline-offset: -2px"><input type="checkbox" aria-label="Staged: {{f.name}}" checked="{{f.checked}}" style="margin: 0"><span title="{{f.kindText}}" style="width: 12px; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px; font-weight: 700; color: {{f.kindColor}}">{{f.kind}}</span><span style="flex-grow: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{f.name}}</span><span style="color: #5b6472; font-size: 12px">{{f.dir}}</span></div>
+<div role="option" aria-selected="{{f.selected}}" aria-label="{{f.name}}, {{f.state}}" style="height: {{d.row}}; display: flex; align-items: center; gap: 8px; margin: 0 4px; padding: 0 {{d.pad8}}; border-radius: 6px; background: {{f.bg}}; outline: {{f.outline}}; outline-offset: -2px"><span aria-hidden="true" style="width: 14px; height: 14px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid {{f.boxBorder}}; border-radius: 3px; background: {{f.boxBg}}; color: #ffffff; font-size: 10px; line-height: 1">{{f.mark}}</span><span title="{{f.kindText}}" style="width: 12px; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px; font-weight: 700; color: {{f.kindColor}}">{{f.kind}}</span><span style="flex-grow: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{f.name}}</span><span style="color: #5b6472; font-size: 12px">{{f.dir}}</span></div>
 </sc-for>
 </div>
 <div style="flex-shrink: 0; padding: {{d.pad}}; border-top: 1px solid #e1e4ea; display: flex; flex-direction: column; gap: 8px">
 <label style="display: flex; flex-direction: column; gap: 4px; padding: 8px; border: 1px solid #7f8898; border-radius: 8px"><span style="font-size: 12px; color: #5b6472">Commit message</span><textarea rows="2" placeholder="Describe the change" style="padding: 0; border: 0; background: none; resize: none; color: #1b1f27; outline-offset: 4px"></textarea></label>
-<div style="display: flex; gap: 8px">
-<button type="button" aria-label="Write the message with AI" title="Write the message with AI" style="height: {{d.ctl}}; padding: 0 10px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; font-size: 12px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" stroke="{{accent}}" stroke-width="1.75" fill="none" stroke-linejoin="round"></path></svg>Write</button>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<button type="button" title="Write the message with AI" style="height: {{d.ctl}}; padding: 0 10px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; font-size: 12px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" stroke="{{accent}}" stroke-width="1.75" fill="none" stroke-linejoin="round"></path></svg>Write the message with AI</button>
 <button type="button" style="flex-grow: 1; height: {{d.ctl}}; padding: 0 12px; border: 1px solid #2563eb; border-radius: 6px; background: #2563eb; color: #ffffff; font-size: 13px; font-weight: 600">Commit 1 file <span style="font-weight: 400; font-size: 12px">Ctrl+Enter</span></button>
 </div>
 </div>
@@ -168,7 +167,7 @@ D: { kindColor: '#b91c1c', kindText: 'deleted' }
 };
 const file = (kind, name, dir, checked, selected) => ({
 kind, name, dir, ...kinds[kind],
-checked: checked,
+boxBg: checked ? '#2563eb' : '#ffffff', boxBorder: checked ? '#2563eb' : '#7f8898', mark: checked ? '✓' : '', state: checked ? 'staged' : 'not staged',
 selected: selected ? 'true' : 'false',
 bg: selected ? '#f1f3f6' : 'transparent',
 outline: selected ? '2px solid #2563eb' : 'none'

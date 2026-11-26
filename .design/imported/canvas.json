@@ -316,7 +316,7 @@
       "y": 16180,
       "w": 1600,
       "h": 800,
-      "title": "Git view: history with diff, changes"
+      "title": "Git view: history with commit tab, changes"
     },
     "HistoryView.dc.html": {
       "x": 3040,
@@ -338,6 +338,13 @@
       "w": 760,
       "h": 220,
       "title": "Results bar: Ask about these rows"
+    },
+    "FilesSessionsView.dc.html": {
+      "x": 4400,
+      "y": 16180,
+      "w": 760,
+      "h": 800,
+      "title": "Files view and Sessions view"
     }
   },
   "order": [
@@ -386,7 +393,8 @@
     "ConnectionsView.dc.html",
     "GitView.dc.html",
     "HistoryView.dc.html",
-    "ViewSpecThemes.dc.html"
+    "ViewSpecThemes.dc.html",
+    "FilesSessionsView.dc.html"
   ],
   "notes": {
     "aieach": {
@@ -462,7 +470,7 @@
     "viewstd": {
       "x": 0,
       "y": 12820,
-      "text": "View standards and view redesign (proposal)",
+      "text": "View standards and view redesign (built in M22)",
       "kind": "title1",
       "maxW": 5020
     },
@@ -471,7 +479,14 @@
       "y": 13100,
       "w": 460,
       "color": "blue",
-      "text": "View standards: decisions\n\n1. Each side view has the same parts: header (title, scope, one primary action, overflow), mode tabs if needed, filter, one tree or list, status line.\n2. Two densities: rows 28 or 24 px, header 44 or 36, toolbar 40 or 32. 4 px grid.\n3. The detail opens as a preview tab in the editor area, not in a panel in the side view. Reason: the side view is too narrow for columns or a diff, and tabs give known keys.\n4. Monospace is for code only (types, SQL, hashes, values). Object names use the UI font. Reason: names are labels; mono makes them wider and cuts them sooner.\n5. One status scale with a shape for each state: OK, busy, neutral, warning, error.\n6. Git: Changes, History, and Branches are tabs under the header. History groups commits by day.\n\nOpen questions:\na. Preview tab in the editor area: OK? Then the 'Table' tab of the lower panel goes away.\nb. Nullable column: 'text?' in the tree. OK, or other mark?\nc. Is a diagram mode for the schema planned? If not, no view switch.\nd. Warning colour equals the accent (#b45309). Keep, with the shape as the difference?\ne. Connections grouped by environment, production first: OK?\nf. MongoDB sample size: [1 000] documents?"
+      "text": "View standards: decisions\n\n1. Each side view has the same parts: header (title, scope, one primary action, overflow), mode tabs if needed, filter, one tree or list, status line.\n2. Two densities: rows 28 or 24 px, header 44 or 36, toolbar 40 or 32. 4 px grid.\n3. The detail opens as a preview tab in the editor area, not in a panel in the side view. The Table and History tabs of the lower panel are gone. History is a side view.\n4. Monospace is for code only (types, SQL, hashes, values). Object names use the UI font.\n5. One status scale with a shape for each state: OK, busy, neutral, warning, error.\n6. Git: Changes, History, and Branches are tabs under the header. History groups commits by day.\n7. A nullable column shows as 'text?'.\n8. The schema has no diagram mode, so no view switch.\n9. Warning colour: see View standards 3 (themes).\n10. Connections are grouped by environment, production first.\n11. The MongoDB sample has 100 documents.\n\nBuilt on 2026-11-26 (M22, phases 1 to 8)."
+    },
+    "viewstdbuilt": {
+      "x": 5240,
+      "y": 16180,
+      "w": 420,
+      "color": "orange",
+      "text": "Differences between the design and the build (M22):\n\n1. Git commit tab: no AI action and no line counts. The backend does not give them.\n2. Git changes: the check box is a mark in the row, not a control. An option cannot contain a control. Space stages or unstages.\n3. Git branches: rename and new branch use a form above the list, not a field in the row.\n4. Git: 'Stage all' and 'Unstage all' are in the overflow menu. No selection of more than one row.\n5. Files and Sessions open a normal tab, not a preview tab.\n6. Files has no rename and no delete. The backend has no command for them. Sessions have no rename, delete, or F5.\n7. Schema: DDL, nested fields, and field shares wait for backend data.\n8. MongoDB plan analysis needs a new connector release."
     }
   },
   "designSystems": []

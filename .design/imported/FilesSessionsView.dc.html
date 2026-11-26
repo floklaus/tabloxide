@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Files view and Sessions view</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+button,input{font:inherit}
+</style>
+</helmet>
+<div style="width: 760px; height: 800px; display: flex; gap: 24px; padding: 8px; background: #eceef2; color: #1b1f27; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px; line-height: 1.4; overflow: hidden">
+
+<section aria-label="Files" style="width: 340px; flex-shrink: 0; display: flex; flex-direction: column; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; overflow: hidden">
+<div style="height: {{d.hdr}}; flex-shrink: 0; display: flex; align-items: center; gap: 4px; padding: 0 {{d.pad8}} 0 {{d.pad}}">
+<h2 style="margin: 0; font-size: 14px; font-weight: 600">Files</h2>
+<span style="color: #5b6472; font-size: 12px; padding: 0 6px">shop-reports</span>
+<span style="flex-grow: 1"></span>
+<button type="button" aria-label="Read the files again" title="Read the files again (F5)" style="width: {{d.ctl}}; height: {{d.ctl}}; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: none"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7 M20 4v7h-7" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-haspopup="menu" aria-label="More files actions" title="More files actions: read the files again, close all folders" style="width: {{d.ctl}}; height: {{d.ctl}}; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: none"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M5 12h.01 M12 12h.01 M19 12h.01" stroke="#5b6472" stroke-width="2.5" fill="none" stroke-linecap="round"></path></svg></button>
+</div>
+<div style="height: {{d.bar}}; flex-shrink: 0; display: flex; align-items: center; padding: 0 {{d.pad}}">
+<label style="flex-grow: 1; height: {{d.ctl}}; display: flex; align-items: center; gap: 6px; padding: 0 8px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M20 20l-4-4" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round"></path></svg><input type="search" aria-label="Filter the files" placeholder="Filter  /" style="flex-grow: 1; min-width: 0; border: 0; background: none; color: #1b1f27; font-size: 13px"></label>
+</div>
+<div role="tree" aria-label="Files of shop-reports" style="flex-grow: 1; min-height: 0; overflow: auto; padding: 4px 0">
+<sc-for list="{{files}}" as="f" hint-placeholder-count="9">
+<div role="treeitem" aria-level="{{f.level}}" aria-expanded="{{f.expanded}}" aria-selected="{{f.selected}}" style="height: {{d.row}}; display: flex; align-items: center; gap: 6px; margin: 0 4px; padding: 0 {{d.pad8}} 0 {{f.indent}}; border-radius: 6px; background: {{f.bg}}; outline: {{f.outline}}; outline-offset: -2px">
+<span aria-hidden="true" style="width: 14px; flex-shrink: 0; color: #5b6472; font-size: 11px; text-align: center">{{f.chevron}}</span>
+<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="{{f.icon}}" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linejoin="round"></path></svg>
+<span style="flex-grow: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{f.name}}</span>
+</div>
+</sc-for>
+</div>
+<div role="status" style="height: {{d.row}}; flex-shrink: 0; display: flex; align-items: center; padding: 0 {{d.pad}}; border-top: 1px solid #e1e4ea; color: #5b6472; font-size: 12px">3 folders, 6 files</div>
+</section>
+
+<section aria-label="Sessions" style="width: 340px; flex-shrink: 0; display: flex; flex-direction: column; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; overflow: hidden">
+<div style="height: {{d.hdr}}; flex-shrink: 0; display: flex; align-items: center; gap: 4px; padding: 0 {{d.pad8}} 0 {{d.pad}}">
+<h2 style="margin: 0; font-size: 14px; font-weight: 600">Sessions</h2>
+<span style="flex-grow: 1"></span>
+<button type="button" aria-label="New session" title="New session" style="width: {{d.ctl}}; height: {{d.ctl}}; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: none"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M12 5v14 M5 12h14" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round"></path></svg></button>
+<button type="button" aria-haspopup="menu" aria-label="More sessions actions" title="More sessions actions: new session, show the assistant panel" style="width: {{d.ctl}}; height: {{d.ctl}}; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: none"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M5 12h.01 M12 12h.01 M19 12h.01" stroke="#5b6472" stroke-width="2.5" fill="none" stroke-linecap="round"></path></svg></button>
+</div>
+<div style="height: {{d.bar}}; flex-shrink: 0; display: flex; align-items: center; padding: 0 {{d.pad}}">
+<label style="flex-grow: 1; height: {{d.ctl}}; display: flex; align-items: center; gap: 6px; padding: 0 8px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M20 20l-4-4" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round"></path></svg><input type="search" aria-label="Filter the sessions" placeholder="Filter  /" style="flex-grow: 1; min-width: 0; border: 0; background: none; color: #1b1f27; font-size: 13px"></label>
+</div>
+<div role="listbox" aria-label="Sessions" style="flex-grow: 1; min-height: 0; overflow: auto; padding: 4px 0">
+<sc-for list="{{sessions}}" as="s" hint-placeholder-count="5">
+<div role="option" aria-selected="{{s.selected}}" aria-label="{{s.title}}, {{s.state}}" style="height: {{d.row2}}; display: flex; align-items: center; gap: 8px; margin: 0 4px; padding: 0 {{d.pad}}; border-radius: 6px; background: {{s.bg}}; outline: {{s.outline}}; outline-offset: -2px">
+<svg role="img" aria-label="{{s.state}}" width="12" height="12" viewBox="0 0 12 12" style="flex-shrink: 0"><path d="{{s.mark}}" fill="{{s.markFill}}" stroke="{{s.markStroke}}" stroke-width="1.5"></path></svg>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column">
+<span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{s.title}}</span>
+<span style="color: {{s.lineColor}}; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{s.line}}</span>
+</div>
+</div>
+</sc-for>
+</div>
+<div role="status" style="height: {{d.row}}; flex-shrink: 0; display: flex; align-items: center; padding: 0 {{d.pad}}; border-top: 1px solid #e1e4ea; color: #5b6472; font-size: 12px">5 sessions · 1 running</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"density":{"editor":"enum","default":"comfortable","options":["comfortable","compact"]},"$preview":{"width":760,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+const compact = this.props.density === 'compact';
+const d = compact
+? { hdr: '36px', bar: '32px', ctl: '28px', row: '24px', row2: '40px', pad: '8px', pad8: '4px' }
+: { hdr: '44px', bar: '40px', ctl: '32px', row: '28px', row2: '48px', pad: '12px', pad8: '8px' };
+const FOLDER = 'M3 6h6l2 2h10v11H3z';
+const FILE = 'M6 3h8l4 4v14H6z M14 3v4h4';
+const f = (level, name, kind, opts) => {
+const o = opts || {};
+const isFolder = kind === 'folder';
+return {
+level: String(level), name,
+indent: (8 + (level - 1) * 16) + 'px',
+expanded: isFolder ? (o.open ? 'true' : 'false') : undefined,
+chevron: isFolder ? (o.open ? '⌄' : '›') : '',
+icon: isFolder ? FOLDER : FILE,
+selected: o.selected ? 'true' : 'false',
+bg: o.selected ? '#f1f3f6' : 'transparent',
+outline: o.focus ? '2px solid #2563eb' : 'none'
+};
+};
+const files = [
+f(1, 'maintenance', 'folder'),
+f(1, 'queries', 'folder', { open: true }),
+f(2, 'items.sql', 'file', { selected: true, focus: true }),
+f(2, 'open_orders.sql', 'file'),
+f(1, 'reports', 'folder', { open: true }),
+f(2, 'daily_sales.sql', 'file'),
+f(2, 'runs_by_day.sql', 'file'),
+f(1, '.gitignore', 'file'),
+f(1, 'README.md', 'file')
+];
+const marks = {
+busy: { mark: 'M6 1.5a4.5 4.5 0 1 1-4.5 4.5', markFill: 'none', markStroke: '#2563eb', lineColor: '#5b6472' },
+warning: { mark: 'M6 1l5 10H1z', markFill: '#b45309', markStroke: 'none', lineColor: '#5b6472' },
+ok: { mark: 'M6 1.5a4.5 4.5 0 1 0 0.01 0z', markFill: '#15803d', markStroke: 'none', lineColor: '#5b6472' },
+neutral: { mark: 'M6 1.5a4.5 4.5 0 1 0 0.01 0z', markFill: 'none', markStroke: '#7f8898', lineColor: '#5b6472' },
+error: { mark: 'M6 1l5 5-5 5-5-5z', markFill: '#b91c1c', markStroke: 'none', lineColor: '#b91c1c' }
+};
+const s = (title, kind, state, line, selected) => ({
+title, state, line, ...marks[kind],
+selected: selected ? 'true' : 'false',
+bg: selected ? '#f1f3f6' : 'transparent',
+outline: selected ? '2px solid #2563eb' : 'none'
+});
+const sessions = [
+s('Find slow queries in reports', 'busy', 'Running', 'Running · just now', true),
+s('Index for the price filter', 'warning', 'Waiting for you', 'Waiting for you', false),
+s('Explain the table item', 'ok', 'Done', 'Done · 5 minutes ago', false),
+s('Monthly revenue by region', 'neutral', 'Stopped', 'Stopped · 1 hour ago', false),
+s('Fix the join in open_orders', 'error', 'Failed', 'Failed · yesterday', false)
+];
+return { d, files, sessions };
+}
+}
+</script>
+</body>
+</html>
