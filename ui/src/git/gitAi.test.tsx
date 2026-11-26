@@ -1,14 +1,14 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { commands } from '../bindings'
 import { AssistantPanel } from '../assistant/AssistantPanel'
 import { useAssistantStore } from '../assistant/assistantStore'
-import { useResultsViewStore } from '../results/resultsViewStore'
 import { resetShellStore } from '../shell/shellStore'
 import { useTabsStore } from '../tabs/tabsStore'
+import { ActiveDetail } from '../test/ActiveDetail'
 import { file, ok, repository } from '../test/gitFixtures'
-import { DiffView } from './DiffView'
+import { showDiff } from './gitActions'
 import { GitPanel } from './GitPanel'
 import { useGitStore, type GitOverview } from './gitStore'
 
@@ -52,7 +52,7 @@ async function renderPanel(overview: GitOverview) {
   render(
     <>
       <GitPanel />
-      <DiffView />
+      <ActiveDetail />
       <AssistantPanel />
     </>,
   )
@@ -66,7 +66,6 @@ describe('AI actions of Git', () => {
     useGitStore.getState().reset()
     useTabsStore.getState().reset()
     resetShellStore()
-    useResultsViewStore.getState().setView('results')
     useAssistantStore.getState().reset()
     useAssistantStore.setState({ hasKey: true })
     vi.mocked(commands.assistantStatus).mockResolvedValue(ok({ has_key: true }))
@@ -108,7 +107,6 @@ describe('AI actions of Git', () => {
     expect(again.parentElement).toContainElement(
       screen.getByRole('button', { name: /^Commit/ }),
     )
-    expect(screen.getByText('Message')).toBeVisible()
     expect(
       useAssistantStore.getState().sessions[0].store.getState().messages,
     ).toHaveLength(0)
@@ -156,7 +154,7 @@ describe('AI actions of Git', () => {
       ok({ original: 'select 1\n', modified: 'select 2\n' }),
     )
     answerWith('The report reads a different value.')
-    await useGitStore.getState().showDiff('revenue.sql', true)
+    act(() => showDiff('revenue.sql', true, false))
 
     await user.click(
       await screen.findByRole('button', { name: 'Explain the changes' }),
@@ -192,7 +190,7 @@ describe('AI actions of Git', () => {
       }),
     )
     answerWith('Both changes.\n\n```sql\nselect mine, incoming\n```')
-    await user.click(screen.getByRole('button', { name: 'Resolve a.sql' }))
+    await user.click(screen.getByRole('option', { name: 'a.sql, conflict' }))
 
     await user.click(
       await screen.findByRole('button', { name: 'Propose a resolution' }),
@@ -235,7 +233,7 @@ describe('AI actions of Git', () => {
       }),
     )
     answerWith('```sql\nselect both\n```')
-    await user.click(screen.getByRole('button', { name: 'Resolve a.sql' }))
+    await user.click(screen.getByRole('option', { name: 'a.sql, conflict' }))
     await user.click(
       await screen.findByRole('button', { name: 'Propose a resolution' }),
     )

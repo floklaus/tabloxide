@@ -149,11 +149,11 @@ Tabloxide reads the structure of the table from the database for the request: th
 
 ## 9. Use AI with Git
 
-The Git panel and the diff view have three AI actions. They send no rows and no structure of the database.
+The Git view and its detail tabs have three AI actions. They send no rows and no structure of the database.
 
-- **Write the message with AI**, above the commit message field. The AI writes the message from the staged changes, and the message goes into the field. Read it and change it before you commit. If the field has your own text, Tabloxide asks before it replaces it. **Write again** writes a new message.
-- **Explain the changes**, in the diff of a changed file. The explanation goes to the assistant panel.
-- **Propose a resolution**, in the view of a file with a merge conflict. The AI proposes a result that keeps the changes of the two branches. **Accept** puts it into the result side, and **Edit in the result** also moves the cursor there. **Reject** removes it. Then you mark the file as resolved.
+- **Write the message with AI**, below the commit message field at the bottom of the Git view. The AI writes the message from the staged changes, and the message goes into the field. Read it and change it before you commit. If the field has your own text, Tabloxide asks before it replaces it. **Write again** writes a new message.
+- **Explain the changes**, in the diff tab of a changed file. The explanation goes to the assistant panel.
+- **Propose a resolution**, in the conflict tab of a file with a merge conflict. The AI proposes a result that keeps the changes of the two branches. **Accept** puts it into the result side, and **Edit in the result** also moves the cursor there. **Reject** removes it. Then you mark the file as resolved.
 
 What each request sends:
 

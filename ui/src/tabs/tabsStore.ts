@@ -29,6 +29,10 @@ export type Detail =
   | { kind: 'table'; schema: string; name: string }
   | { kind: 'connection'; id: string }
   | { kind: 'history'; id: number }
+  /** The diff of a changed file: the staged changes, or the changes on disk. */
+  | { kind: 'diff'; path: string; staged: boolean }
+  | { kind: 'conflict'; path: string }
+  | { kind: 'commit'; id: string }
 
 /** A key that is the same for the same detail. */
 export function detailKey(detail: Detail): string {
@@ -39,6 +43,12 @@ export function detailKey(detail: Detail): string {
       return `connection:${detail.id}`
     case 'history':
       return `history:${detail.id}`
+    case 'diff':
+      return `diff:${detail.staged ? 'staged' : 'disk'}:${detail.path}`
+    case 'conflict':
+      return `conflict:${detail.path}`
+    case 'commit':
+      return `commit:${detail.id}`
   }
 }
 

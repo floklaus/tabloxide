@@ -1,6 +1,6 @@
 # Git console
 
-The Git console runs Git commands that you type. It is for users who know Git and want a command that the Git panel does not have.
+The Git console runs Git commands that you type. It is for users who know Git and want a command that the Git view does not have.
 
 The console runs the `git` program of your system, in the root folder of the repository of the workspace. It runs no shell.
 
@@ -27,7 +27,7 @@ The output shows below the command. Errors of Git show in red.
 
 **Stop** ends a command that runs. **Clear** removes the output from the view. It does not remove the history.
 
-After each command, the Git panel reads the state of the repository again.
+After each command, the Git view reads the state of the repository again.
 
 **Explain the last output** sends the last command and its output to the AI assistant. The request sends no rows and no structure of the database.
 
@@ -77,5 +77,5 @@ A command that opens an editor in a different way fails at once. The console the
 
 - The console shows the last 1 MB of the output of a command.
 - The console removes passwords from remote addresses in the output.
-- A remote command that needs a password or a passphrase asks for it in a dialog, as the Git panel does.
+- A remote command that needs a password or a passphrase asks for it in a dialog, as the Git view does.
 - The console is not a protection against your own Git configuration. Hooks and the settings of your repository apply, as in a terminal.

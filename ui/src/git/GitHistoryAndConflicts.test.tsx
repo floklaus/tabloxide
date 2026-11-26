@@ -2,11 +2,18 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { commands } from '../bindings'
-import { useResultsViewStore } from '../results/resultsViewStore'
 import { useTabsStore } from '../tabs/tabsStore'
-import { commit, failed, file, ok, repository } from '../test/gitFixtures'
-import { DiffView } from './DiffView'
+import { ActiveDetail } from '../test/ActiveDetail'
+import {
+  commit,
+  commitAt,
+  failed,
+  file,
+  ok,
+  repository,
+} from '../test/gitFixtures'
 import { GitPanel } from './GitPanel'
+import { groupCommits } from './gitModel'
 import { HISTORY_PAGE, useGitStore, type GitOverview } from './gitStore'
 
 vi.mock('../bindings', async () =>
@@ -36,34 +43,66 @@ async function renderPanel(overview: GitOverview) {
   render(
     <>
       <GitPanel />
-      <DiffView />
+      <ActiveDetail />
     </>,
   )
   await waitFor(() => expect(useGitStore.getState().overview).not.toBeNull())
   return userEvent.setup()
 }
 
+async function openMode(
+  user: ReturnType<typeof userEvent.setup>,
+  name: string,
+) {
+  await user.click(screen.getByRole('tab', { name }))
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   useGitStore.getState().reset()
   useTabsStore.getState().reset()
-  useResultsViewStore.getState().setView('results')
 })
 
-describe('commit history', () => {
-  test('does not read the history until the user opens it', async () => {
+describe('the History mode', () => {
+  test('does not read the history until the user opens the mode', async () => {
     const user = await renderPanel(repository())
     expect(gitLog).not.toHaveBeenCalled()
-    gitLog.mockResolvedValue(ok([commit(2), commit(1)]))
+    const today = new Date()
+    const yesterday = new Date(today.getTime() - 86_400_000)
+    gitLog.mockResolvedValue(
+      ok([commitAt(3, today), commitAt(2, today), commitAt(1, yesterday)]),
+    )
 
-    await user.click(screen.getByRole('button', { name: 'Show the history' }))
+    await openMode(user, 'History')
 
     expect(gitLog).toHaveBeenCalledWith(HISTORY_PAGE, 0)
-    const row = await screen.findByRole('button', { name: /^commit 2/ })
-    expect(row).toHaveTextContent('aaaaaa2 · Ada · 2026-11-14')
+    const todayGroup = await screen.findByRole('group', { name: 'Today' })
+    expect(within(todayGroup).getAllByRole('option')).toHaveLength(2)
+    expect(screen.getByRole('group', { name: 'Yesterday' })).toBeInTheDocument()
+    // The branch is 2 commits ahead, thus the first 2 commits are not pushed.
+    expect(
+      screen.getByRole('option', { name: 'commit 3, aaaaaa3, not pushed' }),
+    ).toHaveTextContent('Ada')
+    expect(
+      screen.getByRole('option', { name: 'commit 1, aaaaaa1' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('3 commits · 2 commits not pushed to origin/main'),
+    ).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Load more commits' }),
     ).not.toBeInTheDocument()
+  })
+
+  test('says when the branch has no commits', async () => {
+    const user = await renderPanel(repository())
+    gitLog.mockResolvedValue(ok([]))
+
+    await openMode(user, 'History')
+
+    expect(
+      await screen.findByText('The branch has no commits.'),
+    ).toBeInTheDocument()
   })
 
   test('gets the next page of commits', async () => {
@@ -72,46 +111,101 @@ describe('commit history', () => {
     gitLog.mockResolvedValueOnce(ok(page))
     gitLog.mockResolvedValueOnce(ok([commit(900)]))
 
-    await user.click(screen.getByRole('button', { name: 'Show the history' }))
+    await openMode(user, 'History')
     await user.click(
       await screen.findByRole('button', { name: 'Load more commits' }),
     )
 
     expect(gitLog).toHaveBeenLastCalledWith(HISTORY_PAGE, HISTORY_PAGE)
     expect(
-      await screen.findByRole('button', { name: /^commit 900/ }),
+      await screen.findByRole('option', { name: /^commit 900/ }),
     ).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Load more commits' }),
     ).not.toBeInTheDocument()
   })
 
-  test('shows the files of a commit and the diff of one file', async () => {
+  test('the filter applies to the commits', async () => {
     const user = await renderPanel(repository())
-    gitLog.mockResolvedValue(ok([commit(1)]))
+    gitLog.mockResolvedValue(ok([commit(1), commit(2)]))
+    await openMode(user, 'History')
+    await screen.findByRole('option', { name: /^commit 2/ })
+
+    await user.type(
+      screen.getByRole('searchbox', { name: 'Filter the commits' }),
+      'commit 2',
+    )
+
+    expect(screen.getAllByRole('option')).toHaveLength(1)
+  })
+
+  test('Space shows a commit in a preview tab with its files and diffs', async () => {
+    // The branch has 1 commit to push. The second commit is on the remote.
+    const user = await renderPanel(repository([], { ahead: 1 }))
+    gitLog.mockResolvedValue(ok([commit(2), commit(1)]))
     gitCommitFiles.mockResolvedValue(
-      ok([{ path: 'new.sql', original_path: 'old.sql', kind: 'renamed' }]),
+      ok([
+        { path: 'reports/new.sql', original_path: 'old.sql', kind: 'renamed' },
+        { path: 'README.md', original_path: null, kind: 'modified' },
+      ]),
     )
     gitCommitDiff.mockResolvedValue(
       ok({ original: 'select 1\n', modified: 'select 2\n' }),
     )
+    await openMode(user, 'History')
 
-    await user.click(screen.getByRole('button', { name: 'Show the history' }))
-    await user.click(await screen.findByRole('button', { name: /^commit 1/ }))
+    ;(await screen.findByRole('option', { name: /^commit 1/ })).focus()
+    await user.keyboard(' ')
+
+    expect(useTabsStore.getState().tabs[0]).toMatchObject({
+      title: 'Commit aaaaaa1',
+      isPreview: true,
+    })
+    expect(
+      screen.getByRole('heading', { name: 'commit 1' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('aaaaaa1', { selector: 'code' })).toBeVisible()
+    expect(screen.getByRole('img', { name: 'Pushed' })).toBeInTheDocument()
     const files = await screen.findByRole('list', { name: 'Files of aaaaaa1' })
-    await user.click(within(files).getByRole('button', { name: /^new.sql/ }))
-
+    expect(within(files).getAllByRole('button')).toHaveLength(2)
+    expect(screen.getByText('2 files')).toBeInTheDocument()
     expect(gitCommitFiles).toHaveBeenCalledWith(commit(1).id)
-    expect(gitCommitDiff).toHaveBeenCalledWith(
-      commit(1).id,
-      'new.sql',
-      'old.sql',
+    // The first file shows first.
+    await waitFor(() =>
+      expect(gitCommitDiff).toHaveBeenCalledWith(
+        commit(1).id,
+        'reports/new.sql',
+        'old.sql',
+      ),
+    )
+
+    await user.click(within(files).getByRole('button', { name: /README.md/ }))
+    await waitFor(() =>
+      expect(gitCommitDiff).toHaveBeenLastCalledWith(
+        commit(1).id,
+        'README.md',
+        null,
+      ),
     )
     expect(
-      await screen.findByRole('heading', { name: 'new.sql in aaaaaa1' }),
+      screen.getByRole('region', { name: 'Diff of README.md' }),
+    ).toHaveTextContent('Left: before the commit')
+  })
+
+  test('Enter keeps the commit tab, and a commit that is not pushed says so', async () => {
+    const user = await renderPanel(repository())
+    gitLog.mockResolvedValue(ok([commit(2)]))
+    gitCommitFiles.mockResolvedValue(ok([]))
+    await openMode(user, 'History')
+
+    ;(await screen.findByRole('option', { name: /^commit 2/ })).focus()
+    await user.keyboard('{Enter}')
+
+    expect(useTabsStore.getState().tabs[0].isPreview).toBe(false)
+    expect(screen.getByRole('img', { name: 'Not pushed' })).toBeInTheDocument()
+    expect(
+      await screen.findByText('The commit changed no file.'),
     ).toBeInTheDocument()
-    expect(screen.getByText(/Left: before the commit/)).toBeInTheDocument()
-    expect(useResultsViewStore.getState().view).toBe('diff')
   })
 
   test('reads the history again after a commit', async () => {
@@ -119,29 +213,85 @@ describe('commit history', () => {
       repository([file({ path: 'a.sql', staged: 'modified' })]),
     )
     gitLog.mockResolvedValue(ok([commit(1)]))
-    await user.click(screen.getByRole('button', { name: 'Show the history' }))
-    await screen.findByRole('button', { name: /^commit 1/ })
+    await openMode(user, 'History')
+    await screen.findByRole('option', { name: /^commit 1/ })
     gitLog.mockResolvedValue(ok([commit(2), commit(1)]))
 
+    await openMode(user, 'Changes 1')
     await user.type(screen.getByLabelText('Commit message'), 'next')
     await user.click(screen.getByRole('button', { name: /^Commit/ }))
+    await waitFor(() => expect(gitLog).toHaveBeenCalledTimes(2))
+    await openMode(user, 'History')
 
     expect(
-      await screen.findByRole('button', { name: /^commit 2/ }),
+      await screen.findByRole('option', { name: /^commit 2/ }),
     ).toBeInTheDocument()
+  })
+
+  test('groups the commits by day', () => {
+    const now = new Date(2026, 10, 26, 12)
+    const groups = groupCommits(
+      [
+        commitAt(3, new Date(2026, 10, 26, 9)),
+        commitAt(2, new Date(2026, 10, 25, 9)),
+        commitAt(1, new Date(2026, 10, 20, 9)),
+      ],
+      now,
+    )
+
+    expect(groups.map((group) => group.day).slice(0, 2)).toEqual([
+      'Today',
+      'Yesterday',
+    ])
+    expect(groups).toHaveLength(3)
   })
 })
 
-describe('branch operations', () => {
-  test('renames the current branch', async () => {
-    const user = await renderPanel(repository())
+describe('the Branches mode', () => {
+  test('lists the local and the remote branches', async () => {
+    const overview = repository()
+    if (overview.state !== 'repository') throw new Error('fixture')
+    const user = await renderPanel({
+      ...overview,
+      remote_branches: [
+        { name: 'origin/release', local_name: 'release', last_commit: null },
+      ],
+    })
 
-    await user.click(screen.getByRole('button', { name: 'Rename the branch' }))
+    await openMode(user, 'Branches')
+
+    const local = within(screen.getByRole('group', { name: 'Local' }))
+    expect(
+      local.getByRole('option', { name: 'main, current branch' }),
+    ).toHaveTextContent('↑2 ↓1')
+    expect(local.getByRole('option', { name: 'feature' })).toBeInTheDocument()
+    const remote = within(screen.getByRole('group', { name: 'Remote' }))
+    remote.getByRole('option', { name: 'origin/release' }).focus()
+    await user.keyboard('{Enter}')
+
+    expect(commands.gitBranchSwitch).toHaveBeenCalledWith('release')
+  })
+
+  test('Enter switches to a branch', async () => {
+    const user = await renderPanel(repository())
+    await openMode(user, 'Branches')
+
+    screen.getByRole('option', { name: 'feature' }).focus()
+    await user.keyboard('{Enter}')
+
+    expect(commands.gitBranchSwitch).toHaveBeenCalledWith('feature')
+  })
+
+  test('F2 renames a branch', async () => {
+    const user = await renderPanel(repository())
+    await openMode(user, 'Branches')
+
+    screen.getByRole('option', { name: /^main/ }).focus()
+    await user.keyboard('{F2}')
     const field = screen.getByLabelText('New name of the branch')
     expect(field).toHaveValue('main')
     await user.clear(field)
-    await user.type(field, 'trunk')
-    await user.click(screen.getByRole('button', { name: 'Rename' }))
+    await user.type(field, 'trunk{Enter}')
 
     expect(gitBranchRename).toHaveBeenCalledWith('main', 'trunk')
     await waitFor(() =>
@@ -151,12 +301,44 @@ describe('branch operations', () => {
     )
   })
 
-  test('asks before it deletes a branch', async () => {
+  test('Esc in the name field cancels the rename', async () => {
+    const user = await renderPanel(repository())
+    await openMode(user, 'Branches')
+
+    screen.getByRole('option', { name: 'feature' }).focus()
+    await user.keyboard('{F2}{Escape}')
+
+    expect(
+      screen.queryByLabelText('New name of the branch'),
+    ).not.toBeInTheDocument()
+    expect(gitBranchRename).not.toHaveBeenCalled()
+  })
+
+  test('creates a branch from the overflow menu', async () => {
     const user = await renderPanel(repository())
 
-    await user.click(screen.getByRole('button', { name: 'Delete a branch' }))
-    expect(screen.getByLabelText('Branch to delete')).toHaveValue('feature')
-    await user.click(screen.getByRole('button', { name: 'Delete' }))
+    await user.click(screen.getByRole('button', { name: 'More git actions' }))
+    await user.click(screen.getByRole('menuitem', { name: /^New branch/ }))
+    await user.type(
+      screen.getByRole('textbox', { name: 'Name of the new branch' }),
+      'feature/report',
+    )
+    await user.click(screen.getByRole('button', { name: 'Create' }))
+
+    expect(commands.gitBranchCreate).toHaveBeenCalledWith('feature/report')
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('textbox', { name: 'Name of the new branch' }),
+      ).not.toBeInTheDocument(),
+    )
+  })
+
+  test('Delete asks before it deletes a branch', async () => {
+    const user = await renderPanel(repository())
+    await openMode(user, 'Branches')
+
+    screen.getByRole('option', { name: 'feature' }).focus()
+    await user.keyboard('{Delete}')
     expect(gitBranchDelete).not.toHaveBeenCalled()
     const dialog = screen.getByRole('dialog', { name: 'Delete the branch?' })
     await user.click(within(dialog).getByRole('button', { name: 'Delete' }))
@@ -167,9 +349,10 @@ describe('branch operations', () => {
   test('asks a second time for a branch that is not merged', async () => {
     const user = await renderPanel(repository())
     gitBranchDelete.mockResolvedValueOnce(ok('not-merged'))
+    await openMode(user, 'Branches')
 
-    await user.click(screen.getByRole('button', { name: 'Delete a branch' }))
-    await user.click(screen.getByRole('button', { name: 'Delete' }))
+    screen.getByRole('option', { name: 'feature' }).focus()
+    await user.keyboard('{Delete}')
     await user.click(
       within(screen.getByRole('dialog')).getByRole('button', {
         name: 'Delete',
@@ -186,29 +369,31 @@ describe('branch operations', () => {
     expect(gitBranchDelete).toHaveBeenLastCalledWith('feature', true)
   })
 
-  test('cannot delete a branch when the current branch is the only branch', async () => {
-    const overview = repository()
-    if (overview.state !== 'repository') throw new Error('fixture')
-    await renderPanel({
-      ...overview,
-      branches: [{ name: 'main', is_current: true, last_commit: null }],
-    })
+  test('cannot delete the current branch', async () => {
+    const user = await renderPanel(repository())
+    await openMode(user, 'Branches')
 
-    expect(
-      screen.getByRole('button', { name: 'Delete a branch' }),
-    ).toBeDisabled()
+    screen.getByRole('option', { name: /^main/ }).focus()
+    await user.keyboard('{Delete}')
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 })
 
 describe('conflict resolution', () => {
-  test('shows the two sides and resolves with the incoming version', async () => {
+  async function openConflict(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByRole('option', { name: 'a.sql, conflict' }))
+  }
+
+  test('shows the two sides in a tab and resolves with the incoming version', async () => {
     const user = await renderPanel(repository(conflicted, {}, 'Merge branch'))
     gitConflict.mockResolvedValue(ok(SIDES))
 
-    await user.click(screen.getByRole('button', { name: 'Resolve a.sql' }))
+    await openConflict(user)
     expect(
       await screen.findByRole('heading', { name: 'Conflict in a.sql' }),
     ).toBeInTheDocument()
+    expect(useTabsStore.getState().tabs[0].title).toBe('Conflict: a.sql')
     await waitFor(() => {
       const text = document.querySelector('.cm-mergeView')?.textContent ?? ''
       expect(text).toContain('select mine')
@@ -220,14 +405,19 @@ describe('conflict resolution', () => {
     await user.click(screen.getByRole('button', { name: 'Mark as resolved' }))
 
     expect(gitResolveText).toHaveBeenCalledWith('a.sql', 'select incoming\n')
-    await waitFor(() => expect(useGitStore.getState().conflict).toBeNull())
+    // The tab of the resolved file closes.
+    await waitFor(() =>
+      expect(
+        useTabsStore.getState().tabs.some((tab) => tab.detail !== undefined),
+      ).toBe(false),
+    )
   })
 
   test('the result starts as the version of the user', async () => {
     const user = await renderPanel(repository(conflicted, {}, 'Merge branch'))
     gitConflict.mockResolvedValue(ok(SIDES))
 
-    await user.click(screen.getByRole('button', { name: 'Resolve a.sql' }))
+    await openConflict(user)
     await user.click(
       await screen.findByRole('button', { name: 'Mark as resolved' }),
     )
@@ -240,20 +430,23 @@ describe('conflict resolution', () => {
     gitConflict.mockResolvedValue(ok(SIDES))
     gitResolveText.mockResolvedValueOnce(failed('The name is not valid: a.sql'))
 
-    await user.click(screen.getByRole('button', { name: 'Resolve a.sql' }))
+    await openConflict(user)
     await user.click(
       await screen.findByRole('button', { name: 'Mark as resolved' }),
     )
 
     expect(await screen.findByText(/name is not valid/)).toBeInTheDocument()
-    expect(useGitStore.getState().conflict?.path).toBe('a.sql')
+    expect(useTabsStore.getState().tabs[0].detail).toEqual({
+      kind: 'conflict',
+      path: 'a.sql',
+    })
   })
 
   test('offers to keep or delete a file that one branch deleted', async () => {
     const user = await renderPanel(repository(conflicted, {}, 'Merge branch'))
     gitConflict.mockResolvedValue(ok({ ...SIDES, theirs: null }))
 
-    await user.click(screen.getByRole('button', { name: 'Resolve a.sql' }))
+    await openConflict(user)
     expect(
       await screen.findByText(/The incoming branch deleted this file/),
     ).toBeInTheDocument()
@@ -266,7 +459,7 @@ describe('conflict resolution', () => {
     const user = await renderPanel(repository(conflicted, {}, 'Merge branch'))
     gitConflict.mockResolvedValue(ok({ ...SIDES, ours: null }))
 
-    await user.click(screen.getByRole('button', { name: 'Resolve a.sql' }))
+    await openConflict(user)
     await user.click(
       await screen.findByRole('button', { name: 'Keep the changed file' }),
     )

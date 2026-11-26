@@ -26,6 +26,9 @@ const PATHS = {
   refresh: 'M20 11a8 8 0 1 0-2.3 5.7 M20 4v7h-7',
   external: 'M14 4h6v6 M20 4l-9 9 M18 14v6H4V6h6',
   plus: 'M12 5v14 M5 12h14',
+  'arrow-up': 'M12 19V5 M6 11l6-6 6 6',
+  'arrow-down': 'M12 5v14 M6 13l6 6 6-6',
+  check: 'M5 12l5 5 9-10',
   close: 'M6 6l12 12 M18 6L6 18',
   grip: 'M9 6h.01 M15 6h.01 M9 12h.01 M15 12h.01 M9 18h.01 M15 18h.01',
   sparkle:

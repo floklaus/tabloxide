@@ -255,7 +255,7 @@ The preferences have a rule for each environment of a connection: never, before 
 
 ### Git is not installed
 
-**Symptom:** the Git panel shows "Git is not installed, or it is not in the PATH."
+**Symptom:** the Git view shows "Git is not installed, or it is not in the PATH."
 
 **Solution:**
 
@@ -301,11 +301,11 @@ ssh-add ~/.ssh/id_ed25519
 
 ### Pull reports a merge conflict
 
-**Solution:** the Git panel lists the files that have a conflict. Open each file in the conflict view, edit the result, and mark it as resolved. Then commit. To go back to the state before the pull, abort the merge.
+**Solution:** the Changes mode of the Git view lists the files that have a conflict in the group Conflicts. Select a file to open its conflict tab. Edit the result and mark it as resolved. Then commit. To go back to the state before the pull, select **Abort the merge**.
 
-### The Git panel is not necessary for a workspace
+### The Git view is not necessary for a workspace
 
-**Solution:** disable Git for that workspace in the Git panel. The setting applies to one workspace on one computer.
+**Solution:** in the Git view, open the menu **More git actions** and select **Disable Git for this workspace**. The setting applies to one workspace on one computer.
 
 ## 8. Reset the local state
 

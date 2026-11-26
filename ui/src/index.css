@@ -1338,78 +1338,11 @@ body {
 
 /* Git panel */
 
-.git {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-}
-
 .git__row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
-}
-
-.git__branch {
-  flex: 1;
-  min-width: 0;
-}
-
-.git__branch select {
-  width: 100%;
-}
-
-.git__upstream,
-.git__subtitle {
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: 0.8rem;
-}
-
-.git__subtitle {
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.git__files {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.git__file {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.git__path {
-  flex: 1;
-  min-width: 0;
-  padding: 0.15rem 0.25rem;
-  overflow: hidden;
-  border: 0;
-  border-radius: 3px;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.git__path:hover {
-  background: var(--color-surface);
-}
-
-.git__commit {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.4rem;
 }
 
 .git__message {
@@ -1421,17 +1354,6 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   font: inherit;
-}
-
-.git__commit-row {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
-
-.git__commit-subject {
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .conflict__kept {
@@ -1591,11 +1513,6 @@ body {
   font-size: 0.8rem;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-}
-
-.git__disable {
-  align-self: flex-start;
-  margin-top: 0.5rem;
 }
 
 .clone__parent {
@@ -3512,18 +3429,6 @@ body {
   color: var(--color-danger);
 }
 
-.git__message-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  width: 100%;
-}
-
-.git__message-label {
-  color: var(--color-text-muted);
-  font-size: 12px;
-}
-
 .git__ai {
   width: 100%;
 }
@@ -3627,4 +3532,177 @@ body {
   flex-direction: column;
   gap: 0.75rem;
   padding-top: 0.75rem;
+}
+
+/* ---------- The Git view (view standards) ---------- */
+
+.view__mode-count {
+  margin-left: 2px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.git-change__folder {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  text-align: left;
+}
+
+/* The check box of a change. It is part of the option, thus it is not a control. */
+.git-check {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--color-control-border);
+  border-radius: 3px;
+  background: var(--color-bg);
+  cursor: pointer;
+}
+
+.git-check[data-checked='true'] {
+  border-color: var(--color-focus);
+  background: var(--color-focus);
+  color: #ffffff;
+}
+
+.view-row .git-check[data-checked='true'] .icon {
+  color: #ffffff;
+}
+
+.git-kind {
+  flex: none;
+  width: 12px;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-align: center;
+}
+
+.git-kind--added,
+.git-kind--new {
+  color: var(--status-ok);
+}
+
+.git-kind--deleted,
+.git-kind--conflict {
+  color: var(--status-error);
+}
+
+.git-commit__aside {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  padding-top: 6px;
+}
+
+.git-commit__unpushed {
+  display: inline-flex;
+  color: var(--status-warning);
+}
+
+.view-row .git-commit__unpushed .icon {
+  color: inherit;
+}
+
+.git-branch__space {
+  flex: none;
+  width: 16px;
+}
+
+.git-more {
+  margin: 4px 6px;
+}
+
+.git-merge,
+.git-output {
+  align-items: flex-start;
+}
+
+.git-form {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0 8px;
+}
+
+.git-form .view__filter {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The commit box at the bottom of the view. */
+.git-commit {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px var(--view-padding);
+  border-top: 1px solid var(--color-border);
+}
+
+.git-commit__key {
+  margin-left: 6px;
+  opacity: 0.75;
+  font-size: 11px;
+}
+
+.detail-tab--fill {
+  display: flex;
+  flex-direction: column;
+}
+
+.commit-detail {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-height: 0;
+}
+
+.commit-detail .results__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.commit-detail__files {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.commit-detail__file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 28px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.commit-detail__file:hover {
+  background: var(--color-surface);
+}
+
+.commit-detail__file[aria-pressed='true'] {
+  background: var(--view-selected);
+  color: var(--view-selected-text);
 }

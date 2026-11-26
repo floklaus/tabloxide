@@ -32,6 +32,11 @@ export type ViewKeysOptions = {
   selectedKey?: string | null
   /** Space or a click: show the detail in the preview tab. The focus stays. */
   onSelect?: (key: string) => void
+  /**
+   * Space in a row with a check box, for example a change in Git: set or clear the
+   * check box. Without it, Space is the same as `onSelect`.
+   */
+  onCheck?: (key: string) => void
   /** Enter or a double click: the primary action of the row. */
   onOpen?: (key: string) => void
   /** Ctrl+Enter: the second action of the row. */
@@ -173,8 +178,10 @@ export function useViewKeys(options: ViewKeysOptions) {
     } else if (event.key === 'ArrowLeft' && kind === 'tree') {
       if (row.isExpanded) o.onToggle?.(row.key, false)
       else if (row.parentKey) focusKey(row.parentKey)
-    } else if (event.key === ' ' && !isModifier) o.onSelect?.(row.key)
-    else if (event.key === 'Enter' && isModifier) o.onSecondary?.(row.key)
+    } else if (event.key === ' ' && !isModifier) {
+      if (o.onCheck) o.onCheck(row.key)
+      else o.onSelect?.(row.key)
+    } else if (event.key === 'Enter' && isModifier) o.onSecondary?.(row.key)
     else if (event.key === 'Enter') o.onOpen?.(row.key)
     else if (event.key === 'F2' && o.onRename) o.onRename(row.key)
     else if (event.key === 'Delete' && o.onDelete) o.onDelete(row.key)

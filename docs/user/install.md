@@ -28,7 +28,7 @@ The Git functions use the `git` executable of your system. Tabloxide does not in
 * On Windows, install Git for Windows from <https://git-scm.com>.
 * A passphrase prompt for an SSH key needs OpenSSH 8.4 or later.
 
-Without Git, the Git panel shows an instruction to install Git. The database functions continue to operate.
+Without Git, the Git view shows an instruction to install Git. The database functions continue to operate.
 
 ## 2. Download the installer and check it
 

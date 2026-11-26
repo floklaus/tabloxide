@@ -49,7 +49,8 @@ async function startPull() {
   await waitFor(() => expect(useGitStore.getState().overview).not.toBeNull())
   const user = userEvent.setup()
   const pull = pendingPull()
-  await user.click(screen.getByRole('button', { name: 'Pull' }))
+  await user.click(screen.getByRole('button', { name: 'More git actions' }))
+  await user.click(screen.getByRole('menuitem', { name: /^Pull/ }))
   return { user, pull }
 }
 

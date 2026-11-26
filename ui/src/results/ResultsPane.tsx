@@ -1,6 +1,5 @@
 import { AiAction } from '../assistant/AiAction'
 import type { ActionRequest } from '../assistant/assistantStore'
-import { DiffView } from '../git/DiffView'
 import { GitConsole } from '../git/GitConsole'
 import { PlanView } from '../plan/PlanView'
 import {
@@ -307,7 +306,6 @@ export function ResultsPane() {
   const views: { id: ResultsView; label: string }[] = [
     { id: 'results', label: 'Results' },
     { id: 'plan', label: 'Plan' },
-    { id: 'diff', label: 'Diff' },
     { id: 'console', label: 'Git console' },
   ]
 
@@ -330,7 +328,6 @@ export function ResultsPane() {
       <div className="results__content">
         {view === 'results' && <Results />}
         {view === 'plan' && <PlanView />}
-        {view === 'diff' && <DiffView />}
         {view === 'console' && <GitConsole />}
       </div>
     </section>

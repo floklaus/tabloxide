@@ -1,12 +1,13 @@
 import { MergeView } from '@codemirror/merge'
 import { useEffect, useRef } from 'react'
 import { AiAction } from '../assistant/AiAction'
-import type { FileDiff } from '../bindings'
-import { ConflictView } from './ConflictView'
+import { commands, type FileDiff } from '../bindings'
 import { readOnlySide } from './diffExtensions'
+import { useLoad, type Load } from './gitLoad'
 import { useGitStore } from './gitStore'
 
-function Sides({ diff }: { diff: FileDiff }) {
+/** The two sides of a diff, next to each other. */
+export function DiffSides({ diff }: { diff: FileDiff }) {
   const hostRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -22,47 +23,64 @@ function Sides({ diff }: { diff: FileDiff }) {
   return <div ref={hostRef} className="diff__sides code-editor" />
 }
 
-/** The diff or the conflict of the file that the user selected in the Git panel. */
-export function DiffView() {
-  const diff = useGitStore((state) => state.diff)
-  const conflict = useGitStore((state) => state.conflict)
-  if (conflict) return <ConflictView key={conflict.path} conflict={conflict} />
-  if (!diff) {
+/** The load state of a diff: a status, an error, or the two sides. */
+export function DiffLoad({ load }: { load: Load<FileDiff> }) {
+  if (load.status === 'loading') return <p role="status">Loading the diff…</p>
+  if (load.status === 'failed') {
     return (
-      <p className="pane__hint">
-        Select a changed file or a commit in the Git panel to see its diff here.
+      <p className="message message--error" role="alert">
+        {load.message}
       </p>
     )
+  }
+  return <DiffSides diff={load.data} />
+}
+
+/**
+ * The detail tab of a changed file: the staged changes, or the changes on disk. It
+ * reads the diff again after each read of the status.
+ */
+export function DiffView({ path, staged }: { path: string; staged: boolean }) {
+  const revision = useGitStore((state) => state.revision)
+  const busy = useGitStore((state) => state.busy)
+  const load = useLoad(`${staged}:${path}:${revision}`, () =>
+    commands.gitDiff(path, staged),
+  )
+  const move = () => {
+    const { stage, unstage } = useGitStore.getState()
+    void (staged ? unstage([path]) : stage([path]))
   }
 
   return (
     <div className="diff">
       <div className="table-detail__header">
-        <h3 className="table-detail__title">{diff.title}</h3>
-        {diff.file && diff.load.status === 'loaded' && (
+        <h3 className="table-detail__title">{path}</h3>
+        {load.status === 'loaded' && (
           <AiAction
             label="Explain the changes"
             title="The AI explains the effect of the changes. The request sends the diff of this file."
             request={() => ({
               task: 'explain-diff',
-              text: `Explain the changes in ${diff.file?.path}.`,
-              context: {
-                type: 'file-diff',
-                path: diff.file?.path ?? '',
-                staged: diff.file?.staged ?? false,
-              },
+              text: `Explain the changes in ${path}.`,
+              context: { type: 'file-diff', path, staged },
             })}
           />
         )}
+        <button
+          type="button"
+          className="button button--small"
+          disabled={busy !== null}
+          onClick={move}
+        >
+          {staged ? 'Unstage' : 'Stage'}
+        </button>
       </div>
-      <p className="results__status">{diff.sides}</p>
-      {diff.load.status === 'loading' && <p role="status">Loading the diff…</p>}
-      {diff.load.status === 'failed' && (
-        <p className="message message--error" role="alert">
-          {diff.load.message}
-        </p>
-      )}
-      {diff.load.status === 'loaded' && <Sides diff={diff.load.data} />}
+      <p className="results__status">
+        {staged
+          ? 'Staged changes. Left: last commit. Right: staged.'
+          : 'Changes on disk. Left: staged or last commit. Right: file on disk.'}
+      </p>
+      <DiffLoad load={load} />
     </div>
   )
 }

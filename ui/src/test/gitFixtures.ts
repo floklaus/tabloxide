@@ -64,3 +64,8 @@ export function commit(index: number): CommitInfo {
     subject: `commit ${index}`,
   }
 }
+
+/** A commit at a time, for the groups by day. */
+export function commitAt(index: number, date: Date): CommitInfo {
+  return { ...commit(index), date: date.toISOString() }
+}

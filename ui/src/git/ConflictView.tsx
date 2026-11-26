@@ -3,9 +3,13 @@ import { useEffect, useRef, useState } from 'react'
 import { AiAction } from '../assistant/AiAction'
 import { onlyCodeBlock, splitAnswer } from '../assistant/answerSegments'
 import type { SessionStore } from '../assistant/assistantStore'
-import type { ConflictSides_Serialize as ConflictSides } from '../bindings'
+import {
+  commands,
+  type ConflictSides_Serialize as ConflictSides,
+} from '../bindings'
 import { DIFF_BASE, readOnlySide, sideLabel } from './diffExtensions'
-import { useGitStore, type ConflictState } from './gitStore'
+import { useLoad } from './gitLoad'
+import { useGitStore } from './gitStore'
 
 type TwoSidesProps = {
   path: string
@@ -221,9 +225,12 @@ function OneSide({ path, sides }: { path: string; sides: ConflictSides }) {
   )
 }
 
-/** The resolution of the conflict of one file. */
-export function ConflictView({ conflict }: { conflict: ConflictState }) {
-  const { path, load } = conflict
+/**
+ * The detail tab of a file with a conflict, for its resolution. It reads the versions
+ * only once, so a new read of the status does not remove the edits of the user.
+ */
+export function ConflictView({ path }: { path: string }) {
+  const load = useLoad(path, () => commands.gitConflict(path))
   const sides = load.status === 'loaded' ? load.data : null
 
   return (
