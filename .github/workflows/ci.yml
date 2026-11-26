@@ -1,9 +1,21 @@
 name: CI
 
+# A push and a pull request run the Linux job on the self-hosted runner (refer to
+# docs/self-hosted-runner.md). A pull request from a fork runs on a GitHub-hosted
+# runner, so that code from other people never runs on the server.
+#
+# macOS and Windows minutes are expensive. Their jobs run only when you start the
+# workflow by hand with "All platforms", and in the release workflow on a tag.
 on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      all-platforms:
+        description: Also build and test on macOS and Windows
+        type: boolean
+        default: false
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -15,22 +27,21 @@ permissions:
 jobs:
   build:
     name: Build and test (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+    # Linux: the self-hosted runner, except for a pull request from a fork.
+    runs-on: ${{ (matrix.os != 'linux' && matrix.os) || (github.event.pull_request.head.repo.fork && 'ubuntu-22.04') || fromJSON('["self-hosted", "linux", "tabloxide"]') }}
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: ubuntu-22.04
-            executable: target/release/tabloxide
-          - os: macos-latest
-            executable: target/release/tabloxide
-          - os: windows-latest
-            executable: target/release/tabloxide.exe
+        os: ${{ fromJSON((github.event_name == 'workflow_dispatch' && inputs.all-platforms) && '["linux", "macos-latest", "windows-latest"]' || '["linux"]') }}
+    env:
+      EXECUTABLE: ${{ matrix.os == 'windows-latest' && 'target/release/tabloxide.exe' || 'target/release/tabloxide' }}
     steps:
       - uses: actions/checkout@v4
 
+      # The self-hosted runner has these libraries. Its user has no sudo.
       - name: Install Linux system libraries
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && runner.environment == 'github-hosted'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
@@ -77,7 +88,7 @@ jobs:
       - name: Test Rust
         run: cargo test --workspace
 
-      # The Linux runner has Docker. The macOS and Windows runners do not run these tests.
+      # The Linux runners have Docker. The macOS and Windows runners do not run these tests.
       - name: Test the PostgreSQL adapter against a real server
         if: runner.os == 'Linux'
         run: cargo test -p tabloxide-adapter-postgres -- --ignored
@@ -94,11 +105,12 @@ jobs:
 
       - name: Smoke test (Linux)
         if: runner.os == 'Linux'
-        run: xvfb-run -a node scripts/smoke-start.mjs ${{ matrix.executable }}
+        run: xvfb-run -a node scripts/smoke-start.mjs "$EXECUTABLE"
 
       - name: Smoke test (macOS and Windows)
         if: runner.os != 'Linux'
-        run: node scripts/smoke-start.mjs ${{ matrix.executable }}
+        shell: bash
+        run: node scripts/smoke-start.mjs "$EXECUTABLE"
 
       - name: Upload installers
         uses: actions/upload-artifact@v4

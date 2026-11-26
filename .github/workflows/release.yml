@@ -17,6 +17,10 @@ name: Release
 # A manual run (Actions › Release › Run workflow) builds the installers for one
 # platform or for all platforms. It makes no release. The installers are the
 # artifacts of the run.
+# The builds of this workflow run on GitHub-hosted runners, also for Linux. The
+# Linux installer must run on glibc 2.35 (Ubuntu 22.04). A build on the
+# self-hosted runner would need the glibc of the server. Refer to
+# docs/self-hosted-runner.md.
 on:
   push:
     tags: ['v*']

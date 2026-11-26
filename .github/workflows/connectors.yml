@@ -10,6 +10,11 @@
 #
 # The private key never goes into this workflow.
 
+# The builds of this workflow run on GitHub-hosted runners, also for Linux. The
+# Linux installer must run on glibc 2.35 (Ubuntu 22.04). A build on the
+# self-hosted runner would need the glibc of the server. Refer to
+# docs/self-hosted-runner.md.
+
 name: Connectors
 
 on:
