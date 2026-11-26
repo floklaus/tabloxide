@@ -76,10 +76,16 @@ install_packages() {
   info "installing the system packages"
   export DEBIAN_FRONTEND=noninteractive
   apt-get update -q
+  # Ubuntu 24.04 and later have libfuse2 with the name libfuse2t64. The AppImage
+  # build needs it.
+  local fuse=libfuse2
+  if apt-cache show libfuse2t64 >/dev/null 2>&1; then
+    fuse=libfuse2t64
+  fi
   apt-get install -y -q --no-install-recommends \
     build-essential curl file git jq unzip xz-utils zstd ca-certificates pkg-config \
     libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev \
-    libssl-dev libxdo-dev xvfb xauth libfuse2 rpm
+    libssl-dev libxdo-dev xvfb xauth "$fuse" rpm
   command -v docker >/dev/null || die "Docker is missing. The Coolify server has it, so check the PATH."
 }
 
