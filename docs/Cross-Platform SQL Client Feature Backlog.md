@@ -84,6 +84,10 @@
 * Keep credentials out of logs, crash reports, query history, and Git diffs.
 * Show what data is sent in any optional diagnostics or update checks; make telemetry opt-in or clearly configurable.
 * Handle app crashes or database disconnects without corrupting local SQL files.
+* **Errors for people, with technical details and AI help** (requested by the product owner on 2026-11-26):
+  * Each error in the application shows a message for people first: what failed and what to do. The technical details (the error text of the database, Git, the connector, or the application, with its code) are behind a "Show the technical details" control, and the user can copy them.
+  * Each error has the action "Ask the AI". It sends the error to the assistant panel with its context: where it comes from (for example the Git panel, the schema browser, a query tab, a connector) and which action the user did (for example push, connect, run, install). The user does not type this context.
+  * The same rules as for the other AI actions apply: the request sends no rows and no passwords, the panel shows the "Sent:" line, and a production connection sends no rows.
 
 ## 4. Cross-platform engineering and release features
 
