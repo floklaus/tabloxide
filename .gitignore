@@ -21,3 +21,6 @@ dist/
 .vscode/*
 !.vscode/extensions.json
 .DS_Store
+
+# Local test databases (docker compose, datasets)
+/dev-databases/
