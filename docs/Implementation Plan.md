@@ -803,7 +803,7 @@ Status on 2026-11-26: phases 1 to 8 are done. M22 is complete.
 | 5. Connections | 2e464e5 |
 | 6. History | 869c021 |
 | 7. Git | fdba47c |
-| 8. Files, sessions, and the rest | The commit "build the Files and sessions views after the view standards" |
+| 8. Files, sessions, and the rest | 1b65698 |
 
 Phase 8 has these results:
 
