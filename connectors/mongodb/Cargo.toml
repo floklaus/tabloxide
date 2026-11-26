@@ -1,0 +1,27 @@
+[package]
+name = "tabloxide-connector-mongodb"
+description = "The MongoDB connector of Tabloxide"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[[bin]]
+name = "tabloxide-connector-mongodb"
+path = "src/main.rs"
+
+[dependencies]
+async-trait = "0.1"
+futures-util = "0.3"
+mongodb = { version = "3.10.2", default-features = false, features = ["compat-3-0-0", "rustls-tls", "dns-resolver"] }
+serde_json = "1.0.154"
+tabloxide-connector-sdk = { version = "0.1.0", path = "../../crates/connector-sdk" }
+tabloxide-core = { version = "0.1.0", path = "../../crates/core" }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync", "time"] }
+
+[dev-dependencies]
+tabloxide-connector-host = { version = "0.1.0", path = "../../crates/connector-host" }
+testcontainers-modules = { version = "0.13.0", features = ["mongo"] }
+
+[lints]
+workspace = true

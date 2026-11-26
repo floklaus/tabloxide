@@ -193,6 +193,7 @@ async fn the_connector_refuses_a_client_with_a_different_token() {
     ));
 }
 
+#[cfg(target_os = "linux")]
 #[tokio::test(flavor = "multi_thread")]
 async fn a_program_that_gives_no_port_does_not_start() {
     let error = ConnectorProcess::start(Path::new("/bin/true"), &[], &[], "scripted")

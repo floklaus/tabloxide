@@ -1,0 +1,8 @@
+engine = "mongodb"
+display_name = "MongoDB"
+version = "0.1.0"
+protocol = 1
+program = "tabloxide-connector-mongodb"
+language = "mongodb-shell"
+default_port = 27017
+publisher = "Tabloxide project"

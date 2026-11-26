@@ -82,6 +82,10 @@ jobs:
         if: runner.os == 'Linux'
         run: cargo test -p tabloxide-adapter-postgres -- --ignored
 
+      - name: Test the MongoDB connector against a real server
+        if: runner.os == 'Linux'
+        run: cargo test -p tabloxide-connector-mongodb -- --ignored
+
       - name: Check that the TypeScript bindings are current
         run: git diff --exit-code -- ui/src/bindings.ts
 

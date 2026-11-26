@@ -9,6 +9,7 @@
     "dev": "tauri dev",
     "build": "tauri build",
     "bindings": "cargo test -p tabloxide export_bindings",
+    "connectors:dev": "bash scripts/dev-connectors.sh",
     "lint": "pnpm --dir ui lint && cargo clippy --workspace --all-targets -- -D warnings",
     "typecheck": "pnpm --dir ui typecheck",
     "format": "prettier --write . && cargo fmt --all",
