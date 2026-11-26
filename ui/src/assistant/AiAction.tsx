@@ -1,10 +1,16 @@
 import { Icon } from '../shell/icons'
-import { runAiAction, type ActionRequest } from './assistantStore'
+import {
+  runAiAction,
+  type ActionRequest,
+  type SessionStore,
+} from './assistantStore'
 
 type Props = {
   label: string
   /** Makes the request when the user selects the button. */
   request: () => ActionRequest
+  /** Runs after the end of the request, with its session. */
+  after?: (session: SessionStore) => void
   disabled?: boolean
   /** The reason why the action is not available, or an explanation. */
   title?: string
@@ -18,6 +24,7 @@ type Props = {
 export function AiAction({
   label,
   request,
+  after,
   disabled = false,
   title,
   className = 'button button--small',
@@ -28,7 +35,11 @@ export function AiAction({
       className={`${className} ai-action`}
       disabled={disabled}
       title={title}
-      onClick={() => void runAiAction(request())}
+      onClick={() =>
+        void runAiAction(request()).then((session) => {
+          if (session) after?.(session)
+        })
+      }
     >
       <Icon name="sparkle" size={14} />
       {label}

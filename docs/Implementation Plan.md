@@ -520,6 +520,12 @@ Status of stage 3 on 2026-11-25: stage 3 is complete in code.
 * "Explain the table" goes to the panel.
 * "Write a starter query" opens a new editor tab with the name "<table>: starter query". The tab has the SQL of the answer. The application does not run it.
 
+Status of stage 4 on 2026-11-25: stage 4 is complete in code.
+
+* The two actions are in the Table view of the results pane, not in a menu of the schema tree. Each row of the tree hides the content outside the row, thus a menu at a row would be cut.
+* The UI sends the schema and the name of the table. The backend reads the structure with `relation_detail` and puts it into the request. The UI cannot set the structure, because the field is not in the input.
+* "Write a starter query" opens a new tab only for an answer with exactly one code block. The tab gets the connection of the SQL tab.
+
 **Stage 5: Git (1.5 weeks).**
 
 * **Commit message.** The message field gets a sparkle button, and then "Write again".

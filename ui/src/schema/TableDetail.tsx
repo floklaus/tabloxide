@@ -1,4 +1,10 @@
+import { AiAction } from '../assistant/AiAction'
 import { ResultGrid } from '../results/ResultGrid'
+import {
+  explainTableRequest,
+  openStarterQuery,
+  starterQueryRequest,
+} from './schemaAi'
 import { useSchemaStore } from './schemaStore'
 import { relationKey } from './treeModel'
 
@@ -69,9 +75,22 @@ export function TableDetail() {
 
   return (
     <div className="table-detail">
-      <h3 className="table-detail__title">
-        {selected.schema}.{selected.name}
-      </h3>
+      <div className="table-detail__header">
+        <h3 className="table-detail__title">
+          {selected.schema}.{selected.name}
+        </h3>
+        <AiAction
+          label="Explain the table"
+          title="The AI explains the table from its structure. The request sends no rows."
+          request={() => explainTableRequest(selected)}
+        />
+        <AiAction
+          label="Write a starter query"
+          title="The AI writes a first query. It opens in a new tab, and the application does not run it."
+          request={() => starterQueryRequest(selected)}
+          after={(session) => openStarterQuery(selected, session)}
+        />
+      </div>
       {(!detail || detail.status === 'loading') && (
         <p role="status">Loading the structure…</p>
       )}

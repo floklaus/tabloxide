@@ -16,6 +16,21 @@ const FENCE = '```'
  * Splits an answer into text and fenced code blocks. The answer can be a partial
  * answer, because the text comes in parts.
  */
+/**
+ * Returns the code of the one complete code block of `answer`, or `null` if the
+ * answer has no code block or more than one.
+ */
+export function onlyCodeBlock(answer: string): string | null {
+  const blocks = splitAnswer(answer).filter(
+    (segment) => segment.type === 'code',
+  )
+  const [block] = blocks
+  if (blocks.length !== 1 || block.type !== 'code' || !block.isComplete) {
+    return null
+  }
+  return block.code.replace(/\n$/, '')
+}
+
 export function splitAnswer(answer: string): Segment[] {
   const segments: Segment[] = []
   let text: string[] = []

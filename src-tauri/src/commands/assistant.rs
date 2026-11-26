@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex, PoisonError};
 use tabloxide_assistant::{
     AssistantError, AssistantErrorKind, ChatMessage, ChatOutcome, ChatProvider, Database,
     ExplainRejection, MAX_DETAILED_RELATIONS, SchemaContext, SchemaCount, Task, TextSink,
-    chat_request, collect_schema, explain_statement, plan_text, sent_summary,
+    chat_request, collect_schema, explain_statement, plan_text, read_relations, sent_summary,
 };
 use tabloxide_core::{QueryError, QuerySession, Secret};
 use tauri::ipc::Channel;
@@ -266,6 +266,13 @@ async fn answer(
             detailed: count(database.schema.detailed_count()),
         });
     }
+    // A table of the schema browser gets its structure from the database here. The
+    // UI cannot send it.
+    let entry = session.as_ref().map(|(entry, _)| entry.session.as_ref());
+    let messages = match read_relations(&request.messages, entry).await {
+        Ok(messages) => messages,
+        Err(error) => return Ok(AskResult::Failed { error }),
+    };
     let _ = on_event.send(AssistantEvent::Sent {
         summary: summary_of(request, database.as_ref()),
     });
@@ -281,7 +288,7 @@ async fn answer(
         model,
         task: request.task,
         database: database.as_ref(),
-        messages: &request.messages,
+        messages: &messages,
         api_key,
     };
     Ok(ask.send_with_cancel(cancel, &on_part).await)

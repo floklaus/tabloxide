@@ -86,6 +86,15 @@ fn render_detail(out: &mut String, detail: &RelationDetail) {
     }
 }
 
+/// Returns the text of the structure of one table or view: its columns, indexes, and
+/// constraints. The text has no default expressions and no rows.
+#[must_use]
+pub fn relation_text(detail: &RelationDetail) -> String {
+    let mut out = String::new();
+    render_detail(&mut out, detail);
+    out
+}
+
 impl SchemaContext {
     /// Number of tables and views.
     #[must_use]

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { splitAnswer } from './answerSegments'
+import { onlyCodeBlock, splitAnswer } from './answerSegments'
 
 describe('splitAnswer', () => {
   test('returns the text and the code blocks in sequence', () => {
@@ -46,5 +46,21 @@ describe('splitAnswer', () => {
 
   test('returns no segments for an empty answer', () => {
     expect(splitAnswer('  \n')).toEqual([])
+  })
+})
+
+describe('onlyCodeBlock', () => {
+  test('returns the code of the one complete block', () => {
+    expect(onlyCodeBlock('Text.\n\n```sql\nselect 1\n```\nMore text.')).toBe(
+      'select 1',
+    )
+  })
+
+  test('returns null for no block, two blocks, or a block without its end', () => {
+    expect(onlyCodeBlock('Only text.')).toBeNull()
+    expect(
+      onlyCodeBlock('```sql\nselect 1\n```\n```sql\nselect 2\n```'),
+    ).toBeNull()
+    expect(onlyCodeBlock('```sql\nselect 1')).toBeNull()
   })
 })

@@ -5,7 +5,7 @@ import { connectionLanguage } from '../engines/engineStore'
 import { toMessage } from '../lib/errors'
 import { useShellStore } from '../shell/shellStore'
 import { sqlTabForTools, type Tab } from '../tabs/tabsStore'
-import { splitAnswer } from './answerSegments'
+import { onlyCodeBlock } from './answerSegments'
 import { createSession, type SessionStore } from './assistantSession'
 import { runAiAction, useAssistantStore } from './assistantStore'
 
@@ -110,18 +110,6 @@ const CLOSED = {
 let session: SessionStore | null = null
 /** Each request has a number. An answer of an old request does nothing. */
 let requestNumber = 0
-
-/** The one code block of the answer, or `null`. */
-function onlyCodeBlock(answer: string): string | null {
-  const blocks = splitAnswer(answer).filter(
-    (segment) => segment.type === 'code',
-  )
-  const [block] = blocks
-  if (blocks.length !== 1 || block.type !== 'code' || !block.isComplete) {
-    return null
-  }
-  return block.code.replace(/\n$/, '')
-}
 
 export const useInlineChange = create<InlineState>((set, get) => {
   const unlock = () => activeEditor()?.clearProposal()

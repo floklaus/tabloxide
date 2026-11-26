@@ -33,7 +33,8 @@ type TabsState = {
   error: string | null
   /** Restores the tabs of the last session. Always leaves a minimum of one tab. */
   load: () => Promise<void>
-  newTab: (content?: string) => string
+  /** Opens a new tab. Without `title`, the tab gets the next free name. */
+  newTab: (content?: string, title?: string) => string
   openFile: (path: string) => Promise<void>
   activate: (id: string) => void
   /** Shows the assistant session in its tab. Opens the tab if necessary. */
@@ -78,10 +79,10 @@ function nextTitle(tabs: Tab[]): string {
   return `Query ${number}`
 }
 
-function makeTab(tabs: Tab[], content = ''): Tab {
+function makeTab(tabs: Tab[], content = '', title?: string): Tab {
   return {
     id: crypto.randomUUID(),
-    title: nextTitle(tabs),
+    title: title ?? nextTitle(tabs),
     path: null,
     content,
     savedContent: null,
@@ -199,8 +200,8 @@ export const useTabsStore = create<TabsState>((set, get) => {
       set({ tabs, activeId: active.id, sqlId: active.id, isLoaded: true })
     },
 
-    newTab: (content = '') => {
-      const tab = makeTab(get().tabs, content)
+    newTab: (content = '', title) => {
+      const tab = makeTab(get().tabs, content, title)
       set({ tabs: [...get().tabs, tab], activeId: tab.id, sqlId: tab.id })
       return tab.id
     },

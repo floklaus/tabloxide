@@ -3322,3 +3322,14 @@ body {
 .inline-change__hint {
   color: var(--color-text-muted);
 }
+
+.table-detail__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.table-detail__header .table-detail__title {
+  flex: 1 1 auto;
+}

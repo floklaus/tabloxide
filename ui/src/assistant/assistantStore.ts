@@ -154,12 +154,17 @@ export function labelOf(state: SessionState): SessionLabel {
  * Shows the assistant panel and sends the request of an AI action. Without an API
  * key, the panel shows the setup and the request does not go. If the session of the
  * panel has a request in progress, the action starts a new session.
+ *
+ * Returns the session of the request after its end, or `null` if no request went.
  */
-export async function runAiAction(action: ActionRequest): Promise<void> {
+export async function runAiAction(
+  action: ActionRequest,
+): Promise<SessionStore | null> {
   const shell = useShellStore.getState()
   if (!shell.panels.assistant) shell.togglePanel('assistant')
   const assistant = useAssistantStore.getState()
-  if (assistant.hasKey === false) return
+  if (assistant.hasKey === false) return null
   if (activeSession().getState().status !== 'idle') assistant.newSession()
-  await activeSession().getState().runAction(action)
+  const session = activeSession()
+  return (await session.getState().runAction(action)) ? session : null
 }

@@ -269,7 +269,12 @@ code?: string | null } |
 /**  The text that the user selected in the editor. */
 { type: "selection"; text: string } | 
 /**  A command of the Git console and its output. */
-{ type: "git-output"; command: string; output: string };
+{ type: "git-output"; command: string; output: string } | 
+/**
+ *  A table or a view of the schema browser. The backend reads its structure. The
+ *  UI cannot set `structure`, thus no other text goes into the request in its place.
+ */
+{ type: "relation"; schema: string; name: string };
 
 /**  The data of an AI action. The UI sends it with the message of the user. */
 export type ActionContext_Serialize = 
@@ -289,7 +294,12 @@ code: string | null } |
 /**  The text that the user selected in the editor. */
 { type: "selection"; text: string } | 
 /**  A command of the Git console and its output. */
-{ type: "git-output"; command: string; output: string };
+{ type: "git-output"; command: string; output: string } | 
+/**
+ *  A table or a view of the schema browser. The backend reads its structure. The
+ *  UI cannot set `structure`, thus no other text goes into the request in its place.
+ */
+{ type: "relation"; schema: string; name: string; structure: string | null };
 
 /**  Name and version of the application. */
 export type AppInfo = {

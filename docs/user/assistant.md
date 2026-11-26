@@ -124,7 +124,16 @@ To explain the text, press **Ctrl+Shift+I**. The explanation goes to the assista
 
 The request sends the text, the instruction, and the structure of the database. It sends no rows. Tabloxide does not run the changed text.
 
-## 8. Use sessions
+## 8. Explain a table, or write a starter query
+
+Select a table or a view in the schema browser. The results pane shows its structure in the **Table** view. The view has two AI actions:
+
+- **Explain the table** explains in the assistant panel what one row is, the key, the references, and the indexes.
+- **Write a starter query** writes a first query for the table. The query opens in a new tab with the name "*table*: starter query" and the connection of your tab. Tabloxide does not run it. The answer also stays in the panel.
+
+Tabloxide reads the structure of the table from the database for the request: the columns, the indexes, and the constraints. The request sends no rows and no default values.
+
+## 9. Use sessions
 
 Each conversation is a session. Two or more sessions can run at the same time. The sessions stay until you close the workspace. Tabloxide does not store them on disk.
 
@@ -141,7 +150,7 @@ The tab of a session shows these parts:
 
 A request of a session uses the last SQL tab, also when the tab of the session is active. The status bar shows the number of sessions that run.
 
-## 9. Limits
+## 10. Limits
 
 - The model can make mistakes. Examine each statement before you run it, most of all a statement that changes or removes data.
 - The model does not see rows, the number of rows, or the distribution of values, unless a plan shows them.

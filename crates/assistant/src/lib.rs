@@ -23,10 +23,11 @@ mod sse;
 #[cfg(test)]
 mod test_server;
 
-pub use action::{ActionContext, MAX_GIT_OUTPUT_CHARS, SchemaCount, sent_summary};
+pub use action::{ActionContext, MAX_GIT_OUTPUT_CHARS, SchemaCount, read_relations, sent_summary};
 pub use anthropic::AnthropicProvider;
 pub use context::{
     MAX_DETAILED_RELATIONS, RelationContext, SchemaContext, SchemaGroup, collect_schema,
+    relation_text,
 };
 pub use error::{AssistantError, AssistantErrorKind};
 pub use explain::{
