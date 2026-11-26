@@ -163,7 +163,7 @@ describe('AssistantPanel', () => {
         id: expect.any(Number),
         session_id: 7,
         task: 'sql',
-        messages: [{ role: 'user', text: 'Count the items' }],
+        messages: [{ role: 'user', text: 'Count the items', context: null }],
         refresh_schema: false,
       },
       expect.anything(),
@@ -186,9 +186,9 @@ describe('AssistantPanel', () => {
     await sendRequest(user, 'Second')
 
     expect(assistantAsk.mock.calls[1][0].messages).toEqual([
-      { role: 'user', text: 'First' },
-      { role: 'assistant', text: 'First answer' },
-      { role: 'user', text: 'Second' },
+      { role: 'user', text: 'First', context: null },
+      { role: 'assistant', text: 'First answer', context: null },
+      { role: 'user', text: 'Second', context: null },
     ])
   })
 

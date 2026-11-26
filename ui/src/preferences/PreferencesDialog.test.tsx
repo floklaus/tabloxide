@@ -50,7 +50,7 @@ describe('PreferencesDialog', () => {
         staging: 'risky' as const,
         production: 'always' as const,
       },
-      assistant: { model: 'claude-opus-5-5' as const },
+      assistant: { model: 'claude-opus-5-5' as const, rows_for_ai: 100 },
       check_for_updates: true,
     }
     preferencesSave.mockResolvedValue({ status: 'ok', data: changed })
@@ -134,7 +134,34 @@ describe('PreferencesDialog', () => {
 
     expect(preferencesSave).toHaveBeenCalledWith({
       ...DEFAULT_PREFERENCES,
-      assistant: { model: 'claude-sonnet-5-5' },
+      assistant: {
+        ...DEFAULT_PREFERENCES.assistant,
+        model: 'claude-sonnet-5-5',
+      },
+    })
+  })
+
+  test('stores the number of rows for the AI and tells the production rule', async () => {
+    const user = userEvent.setup()
+    preferencesSave.mockResolvedValue({
+      status: 'ok',
+      data: DEFAULT_PREFERENCES,
+    })
+    render(<PreferencesDialog onClose={() => {}} />)
+
+    await user.click(screen.getByRole('tab', { name: 'AI assistant' }))
+    const rows = screen.getByLabelText(/Rows for “Ask about these rows”/)
+    expect(rows).toHaveValue(100)
+    expect(
+      screen.getByText(/A production connection never sends rows/),
+    ).toBeVisible()
+    await user.clear(rows)
+    await user.type(rows, '250')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(preferencesSave).toHaveBeenCalledWith({
+      ...DEFAULT_PREFERENCES,
+      assistant: { ...DEFAULT_PREFERENCES.assistant, rows_for_ai: 250 },
     })
   })
 

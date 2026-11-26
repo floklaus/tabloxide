@@ -9,6 +9,9 @@ pub const DEFAULT_TAB_WIDTH: u8 = 2;
 pub const TAB_WIDTH_RANGE: (u8, u8) = (1, 8);
 pub const DEFAULT_HISTORY_RETENTION_DAYS: u32 = 90;
 pub const HISTORY_RETENTION_RANGE: (u32, u32) = (1, 3650);
+/// The number of rows that "Ask about these rows" sends to the AI service.
+pub const DEFAULT_ROWS_FOR_AI: u32 = 100;
+pub const ROWS_FOR_AI_RANGE: (u32, u32) = (1, 1000);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
@@ -108,11 +111,23 @@ impl AssistantModel {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(default)]
 pub struct AssistantPreferences {
     pub model: AssistantModel,
+    /// The maximum number of rows that "Ask about these rows" sends. A production
+    /// connection never sends rows, whatever this value is.
+    pub rows_for_ai: u32,
+}
+
+impl Default for AssistantPreferences {
+    fn default() -> Self {
+        Self {
+            model: AssistantModel::default(),
+            rows_for_ai: DEFAULT_ROWS_FOR_AI,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -163,6 +178,13 @@ impl Preferences {
             history_retention_days: self
                 .history_retention_days
                 .clamp(HISTORY_RETENTION_RANGE.0, HISTORY_RETENTION_RANGE.1),
+            assistant: AssistantPreferences {
+                rows_for_ai: self
+                    .assistant
+                    .rows_for_ai
+                    .clamp(ROWS_FOR_AI_RANGE.0, ROWS_FOR_AI_RANGE.1),
+                ..self.assistant
+            },
             ..self
         }
     }
@@ -187,11 +209,17 @@ mod tests {
                 staging: ConfirmRule::Always,
                 production: ConfirmRule::Risky,
             },
-            assistant: AssistantPreferences::default(),
+            assistant: AssistantPreferences {
+                model: AssistantModel::Haiku,
+                rows_for_ai: 5000,
+            },
             check_for_updates: false,
         };
 
         let normalized = preferences.normalized();
+
+        assert_eq!(normalized.assistant.rows_for_ai, 1000);
+        assert_eq!(normalized.assistant.model, AssistantModel::Haiku);
 
         assert_eq!(normalized.editor.font_size, 32);
         assert_eq!(normalized.editor.tab_width, 1);
@@ -214,6 +242,7 @@ mod tests {
             DEFAULT_HISTORY_RETENTION_DAYS
         );
         assert_eq!(preferences.guardrails, Guardrails::default());
+        assert_eq!(preferences.assistant.rows_for_ai, DEFAULT_ROWS_FOR_AI);
         // Preferences of an earlier version check for updates.
         assert!(preferences.check_for_updates);
     }

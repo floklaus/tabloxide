@@ -3,6 +3,7 @@ import { Channel } from '@tauri-apps/api/core'
 import { createStore, type StoreApi } from 'zustand/vanilla'
 import {
   commands,
+  type ActionContext,
   type AssistantEvent,
   type Environment,
   type Role,
@@ -18,6 +19,10 @@ import { useWorkspaceStore } from '../workspace/workspaceStore'
 export type AssistantMessage = {
   role: Role
   text: string
+  /** The data of an AI action, for a message of the user. */
+  context?: ActionContext
+  /** What the request of this message sent, for example "Sent: your request." */
+  sent?: string
   /** A remark of the application about the message, for example that it is not complete. */
   note?: string
 }
@@ -76,6 +81,11 @@ export type SessionState = {
   setDraft: (draft: string) => void
   /** Sends the text of the request field. */
   send: () => Promise<void>
+  /**
+   * Sends the request of an AI action. Returns `false` if a request of the
+   * session is in progress.
+   */
+  runAction: (action: ActionRequest) => Promise<boolean>
   /**
    * Reads the plan of the statement at the cursor and asks for its analysis.
    * `analyze` runs the statement to measure the times.
@@ -184,10 +194,40 @@ export function planRequest(
   return lines.join('\n')
 }
 
-/** The phases of a request of each task, in sequence. */
+const WITH_SCHEMA: AssistantStatus[] = [
+  'reading-schema',
+  'waiting',
+  'answering',
+]
+const WITHOUT_SCHEMA: AssistantStatus[] = ['waiting', 'answering']
+
+/** The phases of a request of each task, in sequence. A Git task reads no schema. */
 export const PHASES: Record<RequestTask, AssistantStatus[]> = {
-  plan: ['reading-plan', 'reading-schema', 'waiting', 'answering'],
-  sql: ['reading-schema', 'waiting', 'answering'],
+  plan: ['reading-plan', ...WITH_SCHEMA],
+  sql: WITH_SCHEMA,
+  'query-error': WITH_SCHEMA,
+  'change-selection': WITH_SCHEMA,
+  'explain-selection': WITH_SCHEMA,
+  'explain-table': WITH_SCHEMA,
+  'starter-query': WITH_SCHEMA,
+  rows: WITH_SCHEMA,
+  'commit-message': WITHOUT_SCHEMA,
+  'explain-diff': WITHOUT_SCHEMA,
+  conflict: WITHOUT_SCHEMA,
+  'git-output': WITHOUT_SCHEMA,
+}
+
+/** `true` if a request of the task sends the structure of the database. */
+export function usesSchema(task: RequestTask): boolean {
+  return PHASES[task].includes('reading-schema')
+}
+
+/** A request of an AI action, for example "Explain and fix" of a query error. */
+export type ActionRequest = {
+  task: RequestTask
+  /** The request text. The panel shows it as the message of the user. */
+  text: string
+  context?: ActionContext
 }
 
 const MAX_TITLE = 48
@@ -276,6 +316,15 @@ export function createSession(): SessionStore {
       } else if (event.type === 'schema') {
         const { relations, detailed } = event
         set({ status: 'waiting', schema: { relations, detailed } })
+      } else if (event.type === 'sent') {
+        // The line belongs to the request: the last message of the user.
+        set((state) => ({
+          messages: state.messages.map((message, index) =>
+            index === state.messages.length - 1 && message.role === 'user'
+              ? { ...message, sent: event.summary }
+              : message,
+          ),
+        }))
       } else {
         set((state) => ({
           status: 'answering',
@@ -284,17 +333,34 @@ export function createSession(): SessionStore {
       }
     }
 
-    const ask = async (text: string, task: Task, tab: Tab | undefined) => {
+    const ask = async (
+      text: string,
+      task: Task,
+      tab: Tab | undefined,
+      context?: ActionContext,
+    ) => {
       const id = nextAskId++
       activeAskId = id
       isStopRequested = false
       // A reset or a newer request makes this request old. An old request must not
       // change the state.
       const isCurrent = () => activeAskId === id
-      const history = get().messages.map(({ role, text }) => ({ role, text }))
-      const messages = [...history, { role: 'user' as const, text }]
+      // Each message keeps the data of its action, so that a later request of the
+      // session still has it.
+      const history = get().messages.map(({ role, text, context }) => ({
+        role,
+        text,
+        context: context ?? null,
+      }))
+      const messages = [
+        ...history,
+        { role: 'user' as const, text, context: context ?? null },
+      ]
       set((state) => ({
-        messages: [...state.messages, { role: 'user', text }],
+        messages: [
+          ...state.messages,
+          { role: 'user', text, ...(context ? { context } : {}) },
+        ],
         answer: '',
         status: 'waiting',
         error: null,
@@ -445,6 +511,18 @@ export function createSession(): SessionStore {
         if (!text || get().status !== 'idle') return
         set({ draft: '' })
         await ask(text, 'sql', activeTab())
+      },
+
+      runAction: async ({ task, text, context }) => {
+        if (get().status !== 'idle') return false
+        // A Git task needs no database. Thus it does not connect the tab.
+        await ask(
+          text,
+          task,
+          usesSchema(task) ? activeTab() : undefined,
+          context,
+        )
+        return true
       },
 
       analyzePlan: async (analyze) => {

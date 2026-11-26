@@ -83,6 +83,7 @@ function Message({ message }: { message: AssistantMessage }) {
         ),
       )}
       {message.note && <p className="assistant__note">{message.note}</p>}
+      {message.sent && <p className="assistant__sent">{message.sent}</p>}
     </div>
   )
 }

@@ -18,6 +18,8 @@ const PATHS = {
   plus: 'M12 5v14 M5 12h14',
   close: 'M6 6l12 12 M18 6L6 18',
   grip: 'M9 6h.01 M15 6h.01 M9 12h.01 M15 12h.01 M9 18h.01 M15 18h.01',
+  sparkle:
+    'M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z',
 } as const
 
 export type IconName = keyof typeof PATHS

@@ -276,6 +276,7 @@ export function PreferencesDialog({ onClose }: Props) {
                     setDraft({
                       ...draft,
                       assistant: {
+                        ...draft.assistant,
                         model: event.target.value as AssistantModel,
                       },
                     })
@@ -289,6 +290,23 @@ export function PreferencesDialog({ onClose }: Props) {
                 </select>
               </label>
               <ApiKeyField />
+            </div>
+            <div className="form__grid form__grid--two">
+              <NumberField
+                label="Rows for “Ask about these rows”"
+                value={draft.assistant.rows_for_ai}
+                limits={LIMITS.rowsForAi}
+                onChange={(rows_for_ai) =>
+                  setDraft({
+                    ...draft,
+                    assistant: { ...draft.assistant, rows_for_ai },
+                  })
+                }
+              />
+              <p className="field__hint">
+                The other AI actions send no rows. A production connection never
+                sends rows, and no setting changes this.
+              </p>
             </div>
           </fieldset>
         </Panel>

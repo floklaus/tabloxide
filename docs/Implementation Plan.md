@@ -471,6 +471,13 @@ Changes in the UI:
 * The preference `assistant.rows_for_ai`, 1 to 1000, default 100. It goes on the tab "AI assistant" of the Preferences dialog. The tab also shows: "A production connection never sends rows, and no setting changes this."
 * Unit tests for the context text, the limits, the summaries, and the third system part.
 
+Status of stage 1 on 2026-11-25: stage 1 is complete in code.
+
+* The context of an action goes with its message of the user, as `ChatMessage.context`. Thus a later request of the session sends the data of the earlier actions again. The backend puts the data into the text between tags, and the instructions tell the AI service that this text is data.
+* Stage 1 has the data that the UI sends: `QueryError`, `Selection`, and `GitOutput`. The data that the backend reads (the diff, the conflict, the table, and the rows) comes with stages 4 to 6.
+* A Git task sends no structure of the database, and it does not connect the tab.
+* No feature shows an AI action yet. Stage 2 adds the first one.
+
 **Stage 2: query errors (0.5 weeks).**
 
 * The error of a query gets the button "Explain and fix".

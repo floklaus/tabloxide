@@ -248,6 +248,45 @@ export const commands = {
 };
 
 /* Types */
+/**  The data of an AI action. The UI sends it with the message of the user. */
+export type ActionContext = ActionContext_Serialize | ActionContext_Deserialize;
+
+/**  The data of an AI action. The UI sends it with the message of the user. */
+export type ActionContext_Deserialize = 
+/**  A statement that failed, and the error of the database. */
+{ type: "query-error"; statement: string; message: string; 
+/**
+ *  The position of the error in the statement: the number of the character,
+ *  from 1.
+ */
+position?: number | null; 
+/**  The hint of the database. */
+hint?: string | null; 
+/**  The error code of the database, for example the SQLSTATE code. */
+code?: string | null } | 
+/**  The text that the user selected in the editor. */
+{ type: "selection"; text: string } | 
+/**  A command of the Git console and its output. */
+{ type: "git-output"; command: string; output: string };
+
+/**  The data of an AI action. The UI sends it with the message of the user. */
+export type ActionContext_Serialize = 
+/**  A statement that failed, and the error of the database. */
+{ type: "query-error"; statement: string; message: string; 
+/**
+ *  The position of the error in the statement: the number of the character,
+ *  from 1.
+ */
+position: number | null; 
+/**  The hint of the database. */
+hint: string | null; 
+/**  The error code of the database, for example the SQLSTATE code. */
+code: string | null } | 
+/**  The text that the user selected in the editor. */
+{ type: "selection"; text: string } | 
+/**  A command of the Git console and its output. */
+{ type: "git-output"; command: string; output: string };
+
 /**  Name and version of the application. */
 export type AppInfo = {
 	name: string,
@@ -264,7 +303,7 @@ export type AskRequest_Deserialize = {
 	session_id?: number | null,
 	task: Task,
 	/**  The conversation. The last message is the new request of the user. */
-	messages: ChatMessage[],
+	messages: ChatMessage_Deserialize[],
 	/**  `true` reads the schema again. `false` uses the schema of the last request. */
 	refresh_schema: boolean,
 };
@@ -276,7 +315,7 @@ export type AskRequest_Serialize = {
 	session_id: number | null,
 	task: Task,
 	/**  The conversation. The last message is the new request of the user. */
-	messages: ChatMessage[],
+	messages: ChatMessage_Serialize[],
 	/**  `true` reads the schema again. `false` uses the schema of the last request. */
 	refresh_schema: boolean,
 };
@@ -323,6 +362,11 @@ export type AssistantEvent =
  *  the number of those for which the request has the columns.
  */
 { type: "schema"; relations: number; detailed: number } | 
+/**
+ *  What the request sends to the AI service, for example "Sent: your request and
+ *  the structure of 12 tables and views." It comes before the answer text.
+ */
+{ type: "sent"; summary: string } | 
 /**  The next part of the answer text. */
 { type: "text"; text: string };
 
@@ -336,10 +380,20 @@ export type AssistantPreferences = AssistantPreferences_Serialize | AssistantPre
 
 export type AssistantPreferences_Deserialize = {
 	model?: AssistantModel,
+	/**
+	 *  The maximum number of rows that "Ask about these rows" sends. A production
+	 *  connection never sends rows, whatever this value is.
+	 */
+	rows_for_ai?: number,
 };
 
 export type AssistantPreferences_Serialize = {
 	model: AssistantModel,
+	/**
+	 *  The maximum number of rows that "Ask about these rows" sends. A production
+	 *  connection never sends rows, whatever this value is.
+	 */
+	rows_for_ai: number,
 };
 
 export type AssistantStatus = {
@@ -381,9 +435,28 @@ export type Capabilities = {
 export type ChangeKind = "added" | "modified" | "deleted" | "renamed" | "copied" | "type-changed";
 
 /**  One message of the conversation. */
-export type ChatMessage = {
+export type ChatMessage = ChatMessage_Serialize | ChatMessage_Deserialize;
+
+/**  One message of the conversation. */
+export type ChatMessage_Deserialize = {
 	role: Role,
 	text: string,
+	/**
+	 *  The data of an AI action, for a message of the user. `chat_request` puts it
+	 *  into the text. A message that goes to a `ChatProvider` has no context.
+	 */
+	context?: ActionContext_Deserialize | null,
+};
+
+/**  One message of the conversation. */
+export type ChatMessage_Serialize = {
+	role: Role,
+	text: string,
+	/**
+	 *  The data of an AI action, for a message of the user. `chat_request` puts it
+	 *  into the text. A message that goes to a `ChatProvider` has no context.
+	 */
+	context?: ActionContext_Serialize,
 };
 
 /**  Data about an answer that ended. */
@@ -1492,7 +1565,27 @@ export type Task =
 /**  Write or change SQL. */
 "sql" | 
 /**  Analyze an execution plan. */
-"plan";
+"plan" | 
+/**  Explain the error of a query and fix the statement. */
+"query-error" | 
+/**  Change the selected text after an instruction of the user. */
+"change-selection" | 
+/**  Explain the selected text. */
+"explain-selection" | 
+/**  Explain a table or a view. */
+"explain-table" | 
+/**  Write a first query for a table or a view. */
+"starter-query" | 
+/**  Write a commit message for the staged changes. */
+"commit-message" | 
+/**  Explain the changes of a diff. */
+"explain-diff" | 
+/**  Propose a resolution of a merge conflict. */
+"conflict" | 
+/**  Explain the output of a command of the Git console. */
+"git-output" | 
+/**  Answer a question about rows of a result. */
+"rows";
 
 /**  A range in the script, in UTF-16 code units. */
 export type TextRange = {

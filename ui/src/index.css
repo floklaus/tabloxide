@@ -1736,6 +1736,7 @@ body {
 }
 
 .assistant__note,
+.assistant__sent,
 .assistant__schema,
 .assistant__status {
   margin: 0;
@@ -3228,4 +3229,17 @@ body {
   flex: 1;
   color: var(--color-text-muted);
   overflow-wrap: anywhere;
+}
+
+/* ---------- AI actions ---------- */
+
+.ai-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ai-action .icon {
+  flex: none;
+  color: var(--color-accent);
 }

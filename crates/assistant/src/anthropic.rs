@@ -378,18 +378,9 @@ mod tests {
                 },
             ],
             messages: vec![
-                ChatMessage {
-                    role: Role::User,
-                    text: "one".to_owned(),
-                },
-                ChatMessage {
-                    role: Role::Assistant,
-                    text: "two".to_owned(),
-                },
-                ChatMessage {
-                    role: Role::User,
-                    text: "three".to_owned(),
-                },
+                ChatMessage::new(Role::User, "one"),
+                ChatMessage::new(Role::Assistant, "two"),
+                ChatMessage::new(Role::User, "three"),
             ],
         }
     }

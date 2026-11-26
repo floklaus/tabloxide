@@ -1,6 +1,6 @@
 //! The interface to an AI service. It does not depend on one service.
 
-use crate::AssistantError;
+use crate::{ActionContext, AssistantError};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use tabloxide_core::Secret;
@@ -19,6 +19,22 @@ pub enum Role {
 pub struct ChatMessage {
     pub role: Role,
     pub text: String,
+    /// The data of an AI action, for a message of the user. `chat_request` puts it
+    /// into the text. A message that goes to a `ChatProvider` has no context.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub context: Option<ActionContext>,
+}
+
+impl ChatMessage {
+    /// A message without the data of an action.
+    #[must_use]
+    pub fn new(role: Role, text: impl Into<String>) -> Self {
+        Self {
+            role,
+            text: text.into(),
+            context: None,
+        }
+    }
 }
 
 /// The type of work that the user asks for.
@@ -30,6 +46,47 @@ pub enum Task {
     Sql,
     /// Analyze an execution plan.
     Plan,
+    /// Explain the error of a query and fix the statement.
+    QueryError,
+    /// Change the selected text after an instruction of the user.
+    ChangeSelection,
+    /// Explain the selected text.
+    ExplainSelection,
+    /// Explain a table or a view.
+    ExplainTable,
+    /// Write a first query for a table or a view.
+    StarterQuery,
+    /// Write a commit message for the staged changes.
+    CommitMessage,
+    /// Explain the changes of a diff.
+    ExplainDiff,
+    /// Propose a resolution of a merge conflict.
+    Conflict,
+    /// Explain the output of a command of the Git console.
+    GitOutput,
+    /// Answer a question about rows of a result.
+    Rows,
+}
+
+impl Task {
+    /// How much work the model does for an answer of this task.
+    #[must_use]
+    pub fn effort(self) -> Effort {
+        match self {
+            Self::Plan | Self::Conflict => Effort::High,
+            _ => Effort::Medium,
+        }
+    }
+
+    /// `true` if a request of this task sends the structure of the database.
+    /// A Git task does not need the structure. Thus it does not send it.
+    #[must_use]
+    pub fn uses_schema(self) -> bool {
+        !matches!(
+            self,
+            Self::CommitMessage | Self::ExplainDiff | Self::Conflict | Self::GitOutput
+        )
+    }
 }
 
 /// How much work the model does for one answer.

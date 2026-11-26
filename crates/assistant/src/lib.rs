@@ -9,6 +9,7 @@
 //!   reads it from the Models API of Anthropic.
 //! - [`explain_statement`] makes the statement that reads an execution plan.
 
+mod action;
 mod anthropic;
 mod anthropic_models;
 mod context;
@@ -22,6 +23,7 @@ mod sse;
 #[cfg(test)]
 mod test_server;
 
+pub use action::{ActionContext, MAX_GIT_OUTPUT_CHARS, SchemaCount, sent_summary};
 pub use anthropic::AnthropicProvider;
 pub use context::{
     MAX_DETAILED_RELATIONS, RelationContext, SchemaContext, SchemaGroup, collect_schema,

@@ -22,6 +22,8 @@ Each request sends this data to Anthropic:
 - The conversation in the panel: your requests and the answers.
 - For a plan analysis: the text of the statement and the text of the plan. The panel shows this text as your message.
 
+Under each request, the panel shows a line that starts with **Sent:**. The line tells what the request sent, for example "Sent: your request and the structure of 12 tables and views."
+
 A request does not send this data:
 
 - Rows of a table or of a result.

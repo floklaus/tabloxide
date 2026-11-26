@@ -1,14 +1,17 @@
 import { create } from 'zustand'
 import { commands } from '../bindings'
 import { toMessage } from '../lib/errors'
+import { useShellStore } from '../shell/shellStore'
 import { useTabsStore } from '../tabs/tabsStore'
 import {
   createSession,
+  type ActionRequest,
   type SessionState,
   type SessionStore,
 } from './assistantSession'
 
 export type {
+  ActionRequest,
   AssistantMessage,
   AssistantStatus,
   PendingAnalyze,
@@ -18,7 +21,7 @@ export type {
   SessionState,
   SessionStore,
 } from './assistantSession'
-export { planRequest, PHASES } from './assistantSession'
+export { planRequest, PHASES, usesSchema } from './assistantSession'
 
 export type SessionEntry = { id: string; store: SessionStore }
 
@@ -144,4 +147,18 @@ export function labelOf(state: SessionState): SessionLabel {
   if (state.pendingAnalyze) return 'waiting'
   if (state.outcome === 'running') return 'running'
   return state.outcome ?? 'new'
+}
+
+/**
+ * Shows the assistant panel and sends the request of an AI action. Without an API
+ * key, the panel shows the setup and the request does not go. If the session of the
+ * panel has a request in progress, the action starts a new session.
+ */
+export async function runAiAction(action: ActionRequest): Promise<void> {
+  const shell = useShellStore.getState()
+  if (!shell.panels.assistant) shell.togglePanel('assistant')
+  const assistant = useAssistantStore.getState()
+  if (assistant.hasKey === false) return
+  if (activeSession().getState().status !== 'idle') assistant.newSession()
+  await activeSession().getState().runAction(action)
 }

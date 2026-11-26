@@ -9,8 +9,8 @@ use specta::Type;
 use std::sync::{Arc, Mutex, PoisonError};
 use tabloxide_assistant::{
     AssistantError, AssistantErrorKind, ChatMessage, ChatOutcome, ChatProvider, Database,
-    ExplainRejection, MAX_DETAILED_RELATIONS, SchemaContext, Task, TextSink, chat_request,
-    collect_schema, explain_statement, plan_text,
+    ExplainRejection, MAX_DETAILED_RELATIONS, SchemaContext, SchemaCount, Task, TextSink,
+    chat_request, collect_schema, explain_statement, plan_text, sent_summary,
 };
 use tabloxide_core::{QueryError, QuerySession, Secret};
 use tauri::ipc::Channel;
@@ -54,6 +54,9 @@ pub enum AssistantEvent {
     /// The schema that goes to the AI service: the number of tables and views, and
     /// the number of those for which the request has the columns.
     Schema { relations: u32, detailed: u32 },
+    /// What the request sends to the AI service, for example "Sent: your request and
+    /// the structure of 12 tables and views." It comes before the answer text.
+    Sent { summary: String },
     /// The next part of the answer text.
     Text { text: String },
 }
@@ -169,6 +172,19 @@ async fn schema_of(
     Ok(schema)
 }
 
+/// Makes the "Sent:" line of a request.
+fn summary_of(request: &AskRequest, database: Option<&Database<'_>>) -> String {
+    let schema = database.map(|database| SchemaCount {
+        relations: database.schema.relation_count(),
+        detailed: database.schema.detailed_count(),
+    });
+    let context = request
+        .messages
+        .last()
+        .and_then(|message| message.context.as_ref());
+    sent_summary(request.messages.len() > 1, context, schema)
+}
+
 /// The data of one request to the AI service.
 struct Ask<'a> {
     provider: &'a dyn ChatProvider,
@@ -226,7 +242,9 @@ async fn answer(
     cancel: &Notify,
     on_event: &Channel<AssistantEvent>,
 ) -> Result<AskResult, CommandError> {
-    let session = match request.session_id {
+    // A task without the structure of the database does not read it.
+    let session_id = request.session_id.filter(|_| request.task.uses_schema());
+    let session = match session_id {
         Some(id) => {
             let entry = state.session_entry(id)?;
             match schema_of(state, id, &entry, request.refresh_schema, on_event).await {
@@ -248,6 +266,9 @@ async fn answer(
             detailed: count(database.schema.detailed_count()),
         });
     }
+    let _ = on_event.send(AssistantEvent::Sent {
+        summary: summary_of(request, database.as_ref()),
+    });
     let on_part = |text: &str| {
         // The UI is gone when the send fails. Then no one needs the text.
         let _ = on_event.send(AssistantEvent::Text {
@@ -388,10 +409,7 @@ mod tests {
     }
 
     fn user(text: &str) -> ChatMessage {
-        ChatMessage {
-            role: Role::User,
-            text: text.to_owned(),
-        }
+        ChatMessage::new(Role::User, text)
     }
 
     async fn ask_cancellable(
@@ -467,6 +485,44 @@ mod tests {
         let (result, _) = ask_cancellable(&SlowProvider, &[user("x")], &cancel).await;
 
         assert!(matches!(result, AskResult::Cancelled { .. }));
+    }
+
+    #[test]
+    fn the_summary_names_the_data_of_the_last_message_and_the_schema() {
+        let error = ChatMessage {
+            context: Some(tabloxide_assistant::ActionContext::QueryError {
+                statement: "select".to_owned(),
+                message: "syntax error".to_owned(),
+                position: None,
+                hint: None,
+                code: None,
+            }),
+            ..user("Explain and fix.")
+        };
+        let request = AskRequest {
+            id: 1,
+            session_id: None,
+            task: Task::QueryError,
+            messages: vec![error],
+            refresh_schema: false,
+        };
+        let schema = SchemaContext::default();
+        let database = Database {
+            engine: "PostgreSQL",
+            version: "17",
+            language: tabloxide_core::QueryLanguage::Sql,
+            schema: &schema,
+        };
+
+        assert_eq!(
+            summary_of(&request, Some(&database)),
+            "Sent: your request, the statement, the error message, and the structure \
+             of 0 tables and views."
+        );
+        assert_eq!(
+            summary_of(&request, None),
+            "Sent: your request, the statement, and the error message."
+        );
     }
 
     #[test]
