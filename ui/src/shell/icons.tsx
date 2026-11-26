@@ -10,6 +10,15 @@ const PATHS = {
   sessions: 'M3 4h13v9H7l-4 3z M8 16v1h9l4 3V8h-2',
   search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M20 20l-4-4',
   chevron: 'M6 9l6 6 6-6',
+  'chevron-right': 'M9 6l6 6-6 6',
+  database: 'M3 7h6l2 2h10v10H3z',
+  table: 'M4 5h16v14H4z M4 10h16 M10 10v9',
+  view: 'M4 5h16v14H4z M4 10h16',
+  collection:
+    'M8 4c-2 0-3 1-3 3v2c0 1-1 2-2 3 1 1 2 2 2 3v2c0 2 1 3 3 3 M16 4c2 0 3 1 3 3v2c0 1 1 2 2 3-1 1-2 2-2 3v2c0 2-1 3-3 3',
+  key: 'M8 12a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M10.5 13.5L20 4 M17 7l2 2 M15 9l2 2',
+  'foreign-key':
+    'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1 M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1',
   folder: 'M3 6h6l2 2h10v11H3z',
   play: 'M7 5l12 7-12 7z',
   more: 'M5 12h.01 M12 12h.01 M19 12h.01',
