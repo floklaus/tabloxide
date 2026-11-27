@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Plan tab with a measured PostgreSQL plan</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit}
+ul{list-style:none;margin:0;padding:0}
+summary{cursor:pointer}
+</style>
+</helmet>
+<div style="width: 900px; height: 800px; padding: 8px; background: #eceef2; color: #1b1f27; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.4; display: flex">
+<section aria-label="Results" style="flex-grow: 1; min-width: 0; background: #ffffff; border-radius: 10px; border: 1px solid #e1e4ea; display: flex; flex-direction: column; overflow: hidden">
+<div role="tablist" aria-label="Result views" style="display: flex; align-items: flex-end; gap: 2px; padding: 4px 8px 0; background: #f4f5f7; border-bottom: 1px solid #e1e4ea">
+<button type="button" role="tab" aria-selected="false" style="height: 32px; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: none; color: #5b6472; font-size: 13px">Results</button>
+<button type="button" role="tab" aria-selected="true" style="height: 32px; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: #ffffff; color: #1b1f27; font-size: 13px; font-weight: 600">Plan</button>
+<button type="button" role="tab" aria-selected="false" style="height: 32px; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: none; color: #5b6472; font-size: 13px">Git console</button>
+</div>
+
+<div style="height: 44px; flex-shrink: 0; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid #e1e4ea">
+<span title="select o.order_id, c.name, o.total from orders o join customer c using (customer_id) where o.status = 'shipped' order by o.ordered_at desc limit 50;" style="flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 12px">select o.order_id, c.name, o.total from orders o join customer c using (customer_id) where o.status = 'shipped' order by o.ordered_at desc limit 50;</span>
+<span style="flex-shrink: 0; padding: 0 8px; border-radius: 999px; background: #eef4ff; color: #1d4ed8; font-size: 12px; font-weight: 600">Measured</span>
+<div role="radiogroup" aria-label="Plan view" style="flex-shrink: 0; display: inline-flex; height: 32px; padding: 2px; border-radius: 6px; background: #f1f3f6">
+<button type="button" role="radio" aria-checked="true" style="padding: 0 10px; border: 0; border-radius: 4px; background: #ffffff; color: #1b1f27; font-size: 12px; font-weight: 600; box-shadow: 0 1px 2px rgba(27, 31, 39, 0.12)">Steps</button>
+<button type="button" role="radio" aria-checked="false" style="padding: 0 10px; border: 0; border-radius: 4px; background: none; color: #5b6472; font-size: 12px">Original</button>
+</div>
+<button type="button" title="Explain and measure the same statement again (Ctrl+Shift+E)" style="flex-shrink: 0; height: 32px; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 1px solid #d5d9e0; background: #ffffff; color: #1b1f27"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7 M20 4v7h-7" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>Explain again</button>
+<button type="button" title="The AI analyzes the plan in the assistant panel. The request sends the statement, the plan, and the structure of the database. It sends no rows." style="flex-shrink: 0; height: 32px; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 1px solid #d5d9e0; background: #ffffff; color: #1b1f27"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" stroke="#b45309" stroke-width="1.75" fill="none" stroke-linejoin="round"></path></svg>Ask the AI</button>
+</div>
+
+<div style="flex-grow: 1; min-height: 0; overflow: hidden; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px">
+<p role="status" style="margin: 0; color: #5b6472; font-size: 12px">The database ran the statement and measured each step. Total: 47.4 ms. Planning: 0.4 ms.</p>
+<label style="display: flex; align-items: center; gap: 6px; font-size: 12px"><input type="checkbox"><span>Show all fields of each step</span></label>
+</div>
+<details style="padding: 6px 10px; border: 1px solid #e1e4ea; border-radius: 8px; background: #fafbfc; font-size: 13px"><summary style="font-weight: 600">How to read this plan</summary></details>
+<details style="padding: 6px 10px; border: 1px solid #e1e4ea; border-radius: 8px; background: #fafbfc; font-size: 13px"><summary style="font-weight: 600">Totals of the statement</summary></details>
+
+<ul aria-label="Plan steps" style="font-size: 13px">
+<li><details open>
+<summary style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 2px 0"><span style="font-weight: 600">Limit</span><span style="color: #5b6472; font-size: 12px">0.1 ms · 0% · rows: 50 expected, 50 actual</span><span aria-hidden="true" style="display: inline-block; width: 80px; height: 6px; border-radius: 2px; background: #e1e4ea; overflow: hidden"><span style="display: block; width: 0%; height: 100%; background: #2563eb"></span></span></summary>
+<p style="margin: 0 0 6px 20px; max-width: 760px">Stops after the number of rows of LIMIT. The steps below it can stop early. The planner expected 50 rows. The step returned 50 rows.</p>
+<ul style="margin-left: 16px; padding-left: 8px; border-left: 1px solid #e1e4ea">
+
+<li><details open>
+<summary style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 2px 0"><span style="font-weight: 600">Sort</span><span style="padding: 0 8px; border-radius: 999px; background: #fbeaea; color: #b91c1c; font-size: 12px; font-weight: 700">costly</span><span style="padding: 0 8px; border-radius: 999px; background: #fbf0e6; color: #b45309; font-size: 12px; font-weight: 600">76 times more rows than expected</span><span style="color: #5b6472; font-size: 12px">21.4 ms · 45% · rows: 120 expected, 9 140 actual</span><span aria-hidden="true" style="display: inline-block; width: 80px; height: 6px; border-radius: 2px; background: #e1e4ea; overflow: hidden"><span style="display: block; width: 45%; height: 100%; background: #b91c1c"></span></span></summary>
+<div style="margin: 0 0 6px 20px; max-width: 760px; display: flex; flex-direction: column; gap: 4px">
+<p style="margin: 0">Sorts the rows, for example for ORDER BY, a merge join, or a GROUP BY. The planner expected 120 rows. The step returned 9 140 rows. It took 21.4 ms, without the time of its child steps.</p>
+<p style="margin: 0; padding: 4px 8px; border-left: 3px solid #b45309; border-radius: 4px; background: #fafbfc"><strong>Check</strong> The sort did not fit in memory and used temporary files on disk (2 112 kB). A larger work_mem can keep it in memory. An index with the sort columns can make the sort unnecessary.</p>
+</div>
+<ul style="margin-left: 16px; padding-left: 8px; border-left: 1px solid #e1e4ea">
+
+<li><details open>
+<summary style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 2px 0"><span style="font-weight: 600">Hash Join</span><span style="padding: 0 8px; border-radius: 999px; background: #fbeaea; color: #b91c1c; font-size: 12px; font-weight: 700">costly</span><span style="padding: 0 8px; border-radius: 999px; background: #fbf0e6; color: #b45309; font-size: 12px; font-weight: 600">76 times more rows than expected</span><span style="color: #5b6472; font-size: 12px">9.8 ms · 21% · rows: 120 expected, 9 140 actual</span><span aria-hidden="true" style="display: inline-block; width: 80px; height: 6px; border-radius: 2px; background: #e1e4ea; overflow: hidden"><span style="display: block; width: 21%; height: 100%; background: #b91c1c"></span></span></summary>
+<p style="margin: 0 0 6px 20px; max-width: 760px">Puts the rows of one input into a hash table in memory, then finds the matching rows for each row of the other input. It took 9.8 ms, without the time of its child steps.</p>
+<ul style="margin-left: 16px; padding-left: 8px; border-left: 1px solid #e1e4ea">
+
+<li><details open>
+<summary style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 2px 0"><span style="font-weight: 600">Seq Scan</span><span style="color: #5b6472; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 12px">orders</span><span style="padding: 0 8px; border-radius: 999px; background: #fbeaea; color: #b91c1c; font-size: 12px; font-weight: 700">costly</span><span style="padding: 0 8px; border-radius: 999px; background: #fbf0e6; color: #b45309; font-size: 12px; font-weight: 600">76 times more rows than expected</span><span style="color: #5b6472; font-size: 12px">14.6 ms · 31% · rows: 120 expected, 9 140 actual</span><span aria-hidden="true" style="display: inline-block; width: 80px; height: 6px; border-radius: 2px; background: #e1e4ea; overflow: hidden"><span style="display: block; width: 31%; height: 100%; background: #b91c1c"></span></span></summary>
+<div style="margin: 0 0 6px 20px; max-width: 760px; display: flex; flex-direction: column; gap: 4px">
+<p style="margin: 0">Reads all rows of the table, from the first to the last, and keeps the rows that agree with the filter. The planner expected 120 rows. The step returned 9 140 rows.</p>
+<p style="margin: 0; padding: 4px 8px; border-left: 3px solid #b45309; border-radius: 4px; background: #fafbfc"><strong>Check</strong> The step read 105 000 rows and kept only 9 140. An index on the columns of the filter (status = 'shipped'::text) can let the database read only the necessary rows.</p>
+</div>
+</details></li>
+
+<li><details open>
+<summary style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 2px 0"><span style="font-weight: 600">Hash</span><span style="color: #5b6472; font-size: 12px">0.6 ms · 1% · rows: 1 200 expected, 1 200 actual</span><span aria-hidden="true" style="display: inline-block; width: 80px; height: 6px; border-radius: 2px; background: #e1e4ea; overflow: hidden"><span style="display: block; width: 1%; height: 100%; background: #2563eb"></span></span></summary>
+<p style="margin: 0 0 6px 20px; max-width: 760px">Makes the hash table for the hash join above it.</p>
+<ul style="margin-left: 16px; padding-left: 8px; border-left: 1px solid #e1e4ea">
+<li><details open>
+<summary style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 2px 0"><span style="font-weight: 600">Seq Scan</span><span style="color: #5b6472; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 12px">customer</span><span style="color: #5b6472; font-size: 12px">0.9 ms · 2% · rows: 1 200 expected, 1 200 actual</span><span aria-hidden="true" style="display: inline-block; width: 80px; height: 6px; border-radius: 2px; background: #e1e4ea; overflow: hidden"><span style="display: block; width: 2%; height: 100%; background: #2563eb"></span></span></summary>
+<p style="margin: 0 0 6px 20px; max-width: 760px">Reads all rows of the table, from the first to the last. The step returned 1 200 rows.</p>
+</details></li>
+</ul>
+</details></li>
+
+</ul>
+</details></li>
+
+</ul>
+</details></li>
+
+</ul>
+</details></li>
+</ul>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":900,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

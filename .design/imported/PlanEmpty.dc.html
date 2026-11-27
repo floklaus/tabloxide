@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Plan tab before the first plan</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit}
+</style>
+</helmet>
+<div style="width: 900px; height: 560px; padding: 16px; background: #eceef2; color: #1b1f27; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.4; display: flex; flex-direction: column; gap: 8px">
+
+<p style="margin: 0; color: #5b6472; font-size: 12px; font-weight: 600">1. The statement at the cursor reads data</p>
+<section aria-label="Results" style="flex-shrink: 0; height: 300px; background: #ffffff; border-radius: 10px; border: 1px solid #e1e4ea; display: flex; flex-direction: column; overflow: hidden">
+<div role="tablist" aria-label="Result views" style="display: flex; align-items: flex-end; gap: 2px; padding: 4px 8px 0; background: #f4f5f7; border-bottom: 1px solid #e1e4ea">
+<button type="button" role="tab" aria-selected="false" style="height: 32px; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: none; color: #5b6472; font-size: 13px">Results</button>
+<button type="button" role="tab" aria-selected="true" style="height: 32px; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: #ffffff; color: #1b1f27; font-size: 13px; font-weight: 600">Plan</button>
+<button type="button" role="tab" aria-selected="false" style="height: 32px; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: none; color: #5b6472; font-size: 13px">Git console</button>
+</div>
+<div style="flex-grow: 1; padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; max-width: 720px">
+<h2 style="margin: 0; font-size: 14px; font-weight: 600">Explain the statement at the cursor</h2>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<span style="color: #5b6472; font-size: 12px">items.sql · lines 1 to 3 · Local shop</span>
+<pre style="margin: 0; padding: 10px 12px; border: 1px solid #e1e4ea; border-radius: 8px; background: #fafbfc; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 12px; line-height: 1.6; white-space: pre-wrap"><span style="color: #6d28d9">select</span> * <span style="color: #6d28d9">from</span> item
+<span style="color: #6d28d9">where</span> price &gt; <span style="color: #ad5009">10</span>
+<span style="color: #6d28d9">order by</span> created_at <span style="color: #6d28d9">desc</span>;</pre>
+</div>
+<div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px">
+<button type="button" aria-keyshortcuts="Control+E" style="height: 32px; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 1px solid #2563eb; background: #2563eb; color: #ffffff; font-weight: 600">Explain<span style="font-weight: 400; font-size: 12px">Ctrl+E</span></button>
+<button type="button" aria-keyshortcuts="Control+Shift+E" style="height: 32px; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 1px solid #d5d9e0; background: #ffffff; color: #1b1f27">Explain and measure<span style="color: #5b6472; font-size: 12px">Ctrl+Shift+E</span></button>
+</div>
+<ul style="margin: 0; padding-left: 18px; color: #5b6472; font-size: 12px; display: flex; flex-direction: column; gap: 4px">
+<li>Explain shows the estimate of the planner. The database does not run the statement.</li>
+<li>Explain and measure runs the statement and measures each step. A confirmation comes first.</li>
+</ul>
+</div>
+</section>
+
+<p style="margin: 8px 0 0; color: #5b6472; font-size: 12px; font-weight: 600">2. The statement at the cursor changes data</p>
+<section aria-label="Plan" style="flex-shrink: 0; background: #ffffff; border-radius: 10px; border: 1px solid #e1e4ea; padding: 16px 24px; display: flex; flex-direction: column; gap: 10px">
+<pre style="margin: 0; padding: 8px 12px; border: 1px solid #e1e4ea; border-radius: 8px; background: #fafbfc; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 12px; white-space: pre-wrap"><span style="color: #6d28d9">delete from</span> item <span style="color: #6d28d9">where</span> price &lt; <span style="color: #ad5009">1</span>;</pre>
+<div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px">
+<button type="button" style="height: 32px; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 1px solid #2563eb; background: #2563eb; color: #ffffff; font-weight: 600">Explain<span style="font-weight: 400; font-size: 12px">Ctrl+E</span></button>
+<button type="button" disabled aria-describedby="empty-reason" style="height: 32px; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 1px solid #d5d9e0; background: #ffffff; color: #1b1f27; opacity: 0.5">Explain and measure<span style="font-size: 12px">Ctrl+Shift+E</span></button>
+<span id="empty-reason" style="color: #5b6472; font-size: 12px">The statement changes data. Explain and measure is not available.</span>
+</div>
+</section>
+<p style="margin: 0; color: #5b6472; font-size: 12px">With no statement at the cursor, the tab says "Put the cursor in a statement." and the two buttons are not available.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":900,"height":560}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

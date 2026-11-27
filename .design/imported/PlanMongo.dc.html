@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Plan tab with a MongoDB plan</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit}
+ul{list-style:none;margin:0;padding:0}
+summary{cursor:pointer}
+dl{margin:0}
+dd{margin:0}
+</style>
+</helmet>
+<div style="width: 1200px; height: 800px; padding: 8px; gap: 8px; background: #eceef2; color: #1b1f27; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.4; display: flex">
+
+<section aria-label="Results" style="flex: 1 1 0; min-width: 0; background: #ffffff; border-radius: 10px; border: 1px solid #e1e4ea; display: flex; flex-direction: column; overflow: hidden">
+<div role="tablist" aria-label="Result views" style="display: flex; align-items: flex-end; gap: 2px; padding: 4px 8px 0; background: #f4f5f7; border-bottom: 1px solid #e1e4ea">
+<button type="button" role="tab" aria-selected="false" style="height: 32px; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: none; color: #5b6472; font-size: 13px">Results</button>
+<button type="button" role="tab" aria-selected="true" style="height: 32px; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: #ffffff; color: #1b1f27; font-size: 13px; font-weight: 600">Plan</button>
+<button type="button" role="tab" aria-selected="false" style="height: 32px; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: none; color: #5b6472; font-size: 13px">Git console</button>
+</div>
+<div style="height: 44px; flex-shrink: 0; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid #e1e4ea">
+<span style="flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 12px">db.orders.find({ status: "shipped" }).sort({ orderedAt: -1 })</span>
+<span style="flex-shrink: 0; padding: 0 8px; border-radius: 999px; background: #eef4ff; color: #1d4ed8; font-size: 12px; font-weight: 600">Measured</span>
+<div role="radiogroup" aria-label="Plan view" style="flex-shrink: 0; display: inline-flex; height: 32px; padding: 2px; border-radius: 6px; background: #f1f3f6">
+<button type="button" role="radio" aria-checked="true" style="padding: 0 10px; border: 0; border-radius: 4px; background: #ffffff; color: #1b1f27; font-size: 12px; font-weight: 600; box-shadow: 0 1px 2px rgba(27, 31, 39, 0.12)">Steps</button>
+<button type="button" role="radio" aria-checked="false" style="padding: 0 10px; border: 0; border-radius: 4px; background: none; color: #5b6472; font-size: 12px">Original</button>
+</div>
+<button type="button" style="flex-shrink: 0; height: 32px; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 1px solid #d5d9e0; background: #ffffff; color: #1b1f27"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7 M20 4v7h-7" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>Explain again</button>
+<button type="button" style="flex-shrink: 0; height: 32px; padding: 0 12px; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 1px solid #d5d9e0; background: #ffffff; color: #1b1f27"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" stroke="#b45309" stroke-width="1.75" fill="none" stroke-linejoin="round"></path></svg>Ask the AI</button>
+</div>
+
+<div style="flex-grow: 1; min-height: 0; overflow: hidden; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px">
+<p role="status" style="margin: 0; color: #5b6472; font-size: 12px">shop › orders. The database ran the statement and measured each step. Total: 186 ms. Cost unit: documents.</p>
+<label style="display: flex; align-items: center; gap: 6px; font-size: 12px"><input type="checkbox" checked><span>Show all fields of each step</span></label>
+</div>
+<details style="padding: 6px 10px; border: 1px solid #e1e4ea; border-radius: 8px; background: #fafbfc; font-size: 13px"><summary style="font-weight: 600">How to read this plan</summary></details>
+<details style="padding: 6px 10px; border: 1px solid #e1e4ea; border-radius: 8px; background: #fafbfc; font-size: 13px"><summary style="font-weight: 600">Totals of the statement</summary></details>
+
+<ul aria-label="Plan steps" style="font-size: 13px">
+<li><details open>
+<summary style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 2px 0"><span style="font-weight: 600">SORT</span><span style="padding: 0 8px; border-radius: 999px; background: #fbeaea; color: #b91c1c; font-size: 12px; font-weight: 700">costly</span><span style="color: #5b6472; font-size: 12px">112 ms · 60% · rows: 9 140 actual</span><span aria-hidden="true" style="display: inline-block; width: 80px; height: 6px; border-radius: 2px; background: #e1e4ea; overflow: hidden"><span style="display: block; width: 60%; height: 100%; background: #b91c1c"></span></span></summary>
+<div style="margin: 0 0 6px 20px; max-width: 760px; display: flex; flex-direction: column; gap: 6px">
+<p style="margin: 0">Sorts the documents in memory for sort(). The step returned 9 140 documents. It took 112 ms, without the time of its child steps.</p>
+<div role="note" aria-label="Hint: Sort in memory" style="padding: 8px 10px; border: 1px solid #f1d9bf; border-radius: 8px; background: #fdf7f0; display: flex; gap: 10px">
+<svg role="img" aria-label="Warning" width="12" height="12" viewBox="0 0 12 12" style="flex-shrink: 0; margin-top: 4px"><path d="M6 1l5 10H1z" fill="#a16207"></path></svg>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<strong style="font-size: 13px">Check: Sort in memory</strong>
+<span>The database sorted 9 140 documents in memory (4.1 MB). An index on { status: 1, orderedAt: -1 } gives the documents in the sort order. Then the database does not need the SORT step. A sort larger than 100 MB fails or uses the disk.</span>
+</div>
+</div>
+<dl style="display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; font-size: 12px">
+<dt style="color: #5b6472">sortPattern</dt><dd><span style="font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace">{ orderedAt: -1 }</span></dd>
+<dt style="color: #5b6472">totalDataSizeSorted</dt><dd><span style="font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace">4.1 MB</span> <span style="color: #5b6472">The size of all sorted documents.</span></dd>
+<dt style="color: #5b6472">usedDisk</dt><dd><span style="font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace">false</span></dd>
+</dl>
+</div>
+<ul style="margin-left: 16px; padding-left: 8px; border-left: 1px solid #e1e4ea">
+<li><details open>
+<summary style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 2px 0"><span style="font-weight: 600">FETCH</span><span style="color: #5b6472; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 12px">orders</span><span style="padding: 0 8px; border-radius: 999px; background: #fbeaea; color: #b91c1c; font-size: 12px; font-weight: 700">costly</span><span style="color: #5b6472; font-size: 12px">52 ms · 28% · rows: 9 140 actual</span><span aria-hidden="true" style="display: inline-block; width: 80px; height: 6px; border-radius: 2px; background: #e1e4ea; overflow: hidden"><span style="display: block; width: 28%; height: 100%; background: #b91c1c"></span></span></summary>
+<div style="margin: 0 0 6px 20px; max-width: 760px; display: flex; flex-direction: column; gap: 4px">
+<p style="margin: 0">Reads the full document for each index key that the step below gives. The step returned 9 140 documents.</p>
+<dl style="display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; font-size: 12px">
+<dt style="color: #5b6472">docsExamined</dt><dd><span style="font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace">9 140</span> <span style="color: #5b6472">Documents that the step read.</span></dd>
+</dl>
+</div>
+<ul style="margin-left: 16px; padding-left: 8px; border-left: 1px solid #e1e4ea">
+<li><details open>
+<summary style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 2px 0"><span style="font-weight: 600">IXSCAN</span><span style="color: #5b6472; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 12px">status_1</span><span style="padding: 0 8px; border-radius: 999px; background: #fbeaea; color: #b91c1c; font-size: 12px; font-weight: 700">costly</span><span style="color: #5b6472; font-size: 12px">22 ms · 12% · rows: 9 140 actual</span><span aria-hidden="true" style="display: inline-block; width: 80px; height: 6px; border-radius: 2px; background: #e1e4ea; overflow: hidden"><span style="display: block; width: 12%; height: 100%; background: #b91c1c"></span></span></summary>
+<div style="margin: 0 0 6px 20px; max-width: 760px; display: flex; flex-direction: column; gap: 4px">
+<p style="margin: 0">Reads the keys of the index status_1 in the range of the filter. It does not read the documents. The step returned 9 140 keys.</p>
+<dl style="display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; font-size: 12px">
+<dt style="color: #5b6472">keysExamined</dt><dd><span style="font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace">9 140</span> <span style="color: #5b6472">Index keys that the step read.</span></dd>
+<dt style="color: #5b6472">keyPattern</dt><dd><span style="font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace">{ status: 1 }</span></dd>
+<dt style="color: #5b6472">indexBounds</dt><dd><span style="font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace">status: ["shipped", "shipped"]</span></dd>
+</dl>
+</div>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</section>
+
+<div style="width: 400px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px">
+<section aria-label="Plan: Original view" style="flex: 1 1 0; min-height: 0; background: #ffffff; border-radius: 10px; border: 1px solid #e1e4ea; display: flex; flex-direction: column; overflow: hidden">
+<div style="height: 44px; flex-shrink: 0; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid #e1e4ea">
+<span style="flex-grow: 1; color: #5b6472; font-size: 12px; font-weight: 600">The Original view</span>
+<div role="radiogroup" aria-label="Plan view" style="display: inline-flex; height: 32px; padding: 2px; border-radius: 6px; background: #f1f3f6">
+<button type="button" role="radio" aria-checked="false" style="padding: 0 10px; border: 0; border-radius: 4px; background: none; color: #5b6472; font-size: 12px">Steps</button>
+<button type="button" role="radio" aria-checked="true" style="padding: 0 10px; border: 0; border-radius: 4px; background: #ffffff; color: #1b1f27; font-size: 12px; font-weight: 600; box-shadow: 0 1px 2px rgba(27, 31, 39, 0.12)">Original</button>
+</div>
+<button type="button" aria-label="Copy the plan" title="Copy the plan" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: none"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M9 9h11v11H9z M5 15H4V4h11v1" stroke="#5b6472" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+</div>
+<pre style="flex-grow: 1; margin: 0; padding: 10px 12px; overflow: hidden; background: #fafbfc; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 11.5px; line-height: 1.5; white-space: pre; color: #1b1f27">{
+  <span style="color: #1d4ed8">"queryPlanner"</span>: {
+    <span style="color: #1d4ed8">"namespace"</span>: <span style="color: #15803d">"shop.orders"</span>,
+    <span style="color: #1d4ed8">"winningPlan"</span>: {
+      <span style="color: #1d4ed8">"stage"</span>: <span style="color: #15803d">"SORT"</span>,
+      <span style="color: #1d4ed8">"sortPattern"</span>: { <span style="color: #1d4ed8">"orderedAt"</span>: <span style="color: #ad5009">-1</span> },
+      <span style="color: #1d4ed8">"inputStage"</span>: {
+        <span style="color: #1d4ed8">"stage"</span>: <span style="color: #15803d">"FETCH"</span>,
+        <span style="color: #1d4ed8">"inputStage"</span>: {
+          <span style="color: #1d4ed8">"stage"</span>: <span style="color: #15803d">"IXSCAN"</span>,
+          <span style="color: #1d4ed8">"indexName"</span>: <span style="color: #15803d">"status_1"</span>,
+          <span style="color: #1d4ed8">"keyPattern"</span>: { <span style="color: #1d4ed8">"status"</span>: <span style="color: #ad5009">1</span> }
+        }
+      }
+    }
+  },
+  <span style="color: #1d4ed8">"executionStats"</span>: {
+    <span style="color: #1d4ed8">"nReturned"</span>: <span style="color: #ad5009">9140</span>,
+    <span style="color: #1d4ed8">"executionTimeMillis"</span>: <span style="color: #ad5009">186</span>,
+    <span style="color: #1d4ed8">"totalKeysExamined"</span>: <span style="color: #ad5009">9140</span>,
+    <span style="color: #1d4ed8">"totalDocsExamined"</span>: <span style="color: #ad5009">9140</span>,
+    <span style="color: #1d4ed8">"executionStages"</span>: { … }
+  }
+}</pre>
+<p style="margin: 0; padding: 8px 12px; border-top: 1px solid #e1e4ea; color: #5b6472; font-size: 12px">The plan of the engine as formatted JSON. A connector of protocol minor 2 gives only this view.</p>
+</section>
+
+<section aria-label="Variant without an index" style="flex-shrink: 0; background: #ffffff; border-radius: 10px; border: 1px solid #e1e4ea; padding: 12px; display: flex; flex-direction: column; gap: 6px; font-size: 13px">
+<span style="color: #5b6472; font-size: 12px; font-weight: 600">Variant: no index on status</span>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px"><span style="font-weight: 600">COLLSCAN</span><span style="color: #5b6472; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px">orders</span><span style="padding: 0 8px; border-radius: 999px; background: #fbeaea; color: #b91c1c; font-size: 12px; font-weight: 700">costly</span><span style="color: #5b6472; font-size: 12px">640 ms · 78%</span></div>
+<div role="note" aria-label="Hint: No index for the filter" style="padding: 8px 10px; border: 1px solid #f1d9bf; border-radius: 8px; background: #fdf7f0; display: flex; gap: 10px">
+<svg role="img" aria-label="Warning" width="12" height="12" viewBox="0 0 12 12" style="flex-shrink: 0; margin-top: 4px"><path d="M6 1l5 10H1z" fill="#a16207"></path></svg>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<strong>Check: No index for the filter</strong>
+<span>The step examined 250 000 documents and returned 9 140. An index on { status: 1 } lets the database read only the matching documents.</span>
+</div>
+</div>
+</section>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

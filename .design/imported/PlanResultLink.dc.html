@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Explain from a result and from the history</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit}
+a{color:#2563eb}a:hover{color:#1d4ed8}
+</style>
+</helmet>
+<div style="width: 900px; height: 640px; padding: 16px; background: #eceef2; color: #1b1f27; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.4; display: flex; flex-direction: column; gap: 8px">
+
+<p style="margin: 0; color: #5b6472; font-size: 12px; font-weight: 600">1. Status line of a result: the Explain link</p>
+<section aria-label="Results" style="flex-shrink: 0; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; display: flex; flex-direction: column; overflow: hidden">
+<table style="width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums">
+<thead><tr><th style="padding: 6px 12px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px; font-weight: 600; text-align: right">item_id</th><th style="padding: 6px 12px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px; font-weight: 600; text-align: left">name</th><th style="padding: 6px 12px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px; font-weight: 600; text-align: right">price</th><th style="padding: 6px 12px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px; font-weight: 600; text-align: left">created_at</th></tr></thead>
+<tbody>
+<tr><td style="padding: 6px 12px; border-bottom: 1px solid #e1e4ea; text-align: right">1042</td><td style="padding: 6px 12px; border-bottom: 1px solid #e1e4ea">Desk lamp</td><td style="padding: 6px 12px; border-bottom: 1px solid #e1e4ea; text-align: right">34.90</td><td style="padding: 6px 12px; border-bottom: 1px solid #e1e4ea">2026-11-14 09:12:40+00</td></tr>
+</tbody>
+</table>
+<div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px">
+<span role="status" style="color: #5b6472; font-size: 12px">3 rows (42 ms)</span>
+<span aria-hidden="true" style="color: #5b6472; font-size: 12px">·</span>
+<button type="button" title="Explain the statement of this result (not the statement at the cursor)" style="padding: 0; border: 0; background: none; color: #2563eb; font-size: 12px; text-decoration: underline">Explain</button>
+<span style="flex-grow: 1"></span>
+<button type="button" style="height: 28px; padding: 0 10px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px">Export CSV</button>
+</div>
+</section>
+<p style="margin: 0; color: #5b6472; font-size: 12px">The link reads the plan of the statement of this result. The cursor can be in a different statement.</p>
+
+<p style="margin: 10px 0 0; color: #5b6472; font-size: 12px; font-weight: 600">2. Slow query: the run took more than 1 s</p>
+<section aria-label="Results" style="flex-shrink: 0; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px">
+<div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px">
+<span role="status" style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px"><svg role="img" aria-label="Warning" width="12" height="12" viewBox="0 0 12 12"><path d="M6 1l5 10H1z" fill="#a16207"></path></svg><span style="color: #5b6472">9 140 rows.</span>Took 3.2 s. <button type="button" style="padding: 0; border: 0; background: none; color: #2563eb; font-size: 12px; text-decoration: underline">Explain the statement?</button></span>
+<span style="flex-grow: 1"></span>
+<button type="button" style="height: 28px; padding: 0 10px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px">Export CSV</button>
+</div>
+</section>
+<p style="margin: 0; color: #5b6472; font-size: 12px">A preference sets the limit. The default is 1 s.</p>
+
+<p style="margin: 10px 0 0; color: #5b6472; font-size: 12px; font-weight: 600">3. History: the action Explain</p>
+<div style="flex-grow: 1; min-height: 0; display: flex; gap: 8px">
+<section aria-label="History" style="position: relative; width: 360px; flex-shrink: 0; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; padding: 4px 0">
+<div role="listbox" aria-label="Query history">
+<div style="height: 28px; display: flex; align-items: center; padding: 0 12px; color: #5b6472; font-size: 12px; font-weight: 600">Today</div>
+<div role="option" aria-selected="true" style="height: 48px; margin: 0 4px; padding: 0 12px; display: flex; align-items: center; gap: 8px; border-radius: 6px; background: #f1f3f6; outline: 2px solid #2563eb; outline-offset: -2px">
+<svg role="img" aria-label="Ran" width="10" height="10" viewBox="0 0 12 12" style="flex-shrink: 0"><path d="M6 1a5 5 0 1 1 0 10 5 5 0 1 1 0-10z" fill="#15803d"></path></svg>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column">
+<span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 12px">select * from orders where status = 'shipped' order by ordered_at desc;</span>
+<span style="color: #5b6472; font-size: 12px">10:40 · Local shop · 9 140 rows · 3.2 s</span>
+</div>
+</div>
+<div role="option" aria-selected="false" style="height: 48px; margin: 0 4px; padding: 0 12px; display: flex; align-items: center; gap: 8px; border-radius: 6px">
+<svg role="img" aria-label="Ran" width="10" height="10" viewBox="0 0 12 12" style="flex-shrink: 0"><path d="M6 1a5 5 0 1 1 0 10 5 5 0 1 1 0-10z" fill="#15803d"></path></svg>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column">
+<span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 12px">select * from item where price &gt; 10 order by created_at desc;</span>
+<span style="color: #5b6472; font-size: 12px">10:33 · Local shop · 3 rows · 12 ms</span>
+</div>
+</div>
+</div>
+<div role="menu" aria-label="Actions for this entry" style="position: absolute; left: 150px; top: 70px; width: 250px; padding: 6px; border-radius: 10px; background: #ffffff; border: 1px solid #e1e4ea; box-shadow: 0 12px 32px rgba(27, 31, 39, 0.18); display: flex; flex-direction: column; gap: 1px">
+<button type="button" role="menuitem" style="min-height: 32px; display: flex; align-items: center; gap: 10px; padding: 6px 10px; border: 0; border-radius: 6px; background: none; color: #1b1f27; font-size: 13px; text-align: left"><span style="flex-grow: 1">Open in a new tab</span><span style="color: #5b6472; font-size: 12px">Enter</span></button>
+<button type="button" role="menuitem" style="min-height: 32px; display: flex; align-items: center; gap: 10px; padding: 6px 10px; border: 0; border-radius: 6px; background: none; color: #1b1f27; font-size: 13px; text-align: left"><span style="flex-grow: 1">Run again</span><span style="color: #5b6472; font-size: 12px">Ctrl+Enter</span></button>
+<button type="button" role="menuitem" style="min-height: 32px; display: flex; align-items: center; gap: 10px; padding: 6px 10px; border: 0; border-radius: 6px; background: #f1f3f6; color: #1b1f27; font-size: 13px; text-align: left"><span style="flex-grow: 1">Explain</span><span style="color: #5b6472; font-size: 12px">Ctrl+E</span></button>
+<button type="button" role="menuitem" style="min-height: 32px; display: flex; align-items: center; gap: 10px; padding: 6px 10px; border: 0; border-radius: 6px; background: none; color: #1b1f27; font-size: 13px; text-align: left"><span style="flex-grow: 1">Copy the SQL</span></button>
+</div>
+</section>
+<section aria-label="History entry" style="flex-grow: 1; min-width: 0; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; padding: 12px 16px; display: flex; flex-direction: column; gap: 10px">
+<span style="color: #5b6472; font-size: 12px">History › Today › 10:40</span>
+<div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px">
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #2563eb; border-radius: 6px; background: #2563eb; color: #ffffff; font-size: 13px; font-weight: 600">Open in a new tab</button>
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 13px">Run again</button>
+<button type="button" title="Explain this statement on its connection (Ctrl+E)" style="height: 32px; padding: 0 12px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 13px; display: inline-flex; align-items: center; gap: 6px">Explain<span style="color: #5b6472; font-size: 12px">Ctrl+E</span></button>
+</div>
+<p style="margin: 0; color: #5b6472; font-size: 12px">Explain uses the connection of the entry. The Plan tab opens with the plan of this statement.</p>
+</section>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":900,"height":640}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

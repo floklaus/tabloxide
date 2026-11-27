@@ -345,6 +345,55 @@
       "w": 760,
       "h": 800,
       "title": "Files view and Sessions view"
+    },
+    "PlanEditorBar.dc.html": {
+      "x": 0,
+      "y": 17560,
+      "w": 900,
+      "h": 580,
+      "title": "Editor bar: Explain button, menu, unavailable state"
+    },
+    "PlanEmpty.dc.html": {
+      "x": 980,
+      "y": 17560,
+      "w": 900,
+      "h": 560,
+      "title": "Plan tab before the first plan"
+    },
+    "PlanHeaderPg.dc.html": {
+      "x": 1960,
+      "y": 17560,
+      "w": 900,
+      "h": 800,
+      "title": "Plan tab: PostgreSQL, measured plan"
+    },
+    "PlanMongo.dc.html": {
+      "x": 2940,
+      "y": 17560,
+      "w": 1200,
+      "h": 800,
+      "title": "Plan tab: MongoDB steps and Original view"
+    },
+    "PlanConfirm.dc.html": {
+      "x": 4220,
+      "y": 17560,
+      "w": 480,
+      "h": 720,
+      "title": "Confirm: Explain and measure"
+    },
+    "PlanResultLink.dc.html": {
+      "x": 4780,
+      "y": 17560,
+      "w": 900,
+      "h": 640,
+      "title": "Explain from a result, a slow query, and the history"
+    },
+    "PlanNote.dc.html": {
+      "x": 5760,
+      "y": 17560,
+      "w": 460,
+      "h": 640,
+      "title": "Execution plan: open questions"
     }
   },
   "order": [
@@ -394,7 +443,14 @@
     "GitView.dc.html",
     "HistoryView.dc.html",
     "ViewSpecThemes.dc.html",
-    "FilesSessionsView.dc.html"
+    "FilesSessionsView.dc.html",
+    "PlanEditorBar.dc.html",
+    "PlanEmpty.dc.html",
+    "PlanHeaderPg.dc.html",
+    "PlanMongo.dc.html",
+    "PlanConfirm.dc.html",
+    "PlanResultLink.dc.html",
+    "PlanNote.dc.html"
   ],
   "notes": {
     "aieach": {
@@ -487,6 +543,13 @@
       "w": 420,
       "color": "orange",
       "text": "Differences between the design and the build (M22):\n\n1. Git commit tab: no AI action and no line counts. The backend does not give them.\n2. Git changes: the check box is a mark in the row, not a control. An option cannot contain a control. Space stages or unstages.\n3. Git branches: rename and new branch use a form above the list, not a field in the row.\n4. Git: 'Stage all' and 'Unstage all' are in the overflow menu. No selection of more than one row.\n5. Files and Sessions open a normal tab, not a preview tab.\n6. Files has no rename and no delete. The backend has no command for them. Sessions have no rename, delete, or F5.\n7. Schema: DDL, nested fields, and field shares wait for backend data.\n8. MongoDB plan analysis needs a new connector release."
+    },
+    "planaccess": {
+      "x": 0,
+      "y": 17280,
+      "text": "Execution plan: access and view (proposal)",
+      "kind": "title1",
+      "maxW": 6220
     }
   },
   "designSystems": []

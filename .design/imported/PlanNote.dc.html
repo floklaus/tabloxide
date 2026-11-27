@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Execution plan: open questions</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+code{font-family:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace;font-size:13px}
+</style>
+</helmet>
+<div style="width: 460px; height: 640px; padding: 24px; background: #dbe8fb; color: #1b1f27; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.45; display: flex; flex-direction: column; gap: 14px">
+<h1 style="margin: 0; font-size: 16px; font-weight: 700">Execution plan: questions for the product owner</h1>
+<p style="margin: 0">Status on 2026-11-26: proposal. The product owner made no decision yet. No part is built.</p>
+<ol type="a" style="margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 10px">
+<li>Are the names "Explain" and "Explain and measure" correct? Other choice: "Explain" and "Explain analyze" for SQL engines only, with the connector giving the name.</li>
+<li>Is <code>Ctrl+E</code> correct? Other choice: <code>F6</code>.</li>
+<li>Must a measured plan always ask for a confirmation, or only for staging and production connections?</li>
+<li>Is the limit of 1 s for the "slow query" link correct?</li>
+<li>Is the order of the stages correct (stage 4 first is possible)?</li>
+</ol>
+<p style="margin: 0; font-size: 13px">Note for b: the view standards use F6 to move to the next area of the window.</p>
+<p style="margin: 0; font-size: 13px">Source: docs/Plan Design.md, section 6. The boards of this row show section 3 (easier access) and the view of the common plan form (section 2.2).</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":460,"height":640}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
