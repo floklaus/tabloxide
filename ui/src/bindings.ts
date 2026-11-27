@@ -1007,6 +1007,8 @@ export type FetchedPage_Deserialize = {
 	total_rows?: number | null,
 	/**  The failure that stopped the fetch. The result is then closed. */
 	error?: QueryError_Deserialize | null,
+	/**  The messages of the engine about the statement. They come with its end. */
+	messages: string[],
 	/**  The time of this fetch. The UI adds it to the time of the statement. */
 	elapsed_ms: number,
 };
@@ -1020,6 +1022,8 @@ export type FetchedPage_Serialize = {
 	total_rows: number | null,
 	/**  The failure that stopped the fetch. The result is then closed. */
 	error: QueryError_Serialize | null,
+	/**  The messages of the engine about the statement. They come with its end. */
+	messages: string[],
 	/**  The time of this fetch. The UI adds it to the time of the statement. */
 	elapsed_ms: number,
 };
@@ -1854,6 +1858,11 @@ export type StatementReport_Deserialize = {
 	range: TextRange,
 	elapsed_ms: number,
 	outcome: Outcome_Deserialize,
+	/**
+	 *  Messages of the engine about the statement, for example the notices and the
+	 *  warnings of PostgreSQL. A result that is open gives its messages with its end.
+	 */
+	messages: string[],
 };
 
 /**  The report for one statement of a run. */
@@ -1861,6 +1870,11 @@ export type StatementReport_Serialize = {
 	range: TextRange,
 	elapsed_ms: number,
 	outcome: Outcome_Serialize,
+	/**
+	 *  Messages of the engine about the statement, for example the notices and the
+	 *  warnings of PostgreSQL. A result that is open gives its messages with its end.
+	 */
+	messages: string[],
 };
 
 export type StatusReport = StatusReport_Serialize | StatusReport_Deserialize;

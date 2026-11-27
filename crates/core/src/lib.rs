@@ -29,7 +29,9 @@ pub use plan::{
     FieldGroup, HintLevel, Plan, PlanField, PlanHint, PlanStep, PlanText, json_field_text,
     read_explain_json,
 };
-pub use query::{Column, ColumnKind, Completion, Page, QueryError, QueryErrorKind, Row};
+pub use query::{
+    Column, ColumnKind, Completion, MAX_STATEMENT_MESSAGES, Page, QueryError, QueryErrorKind, Row,
+};
 pub use runner::{
     Outcome, RunLimits, RunOutput, RunTarget, StatementPreview, StatementReport, TextRange,
     preview_run, run_script,

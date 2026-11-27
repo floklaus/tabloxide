@@ -53,6 +53,7 @@ function seed(elapsedMs: number, connectionId: string | null = 'id-1') {
       {
         range: SECOND,
         elapsed_ms: elapsedMs,
+        messages: [],
         outcome: {
           type: 'rows',
           columns: [{ name: 'n', type_name: 'int4', kind: 'number' }],

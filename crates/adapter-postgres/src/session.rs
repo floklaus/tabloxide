@@ -1,5 +1,6 @@
 //! A session and its cancel handle.
 
+use crate::connect::Notices;
 use crate::stream::PgStream;
 use crate::{columns, error, introspect, tls};
 use async_trait::async_trait;
@@ -34,6 +35,7 @@ impl CancelHandle for PgCancel {
 
 pub(crate) struct PgSession {
     client: Client,
+    notices: Notices,
     info: ServerInfo,
     cancel: Arc<PgCancel>,
     query_timeout: Option<Duration>,
@@ -42,6 +44,7 @@ pub(crate) struct PgSession {
 impl PgSession {
     pub(crate) fn new(
         client: Client,
+        notices: Notices,
         info: ServerInfo,
         tls_mode: TlsMode,
         query_timeout: Option<Duration>,
@@ -52,6 +55,7 @@ impl PgSession {
         });
         Self {
             client,
+            notices,
             info,
             cancel,
             query_timeout,
@@ -71,13 +75,16 @@ impl Session for PgSession {
 
     async fn execute(&mut self, statement: &str) -> Result<Box<dyn ResultStream>, QueryError> {
         let types = columns::column_types(&self.client, statement).await;
+        // The messages before this point are not about this statement.
+        self.notices.take();
         let messages = self
             .client
             .simple_query_raw(statement)
             .await
             .map_err(|e| error::map_query_error(&e))?;
         let cancel = Arc::clone(&self.cancel) as Arc<dyn CancelHandle>;
-        let stream = PgStream::start(messages, types, cancel, self.query_timeout).await?;
+        let notices = self.notices.clone();
+        let stream = PgStream::start(messages, types, cancel, notices, self.query_timeout).await?;
         Ok(Box::new(stream))
     }
 

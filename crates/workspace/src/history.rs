@@ -139,6 +139,7 @@ mod tests {
             range: TextRange { from, to },
             elapsed_ms: 5,
             outcome,
+            messages: Vec::new(),
         }
     }
 

@@ -72,6 +72,7 @@ impl DbAdapter for PostgresAdapter {
             .map(|secs| Duration::from_secs(u64::from(secs)));
         Ok(Box::new(session::PgSession::new(
             connected.client,
+            connected.notices,
             info,
             profile.tls_mode,
             query_timeout,

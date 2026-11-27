@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { commands } from '../bindings'
@@ -23,6 +23,7 @@ function rows(isComplete: boolean, elapsedMs: number): StatementReport {
   return {
     range: { from: 0, to: 8 },
     elapsed_ms: elapsedMs,
+    messages: [],
     outcome: {
       type: 'rows',
       columns: [{ name: 'n', type_name: 'int4', kind: 'number' }],
@@ -45,6 +46,7 @@ function failed(kind: 'database' | 'cancelled'): StatementReport {
   return {
     range: { from: 0, to: 8 },
     elapsed_ms: 2100,
+    messages: [],
     outcome: { type: 'failed', error, location: null },
   }
 }
@@ -88,6 +90,7 @@ describe('the run time in the results', () => {
     const statement: StatementReport = {
       range: { from: 0, to: 8 },
       elapsed_ms: 1250,
+      messages: [],
       outcome: { type: 'command', affected_rows: 3 },
     }
 
@@ -110,6 +113,29 @@ describe('the run time in the results', () => {
     expect(screen.getByRole('status')).toHaveTextContent(
       'Cancelled after 2.10 s.',
     )
+  })
+
+  test('shows the messages of the database about a statement', () => {
+    const statement: StatementReport = {
+      range: { from: 0, to: 8 },
+      elapsed_ms: 5,
+      outcome: { type: 'command', affected_rows: 0 },
+      messages: ['NOTICE: step 1', 'WARNING: slow'],
+    }
+
+    show({ statements: [statement] })
+
+    const list = screen.getByRole('list', { name: 'Messages of the database' })
+    expect(within(list).getAllByRole('listitem')).toHaveLength(2)
+    expect(list).toHaveTextContent('WARNING: slow')
+  })
+
+  test('shows no message list for a statement without messages', () => {
+    show({ statements: [rows(true, 48)] })
+
+    expect(
+      screen.queryByRole('list', { name: 'Messages of the database' }),
+    ).toBeNull()
   })
 
   test('shows the time since the start of an active run', () => {

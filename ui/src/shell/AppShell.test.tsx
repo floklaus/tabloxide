@@ -568,6 +568,7 @@ describe('layouts', () => {
           {
             range: { from: 0, to: 8 },
             elapsed_ms: 1,
+            messages: [],
             outcome: { type: 'command', affected_rows: 1 },
           },
         ],

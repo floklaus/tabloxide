@@ -1,7 +1,7 @@
 //! Runs the statements of a script in sequence on a session.
 
 use crate::sql::{Location, Risk, Span, byte_to_utf16, char_to_byte, locate, utf16_to_byte};
-use crate::{Column, QueryError, QueryLanguage, ResultStream, Row, Session};
+use crate::{Column, Completion, QueryError, QueryLanguage, ResultStream, Row, Session};
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 
@@ -70,6 +70,9 @@ pub struct StatementReport {
     #[cfg_attr(feature = "specta", specta(type = u32))]
     pub elapsed_ms: u64,
     pub outcome: Outcome,
+    /// Messages of the engine about the statement, for example the notices and the
+    /// warnings of PostgreSQL. A result that is open gives its messages with its end.
+    pub messages: Vec<String>,
 }
 
 /// The result of a run. `open` is the result stream of the last statement, if it has more rows.
@@ -141,16 +144,24 @@ async fn read_all(
     stream: &mut dyn ResultStream,
     page_rows: usize,
     limit: usize,
-) -> Result<(Vec<Row>, u64), QueryError> {
+) -> Result<(Vec<Row>, Completion), QueryError> {
     let mut rows: Vec<Row> = Vec::new();
     loop {
         let page = stream.next_page(page_rows).await?;
         let free = limit - rows.len();
         rows.extend(page.rows.into_iter().take(free));
         if let Some(end) = page.end {
-            return Ok((rows, end.affected_rows));
+            return Ok((rows, end));
         }
     }
+}
+
+/// What one statement gave: its outcome, the stream if the result is open, and the
+/// messages of the engine.
+struct Ran {
+    outcome: Outcome,
+    open: Option<Box<dyn ResultStream>>,
+    messages: Vec<String>,
 }
 
 async fn run_statement(
@@ -158,30 +169,48 @@ async fn run_statement(
     statement: &str,
     can_stay_open: bool,
     limits: RunLimits,
-) -> Result<(Outcome, Option<Box<dyn ResultStream>>), QueryError> {
+) -> Result<Ran, QueryError> {
     let mut stream = session.execute(statement).await?;
     let Some(columns) = stream.columns().map(<[Column]>::to_vec) else {
-        let (_, affected_rows) = read_all(stream.as_mut(), limits.page_rows, 0).await?;
-        return Ok((Outcome::Command { affected_rows }, None));
+        let (_, end) = read_all(stream.as_mut(), limits.page_rows, 0).await?;
+        return Ok(Ran {
+            outcome: Outcome::Command {
+                affected_rows: end.affected_rows,
+            },
+            open: None,
+            messages: end.messages,
+        });
     };
     if can_stay_open {
         let page = stream.next_page(limits.page_rows).await?;
+        let is_complete = page.end.is_some();
+        let (total_rows, messages) = page.end.map_or((None, Vec::new()), |end| {
+            (Some(end.affected_rows), end.messages)
+        });
         let outcome = Outcome::Rows {
             columns,
             rows: page.rows,
-            is_complete: page.end.is_some(),
-            total_rows: page.end.map(|end| end.affected_rows),
+            is_complete,
+            total_rows,
         };
-        return Ok((outcome, page.end.is_none().then_some(stream)));
+        return Ok(Ran {
+            outcome,
+            open: (!is_complete).then_some(stream),
+            messages,
+        });
     }
-    let (rows, total) = read_all(stream.as_mut(), limits.page_rows, limits.buffered_rows).await?;
+    let (rows, end) = read_all(stream.as_mut(), limits.page_rows, limits.buffered_rows).await?;
     let outcome = Outcome::Rows {
         columns,
         rows,
         is_complete: true,
-        total_rows: Some(total),
+        total_rows: Some(end.affected_rows),
     };
-    Ok((outcome, None))
+    Ok(Ran {
+        outcome,
+        open: None,
+        messages: end.messages,
+    })
 }
 
 /// Runs the statements that `target` selects from `sql`. Stops at the first failure.
@@ -205,20 +234,24 @@ pub async fn run_script(
         let can_stay_open = is_last && language.is_pageable(statement);
         let result = run_statement(session, statement, can_stay_open, limits).await;
         let is_failure = result.is_err();
-        let outcome = match result {
-            Ok((outcome, stream)) => {
-                open = stream;
-                outcome
+        let (outcome, messages) = match result {
+            Ok(ran) => {
+                open = ran.open;
+                (ran.outcome, ran.messages)
             }
-            Err(error) => Outcome::Failed {
-                location: error_location(sql, *span, &error),
-                error,
-            },
+            Err(error) => {
+                let outcome = Outcome::Failed {
+                    location: error_location(sql, *span, &error),
+                    error,
+                };
+                (outcome, Vec::new())
+            }
         };
         statements.push(StatementReport {
             range: text_range(sql, *span),
             elapsed_ms: u64::try_from(start.elapsed().as_millis()).unwrap_or(u64::MAX),
             outcome,
+            messages,
         });
         if is_failure {
             break;
@@ -250,6 +283,42 @@ mod tests {
             Outcome::Rows { rows, .. } => rows.len(),
             other => panic!("not a row result: {other:?}"),
         }
+    }
+
+    #[tokio::test]
+    async fn gives_the_messages_of_the_engine_with_each_statement() {
+        let (session, _) = ScriptedSession::new(vec![Scripted::Command(1), Scripted::Rows(2)]);
+        let mut session = session.with_messages(&["NOTICE: done"]);
+
+        let output = run_script(
+            &mut session,
+            QueryLanguage::Sql,
+            "update t set a = 1; select 1",
+            RunTarget::All,
+            LIMITS,
+        )
+        .await;
+
+        assert_eq!(output.statements[0].messages, ["NOTICE: done"]);
+        assert_eq!(output.statements[1].messages, ["NOTICE: done"]);
+    }
+
+    #[tokio::test]
+    async fn an_open_result_has_no_messages_before_its_end() {
+        let (session, _) = ScriptedSession::new(vec![Scripted::Rows(25)]);
+        let mut session = session.with_messages(&["NOTICE: done"]);
+
+        let output = run_script(
+            &mut session,
+            QueryLanguage::Sql,
+            "select 1",
+            RunTarget::All,
+            LIMITS,
+        )
+        .await;
+
+        assert!(output.open.is_some());
+        assert!(output.statements[0].messages.is_empty());
     }
 
     #[tokio::test]

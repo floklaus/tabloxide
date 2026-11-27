@@ -29,11 +29,28 @@ pub struct Column {
 /// One row. Each value is in the text form of the database engine. `None` is NULL.
 pub type Row = Vec<Option<String>>;
 
+/// The largest number of messages that an engine keeps for one statement.
+pub const MAX_STATEMENT_MESSAGES: usize = 200;
+
 /// Data about a statement that is complete.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Completion {
     /// Number of rows that the statement returned or changed.
     pub affected_rows: u64,
+    /// Messages of the engine about the statement, for example the notices and the
+    /// warnings of PostgreSQL. They are not errors.
+    pub messages: Vec<String>,
+}
+
+impl Completion {
+    /// A completion without messages.
+    #[must_use]
+    pub fn new(affected_rows: u64) -> Self {
+        Self {
+            affected_rows,
+            messages: Vec::new(),
+        }
+    }
 }
 
 /// A group of rows from a result. `end` has a value when the statement is complete.

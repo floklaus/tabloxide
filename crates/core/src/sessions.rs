@@ -36,6 +36,8 @@ pub struct FetchedPage {
     pub total_rows: Option<u64>,
     /// The failure that stopped the fetch. The result is then closed.
     pub error: Option<QueryError>,
+    /// The messages of the engine about the statement. They come with its end.
+    pub messages: Vec<String>,
     /// The time of this fetch. The UI adds it to the time of the statement.
     #[cfg_attr(feature = "specta", specta(type = u32))]
     pub elapsed_ms: u64,
@@ -124,8 +126,9 @@ impl QuerySession {
             Ok(page) => FetchedPage {
                 rows: page.rows,
                 is_complete: page.end.is_some(),
-                total_rows: page.end.map(|end| end.affected_rows),
+                total_rows: page.end.as_ref().map(|end| end.affected_rows),
                 error: None,
+                messages: page.end.map(|end| end.messages).unwrap_or_default(),
                 elapsed_ms,
             },
             Err(error) => FetchedPage {
@@ -133,6 +136,7 @@ impl QuerySession {
                 is_complete: false,
                 total_rows: None,
                 error: Some(error),
+                messages: Vec::new(),
                 elapsed_ms,
             },
         };
@@ -347,6 +351,21 @@ mod tests {
         assert_eq!(third.total_rows, Some(25));
         // A complete result is closed.
         assert_eq!(session.fetch(id, 10).await, None);
+    }
+
+    #[tokio::test]
+    async fn the_last_fetch_gives_the_messages_of_the_engine() {
+        let (scripted, _) = ScriptedSession::new(vec![Scripted::Rows(15)]);
+        let scripted = scripted.with_messages(&["WARNING: slow"]);
+        let session = QuerySession::new(Box::new(scripted), QueryLanguage::Sql);
+
+        let report = run(&session, "select 1").await;
+        let id = report.open_result.expect("the result must be open");
+        let last = session.fetch(id, 10).await.unwrap();
+
+        assert!(report.statements[0].messages.is_empty());
+        assert!(last.is_complete);
+        assert_eq!(last.messages, ["WARNING: slow"]);
     }
 
     #[tokio::test]

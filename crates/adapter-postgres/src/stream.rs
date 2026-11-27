@@ -3,6 +3,7 @@
 //! The driver reads from the socket only when the stream asks for the next message.
 //! Thus a stream that waits does not use more memory, and the server stops the send.
 
+use crate::connect::Notices;
 use crate::{columns, error};
 use async_trait::async_trait;
 use futures_util::StreamExt;
@@ -23,6 +24,8 @@ pub(crate) struct PgStream {
     /// `true` when the server has no more messages for this statement.
     is_drained: bool,
     cancel: Arc<dyn CancelHandle>,
+    /// The notices of the server. The end of the statement takes them.
+    notices: Notices,
 }
 
 fn to_row(row: &SimpleQueryRow) -> Result<Row, QueryError> {
@@ -52,6 +55,7 @@ impl PgStream {
         messages: SimpleQueryStream,
         types: Option<Vec<Type>>,
         cancel: Arc<dyn CancelHandle>,
+        notices: Notices,
         timeout: Option<Duration>,
     ) -> Result<Self, QueryError> {
         let mut stream = Self {
@@ -60,6 +64,7 @@ impl PgStream {
             end: None,
             is_drained: false,
             cancel,
+            notices,
         };
         let first = match timeout {
             None => stream.messages.next().await,
@@ -89,10 +94,18 @@ impl PgStream {
     }
 
     fn finish(&mut self, count: u64) {
-        self.end.get_or_insert(Completion {
-            affected_rows: count,
-        });
+        if self.end.is_none() {
+            self.end = Some(self.completion(count));
+        }
         self.is_drained = true;
+    }
+
+    /// The end of the statement, with the notices that the server sent for it.
+    fn completion(&self, count: u64) -> Completion {
+        Completion {
+            affected_rows: count,
+            messages: self.notices.take(),
+        }
     }
 
     /// Reads and discards the remaining messages. Returns the first error.
@@ -112,13 +125,13 @@ impl PgStream {
 
     /// Records the end of the statement and reads the messages that follow it.
     async fn complete(&mut self, count: u64) -> Result<(), QueryError> {
-        let end = Completion {
-            affected_rows: count,
-        };
         match self.drain().await {
             Some(e) => Err(error::map_query_error(&e)),
             None => {
-                self.end.get_or_insert(end);
+                // The server sent all messages of the statement before this point.
+                if self.end.is_none() {
+                    self.end = Some(self.completion(count));
+                }
                 Ok(())
             }
         }
@@ -159,7 +172,7 @@ impl ResultStream for PgStream {
         }
         Ok(Page {
             rows,
-            end: self.end,
+            end: self.end.clone(),
         })
     }
 

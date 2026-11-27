@@ -242,11 +242,13 @@ describe('QueryEditor', () => {
           {
             range: { from: 0, to: 18 },
             elapsed_ms: 4,
+            messages: [],
             outcome: { type: 'command', affected_rows: 3 },
           },
           {
             range: { from: 20, to: 32 },
             elapsed_ms: 1,
+            messages: [],
             outcome: {
               type: 'failed',
               error: {

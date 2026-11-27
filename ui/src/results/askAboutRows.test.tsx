@@ -65,6 +65,7 @@ function setup(environment: Environment, rowsForAi = 2) {
       {
         range: { from: 0, to: tab.content.length },
         elapsed_ms: 1,
+        messages: [],
         outcome: {
           type: 'rows',
           columns: [

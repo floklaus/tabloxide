@@ -60,6 +60,7 @@ pub struct ScriptedSession {
     answers: VecDeque<Scripted>,
     probe: Arc<Probe>,
     info: ServerInfo,
+    messages: Vec<String>,
 }
 
 impl ScriptedSession {
@@ -72,8 +73,16 @@ impl ScriptedSession {
             info: ServerInfo {
                 version: "test".to_owned(),
             },
+            messages: Vec::new(),
         };
         (session, probe)
+    }
+
+    /// Each statement gives `messages` with its end, as an engine gives its notices.
+    #[must_use]
+    pub fn with_messages(mut self, messages: &[&str]) -> Self {
+        self.messages = messages.iter().map(|&text| text.to_owned()).collect();
+        self
     }
 }
 
@@ -83,6 +92,7 @@ struct ScriptedStream {
     count: u64,
     is_done: bool,
     probe: Arc<Probe>,
+    messages: Vec<String>,
 }
 
 #[async_trait]
@@ -103,8 +113,9 @@ impl ResultStream for ScriptedStream {
             self.next += 1;
         }
         self.is_done = !has_rows || self.next > self.count;
-        let end = self.is_done.then_some(Completion {
+        let end = self.is_done.then(|| Completion {
             affected_rows: self.count,
+            messages: self.messages.clone(),
         });
         Ok(Page { rows, end })
     }
@@ -169,6 +180,7 @@ impl Session for ScriptedSession {
             count,
             is_done: false,
             probe: Arc::clone(&self.probe),
+            messages: self.messages.clone(),
         }))
     }
 

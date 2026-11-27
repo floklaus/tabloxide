@@ -76,11 +76,13 @@ async function runWithError(kind: QueryError['kind'] = 'database') {
         {
           range: { from: 0, to: 8 },
           elapsed_ms: 1,
+          messages: [],
           outcome: { type: 'command' as const, affected_rows: 0 },
         },
         {
           range: FAILED,
           elapsed_ms: 1,
+          messages: [],
           outcome: {
             type: 'failed' as const,
             error: databaseError(kind),

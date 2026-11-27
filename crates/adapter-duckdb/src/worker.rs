@@ -317,9 +317,7 @@ impl Cursor<'_> {
                 None => match self.next_batch()? {
                     Some(batch) => batch,
                     None => {
-                        let end = Some(Completion {
-                            affected_rows: self.total,
-                        });
+                        let end = Some(Completion::new(self.total));
                         return Ok(Page { rows, end });
                     }
                 },
@@ -351,7 +349,7 @@ impl Cursor<'_> {
         }
         Ok(Page {
             rows: Vec::new(),
-            end: Some(Completion { affected_rows }),
+            end: Some(Completion::new(affected_rows)),
         })
     }
 }

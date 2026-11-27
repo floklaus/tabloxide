@@ -389,6 +389,7 @@ pub fn page_to_wire(page: Page) -> v1::Page {
         rows: page.rows.into_iter().map(row_to_wire).collect(),
         end: page.end.map(|end| v1::Completion {
             affected_rows: end.affected_rows,
+            messages: end.messages,
         }),
     }
 }
@@ -400,6 +401,7 @@ pub fn page_from_wire(page: v1::Page) -> (Vec<Row>, Option<Completion>) {
         page.rows.into_iter().map(row_from_wire).collect(),
         page.end.map(|end| Completion {
             affected_rows: end.affected_rows,
+            messages: end.messages,
         }),
     )
 }

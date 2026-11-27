@@ -399,7 +399,7 @@ impl ResultStream for RemoteStream {
         let count = max_rows.min(self.buffer.len());
         let rows: Vec<Row> = self.buffer.drain(..count).collect();
         let end = if self.buffer.is_empty() {
-            self.end
+            self.end.clone()
         } else {
             None
         };

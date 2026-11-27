@@ -131,6 +131,40 @@ async fn runs_statements_and_reports_errors() {
 
 #[tokio::test(flavor = "multi_thread")]
 #[ignore = "needs Docker"]
+async fn gives_the_notices_of_the_server_with_the_statement() {
+    let (_container, profile) = start_server(false).await;
+    let mut session = connect(&profile).await;
+    let session = session.as_mut();
+
+    // A block that raises a notice and a warning.
+    let block = "do $$ begin raise notice 'step %', 1; raise warning 'slow'; end $$";
+    let raised = run(session, block).await.unwrap();
+    assert_eq!(
+        raised.end.unwrap().messages,
+        ["NOTICE: step 1", "WARNING: slow"]
+    );
+
+    // A statement gets only its own messages.
+    let quiet = run(session, "select 1").await.unwrap();
+    assert!(quiet.end.unwrap().messages.is_empty());
+
+    // The server itself warns about a COMMIT without a transaction.
+    let commit = run(session, "commit").await.unwrap();
+    assert_eq!(
+        commit.end.unwrap().messages,
+        ["WARNING: there is no transaction in progress"]
+    );
+
+    // The adapter keeps a bounded number of messages.
+    let many = "do $$ begin for i in 1..500 loop raise notice 'n %', i; end loop; end $$";
+    let messages = run(session, many).await.unwrap().end.unwrap().messages;
+    assert_eq!(messages.len(), 201);
+    assert_eq!(messages[0], "NOTICE: n 1");
+    assert!(messages[200].starts_with("The server sent more messages."));
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "needs Docker"]
 async fn reads_a_large_result_in_pages() {
     let (_container, profile) = start_server(false).await;
     let mut session = connect(&profile).await;

@@ -108,6 +108,7 @@ function withMoreRows(
   isComplete: boolean,
   totalRows: number | null,
   elapsedMs: number,
+  messages: string[],
 ): StatementReport[] {
   return statements.map((statement, i) => {
     if (i !== index || statement.outcome.type !== 'rows') return statement
@@ -119,7 +120,13 @@ function withMoreRows(
     }
     // The time of the statement is the time of all its fetches.
     const elapsed_ms = statement.elapsed_ms + elapsedMs
-    return { ...statement, elapsed_ms, outcome }
+    return {
+      ...statement,
+      elapsed_ms,
+      outcome,
+      // The messages of the engine come with the end of the result.
+      messages: [...statement.messages, ...messages],
+    }
   })
 }
 
@@ -286,6 +293,7 @@ export const createQueryStore = (): QueryStore =>
                 page.is_complete,
                 page.total_rows,
                 page.elapsed_ms,
+                page.messages,
               ),
               open: page.is_complete || page.error ? null : open,
               fetchError: page.error,

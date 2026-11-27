@@ -241,6 +241,9 @@ message Page {
 message Completion {
   // Number of rows that the statement returned or changed.
   uint64 affected_rows = 1;
+  // Messages of the engine about the statement, for example warnings. They are
+  // not errors. A connector that has no messages leaves the list empty.
+  repeated string messages = 2;
 }
 
 message Row {

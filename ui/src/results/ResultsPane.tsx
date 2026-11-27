@@ -234,6 +234,21 @@ function RowsStatus(props: { statement: StatementReport; index: number }) {
   )
 }
 
+/**
+ * The messages of the engine about a statement, for example the notices and the
+ * warnings of PostgreSQL. They are not errors.
+ */
+function Messages({ messages }: { messages: string[] }) {
+  if (messages.length === 0) return null
+  return (
+    <ul className="results__messages" aria-label="Messages of the database">
+      {messages.map((message, index) => (
+        <li key={index}>{message}</li>
+      ))}
+    </ul>
+  )
+}
+
 /** The text of the statement of a result, without the other statements of the run. */
 function statementText(sql: string, statement: StatementReport): string {
   return sql.slice(statement.range.from, statement.range.to)
@@ -279,6 +294,7 @@ function StatementView(props: { statement: StatementReport; index: number }) {
           {count(outcome.affected_rows, 'row')} affected.
         </p>
         {explainLink}
+        <Messages messages={statement.messages} />
       </div>
     )
   }
@@ -295,6 +311,7 @@ function StatementView(props: { statement: StatementReport; index: number }) {
         hasMore={isOpen}
         onNeedMore={() => void fetchMore()}
       />
+      <Messages messages={statement.messages} />
       <div className="results__bar results__bar--footer">
         <RowsStatus statement={statement} index={index} />
         {explainLink}

@@ -82,7 +82,10 @@ impl Connector for FakeConnector {
                 rows: vec![Row {
                     cells: vec![text(&statement), Cell { value: None }],
                 }],
-                end: Some(Completion { affected_rows: 1 }),
+                end: Some(Completion {
+                    affected_rows: 1,
+                    messages: vec!["Matched 1.".to_owned()],
+                }),
             })),
         ];
         Ok(Response::new(Box::pin(tokio_stream::iter(events))))

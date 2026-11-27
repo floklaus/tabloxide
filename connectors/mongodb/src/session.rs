@@ -113,7 +113,7 @@ impl MongoSession {
                     ));
                 }
                 self.database = database;
-                Ok(Box::new(ChangeStream(0)))
+                Ok(Box::new(ChangeStream(Completion::new(0))))
             }
             Plan::ShowDatabases => {
                 let databases = self.guard(self.client.list_databases()).await?;
@@ -159,7 +159,10 @@ impl MongoSession {
             }
             Output::Array { field, column } => array_rows(&answer, field, column.as_deref()),
             Output::Change { count } => {
-                return Ok(Box::new(ChangeStream(changed_count(&answer, count))));
+                return Ok(Box::new(ChangeStream(Completion {
+                    affected_rows: changed_count(&answer, count),
+                    messages: change_messages(&answer, count),
+                })));
             }
         };
         Ok(DocumentStream::from_documents(
@@ -216,6 +219,22 @@ fn check_write_errors(answer: &Document) -> Result<(), QueryError> {
                 .to_owned(),
         )
     })
+}
+
+/// The detail of an update that the one changed count does not show: how many
+/// documents the filter matched, and how many the update changed or inserted.
+/// Only the answer of an update has `nModified`.
+fn change_messages(answer: &Document, fields: &[&str]) -> Vec<String> {
+    if !fields.contains(&"nModified") {
+        return Vec::new();
+    }
+    let upserted = changed_count(answer, &["upserted"]);
+    // `n` counts the matched documents and the upserted documents.
+    let matched = changed_count(answer, &["n"]).saturating_sub(upserted);
+    let modified = changed_count(answer, &["nModified"]);
+    vec![format!(
+        "Matched: {matched}. Modified: {modified}. Upserted: {upserted}."
+    )]
 }
 
 fn changed_count(answer: &Document, fields: &[&str]) -> u64 {
@@ -352,7 +371,7 @@ fn no_plan() -> QueryError {
 }
 
 /// The result of a statement that changes data.
-struct ChangeStream(u64);
+struct ChangeStream(Completion);
 
 #[async_trait]
 impl ResultStream for ChangeStream {
@@ -363,9 +382,7 @@ impl ResultStream for ChangeStream {
     async fn next_page(&mut self, _max_rows: usize) -> Result<Page, QueryError> {
         Ok(Page {
             rows: Vec::new(),
-            end: Some(Completion {
-                affected_rows: self.0,
-            }),
+            end: Some(self.0.clone()),
         })
     }
 
@@ -454,9 +471,7 @@ impl ResultStream for DocumentStream {
         let is_end = self.buffer.is_empty() && self.cursor.is_none();
         Ok(Page {
             rows,
-            end: is_end.then_some(Completion {
-                affected_rows: self.count,
-            }),
+            end: is_end.then(|| Completion::new(self.count)),
         })
     }
 
@@ -504,6 +519,21 @@ mod tests {
 
         assert_eq!(error.message, "E11000 duplicate key");
         assert_eq!(error.code.as_deref(), Some("11000"));
+    }
+
+    #[test]
+    fn an_update_gives_the_matched_the_modified_and_the_upserted_counts() {
+        let answer = doc! { "n": 3, "nModified": 1, "upserted": [{ "index": 0, "_id": 1 }] };
+
+        assert_eq!(
+            change_messages(&answer, &["nModified", "upserted"]),
+            ["Matched: 2. Modified: 1. Upserted: 1."]
+        );
+    }
+
+    #[test]
+    fn a_delete_gives_no_message() {
+        assert!(change_messages(&doc! { "n": 3 }, &["n"]).is_empty());
     }
 
     #[test]

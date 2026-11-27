@@ -267,6 +267,7 @@ describe('SchemaTree', () => {
       ok({
         range: { from: 0, to: 10 },
         elapsed_ms: 2,
+        messages: [],
         outcome: {
           type: 'rows',
           columns: [{ name: 'id', type_name: 'int4', kind: 'number' }],

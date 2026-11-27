@@ -13,6 +13,12 @@ The section `Unreleased` collects the changes after the last release. Before you
 - The time of a result with more rows than the first page now includes each later fetch. While rows are not loaded, the status says `so far`.
 - On Linux, a click on the close button of the last editor tab now closes the tab.
 
+### Messages of the database
+
+- The result of a statement shows the messages that the database sent with it. For PostgreSQL, these are the notices and the warnings, for example the text of `RAISE NOTICE`, or the warning of a `COMMIT` without a transaction.
+- For a MongoDB update, the result shows how many documents the filter matched, how many the update changed, and how many it inserted. This needs a MongoDB connector that is newer than 0.1.0.
+- The result keeps a maximum of 200 messages for one statement.
+
 ## 0.1.0 (2026-11-26)
 
 This is the first release.

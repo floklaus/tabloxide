@@ -23,6 +23,7 @@ function rowsStatement(rows: string[][], isComplete: boolean): StatementReport {
   return {
     range: { from: 0, to: 8 },
     elapsed_ms: 3,
+    messages: [],
     outcome: {
       type: 'rows',
       columns: [{ name: 'n', type_name: 'int4', kind: 'number' }],
@@ -160,6 +161,7 @@ describe('queryStore', () => {
         total_rows: 3,
         error: null,
         elapsed_ms: 40,
+        messages: ['NOTICE: done'],
       }),
     )
 
@@ -169,6 +171,7 @@ describe('queryStore', () => {
     expect(loadedRows()).toBe(3)
     // The time of the statement is the time of the run and of the fetch.
     expect(store.getState().statements[0].elapsed_ms).toBe(43)
+    expect(store.getState().statements[0].messages).toEqual(['NOTICE: done'])
     expect(store.getState().open).toBeNull()
     expect(store.getState().statements[0].outcome).toMatchObject({
       is_complete: true,
@@ -193,6 +196,7 @@ describe('queryStore', () => {
         total_rows: null,
         error,
         elapsed_ms: 1,
+        messages: [],
       }),
     )
 
@@ -207,6 +211,7 @@ describe('queryStore', () => {
     const lost = {
       range: { from: 0, to: 8 },
       elapsed_ms: 1,
+      messages: [],
       outcome: {
         type: 'failed' as const,
         error: {
