@@ -1,4 +1,4 @@
-import { engineLanguage, findEngine } from '../engines/engineStore'
+import { engineLanguage, findEngine, hasPlanView } from '../engines/engineStore'
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { commands as backend } from '../bindings'
@@ -119,16 +119,9 @@ export function buildCommands(): Command[] {
   const always = () => true
   const hasTab = () => activeTab() !== undefined
   const hasConnection = () => activeConnection() !== undefined
-  // The plan tree reads the JSON of EXPLAIN. Thus it is only for the SQL engines.
-  // A connector engine with plans gives them to the assistant only.
-  const canExplain = () => {
-    const engine = findEngine(activeConnection()?.engine ?? 'postgres')
-    return (
-      canRun() &&
-      engine?.info.language === 'sql' &&
-      engine.info.capabilities.explainPlan
-    )
-  }
+  const canExplain = () =>
+    canRun() &&
+    hasPlanView(findEngine(activeConnection()?.engine ?? 'postgres'))
   const commands: Command[] = [
     // File
     {
@@ -233,15 +226,17 @@ export function buildCommands(): Command[] {
       id: 'query.explain',
       label: 'Explain the statement at the cursor',
       group: 'Query',
+      shortcut: 'Ctrl+E',
       isEnabled: canExplain,
-      run: () => usePlanStore.getState().read(false),
+      run: () => usePlanStore.getState().request(false),
     },
     {
-      id: 'query.explain-analyze',
-      label: 'Explain analyze the statement at the cursor',
+      id: 'query.explain-measure',
+      label: 'Explain and measure the statement at the cursor',
       group: 'Query',
+      shortcut: 'Ctrl+Shift+E',
       isEnabled: canExplain,
-      run: () => usePlanStore.getState().read(true),
+      run: () => usePlanStore.getState().request(true),
     },
     {
       id: 'query.ai-change',

@@ -15,6 +15,7 @@ import { usePreferencesStore } from '../preferences/preferencesStore'
 import { QueryEditor } from '../query/QueryEditor'
 import { resetQueryStores, useQuery } from '../query/queryStore'
 import { RunConfirmDialog } from '../query/RunConfirmDialog'
+import { PlanConfirmDialog } from '../plan/PlanConfirmDialog'
 import { ResultsPane } from '../results/ResultsPane'
 import { useResultsViewStore } from '../results/resultsViewStore'
 import { useSchemaStore } from '../schema/schemaStore'
@@ -79,6 +80,7 @@ function Dialogs() {
   return (
     <>
       <RunConfirmDialog />
+      <PlanConfirmDialog />
       {dialog === 'preferences' && <PreferencesDialog onClose={close} />}
       {dialog === 'clone' && <CloneDialog onClose={close} />}
       {dialog === 'palette' && <CommandPalette />}

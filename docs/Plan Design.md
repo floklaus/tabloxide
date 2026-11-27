@@ -2,7 +2,7 @@
 
 This document gives a new design for the execution plan ("Explain"). It accompanies `Connector Design.md` and `Implementation Plan.md`.
 
-Status on 2026-11-26: this is a proposal. The product owner made no decision yet. Section 6 lists the questions. No part is built.
+Status on 2026-11-26: the product owner approved the design and the answers of section 6. Stage 4 is built. Stages 1, 2, 3, and 5 are open.
 
 The design has two parts:
 
@@ -132,10 +132,20 @@ Stage 4 does not need stages 2 and 3. It can come first.
 - A connector of minor 2 continues to work. It gets the "Original" view only.
 - The AI uses `text` as today. The AI can also use the steps, but this design does not need it.
 
-## 6. Questions for the product owner
+## 6. Decisions
 
-a. Are the names "Explain" and "Explain and measure" correct? Other choice: "Explain" and "Explain analyze" for SQL engines only, with the connector giving the name.
-b. Is `Ctrl+E` correct? Other choice: `F6`.
-c. Must a measured plan always ask for a confirmation, or only for staging and production connections?
-d. Is the limit of 1 s for the "slow query" link correct?
-e. Is the order of the stages correct (stage 4 first is possible)?
+The product owner accepted each proposal on 2026-11-26:
+
+a. The names are "Explain" and "Explain and measure".
+b. The shortcuts are `Ctrl+E` and `Ctrl+Shift+E`. `F6` is not available, because the view standards use it to go to the next area.
+c. A measured plan always asks first. The user can stop the question for one connection with "Do not ask again for this connection". This choice stays until the application closes. A production connection always asks.
+d. The limit for the "slow query" link is 1 s.
+e. Stage 4 comes first.
+
+## 7. Stage 4 as built
+
+- `plan_check` (`src-tauri/src/commands/plan.rs`) checks the statement at the cursor without the database. The editor calls it 150 ms after a change of the text or the cursor (`ui/src/plan/planTarget.ts`). A blocked action shows its reason.
+- `ExplainButton.tsx` is the split button in the editor bar. The "More query actions" menu no longer has the plan actions.
+- `PlanConfirmDialog.tsx` asks before Explain and measure.
+- The Plan tab shows the statement at the cursor and the two actions before the first plan. A plan has a header with "Estimate" or "Measured", "Steps | Original", "Explain again", and "Ask the AI". "Original" shows the JSON of the engine.
+- Until stage 1, the button shows only for the SQL engines, as before.

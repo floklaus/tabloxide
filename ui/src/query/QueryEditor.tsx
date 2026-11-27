@@ -1,4 +1,10 @@
-import { engineLanguage, serverLabel } from '../engines/engineStore'
+import {
+  engineLanguage,
+  findEngine,
+  hasPlanView,
+  serverLabel,
+  useEngineStore,
+} from '../engines/engineStore'
 import { useEffect, useRef, useState } from 'react'
 import { AssistantSessionView } from '../assistant/AssistantSessionView'
 import { DetailView } from '../tabs/DetailView'
@@ -11,7 +17,8 @@ import {
 import type { RunTarget } from '../bindings'
 import { combineSources } from '../completion/combine'
 import { completeSql } from '../completion/sqlCompletion'
-import { usePlanStore } from '../plan/planStore'
+import { ExplainButton } from '../plan/ExplainButton'
+import { refreshPlanTarget } from '../plan/planTarget'
 import { Icon } from '../shell/icons'
 import { MenuButton } from '../shell/menu/MenuButton'
 import { useShellStore } from '../shell/shellStore'
@@ -27,6 +34,9 @@ import { activeQueryStore, useQuery } from './queryStore'
 import { requestRun } from './runConfirm'
 
 const NO_CONNECTIONS: never[] = []
+
+/** The wait after a change of the text or the cursor, before the plan check. */
+const PLAN_CHECK_DELAY_MS = 150
 
 export function QueryEditor() {
   const editorRef = useRef<CodeEditorHandle>(null)
@@ -55,6 +65,9 @@ export function QueryEditor() {
   const [formatError, setFormatError] = useState<string | null>(null)
   const [snippetText, setSnippetText] = useState<string | null>(null)
   const setCursor = useShellStore((state) => state.setCursor)
+  const cursor = useShellStore((state) => state.cursor)
+  // The engine list loads after the start. The selector shows the button then.
+  useEngineStore((state) => state.engines)
 
   useEffect(() => {
     setActiveEditor(editorRef)
@@ -66,6 +79,16 @@ export function QueryEditor() {
     editorRef.current?.focusAt(jumpTo)
     activeQueryStore().getState().setJumpTo(null)
   }, [jumpTo])
+
+  const content = tab?.content
+  const connectionId = tab?.connectionId
+  useEffect(() => {
+    const timer = window.setTimeout(
+      () => void refreshPlanTarget(),
+      PLAN_CHECK_DELAY_MS,
+    )
+    return () => window.clearTimeout(timer)
+  }, [content, connectionId, cursor])
 
   if (!tab)
     return (
@@ -108,6 +131,9 @@ export function QueryEditor() {
               Ctrl+Enter
             </span>
           </button>
+          {active && hasPlanView(findEngine(active.engine ?? 'postgres')) && (
+            <ExplainButton isBusy={!canRun} />
+          )}
           <button
             type="button"
             className="button"
@@ -141,21 +167,6 @@ export function QueryEditor() {
             menuLabel="Query actions"
             className="icon-button"
             items={() => [
-              {
-                kind: 'action',
-                label: 'Explain',
-                detail: 'The plan. The statement does not run.',
-                disabled: !active || runState !== 'idle',
-                run: () => void usePlanStore.getState().read(false),
-              },
-              {
-                kind: 'action',
-                label: 'Explain analyze',
-                detail: 'Runs a statement that reads data, and measures it.',
-                disabled: !active || runState !== 'idle',
-                run: () => void usePlanStore.getState().read(true),
-              },
-              { kind: 'separator' },
               {
                 kind: 'action',
                 label: 'Format the SQL',

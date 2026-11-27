@@ -8,10 +8,13 @@ import { ResultsPane } from '../results/ResultsPane'
 import { useResultsViewStore } from '../results/resultsViewStore'
 import { useTabsStore } from '../tabs/tabsStore'
 import { makeProfile, makeWorkspace } from '../test/fixtures'
+import type { Environment } from '../bindings'
 import { useWorkspaceStore } from '../workspace/workspaceStore'
 import duckdbAnalyze from './fixtures/duckdb-analyze.json?raw'
 import postgresExplain from './fixtures/postgres-explain.json?raw'
+import { PlanConfirmDialog } from './PlanConfirmDialog'
 import { usePlanStore } from './planStore'
+import { usePlanTarget } from './planTarget'
 
 vi.mock('../bindings', async () =>
   (await import('../test/mockBindings')).createBindingsMock(),
@@ -20,12 +23,16 @@ vi.mock('../editor/CodeEditor', () => import('../test/FakeCodeEditor'))
 vi.mock('@tauri-apps/plugin-dialog', () => ({ open: vi.fn(), save: vi.fn() }))
 
 const planRead = vi.mocked(commands.planRead)
+const planCheck = vi.mocked(commands.planCheck)
 const queryPreview = vi.mocked(commands.queryPreview)
 const sessionOpen = vi.mocked(commands.sessionOpen)
 const STATEMENT = 'select g, count(*) from t join u using (id) group by g'
 
-function renderWith(engine: 'postgres' | 'duckdb') {
-  const profile = makeProfile({ engine })
+function renderWith(
+  engine: 'postgres' | 'duckdb',
+  environment: Environment = 'development',
+) {
+  const profile = makeProfile({ engine, environment })
   useWorkspaceStore.setState({ workspace: makeWorkspace([profile]) })
   useTabsStore.setState({
     tabs: [
@@ -46,16 +53,31 @@ function renderWith(engine: 'postgres' | 'duckdb') {
     <>
       <QueryEditor />
       <ResultsPane />
+      <PlanConfirmDialog />
     </>,
   )
   return userEvent.setup()
+}
+
+async function measureAndConfirm(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: 'More explain actions' }))
+  await user.click(
+    screen.getByRole('menuitem', { name: /^Explain and measure/ }),
+  )
+  const dialog = await screen.findByRole('dialog')
+  await user.click(
+    within(dialog).getByRole('button', { name: 'Explain and measure' }),
+  )
 }
 
 beforeEach(() => {
   vi.clearAllMocks()
   resetQueryStores()
   usePlanStore.getState().reset()
+  usePlanStore.setState({ skipsConfirm: [] })
+  usePlanTarget.setState({ statement: '', explain: null, measure: null })
   useResultsViewStore.getState().setView('results')
+  planCheck.mockResolvedValue({ explain: null, measure: null })
   queryPreview.mockResolvedValue([
     { range: { from: 0, to: STATEMENT.length }, risk: null },
   ])
@@ -86,10 +108,7 @@ describe('PlanView', () => {
     })
     const user = renderWith('postgres')
 
-    await user.click(screen.getByRole('button', { name: 'More query actions' }))
-    await user.click(
-      screen.getByRole('menuitem', { name: /^Explain(?! analyze)/ }),
-    )
+    await user.click(screen.getByRole('button', { name: 'Explain' }))
 
     expect(planRead).toHaveBeenCalledWith(4, STATEMENT, false)
     const tree = await screen.findByRole('list', { name: 'Plan steps' })
@@ -110,10 +129,7 @@ describe('PlanView', () => {
       },
     })
     const user = renderWith('postgres')
-    await user.click(screen.getByRole('button', { name: 'More query actions' }))
-    await user.click(
-      screen.getByRole('menuitem', { name: /^Explain(?! analyze)/ }),
-    )
+    await user.click(screen.getByRole('button', { name: 'Explain' }))
 
     const tree = await screen.findByRole('list', { name: 'Plan steps' })
     expect(
@@ -149,10 +165,7 @@ describe('PlanView', () => {
     })
     const user = renderWith('duckdb')
 
-    await user.click(screen.getByRole('button', { name: 'More query actions' }))
-    await user.click(
-      screen.getByRole('menuitem', { name: /^Explain analyze(?! analyze)/ }),
-    )
+    await measureAndConfirm(user)
 
     expect(planRead).toHaveBeenCalledWith(4, STATEMENT, true)
     expect(await screen.findByText(/measured each step/)).toBeInTheDocument()
@@ -167,18 +180,15 @@ describe('PlanView', () => {
       data: {
         status: 'rejected',
         reason: 'analyze-changes-data',
-        message: 'EXPLAIN ANALYZE runs the statement.',
+        message: 'Explain and measure runs the statement.',
       },
     })
     const user = renderWith('postgres')
 
-    await user.click(screen.getByRole('button', { name: 'More query actions' }))
-    await user.click(
-      screen.getByRole('menuitem', { name: /^Explain analyze(?! analyze)/ }),
-    )
+    await measureAndConfirm(user)
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'EXPLAIN ANALYZE runs the statement.',
+      'Explain and measure runs the statement.',
     )
   })
 
@@ -197,13 +207,138 @@ describe('PlanView', () => {
     await query.getState().connect('id-1')
     query.setState({ open: { resultId: 1, index: 0 } })
 
-    await user.click(screen.getByRole('button', { name: 'More query actions' }))
-    await user.click(
-      screen.getByRole('menuitem', { name: /^Explain(?! analyze)/ }),
-    )
+    await user.click(screen.getByRole('button', { name: 'Explain' }))
 
     await screen.findByRole('list', { name: 'Plan steps' })
     expect(query.getState().open).toBeNull()
     expect(query.getState().stopReason).toBe('plan')
+  })
+
+  test('the Plan tab starts with the statement at the cursor and the two actions', async () => {
+    renderWith('postgres')
+    useResultsViewStore.getState().setView('plan')
+
+    expect(
+      await screen.findByText('Explain the statement at the cursor'),
+    ).toBeInTheDocument()
+    expect(screen.getAllByText(STATEMENT).length).toBeGreaterThan(0)
+    expect(
+      screen.getByRole('button', { name: 'Explain and measure' }),
+    ).toBeEnabled()
+  })
+
+  test('a statement that changes data cannot be measured, and the tab says why', async () => {
+    planCheck.mockResolvedValue({
+      explain: null,
+      measure: {
+        reason: 'analyze-changes-data',
+        message: 'Explain and measure runs the statement.',
+      },
+    })
+    const user = renderWith('postgres')
+    useResultsViewStore.getState().setView('plan')
+
+    expect(
+      await screen.findByText('Explain and measure runs the statement.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Explain and measure' }),
+    ).toBeDisabled()
+    await user.click(
+      screen.getByRole('button', { name: 'More explain actions' }),
+    )
+    expect(
+      screen.getByRole('menuitem', { name: /^Explain and measure/ }),
+    ).toHaveAttribute('aria-disabled', 'true')
+  })
+
+  test('Cancel in the confirmation does not read the plan', async () => {
+    const user = renderWith('postgres')
+    await user.click(
+      screen.getByRole('button', { name: 'More explain actions' }),
+    )
+    await user.click(
+      screen.getByRole('menuitem', { name: /^Explain and measure/ }),
+    )
+
+    const dialog = await screen.findByRole('dialog')
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(planRead).not.toHaveBeenCalled()
+  })
+
+  test('"Do not ask again" skips the next confirmation of the connection', async () => {
+    planRead.mockResolvedValue({
+      status: 'ok',
+      data: {
+        status: 'plan',
+        statement: 'x',
+        json: duckdbAnalyze,
+        is_analyzed: true,
+      },
+    })
+    usePlanStore.setState({ skipsConfirm: [] })
+    const user = renderWith('duckdb')
+    await user.click(
+      screen.getByRole('button', { name: 'More explain actions' }),
+    )
+    await user.click(
+      screen.getByRole('menuitem', { name: /^Explain and measure/ }),
+    )
+    const dialog = await screen.findByRole('dialog')
+    await user.click(
+      within(dialog).getByRole('checkbox', {
+        name: 'Do not ask again for this connection',
+      }),
+    )
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Explain and measure' }),
+    )
+    await screen.findByText(/measured each step/)
+
+    await user.click(screen.getByRole('button', { name: 'Explain again' }))
+
+    expect(screen.queryByRole('dialog')).toBeNull()
+    await vi.waitFor(() => expect(planRead).toHaveBeenCalledTimes(2))
+    expect(planRead).toHaveBeenLastCalledWith(4, STATEMENT, true)
+  })
+
+  test('a production connection always asks, without "Do not ask again"', async () => {
+    usePlanStore.setState({ skipsConfirm: ['id-1'] })
+    const user = renderWith('postgres', 'production')
+    await user.click(
+      screen.getByRole('button', { name: 'More explain actions' }),
+    )
+    await user.click(
+      screen.getByRole('menuitem', { name: /^Explain and measure/ }),
+    )
+
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog).toHaveTextContent('A production connection always asks.')
+    expect(within(dialog).queryByRole('checkbox')).toBeNull()
+  })
+
+  test('the Original view shows the JSON of the engine', async () => {
+    planRead.mockResolvedValue({
+      status: 'ok',
+      data: {
+        status: 'plan',
+        statement: 'x',
+        json: postgresExplain,
+        is_analyzed: false,
+      },
+    })
+    const user = renderWith('postgres')
+    await user.click(screen.getByRole('button', { name: 'Explain' }))
+    await screen.findByRole('list', { name: 'Plan steps' })
+
+    expect(screen.getByText('Estimate')).toBeInTheDocument()
+    await user.click(screen.getByRole('radio', { name: 'Original' }))
+
+    expect(screen.queryByRole('list', { name: 'Plan steps' })).toBeNull()
+    expect(screen.getByLabelText('Original plan')).toHaveTextContent(
+      '"Node Type"',
+    )
   })
 })

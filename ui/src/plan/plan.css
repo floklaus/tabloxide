@@ -103,3 +103,78 @@
 .plan > * {
   flex-shrink: 0;
 }
+
+/* ---------- Plan tab: start, header, original ---------- */
+
+.plan-start {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 60rem;
+}
+
+.plan-start__title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.plan-start__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.plan-start__help {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--color-text-muted);
+}
+
+.plan-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.plan-header__statement {
+  max-height: 6rem;
+  overflow: auto;
+}
+
+.plan-header__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.plan__original {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+/* ---------- Editor bar: Explain split button ---------- */
+
+.split-button {
+  display: inline-flex;
+}
+
+.split-button > .split-button__main {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.split-button .split-button__more {
+  justify-content: center;
+  height: 100%;
+  padding: 0 0.35rem;
+  border-left: 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}

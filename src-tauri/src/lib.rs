@@ -20,6 +20,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
             app::app_info,
             updates::update_check,
             updates::update_install,
+            plan::plan_check,
             plan::plan_read,
             workspace::workspace_open,
             workspace::workspace_current,

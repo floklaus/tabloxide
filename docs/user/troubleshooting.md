@@ -380,11 +380,11 @@ For the setup and the procedures, refer to [AI assistant](assistant.md).
 
 **Solution:** select **Read the schema again**, then send the request again. If the database has more than 200 tables and views, put the columns of the table into your request.
 
-### "EXPLAIN ANALYZE runs the statement"
+### "Explain and measure runs the statement"
 
-**Cause:** **Measure the times** is set, and the statement does not only read data.
+**Cause:** you selected **Explain and measure**, or **Measure the times** in the assistant is set, and the statement does not only read data.
 
-**Solution:** clear **Measure the times**. Then Tabloxide uses `EXPLAIN`, which does not run the statement.
+**Solution:** use **Explain** (`Ctrl+E`), or clear **Measure the times**. Then Tabloxide uses `EXPLAIN`, which does not run the statement.
 
 ### "The application makes a plan only for a statement that starts with SELECT…"
 

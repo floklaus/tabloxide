@@ -60,6 +60,45 @@ async fn read(session: &QuerySession, sql: &str, analyze: bool, engine: &Engine)
     }
 }
 
+/// Why a plan action is not available, for the user.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Type)]
+pub struct PlanBlock {
+    pub reason: ExplainRejection,
+    pub message: String,
+}
+
+/// What the plan actions can do with a statement. `None` means that the action is
+/// available. Else the value tells why it is not.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Type)]
+pub struct PlanCheck {
+    pub explain: Option<PlanBlock>,
+    pub measure: Option<PlanBlock>,
+}
+
+fn block(sql: &str, measure: bool, engine: &Engine) -> Option<PlanBlock> {
+    explain_json_statement(sql, measure, engine)
+        .err()
+        .map(|reason| PlanBlock {
+            reason,
+            message: reason.to_string(),
+        })
+}
+
+fn check(sql: &str, engine: &Engine) -> PlanCheck {
+    PlanCheck {
+        explain: block(sql, false, engine),
+        measure: block(sql, true, engine),
+    }
+}
+
+/// Checks the statement at the cursor for the plan actions. The editor uses the
+/// result to show which actions are available. Nothing goes to the database.
+#[tauri::command]
+#[specta::specta]
+pub fn plan_check(sql: String, engine: Engine) -> PlanCheck {
+    check(&sql, &engine)
+}
+
 /// Reads the execution plan of the one statement in `sql` as JSON.
 ///
 /// Without `analyze`, the database does not run the statement. With `analyze`, the
@@ -89,6 +128,47 @@ mod tests {
             QuerySession::new(Box::new(session), tabloxide_core::QueryLanguage::Sql),
             probe,
         )
+    }
+
+    #[test]
+    fn a_read_can_be_explained_and_measured() {
+        let result = check("select * from item", &Engine::postgres());
+
+        assert_eq!(
+            result,
+            PlanCheck {
+                explain: None,
+                measure: None
+            }
+        );
+    }
+
+    #[test]
+    fn a_change_can_be_explained_but_not_measured() {
+        let result = check("delete from item where id = 1", &Engine::duckdb());
+
+        assert_eq!(result.explain, None);
+        let measure = result.measure.unwrap();
+        assert_eq!(measure.reason, ExplainRejection::AnalyzeChangesData);
+        assert!(
+            measure
+                .message
+                .starts_with("Explain and measure runs the statement.")
+        );
+    }
+
+    #[test]
+    fn no_statement_has_no_plan_action() {
+        let result = check("  ", &Engine::postgres());
+
+        assert_eq!(
+            result.explain.map(|block| block.reason),
+            Some(ExplainRejection::NoStatement)
+        );
+        assert_eq!(
+            result.measure.map(|block| block.reason),
+            Some(ExplainRejection::NoStatement)
+        );
     }
 
     #[tokio::test]

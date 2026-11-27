@@ -21,8 +21,8 @@ pub enum ExplainRejection {
     )]
     NotExplainable,
     #[error(
-        "EXPLAIN ANALYZE runs the statement. Thus it is available only for a statement \
-         that reads data. Use EXPLAIN without ANALYZE for this statement."
+        "Explain and measure runs the statement. Thus it is available only for a statement \
+         that reads data. Use Explain for this statement."
     )]
     AnalyzeChangesData,
     #[error("The application shows a plan only for PostgreSQL and DuckDB.")]

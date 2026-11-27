@@ -18,6 +18,11 @@ export const commands = {
 	 */
 	updateInstall: (options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("update_install", undefined, options)),
 	/**
+	 *  Checks the statement at the cursor for the plan actions. The editor uses the
+	 *  result to show which actions are available. Nothing goes to the database.
+	 */
+	planCheck: (sql: string, engine: Engine, options?: InvokeOptions) => __TAURI_INVOKE<PlanCheck_Serialize>("plan_check", { sql, engine }, options),
+	/**
 	 *  Reads the execution plan of the one statement in `sql` as JSON.
 	 * 
 	 *  Without `analyze`, the database does not run the statement. With `analyze`, the
@@ -1343,6 +1348,36 @@ export type PackageInfo_Serialize = {
 	isOfficial: boolean,
 	/**  The SHA-256 checksum of the package file, in hexadecimal. */
 	sha256: string,
+};
+
+/**  Why a plan action is not available, for the user. */
+export type PlanBlock = {
+	reason: ExplainRejection,
+	message: string,
+};
+
+/**
+ *  What the plan actions can do with a statement. `None` means that the action is
+ *  available. Else the value tells why it is not.
+ */
+export type PlanCheck = PlanCheck_Serialize | PlanCheck_Deserialize;
+
+/**
+ *  What the plan actions can do with a statement. `None` means that the action is
+ *  available. Else the value tells why it is not.
+ */
+export type PlanCheck_Deserialize = {
+	explain?: PlanBlock | null,
+	measure?: PlanBlock | null,
+};
+
+/**
+ *  What the plan actions can do with a statement. `None` means that the action is
+ *  available. Else the value tells why it is not.
+ */
+export type PlanCheck_Serialize = {
+	explain: PlanBlock | null,
+	measure: PlanBlock | null,
 };
 
 /**  Result of a plan read. A statement that fails is a normal result, not a command error. */
