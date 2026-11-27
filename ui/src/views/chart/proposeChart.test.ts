@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'vitest'
-import { chartScore, proposeChart } from './proposeChart'
+import {
+  chartScore,
+  proposeChart,
+  proposeCharts,
+  suggestionLabel,
+} from './proposeChart'
 import { column } from './testColumns'
 
 const MANY_ROWS = 20
@@ -112,5 +117,72 @@ describe('chartScore', () => {
 
   test('a result without columns hides the chart view', () => {
     expect(chartScore([])).toBe(0)
+  })
+})
+
+describe('proposeCharts', () => {
+  const labels = (columns: Parameters<typeof proposeCharts>[0]) =>
+    proposeCharts(columns, MANY_ROWS).map(suggestionLabel)
+
+  test('a date, a text, and a number column give four charts, with the line for each series first', () => {
+    const columns = [
+      column('day', 'temporal'),
+      column('kind', 'text'),
+      column('amount', 'number'),
+    ]
+
+    expect(labels(columns)).toEqual([
+      'Line: amount by day, for each kind',
+      'Line: amount by day',
+      'Bar: amount by kind',
+      'Histogram of amount',
+    ])
+  })
+
+  test('a text column and two number columns give a bar chart first', () => {
+    const columns = [
+      column('country', 'text'),
+      column('amount', 'number'),
+      column('tax', 'number'),
+    ]
+
+    expect(labels(columns)).toEqual([
+      'Bar: amount by country',
+      'Scatter: tax by amount',
+      'Histogram of amount',
+      'Bar: number of rows by country',
+    ])
+  })
+
+  test('only text columns give one count for each column', () => {
+    expect(labels([column('country', 'text'), column('city', 'text')])).toEqual(
+      ['Bar: number of rows by country', 'Bar: number of rows by city'],
+    )
+  })
+
+  test('a date column without a number gives the number of rows for each day', () => {
+    expect(proposeCharts([column('created', 'temporal')], MANY_ROWS)).toEqual([
+      { type: 'line', x: 'created', y: [], countRows: true, timeUnit: 'day' },
+    ])
+    expect(labels([column('created', 'temporal')])).toEqual([
+      'Line: number of rows by day of created',
+    ])
+  })
+
+  test('the list has a maximum of four charts', () => {
+    const columns = [
+      column('day', 'temporal'),
+      column('kind', 'text'),
+      column('a', 'number'),
+      column('b', 'number'),
+    ]
+
+    expect(proposeCharts(columns, MANY_ROWS)).toHaveLength(4)
+  })
+
+  test('one row with one number gives the single value first', () => {
+    expect(
+      proposeCharts([column('count', 'number')], 1).map(suggestionLabel),
+    ).toEqual(['Single value: count', 'Histogram of count'])
   })
 })

@@ -90,7 +90,7 @@ describe('the view switch', () => {
     const { unmount } = render(host())
     await waitFor(() => expect(viewButton('Chart')).toBeEnabled())
     await userEvent.click(viewButton('Chart'))
-    await userEvent.selectOptions(screen.getByLabelText('Chart type'), 'line')
+    await userEvent.click(screen.getByRole('button', { name: 'Line chart' }))
     unmount()
 
     render(host({ rows: [...ROWS, ['IT', '30']] }))

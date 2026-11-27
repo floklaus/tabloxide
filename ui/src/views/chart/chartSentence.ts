@@ -39,7 +39,6 @@ export function chartSentence(
       size,
     }
   }
-  const columns = list(chart.yColumns)
   const x =
     chart.timeUnit === null
       ? chart.xName
@@ -51,14 +50,27 @@ export function chartSentence(
   if (chart.countsRows) {
     return { what: `${ROW_COUNT_NAME} for each ${x}${series}.`, size }
   }
-  if (chart.aggregate === null) {
+  // Columns with the same aggregate are one group, for example "Sum of a and b".
+  const groups = new Map<string, string[]>()
+  chart.yColumns.forEach((column, index) => {
+    const aggregate = chart.yAggregates[index]
+    const key = aggregate === null ? '' : AGGREGATE_LABELS[aggregate]
+    groups.set(key, [...(groups.get(key) ?? []), column])
+  })
+  const mark = isBars ? 'bar' : 'point'
+  if (groups.size === 1 && groups.has('')) {
     return {
-      what: `${columns} against ${x}, one ${isBars ? 'bar' : 'point'} for each row${series}.`,
+      what: `${list(chart.yColumns)} against ${x}, one ${mark} for each row${series}.`,
       size,
     }
   }
-  return {
-    what: `${AGGREGATE_LABELS[chart.aggregate]} of ${columns} for each ${x}${series}.`,
-    size,
-  }
+  const parts = [...groups].map(([aggregate, columns], index) => {
+    // A column without an aggregate in a chart with aggregates shows each row.
+    const name = aggregate === '' ? 'each row' : aggregate
+    const text = `${name} of ${list(columns)}`
+    return index === 0 ? text : text.charAt(0).toLowerCase() + text.slice(1)
+  })
+  const [first, ...rest] = parts
+  const what = first.charAt(0).toUpperCase() + first.slice(1)
+  return { what: `${list([what, ...rest])} for each ${x}${series}.`, size }
 }

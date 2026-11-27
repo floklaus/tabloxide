@@ -570,7 +570,8 @@ describe('settings without an aggregate', () => {
     expect(chart.categories).toEqual(['DE', 'FR'])
     expect(chart.series[0].values).toEqual([15, 20])
     expect(chart).toMatchObject({
-      aggregate: 'sum',
+      yAggregates: ['sum'],
+      automatic: 'sum',
       isAutoAggregate: true,
       yName: 'sum of amount',
     })
@@ -587,7 +588,8 @@ describe('settings without an aggregate', () => {
     )
 
     expect(chart).toMatchObject({
-      aggregate: null,
+      yAggregates: [null],
+      automatic: null,
       isAutoAggregate: false,
       yName: 'amount',
     })
@@ -607,7 +609,7 @@ describe('settings without an aggregate', () => {
       ),
     )
 
-    expect(chart.aggregate).toBeNull()
+    expect(chart.yAggregates).toEqual([null])
   })
 
   test('an aggregate of the settings is not automatic', () => {
@@ -624,7 +626,10 @@ describe('settings without an aggregate', () => {
       ),
     )
 
-    expect(chart).toMatchObject({ aggregate: 'max', isAutoAggregate: false })
+    expect(chart).toMatchObject({
+      yAggregates: ['max'],
+      isAutoAggregate: false,
+    })
     expect(chart.series[0].values).toEqual([10])
   })
 
@@ -638,7 +643,7 @@ describe('settings without an aggregate', () => {
       ]),
     )
 
-    expect(chart.aggregate).toBeNull()
+    expect(chart.yAggregates).toEqual([null])
     expect(chart.series[0].points).toHaveLength(2)
   })
 })
@@ -736,7 +741,7 @@ describe('a time unit', () => {
     expect(chart).toMatchObject({
       xAxis: 'time',
       timeUnit: 'month',
-      aggregate: 'sum',
+      yAggregates: ['sum'],
       isAutoAggregate: true,
     })
     expect(chart.series[0].points).toEqual([
@@ -864,5 +869,105 @@ describe('the sort of the categories', () => {
     )
 
     expect(chart.categories).toEqual(['FR', 'DE'])
+  })
+})
+
+describe('an aggregate for each column', () => {
+  const rows: Row[] = [
+    ['DE', 'a', '10', '1'],
+    ['DE', 'b', '20', '3'],
+    ['FR', 'a', '5', '2'],
+  ]
+
+  test('each column of the vertical axis uses its own aggregate', () => {
+    const chart = cartesian(
+      prepareChart(
+        {
+          type: 'bar',
+          x: 'country',
+          y: ['amount', 'tax'],
+          aggregates: { amount: 'sum', tax: 'mean' },
+        },
+        SALES,
+        rows,
+      ),
+    )
+
+    expect(chart.series).toMatchObject([
+      { name: 'amount', values: [30, 5] },
+      { name: 'tax', values: [2, 2] },
+    ])
+    expect(chart.yAggregates).toEqual(['sum', 'mean'])
+    expect(chart.isAutoAggregate).toBe(false)
+  })
+
+  test('a column without a setting gets the automatic aggregate', () => {
+    const chart = cartesian(
+      prepareChart(
+        {
+          type: 'bar',
+          x: 'country',
+          y: ['amount', 'tax'],
+          aggregates: { tax: 'max' },
+        },
+        SALES,
+        rows,
+      ),
+    )
+
+    expect(chart.yAggregates).toEqual(['sum', 'max'])
+    expect(chart).toMatchObject({ automatic: 'sum', isAutoAggregate: true })
+  })
+
+  test('the automatic aggregate is known also when no column uses it', () => {
+    const chart = cartesian(
+      prepareChart(
+        {
+          type: 'bar',
+          x: 'country',
+          y: ['amount'],
+          aggregates: { amount: 'mean' },
+        },
+        SALES,
+        rows,
+      ),
+    )
+
+    expect(chart).toMatchObject({ automatic: 'sum', isAutoAggregate: false })
+  })
+
+  test('an aggregate for all columns of a file of the first form applies to each column', () => {
+    const chart = cartesian(
+      prepareChart(
+        { type: 'bar', x: 'country', y: ['amount', 'tax'], aggregate: 'max' },
+        SALES,
+        rows,
+      ),
+    )
+
+    expect(chart.yAggregates).toEqual(['max', 'max'])
+  })
+
+  test('with a series column, each series uses the aggregate of its column', () => {
+    const chart = cartesian(
+      prepareChart(
+        {
+          type: 'bar',
+          x: 'country',
+          y: ['amount', 'tax'],
+          series: 'kind',
+          aggregates: { amount: 'sum', tax: 'count' },
+        },
+        SALES,
+        [...rows, ['DE', 'a', '1', '9']],
+      ),
+    )
+
+    expect(chart.series).toMatchObject([
+      { name: 'a · amount', values: [11, 5] },
+      { name: 'a · tax', values: [2, 1] },
+      { name: 'b · amount', values: [20, null] },
+      { name: 'b · tax', values: [1, null] },
+    ])
   })
 })

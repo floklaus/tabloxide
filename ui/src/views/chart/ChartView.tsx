@@ -8,15 +8,17 @@ import { reducesPoints } from './chartOption'
 import {
   incompleteReason,
   missingColumns,
-  normalize,
+  withEachRow,
   parseChartSettings,
   type ChartSettings,
 } from './chartSettings'
-import { ChartSettingsForm } from './ChartSettingsForm'
+import { ChartSettingsPanel } from './ChartSettingsPanel'
 import { chartSentence } from './chartSentence'
 import { chartSummary } from './chartSummary'
-import { proposeChart } from './proposeChart'
+import { useChartUiStore } from './chartUiStore'
+import { proposeCharts } from './proposeChart'
 import { SaveImageButton } from './SaveImageButton'
+import { SuggestedCharts } from './SuggestedCharts'
 
 const numberFormat = new Intl.NumberFormat('en-US')
 
@@ -136,10 +138,13 @@ export function ChartView(props: ViewProps) {
   )
   // The number of rows decides only between a single value and a histogram.
   const isOneRow = rows.length === 1
-  const proposal = useMemo(
-    () => proposeChart(columns, isOneRow ? 1 : 2) ?? NO_PROPOSAL,
+  const suggestions = useMemo(
+    () => proposeCharts(columns, isOneRow ? 1 : 2),
     [columns, isOneRow],
   )
+  const proposal = suggestions[0] ?? NO_PROPOSAL
+  const isPanelOpen = useChartUiStore((state) => state.isPanelOpen)
+  const setPanelOpen = useChartUiStore((state) => state.setPanelOpen)
   const settings =
     parsed !== null && 'settings' in parsed ? parsed.settings : proposal
   const missing = useMemo(
@@ -222,64 +227,92 @@ export function ChartView(props: ViewProps) {
   const summary = chartSummary(chart)
   const sentence = chartSentence(chart, shownRows.length)
   const warnings = columnWarnings(chart)
-  // The form shows what "Automatic" is now. A view without a chart does not know it.
-  const autoAggregate =
-    chart.kind === 'cartesian' && settings.aggregate === undefined
-      ? chart.aggregate
-      : undefined
+  const hasSettings = props.settings !== undefined
+  const isChart = reason === null && chart.kind === 'cartesian'
 
   return (
     <div className="chart">
       <div className="chart__bar">
-        <ChartSettingsForm
+        <SuggestedCharts
+          suggestions={suggestions}
           settings={settings}
-          columns={columns}
-          onChange={onSettings}
-          autoAggregate={autoAggregate}
-          warnings={warnings}
-          onReset={
-            props.settings === undefined
-              ? undefined
-              : () => onSettings(undefined)
-          }
+          isProposed={!hasSettings}
+          onSelect={onSettings}
         />
-        <SaveImageButton
-          canvas={canvasRef}
-          isAvailable={reason === null && chart.kind === 'cartesian'}
-        />
+        <span className="chart__spacer" />
+        <SaveImageButton canvas={canvasRef} isAvailable={isChart} />
+        <button
+          type="button"
+          className="button button--small"
+          aria-pressed={isPanelOpen}
+          title="Show or hide the chart settings"
+          onClick={() => setPanelOpen(!isPanelOpen)}
+        >
+          Settings
+        </button>
       </div>
-      {sentence !== null && reason === null && (
-        <p className="chart__sentence">
-          <strong>{sentence.what}</strong> <span>{sentence.size}</span>
-        </p>
-      )}
-      <Notes
-        part={partLine}
-        chart={chart}
-        width={width}
-        onShowEachRow={() =>
-          onSettings(normalize({ ...settings, aggregate: 'none' }))
-        }
-      />
-      {reason !== null && <EmptyState text={reason} />}
-      {reason === null && chart.kind === 'empty' && (
-        <EmptyState text="The chart has no data to show." />
-      )}
-      {reason === null && chart.kind === 'value' && (
-        <figure className="chart__value">
-          <output>{chart.text}</output>
-          <figcaption>{chart.label}</figcaption>
-        </figure>
-      )}
-      {reason === null && chart.kind === 'cartesian' && (
-        <ChartCanvas
-          ref={canvasRef}
-          chart={chart}
-          settings={settings}
-          summary={summary}
-          onWidth={setWidth}
-        />
-      )}
+      <div className="chart__body">
+        {isPanelOpen && (
+          <ChartSettingsPanel
+            settings={settings}
+            columns={columns}
+            onChange={onSettings}
+            // A view without a chart does not know what "Automatic" is now.
+            automatic={chart.kind === 'cartesian' ? chart.automatic : undefined}
+            warnings={warnings}
+            onReset={
+              hasSettings && suggestions.length > 0
+                ? () => onSettings(undefined)
+                : undefined
+            }
+            onClose={() => setPanelOpen(false)}
+          />
+        )}
+        <div className="chart__main">
+          {sentence !== null && reason === null && (
+            <p className="chart__sentence">
+              <strong>{sentence.what}</strong> <span>{sentence.size}</span>
+            </p>
+          )}
+          <Notes
+            part={partLine}
+            chart={chart}
+            width={width}
+            onShowEachRow={() => onSettings(withEachRow(settings))}
+          />
+          {reason !== null && (
+            <EmptyState
+              text={reason}
+              action={
+                isPanelOpen
+                  ? undefined
+                  : {
+                      label: 'Open the chart settings',
+                      run: () => setPanelOpen(true),
+                    }
+              }
+            />
+          )}
+          {reason === null && chart.kind === 'empty' && (
+            <EmptyState text="The chart has no data to show." />
+          )}
+          {reason === null && chart.kind === 'value' && (
+            <figure className="chart__value">
+              <output>{chart.text}</output>
+              <figcaption>{chart.label}</figcaption>
+            </figure>
+          )}
+          {isChart && (
+            <ChartCanvas
+              ref={canvasRef}
+              chart={chart}
+              settings={settings}
+              summary={summary}
+              onWidth={setWidth}
+            />
+          )}
+        </div>
+      </div>
     </div>
   )
 }

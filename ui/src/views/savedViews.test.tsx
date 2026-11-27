@@ -198,7 +198,7 @@ describe('the saved views of a result', () => {
     openTab('reports/revenue.sql')
     onDisk(SAVED)
     await showChart()
-    await userEvent.selectOptions(screen.getByLabelText('Chart type'), 'area')
+    await userEvent.click(screen.getByRole('button', { name: 'Area chart' }))
 
     await userEvent.click(screen.getByRole('button', { name: 'Save view' }))
 

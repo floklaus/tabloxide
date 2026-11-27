@@ -62,6 +62,28 @@ describe('chartSentence', () => {
     ).toBe('Mean of amount for each staff.')
   })
 
+  test('names the aggregate of each column', () => {
+    expect(
+      sentence({
+        type: 'bar',
+        x: 'staff',
+        y: ['amount', 'tax'],
+        aggregates: { amount: 'sum', tax: 'mean' },
+      })?.what,
+    ).toBe('Sum of amount and mean of tax for each staff.')
+  })
+
+  test('puts columns with the same aggregate together', () => {
+    expect(
+      sentence({
+        type: 'bar',
+        x: 'staff',
+        y: ['amount', 'tax'],
+        aggregate: 'max',
+      })?.what,
+    ).toBe('Maximum of amount and tax for each staff.')
+  })
+
   test('describes a histogram', () => {
     expect(sentence({ type: 'histogram', x: 'amount', y: [] })?.what).toBe(
       'Number of rows for each range of amount.',

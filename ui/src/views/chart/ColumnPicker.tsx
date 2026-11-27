@@ -29,6 +29,8 @@ type Props = {
   placeholder: string
   /** The warnings about the selected columns. They show below the control. */
   warnings?: string[]
+  /** `true`: the label is only for a screen reader. The button text says what the list does. */
+  isLabelHidden?: boolean
   onChange: (selected: string[]) => void
 }
 
@@ -106,7 +108,12 @@ export function ColumnPicker(props: Props) {
 
   return (
     <div className="chart__field">
-      <span id={id}>{label}</span>
+      <span
+        id={id}
+        className={props.isLabelHidden ? 'visually-hidden' : 'chart__label'}
+      >
+        {label}
+      </span>
       <details
         ref={detailsRef}
         className="chart__picker"

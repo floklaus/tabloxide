@@ -72,8 +72,14 @@ export type ChartSettings = {
   /** A column that divides the rows into series. */
   series?: string
   /**
-   * Combines the rows that have the same `x`. Without a value, the chart
-   * decides: it shows the sum if the values of `x` repeat, else each row.
+   * The aggregate of each `y` column, by the name of the column. It combines
+   * the rows that have the same `x`. A column without a value lets the chart
+   * decide: it shows the sum if the values of `x` repeat, else each row.
+   */
+  aggregates?: Record<string, AggregateSetting>
+  /**
+   * The aggregate of the `y` columns that are not in `aggregates`. Files of
+   * the first form have it. `normalize` moves it into `aggregates`.
    */
   aggregate?: AggregateSetting
   /** Combines the dates of `x` that are in the same hour, day, week, month, or year. */
@@ -173,6 +179,26 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+function isAggregateSetting(value: unknown): value is AggregateSetting {
+  return value === 'none' || isOneOf(AGGREGATES, value)
+}
+
+function isAggregates(
+  value: unknown,
+): value is Record<string, AggregateSetting> {
+  return isRecord(value) && Object.values(value).every(isAggregateSetting)
+}
+
+/**
+ * Returns the aggregate setting of a `y` column. `undefined`: the chart decides.
+ */
+export function aggregateOf(
+  settings: ChartSettings,
+  column: string,
+): AggregateSetting | undefined {
+  return settings.aggregates?.[column] ?? settings.aggregate
+}
+
 /**
  * Reads chart settings from a JSON value, for example from the view settings file.
  * Returns the reason as text if the value is not valid.
@@ -182,7 +208,7 @@ export function parseChartSettings(
 ): { settings: ChartSettings } | { error: string } {
   if (!isRecord(value)) return { error: 'The settings are not an object.' }
   const { type, x, y, series, aggregate, stacked, scale } = value
-  const { countRows, timeUnit, sort } = value
+  const { countRows, timeUnit, sort, aggregates } = value
   if (!isOneOf(CHART_TYPES, type)) {
     return { error: `The chart type ${JSON.stringify(type)} is not known.` }
   }
@@ -208,6 +234,12 @@ export function parseChartSettings(
       error: `The aggregate ${JSON.stringify(aggregate)} is not known.`,
     }
   }
+  if (aggregates !== undefined && !isAggregates(aggregates)) {
+    return {
+      error:
+        'The setting "aggregates" must give an aggregate for column names.',
+    }
+  }
   if (countRows !== undefined && typeof countRows !== 'boolean') {
     return { error: 'The setting "countRows" must be true or false.' }
   }
@@ -230,6 +262,7 @@ export function parseChartSettings(
       y: columns as string[],
       countRows,
       series,
+      aggregates,
       aggregate,
       timeUnit,
       sort,
@@ -254,6 +287,12 @@ export function normalize(settings: ChartSettings): ChartSettings {
         ? settings.y.slice(0, 1)
         : settings.y
   const hasX = roles.x && settings.x !== undefined
+  // The entries have the sequence of the columns. An aggregate for all columns
+  // of a file of the first form becomes an entry for each column.
+  const aggregates = y.flatMap((name): [string, AggregateSetting][] => {
+    const aggregate = aggregateOf(settings, name)
+    return aggregate === undefined ? [] : [[name, aggregate]]
+  })
   return {
     type: settings.type,
     ...(hasX ? { x: settings.x } : {}),
@@ -263,8 +302,8 @@ export function normalize(settings: ChartSettings): ChartSettings {
       ? { series: settings.series }
       : {}),
     // The number of rows is a count. It has no other aggregate.
-    ...(roles.aggregate && !countRows && settings.aggregate !== undefined
-      ? { aggregate: settings.aggregate }
+    ...(roles.aggregate && aggregates.length > 0
+      ? { aggregates: Object.fromEntries(aggregates) }
       : {}),
     ...(roles.grouping && hasX && settings.timeUnit !== undefined
       ? { timeUnit: settings.timeUnit }
@@ -388,4 +427,42 @@ export function axisControls(
   if (column.kind === 'temporal') return { timeUnit: true, sort: false }
   const isCategory = settings.type === 'bar' || column.kind !== 'number'
   return { timeUnit: false, sort: isCategory }
+}
+
+/**
+ * Tells why a chart type cannot show the columns of a result, as a sentence for
+ * the user. Returns `null` if the type can show them.
+ */
+export function typeProblem(type: ChartType, columns: Column[]): string | null {
+  const numbers = numberColumns(columns).length
+  if (type === 'histogram' && numbers === 0) {
+    return 'A histogram needs a number column. This result has none.'
+  }
+  if (type === 'scatter' && numbers === 0) {
+    return 'A scatter plot needs a number column. This result has none.'
+  }
+  if (type === 'scatter' && columns.length < 2) {
+    return 'A scatter plot needs two columns. This result has one.'
+  }
+  return null
+}
+
+/** Sets the aggregate of one `y` column. `undefined` lets the chart decide. */
+export function withAggregate(
+  settings: ChartSettings,
+  column: string,
+  aggregate: AggregateSetting | undefined,
+): ChartSettings {
+  const aggregates = { ...settings.aggregates }
+  if (aggregate === undefined) delete aggregates[column]
+  else aggregates[column] = aggregate
+  return normalize({ ...settings, aggregates, aggregate: undefined })
+}
+
+/** Sets the aggregate None for each `y` column that lets the chart decide. */
+export function withEachRow(settings: ChartSettings): ChartSettings {
+  const aggregates = Object.fromEntries(
+    settings.y.map((name) => [name, aggregateOf(settings, name) ?? 'none']),
+  )
+  return normalize({ ...settings, aggregates, aggregate: undefined })
 }

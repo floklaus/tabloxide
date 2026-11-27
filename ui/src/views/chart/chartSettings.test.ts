@@ -1,10 +1,14 @@
 import { describe, expect, test } from 'vitest'
 import {
+  aggregateOf,
   axisControls,
   incompleteReason,
   missingColumns,
   normalize,
   parseChartSettings,
+  typeProblem,
+  withAggregate,
+  withEachRow,
   withType,
   withX,
 } from './chartSettings'
@@ -188,7 +192,16 @@ describe('the settings of step 1 of the input design', () => {
       sort: 'value-desc',
     }
 
-    expect(parseChartSettings(value)).toEqual({ settings: value })
+    expect(parseChartSettings(value)).toEqual({
+      settings: {
+        type: 'bar',
+        x: 'paid',
+        y: ['amount'],
+        aggregates: { amount: 'none' },
+        timeUnit: 'month',
+        sort: 'value-desc',
+      },
+    })
     expect(
       parseChartSettings({ type: 'bar', x: 'country', countRows: true }),
     ).toEqual({
@@ -296,5 +309,79 @@ describe('the controls of the horizontal axis', () => {
       y: [],
       countRows: true,
     })
+  })
+})
+
+describe('an aggregate for each column', () => {
+  const settings = {
+    type: 'bar' as const,
+    x: 'country',
+    y: ['amount', 'tax'],
+  }
+
+  test('parseChartSettings reads the aggregates by column name', () => {
+    const value = { ...settings, aggregates: { amount: 'sum', tax: 'none' } }
+
+    expect(parseChartSettings(value)).toEqual({ settings: value })
+  })
+
+  test('parseChartSettings refuses an aggregate that it does not know', () => {
+    const parsed = parseChartSettings({
+      ...settings,
+      aggregates: { amount: 'median' },
+    })
+
+    expect('error' in parsed && parsed.error).toContain('"aggregates"')
+  })
+
+  test('an aggregate for all columns of a file of the first form becomes one entry for each column', () => {
+    expect(normalize({ ...settings, aggregate: 'mean' })).toEqual({
+      ...settings,
+      aggregates: { amount: 'mean', tax: 'mean' },
+    })
+  })
+
+  test('normalize removes the aggregate of a column that is not on the vertical axis', () => {
+    expect(
+      normalize({ ...settings, y: ['tax'], aggregates: { amount: 'sum' } }),
+    ).toEqual({ ...settings, y: ['tax'] })
+  })
+
+  test('withAggregate sets and removes the aggregate of one column', () => {
+    const withSum = withAggregate(settings, 'tax', 'sum')
+    const again = withAggregate(withSum, 'tax', undefined)
+
+    expect(withSum.aggregates).toEqual({ tax: 'sum' })
+    expect(aggregateOf(withSum, 'amount')).toBeUndefined()
+    expect(again).toEqual(settings)
+  })
+
+  test('withEachRow sets None for the columns that let the chart decide', () => {
+    const result = withEachRow({ ...settings, aggregates: { tax: 'max' } })
+
+    expect(result.aggregates).toEqual({ amount: 'none', tax: 'max' })
+  })
+})
+
+describe('typeProblem', () => {
+  const text = [column('country', 'text'), column('city', 'text')]
+
+  test('a histogram and a scatter plot need a number column', () => {
+    expect(typeProblem('histogram', text)).toBe(
+      'A histogram needs a number column. This result has none.',
+    )
+    expect(typeProblem('scatter', text)).toContain('needs a number column')
+  })
+
+  test('a scatter plot needs two columns', () => {
+    expect(typeProblem('scatter', [column('n', 'number')])).toBe(
+      'A scatter plot needs two columns. This result has one.',
+    )
+  })
+
+  test('the other types can count rows, thus they have no problem', () => {
+    for (const type of ['line', 'area', 'bar', 'value'] as const) {
+      expect(typeProblem(type, text)).toBeNull()
+    }
   })
 })

@@ -10,46 +10,89 @@ function names(columns: Column[], kind: Column['kind']): string[] {
     .map((column) => column.name)
 }
 
+/** The chart view shows a maximum of this number of suggested charts. */
+const MAX_SUGGESTIONS = 4
+
 /**
- * Proposes a chart from the kinds of the columns. The rules are fixed. They use
- * no rows, except their number for the single value. Returns `null` if no rule
- * applies: the user then selects the columns.
+ * Proposes charts from the kinds of the columns, with the best fit first. The
+ * rules are fixed. They use no rows, except their number for the single value.
+ * The list is empty if no rule applies: the user then selects the columns.
  */
+export function proposeCharts(
+  columns: Column[],
+  rowCount: number,
+): ChartSettings[] {
+  const numbers = names(columns, 'number')
+  const temporal = names(columns, 'temporal')
+  const texts = names(columns, 'text')
+  const charts: ChartSettings[] = []
+
+  if (rowCount === 1 && columns.length === 1 && numbers.length === 1) {
+    charts.push({ type: 'value', y: numbers })
+  }
+  if (temporal.length > 0 && numbers.length > 0) {
+    // One text column divides the rows into series, for example one line for each sensor.
+    const hasSeries = texts.length === 1 && numbers.length === 1
+    const line: ChartSettings = {
+      type: 'line',
+      x: temporal[0],
+      y: numbers.slice(0, MAX_PROPOSED_LINES),
+    }
+    if (hasSeries) charts.push({ ...line, series: texts[0] })
+    charts.push(line)
+  }
+  if (texts.length > 0 && numbers.length > 0) {
+    charts.push({ type: 'bar', x: texts[0], y: [numbers[0]] })
+  }
+  if (numbers.length > 1) {
+    charts.push({ type: 'scatter', x: numbers[0], y: [numbers[1]] })
+  }
+  if (numbers.length > 0) {
+    charts.push({ type: 'histogram', x: numbers[0], y: [] })
+  }
+  // A chart can count the rows of each category, also without a number column.
+  for (const text of numbers.length === 0 ? texts : texts.slice(0, 1)) {
+    charts.push({ type: 'bar', x: text, y: [], countRows: true })
+  }
+  if (temporal.length > 0 && numbers.length === 0) {
+    charts.push({
+      type: 'line',
+      x: temporal[0],
+      y: [],
+      countRows: true,
+      timeUnit: 'day',
+    })
+  }
+  return charts.slice(0, MAX_SUGGESTIONS)
+}
+
+/** The first proposed chart. Returns `null` if no rule applies. */
 export function proposeChart(
   columns: Column[],
   rowCount: number,
 ): ChartSettings | null {
-  const numbers = names(columns, 'number')
-  const temporal = names(columns, 'temporal')
-  const texts = names(columns, 'text')
+  return proposeCharts(columns, rowCount)[0] ?? null
+}
 
-  if (rowCount === 1 && columns.length === 1 && numbers.length === 1) {
-    return { type: 'value', y: numbers }
-  }
-  if (temporal.length === 1 && numbers.length > 0) {
-    // One text column divides the rows into series, for example one line for each sensor.
-    const series = texts.length === 1 && numbers.length === 1 ? texts[0] : null
-    return {
-      type: 'line',
-      x: temporal[0],
-      y: numbers.slice(0, MAX_PROPOSED_LINES),
-      ...(series === null ? {} : { series }),
-    }
-  }
-  if (texts.length === 1 && numbers.length === 1) {
-    return { type: 'bar', x: texts[0], y: numbers }
-  }
-  if (numbers.length === 2 && texts.length === 0 && temporal.length === 0) {
-    return { type: 'scatter', x: numbers[0], y: [numbers[1]] }
-  }
-  if (numbers.length === 1 && columns.length === 1) {
-    return { type: 'histogram', x: numbers[0], y: [] }
-  }
-  // Without a number column, a chart can count the rows of each category.
-  if (numbers.length === 0 && texts.length > 0) {
-    return { type: 'bar', x: texts[0], y: [], countRows: true }
-  }
-  return null
+const SHORT_NAMES: Record<ChartSettings['type'], string> = {
+  line: 'Line',
+  area: 'Area',
+  bar: 'Bar',
+  scatter: 'Scatter',
+  histogram: 'Histogram',
+  value: 'Single value',
+}
+
+/** The short name of a proposed chart, for example "Line: amount by day, for each kind". */
+export function suggestionLabel(chart: ChartSettings): string {
+  const name = SHORT_NAMES[chart.type]
+  const y = chart.countRows ? 'number of rows' : chart.y.join(', ')
+  if (chart.type === 'histogram') return `${name} of ${chart.x}`
+  if (chart.type === 'value') return `${name}: ${y}`
+  const x =
+    chart.timeUnit === undefined ? chart.x : `${chart.timeUnit} of ${chart.x}`
+  const series = chart.series === undefined ? '' : `, for each ${chart.series}`
+  return `${name}: ${y} by ${x}${series}`
 }
 
 /** The score of a result for which no rule gives a proposal. */

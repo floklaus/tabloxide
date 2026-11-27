@@ -6,6 +6,7 @@ import { commands } from '../../bindings'
 import { activeQueryStore, resetQueryStores } from '../../query/queryStore'
 import type { Row } from '../../results/gridModel'
 import type { ViewProps } from '../viewTypes'
+import { useChartUiStore } from './chartUiStore'
 import { ChartView } from './ChartView'
 import { column } from './testColumns'
 
@@ -27,6 +28,12 @@ const ROWS: Row[] = [
   ['DE', '10', '1'],
   ['FR', '20', '2'],
 ]
+
+const ADD_COLUMN = 'Add a column to the vertical axis'
+
+beforeEach(() => {
+  useChartUiStore.setState({ isPanelOpen: true })
+})
 
 /** The radio button of a column in the list of a setting. */
 function picked(setting: string, columnName: string) {
@@ -75,7 +82,13 @@ describe('the chart of a result', () => {
   })
 
   test('without a rule for the columns, it asks for the columns', () => {
-    render(<ChartView {...props({ settings: undefined })} />)
+    const columns = [column('a', 'json'), column('b', 'json')]
+
+    render(
+      <ChartView
+        {...props({ columns, rows: [['{}', '{}']], settings: undefined })}
+      />,
+    )
 
     expect(
       screen.getByText('Select the column of the horizontal axis.'),
@@ -114,7 +127,7 @@ describe('the chart settings', () => {
     const view = props()
     render(<ChartView {...view} />)
 
-    await userEvent.selectOptions(screen.getByLabelText('Chart type'), 'line')
+    await userEvent.click(screen.getByRole('button', { name: 'Line chart' }))
 
     expect(view.onSettings).toHaveBeenCalledWith({
       type: 'line',
@@ -123,21 +136,18 @@ describe('the chart settings', () => {
     })
   })
 
-  test('a second column of the vertical axis goes to the host in the sequence of the result', async () => {
+  test('"Add a column" adds a column to the end of the vertical axis', async () => {
     const view = props({
       settings: { type: 'bar', x: 'country', y: ['tax'] },
     })
     render(<ChartView {...view} />)
-    const picker = screen.getByRole('group', { name: 'Vertical axis' })
 
-    await userEvent.click(
-      within(picker).getByRole('checkbox', { name: /^amount/ }),
-    )
+    await userEvent.click(picked(ADD_COLUMN, 'amount'))
 
     expect(view.onSettings).toHaveBeenCalledWith({
       type: 'bar',
       x: 'country',
-      y: ['amount', 'tax'],
+      y: ['tax', 'amount'],
     })
   })
 
@@ -157,14 +167,17 @@ describe('the chart settings', () => {
     const view = props()
     render(<ChartView {...view} />)
 
-    await userEvent.selectOptions(screen.getByLabelText('Aggregate'), 'mean')
+    await userEvent.selectOptions(
+      screen.getByLabelText('Aggregate of amount'),
+      'mean',
+    )
     await userEvent.click(screen.getByLabelText('Stacked'))
 
     expect(view.onSettings).toHaveBeenNthCalledWith(1, {
       type: 'bar',
       x: 'country',
       y: ['amount'],
-      aggregate: 'mean',
+      aggregates: { amount: 'mean' },
     })
     expect(view.onSettings).toHaveBeenNthCalledWith(2, {
       type: 'bar',
@@ -435,7 +448,7 @@ describe('the automatic aggregate', () => {
       type: 'bar',
       x: 'country',
       y: ['amount'],
-      aggregate: 'none',
+      aggregates: { amount: 'none' },
     })
   })
 
@@ -453,11 +466,8 @@ describe('the number of rows', () => {
   test('"Number of rows" replaces the columns of the vertical axis', async () => {
     const view = props()
     render(<ChartView {...view} />)
-    const picker = screen.getByRole('group', { name: 'Vertical axis' })
 
-    await userEvent.click(
-      within(picker).getByRole('checkbox', { name: /^Number of rows/ }),
-    )
+    await userEvent.click(picked(ADD_COLUMN, 'Number of rows'))
 
     expect(view.onSettings).toHaveBeenCalledWith({
       type: 'bar',
@@ -476,7 +486,7 @@ describe('the number of rows', () => {
       />,
     )
 
-    expect(screen.queryByLabelText('Aggregate')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/^Aggregate of/)).not.toBeInTheDocument()
     expect(
       screen.getByText('Number of rows for each country.'),
     ).toBeInTheDocument()
@@ -602,18 +612,22 @@ describe('the column lists', () => {
       '1 cell of the column amount is not a number. The chart does not show it.',
     )
 
-    expect(warning.closest('.chart__field')).toHaveTextContent('Vertical axis')
+    expect(warning.closest('.chart__section')).toHaveTextContent(
+      'Vertical axis',
+    )
     expect(screen.queryByRole('list')).not.toBeInTheDocument()
   })
 })
 
 describe('the reset', () => {
-  test('"Reset to the proposed chart" removes the settings', async () => {
+  test('"Reset to the first suggested chart" removes the settings', async () => {
     const view = props()
     render(<ChartView {...view} />)
 
     await userEvent.click(
-      screen.getByRole('button', { name: 'Reset to the proposed chart' }),
+      screen.getByRole('button', {
+        name: 'Reset to the first suggested chart',
+      }),
     )
 
     expect(view.onSettings).toHaveBeenCalledWith(undefined)
@@ -630,7 +644,188 @@ describe('the reset', () => {
     )
 
     expect(
-      screen.queryByRole('button', { name: 'Reset to the proposed chart' }),
+      screen.queryByRole('button', {
+        name: 'Reset to the first suggested chart',
+      }),
     ).toBeNull()
+  })
+})
+
+describe('the suggested charts', () => {
+  const suggestion = (name: string) => screen.getByRole('button', { name })
+
+  test('the strip shows the charts that the rules propose, and the first one is the chart of a result without settings', () => {
+    render(<ChartView {...props({ settings: undefined })} />)
+
+    expect(suggestion('Bar: amount by country')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(suggestion('Scatter: tax by amount')).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+    expect(screen.getByRole('img')).toHaveAttribute('data-type', 'bar')
+  })
+
+  test('a suggestion replaces the settings', async () => {
+    const view = props()
+    render(<ChartView {...view} />)
+
+    await userEvent.click(suggestion('Scatter: tax by amount'))
+
+    expect(view.onSettings).toHaveBeenCalledWith({
+      type: 'scatter',
+      x: 'amount',
+      y: ['tax'],
+    })
+  })
+
+  test('the first suggestion removes the settings, thus a new run gets a new proposal', async () => {
+    const view = props({ settings: { type: 'line', x: 'tax', y: ['amount'] } })
+    render(<ChartView {...view} />)
+
+    await userEvent.click(suggestion('Bar: amount by country'))
+
+    expect(view.onSettings).toHaveBeenCalledWith(undefined)
+  })
+
+  test('the suggestion that is equal to the settings shows as selected', () => {
+    render(
+      <ChartView
+        {...props({ settings: { type: 'scatter', x: 'amount', y: ['tax'] } })}
+      />,
+    )
+
+    expect(suggestion('Scatter: tax by amount')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(suggestion('Bar: amount by country')).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+  })
+
+  test('a result without a proposal has no strip', () => {
+    render(
+      <ChartView
+        {...props({
+          columns: [column('a', 'json')],
+          rows: [['{}']],
+          settings: undefined,
+        })}
+      />,
+    )
+
+    expect(screen.queryByRole('group', { name: 'Suggested charts' })).toBeNull()
+  })
+})
+
+describe('the chart type buttons', () => {
+  test('the button of the chart type of the settings shows as selected', () => {
+    render(<ChartView {...props()} />)
+
+    expect(screen.getByRole('button', { name: 'Bar chart' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  })
+
+  test('a type that cannot show the columns gives the cause and has no action', async () => {
+    const view = props({
+      columns: [column('country', 'text'), column('city', 'text')],
+      rows: [['DE', 'Bonn']],
+      settings: undefined,
+    })
+    render(<ChartView {...view} />)
+    const histogram = screen.getByRole('button', {
+      name: 'Histogram. A histogram needs a number column. This result has none.',
+    })
+
+    await userEvent.click(histogram)
+
+    expect(histogram).toHaveAttribute('aria-disabled', 'true')
+    expect(view.onSettings).not.toHaveBeenCalled()
+  })
+})
+
+describe('the columns of the vertical axis', () => {
+  test('each column has a row with its aggregate, and "Remove" removes it', async () => {
+    const view = props({
+      settings: { type: 'bar', x: 'country', y: ['amount', 'tax'] },
+    })
+    render(<ChartView {...view} />)
+    expect(screen.getByLabelText('Aggregate of tax')).toBeInTheDocument()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'Remove amount from the vertical axis',
+      }),
+    )
+
+    expect(view.onSettings).toHaveBeenCalledWith({
+      type: 'bar',
+      x: 'country',
+      y: ['tax'],
+    })
+  })
+
+  test('the list of "Add a column" has only the columns that are not on the axis', () => {
+    render(<ChartView {...props()} />)
+    const list = screen.getByRole('radiogroup', { name: ADD_COLUMN })
+
+    expect(within(list).queryByRole('radio', { name: /^amount/ })).toBeNull()
+    expect(
+      within(list).getByRole('radio', { name: /^tax/ }),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('the settings panel', () => {
+  const settingsButton = () => screen.getByRole('button', { name: 'Settings' })
+
+  test('"Settings" hides the panel, and the chart stays', async () => {
+    render(<ChartView {...props()} />)
+    expect(
+      screen.getByRole('complementary', { name: 'Chart settings' }),
+    ).toBeInTheDocument()
+
+    await userEvent.click(settingsButton())
+
+    expect(screen.queryByRole('complementary')).toBeNull()
+    expect(settingsButton()).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('img')).toBeInTheDocument()
+  })
+
+  test('the close button of the panel hides it', async () => {
+    render(<ChartView {...props()} />)
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Close the chart settings' }),
+    )
+
+    expect(screen.queryByRole('complementary')).toBeNull()
+  })
+
+  test('without a chart and with a closed panel, a button opens the settings', async () => {
+    useChartUiStore.setState({ isPanelOpen: false })
+    render(
+      <ChartView
+        {...props({
+          columns: [column('a', 'json')],
+          rows: [['{}']],
+          settings: undefined,
+        })}
+      />,
+    )
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Open the chart settings' }),
+    )
+
+    expect(
+      screen.getByRole('complementary', { name: 'Chart settings' }),
+    ).toBeInTheDocument()
   })
 })

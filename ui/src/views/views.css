@@ -12,44 +12,129 @@
   flex-direction: column;
   gap: 0.5rem;
   min-height: 0;
+  /* The layout of the body follows the width of the chart view, not of the window. */
+  container-type: inline-size;
 }
 
-.chart__bar,
-.chart__tools {
+/* The suggested charts, the image export, and the settings button. */
+.chart__bar {
   display: flex;
+  flex: none;
   flex-wrap: wrap;
-  /* A field with a warning is higher than the others. The labels stay in one line. */
-  align-items: flex-start;
-  gap: 0.5rem 0.75rem;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-/* A control without a label above it starts at the height of the other controls. */
-.chart__bar > .button,
-.chart__check,
-.chart__reset {
-  margin-top: 1.1rem;
-}
-
-.chart__tools {
+.chart__spacer {
   flex: 1;
 }
 
-.chart__field {
+.chart__suggestions {
   display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  font-size: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
 }
 
-.chart__field > span {
+.chart__suggestion {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.chart__label {
   color: var(--color-text-muted);
+  font-size: 12px;
   font-weight: 600;
 }
 
-.chart__field select,
-.chart__field input[type='text'],
+/* The settings panel is the first part in the document. It shows at the right of the chart. */
+.chart__body {
+  display: flex;
+  flex: 1;
+  flex-direction: row-reverse;
+  gap: 0.75rem;
+  min-height: 0;
+}
+
+.chart__main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  min-height: 0;
+}
+
+.chart__panel {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 20.5rem;
+  padding-left: 0.75rem;
+  overflow-y: auto;
+  border-left: 1px solid var(--color-border);
+}
+
+.chart__panel-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chart__panel-head h3 {
+  flex: 1;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.chart__section,
+.chart__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 12px;
+}
+
+.chart__types {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.chart__type {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  height: 2rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.chart__type[aria-pressed='true'] {
+  border-color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+
+.chart__type[aria-disabled='true'] {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+.chart__type-name {
+  min-height: 2.4em;
+  margin: 0;
+}
+
+.chart__panel select,
+.chart__panel input[type='text'],
 .chart__picker > summary {
-  max-width: 14rem;
   height: 1.75rem;
   padding: 0 0.4rem;
   border: 1px solid var(--color-control-border);
@@ -60,6 +145,68 @@
   font-size: 13px;
 }
 
+/* A label at the left of its control, for example "Group by". */
+.chart__inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 12px;
+}
+
+.chart__inline > span {
+  flex: none;
+  width: 4.5rem;
+  color: var(--color-text-muted);
+}
+
+.chart__inline > select {
+  flex: 1;
+  min-width: 0;
+}
+
+/* One column of the vertical axis: the name, the aggregate, and the remove button. */
+.chart__row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 13px;
+}
+
+.chart__row-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.chart__row-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chart__row .chart__aggregate {
+  flex: none;
+  width: 9.5rem;
+}
+
+.chart__remove {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 16px;
+  cursor: pointer;
+}
+
 .chart__picker {
   position: relative;
 }
@@ -68,7 +215,6 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  min-width: 8rem;
   list-style: none;
   cursor: pointer;
 }
@@ -100,52 +246,6 @@
   color: var(--color-text-muted);
 }
 
-.chart__picker-name {
-  flex: 1;
-}
-
-/* The type name of the database. */
-.chart__picker-type {
-  margin-left: 1rem;
-  color: var(--color-text-muted);
-  font-family: var(--font-mono);
-  font-size: 12px;
-}
-
-.chart__warnings {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  max-width: 14rem;
-}
-
-.chart__warning {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.3rem;
-  margin: 0;
-}
-
-.chart__warning-icon {
-  flex: none;
-  margin-top: 1px;
-  color: var(--color-env-staging);
-}
-
-.chart__sentence {
-  flex: none;
-  margin: 0;
-  font-size: 13px;
-}
-
-.chart__sentence strong {
-  font-weight: 600;
-}
-
-.chart__sentence span {
-  color: var(--color-text-muted);
-}
-
 .chart__picker-list {
   position: absolute;
   z-index: 20;
@@ -173,8 +273,54 @@
   white-space: nowrap;
 }
 
-.chart__check {
-  height: 1.75rem;
+.chart__picker-name {
+  flex: 1;
+}
+
+/* The type name of the database. */
+.chart__picker-type {
+  margin-left: 1rem;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.chart__warnings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.chart__warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.3rem;
+  margin: 0;
+  font-size: 12px;
+}
+
+.chart__warning-icon {
+  flex: none;
+  margin-top: 1px;
+  color: var(--color-env-staging);
+}
+
+.chart__reset {
+  align-self: flex-start;
+}
+
+.chart__sentence {
+  flex: none;
+  margin: 0;
+  font-size: 13px;
+}
+
+.chart__sentence strong {
+  font-weight: 600;
+}
+
+.chart__sentence span {
+  color: var(--color-text-muted);
 }
 
 .chart__notes {
@@ -220,7 +366,41 @@
   align-self: flex-start;
 }
 
+/* A narrow results pane has no space for a panel at the right. The settings are above the chart. */
+@container (max-width: 640px) {
+  .chart__body {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .chart__panel {
+    width: auto;
+    padding: 0 0 0.75rem;
+    overflow-y: visible;
+    border-bottom: 1px solid var(--color-border);
+    border-left: 0;
+  }
+}
+
 /* The saved views of a result, below the view. */
+
+.saved-views select,
+.saved-views input[type='text'] {
+  max-width: 14rem;
+  height: 1.75rem;
+  padding: 0 0.4rem;
+  border: 1px solid var(--color-control-border);
+  border-radius: 4px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.saved-views .chart__field > span {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
 
 .saved-views {
   display: flex;
