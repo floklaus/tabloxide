@@ -1,4 +1,4 @@
-import type { Engine } from '../bindings'
+import type { Engine, PlanStep_Serialize, Plan_Serialize } from '../bindings'
 
 /** One step of an execution plan, in a form that does not depend on the engine. */
 export type PlanNode = {
@@ -33,7 +33,22 @@ export type PlanNode = {
    * `null` if the difference is less than `MISESTIMATE_FACTOR` or a count is missing.
    */
   misestimate: number | null
+  /**
+   * The explanation of the operation from the engine. `undefined` if the engine
+   * gives none. Then the view uses the glossary of the application.
+   */
+  about?: string | null
+  /** The explanations of the fields from the engine, by field name. */
+  fieldTexts?: Record<string, string>
   children: PlanNode[]
+}
+
+/** A hint from the engine. The step is the path, for example `0.1`. */
+export type EngineHint = {
+  step: string
+  level: 'info' | 'warning'
+  title: string
+  text: string
 }
 
 export type Plan = {
@@ -46,6 +61,15 @@ export type Plan = {
   totalTime: number | null
   /** The time of the planner in milliseconds, if the engine gives it. */
   planningTime: number | null
+  /**
+   * The hints of the engine. `undefined` if the plan comes from the JSON of the
+   * engine. Then the view makes its own hints.
+   */
+  hints?: EngineHint[]
+  /** The explanations of the totals from the engine, by name. */
+  totalTexts?: Record<string, string>
+  /** The unit of the cost, for example `documents`. */
+  costUnit?: string
 }
 
 /** A difference of this factor or more between estimate and result is a misestimate. */
@@ -311,12 +335,61 @@ export function parsePlan(engine: Engine, jsonText: string): Plan {
   } catch {
     throw new Error('The plan is not valid JSON.')
   }
-  const { raw, ...rest } =
-    engine === 'duckdb' ? parseDuckdb(json) : parsePostgres(json)
+  return finishPlan(
+    engine,
+    engine === 'duckdb' ? parseDuckdb(json) : parsePostgres(json),
+  )
+}
+
+/** Adds the identifiers, the shares, and the misestimates to the steps. */
+function finishPlan(engine: Engine, parsed: Parsed): Plan {
+  const { raw, ...rest } = parsed
   const useTime = rest.isAnalyzed && inclusiveTime(raw) > 0
   const measure = (node: RawNode) => (useTime ? node.selfTime : node.selfCost)
   const total = useTime ? inclusiveTime(raw) : inclusiveCost(raw) || null
   return { ...rest, engine, root: finish(raw, '0', total, measure) }
+}
+
+function texts(
+  fields: { name: string; explanation: string | null }[],
+): Record<string, string> {
+  return Object.fromEntries(
+    fields.flatMap((field) =>
+      field.explanation === null ? [] : [[field.name, field.explanation]],
+    ),
+  )
+}
+
+function commonNode(step: PlanStep_Serialize): RawNode {
+  return {
+    operation: step.operation,
+    target: step.target,
+    details: step.fields.map((field) => [field.name, field.value]),
+    loops: step.loops,
+    estimatedRows: step.estimatedRows,
+    actualRows: step.actualRows,
+    selfCost: step.selfCost,
+    selfTime: step.selfMs,
+    about: step.explanation ?? undefined,
+    fieldTexts: texts(step.fields),
+    children: step.children.map(commonNode),
+  }
+}
+
+/** Reads a plan in the common form of an adapter or a connector. */
+export function fromCommon(engine: Engine, plan: Plan_Serialize): Plan {
+  return {
+    ...finishPlan(engine, {
+      raw: commonNode(plan.root),
+      isAnalyzed: plan.isMeasured,
+      totalTime: plan.totalMs,
+      planningTime: plan.planningMs,
+      totals: plan.totals.map((field) => [field.name, field.value]),
+    }),
+    hints: plan.hints,
+    totalTexts: texts(plan.totals),
+    costUnit: plan.costUnit,
+  }
 }
 
 /** Returns the steps of the plan, each step before its children. */

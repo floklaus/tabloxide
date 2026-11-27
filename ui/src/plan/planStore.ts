@@ -1,11 +1,16 @@
 import { create } from 'zustand'
-import { commands, type Engine, type Environment } from '../bindings'
+import {
+  commands,
+  type Engine,
+  type Environment,
+  type Plan_Serialize,
+} from '../bindings'
 import { toMessage } from '../lib/errors'
 import { getQueryStore } from '../query/queryStore'
 import { useResultsViewStore } from '../results/resultsViewStore'
 import { sqlTabForTools } from '../tabs/tabsStore'
 import { useWorkspaceStore } from '../workspace/workspaceStore'
-import { parsePlan, type Plan } from './planModel'
+import { fromCommon, parsePlan, type Plan } from './planModel'
 import { targetStatement } from './planTarget'
 
 /** A plan read with a measure, before the confirmation of the user. */
@@ -18,9 +23,14 @@ export type PendingMeasure = {
 
 export type PlanState = {
   status: 'idle' | 'reading' | 'done' | 'failed'
+  /**
+   * The steps of the plan, or `null` if the engine gives only the original text.
+   */
   plan: Plan | null
-  /** The plan in the JSON form of the database engine. */
-  json: string | null
+  /** The plan as the engine gives it, for example a JSON document. */
+  text: string | null
+  /** `true` if the database ran the statement and measured it. */
+  isMeasured: boolean
   /** The statement that the database explained. */
   statement: string | null
   error: string | null
@@ -46,7 +56,8 @@ export type PlanState = {
 const INITIAL = {
   status: 'idle' as const,
   plan: null,
-  json: null,
+  text: null,
+  isMeasured: false,
   statement: null,
   error: null,
 }
@@ -57,6 +68,28 @@ function activeConnection() {
     .getState()
     .workspace?.connections.find((item) => item.id === tab?.connectionId)
   return { tab, connection }
+}
+
+/** The engines whose JSON plan the view reads, until their adapters give the steps. */
+const JSON_ENGINES: Engine[] = ['postgres', 'duckdb']
+
+/**
+ * The steps of a plan. The common form of the engine comes first. Without it, the
+ * view reads the JSON of PostgreSQL and DuckDB. For other engines, or for JSON that
+ * the view cannot read, the result is `null`, and the view shows the original text.
+ */
+function stepsOf(
+  engine: Engine,
+  plan: Plan_Serialize | null,
+  text: string,
+): Plan | null {
+  if (plan) return fromCommon(engine, plan)
+  if (!JSON_ENGINES.includes(engine)) return null
+  try {
+    return parsePlan(engine, text)
+  } catch {
+    return null
+  }
 }
 
 export const usePlanStore = create<PlanState>((set, get) => {
@@ -91,10 +124,12 @@ export const usePlanStore = create<PlanState>((set, get) => {
       } else if (result.data.status === 'failed') {
         set({ status: 'failed', error: result.data.error.message })
       } else {
+        const { plan, text, is_analyzed } = result.data
         set({
           status: 'done',
-          plan: parsePlan(engine, result.data.json),
-          json: result.data.json,
+          plan: stepsOf(engine, plan, text),
+          text,
+          isMeasured: is_analyzed,
           statement,
         })
       }
@@ -143,9 +178,9 @@ export const usePlanStore = create<PlanState>((set, get) => {
     },
 
     again: async () => {
-      const { statement, plan } = get()
+      const { statement } = get()
       if (statement === null) return
-      await start(statement, plan?.isAnalyzed ?? false)
+      await start(statement, get().isMeasured)
     },
 
     confirm: (skipsNextTime) => {

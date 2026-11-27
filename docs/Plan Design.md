@@ -2,7 +2,7 @@
 
 This document gives a new design for the execution plan ("Explain"). It accompanies `Connector Design.md` and `Implementation Plan.md`.
 
-Status on 2026-11-26: the product owner approved the design and the answers of section 6. Stage 4 is built. Stages 1, 2, 3, and 5 are open.
+Status on 2026-11-26: the product owner approved the design and the answers of section 6. Stages 4 and 1 are built. Stages 2, 3, and 5 are open.
 
 The design has two parts:
 
@@ -81,7 +81,7 @@ message PlanHint {
 }
 ```
 
-The core crate gets the same types. `PlanText` becomes `PlanResult { statement, text, plan: Option<Plan> }`.
+The core crate gets the same types (`crates/core/src/plan.rs`). `PlanText` gets the field `plan: Option<Plan>`.
 
 A connector of minor 2 sends only `text`. The UI then shows the "Original" view only, as formatted JSON.
 
@@ -149,3 +149,12 @@ e. Stage 4 comes first.
 - `PlanConfirmDialog.tsx` asks before Explain and measure.
 - The Plan tab shows the statement at the cursor and the two actions before the first plan. A plan has a header with "Estimate" or "Measured", "Steps | Original", "Explain again", and "Ask the AI". "Original" shows the JSON of the engine.
 - Until stage 1, the button shows only for the SQL engines, as before.
+
+## 8. Stage 1 as built
+
+- Protocol minor 3: the messages `Plan`, `PlanStep`, `PlanField`, `PlanHint`, the field `ReadPlanResponse.plan`, and the capability `measured_plan`. For a connector of minor 2, the host sets `measured_plan` to the value of `explain_plan`.
+- `checked_plan_statement` (`crates/assistant/src/explain.rs`) checks the statement with the rules of its language and returns it without `EXPLAIN`. The commands `plan_check` and `plan_read` use it for all engines, after the check of the capabilities.
+- The PostgreSQL and DuckDB adapters implement `read_plan`. They add their `EXPLAIN` options and give the JSON as `text`, without `plan`. Until stage 2, the UI reads this JSON as before.
+- The UI shows the steps of `plan` when an engine sends it (`fromCommon` in `ui/src/plan/planModel.ts`), with the explanations and hints of the engine. Without `plan`, the Plan tab shows only "Original".
+- MongoDB shows the Explain button. Until stage 3, its plan is "Original" only.
+- The connector guide has the section "The execution plan".

@@ -101,6 +101,7 @@ impl DbAdapter for DuckDbAdapter {
                 unix_socket: false,
                 file_database: true,
                 explain_plan: true,
+                measured_plan: true,
             },
         }
     }

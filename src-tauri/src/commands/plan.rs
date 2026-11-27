@@ -1,25 +1,25 @@
-//! The execution plan of a statement as a tree.
+//! The execution plan of a statement. The adapter or the connector of the engine
+//! reads the plan. The application checks the statement first.
 
 use crate::error::CommandError;
-use crate::state::{AppState, SessionId};
+use crate::state::{AppState, SessionEntry, SessionId};
 use serde::Serialize;
 use specta::Type;
-use tabloxide_assistant::{ExplainRejection, explain_json_statement, plan_json};
-use tabloxide_core::{Engine, QueryError, QueryErrorKind, QuerySession};
+use tabloxide_assistant::{ExplainRejection, checked_plan_statement};
+use tabloxide_core::{Capabilities, Plan, QueryError, QueryLanguage};
 use tauri::State;
 
-/// The plan is one row. The limit protects against a different result.
-const MAX_PLAN_ROWS: usize = 10;
-
 /// Result of a plan read. A statement that fails is a normal result, not a command error.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Type)]
+#[derive(Debug, Clone, PartialEq, Serialize, Type)]
 #[serde(tag = "status", rename_all = "kebab-case")]
 pub enum PlanRead {
     Plan {
-        /// The statement that the database ran.
+        /// What the engine ran to make the plan.
         statement: String,
-        /// The plan in the JSON form of the database engine.
-        json: String,
+        /// The plan as the engine gives it, for example a JSON document.
+        text: String,
+        /// The plan in the common form. `None` if the engine gives only `text`.
+        plan: Option<Box<Plan>>,
         /// `true` if the database ran the statement and measured it.
         is_analyzed: bool,
     },
@@ -32,39 +32,20 @@ pub enum PlanRead {
     },
 }
 
-async fn read(session: &QuerySession, sql: &str, analyze: bool, engine: &Engine) -> PlanRead {
-    let statement = match explain_json_statement(sql, analyze, engine) {
-        Ok(statement) => statement,
-        Err(reason) => {
-            return PlanRead::Rejected {
-                reason,
-                message: reason.to_string(),
-            };
-        }
-    };
-    match session.read_rows(&statement, MAX_PLAN_ROWS).await {
-        Ok(rows) => match plan_json(&rows) {
-            Some(json) => PlanRead::Plan {
-                statement,
-                json,
-                is_analyzed: analyze,
-            },
-            None => PlanRead::Failed {
-                error: QueryError::new(
-                    QueryErrorKind::Other,
-                    "The database did not return a plan.",
-                ),
-            },
-        },
-        Err(error) => PlanRead::Failed { error },
-    }
-}
-
 /// Why a plan action is not available, for the user.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Type)]
 pub struct PlanBlock {
     pub reason: ExplainRejection,
     pub message: String,
+}
+
+impl From<ExplainRejection> for PlanBlock {
+    fn from(reason: ExplainRejection) -> Self {
+        Self {
+            reason,
+            message: reason.to_string(),
+        }
+    }
 }
 
 /// What the plan actions can do with a statement. `None` means that the action is
@@ -75,19 +56,31 @@ pub struct PlanCheck {
     pub measure: Option<PlanBlock>,
 }
 
-fn block(sql: &str, measure: bool, engine: &Engine) -> Option<PlanBlock> {
-    explain_json_statement(sql, measure, engine)
-        .err()
-        .map(|reason| PlanBlock {
-            reason,
-            message: reason.to_string(),
-        })
+/// Returns the statement for the engine, or why the engine does not read its plan.
+fn statement_for(
+    language: QueryLanguage,
+    capabilities: Capabilities,
+    sql: &str,
+    measure: bool,
+) -> Result<String, ExplainRejection> {
+    if !capabilities.explain_plan {
+        return Err(ExplainRejection::NoPlan);
+    }
+    if measure && !capabilities.measured_plan {
+        return Err(ExplainRejection::NoMeasuredPlan);
+    }
+    checked_plan_statement(language, sql, measure)
 }
 
-fn check(sql: &str, engine: &Engine) -> PlanCheck {
+fn check(language: QueryLanguage, capabilities: Capabilities, sql: &str) -> PlanCheck {
+    let block = |measure| {
+        statement_for(language, capabilities, sql, measure)
+            .err()
+            .map(PlanBlock::from)
+    };
     PlanCheck {
-        explain: block(sql, false, engine),
-        measure: block(sql, true, engine),
+        explain: block(false),
+        measure: block(true),
     }
 }
 
@@ -95,25 +88,47 @@ fn check(sql: &str, engine: &Engine) -> PlanCheck {
 /// result to show which actions are available. Nothing goes to the database.
 #[tauri::command]
 #[specta::specta]
-pub fn plan_check(sql: String, engine: Engine) -> PlanCheck {
-    check(&sql, &engine)
+pub fn plan_check(sql: String, language: QueryLanguage, capabilities: Capabilities) -> PlanCheck {
+    check(language, capabilities, &sql)
 }
 
-/// Reads the execution plan of the one statement in `sql` as JSON.
+async fn read(entry: &SessionEntry, sql: &str, measure: bool) -> PlanRead {
+    let info = &entry.info;
+    let statement = match statement_for(info.language, info.capabilities, sql, measure) {
+        Ok(statement) => statement,
+        Err(reason) => {
+            return PlanRead::Rejected {
+                reason,
+                message: reason.to_string(),
+            };
+        }
+    };
+    match entry.session.read_plan(&statement, measure).await {
+        Ok(plan) => PlanRead::Plan {
+            statement: plan.statement,
+            text: plan.text,
+            plan: plan.plan.map(Box::new),
+            is_analyzed: measure,
+        },
+        Err(error) => PlanRead::Failed { error },
+    }
+}
+
+/// Reads the execution plan of the one statement in `sql`.
 ///
-/// Without `analyze`, the database does not run the statement. With `analyze`, the
-/// database runs it. Thus `analyze` is permitted only for a statement that reads data.
-/// The query history does not record the plan read. This closes the open result.
+/// Without `measure`, the database does not run the statement. With `measure`, the
+/// database runs it. Thus `measure` is permitted only for a statement that reads
+/// data. The query history does not record the plan read. This closes the open result.
 #[tauri::command]
 #[specta::specta]
 pub async fn plan_read(
     state: State<'_, AppState>,
     session_id: SessionId,
     sql: String,
-    analyze: bool,
+    measure: bool,
 ) -> Result<PlanRead, CommandError> {
     let entry = state.session_entry(session_id)?;
-    Ok(read(&entry.session, &sql, analyze, &entry.engine).await)
+    Ok(read(&entry, &sql, measure).await)
 }
 
 #[cfg(test)]
@@ -121,18 +136,36 @@ mod tests {
     use super::*;
     use std::sync::Arc;
     use tabloxide_core::testing::{Probe, Scripted, ScriptedSession};
+    use tabloxide_core::{ConnectionId, Engine, EngineInfo, QuerySession};
 
-    fn session(answers: Vec<Scripted>) -> (QuerySession, Arc<Probe>) {
-        let (session, probe) = ScriptedSession::new(answers);
-        (
-            QuerySession::new(Box::new(session), tabloxide_core::QueryLanguage::Sql),
-            probe,
-        )
+    const ALL: Capabilities = Capabilities {
+        cancel: true,
+        unix_socket: false,
+        file_database: false,
+        explain_plan: true,
+        measured_plan: true,
+    };
+
+    fn entry(language: QueryLanguage, capabilities: Capabilities) -> (SessionEntry, Arc<Probe>) {
+        let (session, probe) = ScriptedSession::new(vec![Scripted::Rows(1)]);
+        let entry = SessionEntry {
+            session: Arc::new(QuerySession::new(Box::new(session), language)),
+            connection_id: ConnectionId::from("c1"),
+            connection_name: "Shop".to_owned(),
+            info: EngineInfo {
+                engine: Engine::new("test"),
+                display_name: "Test".to_owned(),
+                language,
+                default_port: None,
+                capabilities,
+            },
+        };
+        (entry, probe)
     }
 
     #[test]
     fn a_read_can_be_explained_and_measured() {
-        let result = check("select * from item", &Engine::postgres());
+        let result = check(QueryLanguage::Sql, ALL, "select * from item");
 
         assert_eq!(
             result,
@@ -145,7 +178,7 @@ mod tests {
 
     #[test]
     fn a_change_can_be_explained_but_not_measured() {
-        let result = check("delete from item where id = 1", &Engine::duckdb());
+        let result = check(QueryLanguage::Sql, ALL, "delete from item where id = 1");
 
         assert_eq!(result.explain, None);
         let measure = result.measure.unwrap();
@@ -159,7 +192,7 @@ mod tests {
 
     #[test]
     fn no_statement_has_no_plan_action() {
-        let result = check("  ", &Engine::postgres());
+        let result = check(QueryLanguage::Sql, ALL, "  ");
 
         assert_eq!(
             result.explain.map(|block| block.reason),
@@ -171,46 +204,52 @@ mod tests {
         );
     }
 
-    #[tokio::test]
-    async fn runs_explain_as_json_and_returns_the_cell_of_the_plan() {
-        let (session, probe) = session(vec![Scripted::Rows(1)]);
+    #[test]
+    fn the_capabilities_of_the_engine_decide_first() {
+        let without_plans = Capabilities {
+            explain_plan: false,
+            measured_plan: false,
+            ..ALL
+        };
+        let estimate_only = Capabilities {
+            measured_plan: false,
+            ..ALL
+        };
 
-        let result = read(&session, "select * from item;", true, &Engine::postgres()).await;
+        let none = check(QueryLanguage::MongodbShell, without_plans, "db.a.find()");
+        let some = check(QueryLanguage::MongodbShell, estimate_only, "db.a.find()");
 
+        assert_eq!(none.explain.unwrap().reason, ExplainRejection::NoPlan);
+        assert_eq!(some.explain, None);
         assert_eq!(
-            result,
-            PlanRead::Plan {
-                statement: "EXPLAIN (ANALYZE, VERBOSE, BUFFERS, FORMAT JSON) select * from item"
-                    .to_owned(),
-                json: "1".to_owned(),
-                is_analyzed: true,
-            }
-        );
-        assert_eq!(
-            *probe.executed.lock().unwrap(),
-            vec!["EXPLAIN (ANALYZE, VERBOSE, BUFFERS, FORMAT JSON) select * from item"]
+            some.measure.unwrap().reason,
+            ExplainRejection::NoMeasuredPlan
         );
     }
 
     #[tokio::test]
-    async fn a_result_without_rows_is_a_failure() {
-        let (session, _probe) = session(vec![Scripted::Rows(0)]);
+    async fn the_session_gets_the_statement_without_explain() {
+        let (entry, _probe) = entry(QueryLanguage::Sql, ALL);
 
-        let result = read(&session, "select 1", false, &Engine::postgres()).await;
+        let result = read(&entry, "select * from item;", true).await;
 
-        assert!(matches!(result, PlanRead::Failed { .. }));
+        // The scripted session has no plan. Its default answer proves the call.
+        let PlanRead::Failed { error } = result else {
+            panic!("{result:?}");
+        };
+        assert!(error.message.contains("gives no execution plan"));
     }
 
     #[tokio::test]
-    async fn rejects_analyze_for_a_statement_that_changes_data() {
-        let (session, probe) = session(vec![]);
+    async fn rejects_a_measure_of_a_statement_that_changes_data() {
+        let (entry, probe) = entry(QueryLanguage::MongodbShell, ALL);
 
-        let result = read(&session, "delete from item", true, &Engine::postgres()).await;
+        let result = read(&entry, "db.item.deleteMany({})", true).await;
 
         assert!(matches!(
             result,
             PlanRead::Rejected {
-                reason: ExplainRejection::AnalyzeChangesData,
+                reason: ExplainRejection::MeasureChangesData,
                 ..
             }
         ));

@@ -293,6 +293,8 @@ impl Session for MongoSession {
         Ok(PlanText {
             text,
             statement: format!("explain(\"{verbosity}\") of {}", statement.trim()),
+            // The common form of the plan comes in stage 3 of docs/Plan Design.md.
+            plan: None,
         })
     }
 }

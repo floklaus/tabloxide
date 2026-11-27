@@ -474,3 +474,31 @@ async fn runs_a_script_through_the_query_session_and_exports_csv() {
     let location = location.expect("the error must have a position");
     assert_eq!((location.line, location.column), (2, 15));
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn reads_the_plan_as_json_with_and_without_a_measure() {
+    let adapter = DuckDbAdapter::default();
+    let mut session = connect(&adapter, &memory(), here()).await;
+    let session = session.as_mut();
+    let statement = "SELECT count(*) FROM range(1000) AS t(i) WHERE i % 7 = 0";
+
+    let estimate = session.read_plan(statement, false).await.unwrap();
+    let measured = session.read_plan(statement, true).await.unwrap();
+
+    assert_eq!(
+        estimate.statement,
+        format!("EXPLAIN (FORMAT JSON) {statement}")
+    );
+    assert_eq!(
+        measured.statement,
+        format!("EXPLAIN (ANALYZE, FORMAT JSON) {statement}")
+    );
+    for plan in [&estimate, &measured] {
+        assert!(
+            serde_json::from_str::<serde_json::Value>(&plan.text).is_ok(),
+            "{}",
+            plan.text
+        );
+        assert!(plan.plan.is_none());
+    }
+}

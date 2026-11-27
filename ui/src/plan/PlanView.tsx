@@ -90,12 +90,14 @@ function askTheAi(measure: boolean) {
 
 /** The statement, the mode, and the actions of a plan. */
 function Header({
-  plan,
+  isMeasured,
+  hasSteps,
   statement,
   mode,
   onMode,
 }: {
-  plan: Plan
+  isMeasured: boolean
+  hasSteps: boolean
   statement: string | null
   mode: Mode
   onMode: (mode: Mode) => void
@@ -108,9 +110,7 @@ function Header({
         </pre>
       )}
       <div className="plan-header__bar">
-        <span className="badge">
-          {plan.isAnalyzed ? 'Measured' : 'Estimate'}
-        </span>
+        <span className="badge">{isMeasured ? 'Measured' : 'Estimate'}</span>
         <div className="segmented" role="radiogroup" aria-label="Plan view">
           {(
             [
@@ -128,6 +128,7 @@ function Header({
                 className="visually-hidden"
                 value={value}
                 checked={mode === value}
+                disabled={value === 'steps' && !hasSteps}
                 onChange={() => onMode(value)}
               />
               {label}
@@ -146,7 +147,7 @@ function Header({
           type="button"
           className="button button--small"
           title="Opens the assistant. It reads the plan again and analyzes it."
-          onClick={() => askTheAi(plan.isAnalyzed)}
+          onClick={() => askTheAi(isMeasured)}
         >
           Ask the AI
         </button>
@@ -176,7 +177,7 @@ function Totals({ plan }: { plan: Plan }) {
       <summary>Totals of the statement</summary>
       <dl className="plan__details">
         {plan.totals.map(([key, value]) => {
-          const text = totalText(key)
+          const text = plan.totalTexts?.[key] ?? totalText(key)
           return (
             <div key={key}>
               <dt>{key}</dt>
@@ -210,14 +211,15 @@ export function PlanView() {
   const status = usePlanStore((state) => state.status)
   const plan = usePlanStore((state) => state.plan)
   const statement = usePlanStore((state) => state.statement)
-  const json = usePlanStore((state) => state.json)
+  const text = usePlanStore((state) => state.text)
+  const isMeasured = usePlanStore((state) => state.isMeasured)
   const error = usePlanStore((state) => state.error)
   const [showsFields, setShowsFields] = useState(true)
   const [mode, setMode] = useState<Mode>('steps')
 
   if (status === 'idle') return <Start />
   if (status === 'reading') return <p role="status">Reading the plan…</p>
-  if (status === 'failed' || !plan) {
+  if (status === 'failed') {
     return (
       <>
         <p className="message message--error" role="alert">
@@ -229,10 +231,21 @@ export function PlanView() {
   }
   return (
     <div className="plan">
-      <Header plan={plan} statement={statement} mode={mode} onMode={setMode} />
-      {mode === 'original' ? (
+      <Header
+        isMeasured={isMeasured}
+        hasSteps={plan !== null}
+        statement={statement}
+        mode={plan ? mode : 'original'}
+        onMode={setMode}
+      />
+      {!plan && (
+        <p className="field__hint">
+          The engine gives this plan only as text. The steps are not available.
+        </p>
+      )}
+      {mode === 'original' || !plan ? (
         <pre className="plan__original" aria-label="Original plan">
-          {formatted(json ?? '')}
+          {formatted(text ?? '')}
         </pre>
       ) : (
         <Steps

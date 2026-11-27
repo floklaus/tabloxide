@@ -102,7 +102,8 @@ describe('PlanView', () => {
       data: {
         status: 'plan',
         statement: `EXPLAIN (FORMAT JSON) ${STATEMENT}`,
-        json: postgresExplain,
+        text: postgresExplain,
+        plan: null,
         is_analyzed: false,
       },
     })
@@ -124,7 +125,8 @@ describe('PlanView', () => {
       data: {
         status: 'plan',
         statement: `EXPLAIN (VERBOSE, FORMAT JSON) ${STATEMENT}`,
-        json: postgresExplain,
+        text: postgresExplain,
+        plan: null,
         is_analyzed: false,
       },
     })
@@ -159,7 +161,8 @@ describe('PlanView', () => {
       data: {
         status: 'plan',
         statement: `EXPLAIN (ANALYZE, FORMAT JSON) ${STATEMENT}`,
-        json: duckdbAnalyze,
+        text: duckdbAnalyze,
+        plan: null,
         is_analyzed: true,
       },
     })
@@ -198,7 +201,8 @@ describe('PlanView', () => {
       data: {
         status: 'plan',
         statement: 'x',
-        json: postgresExplain,
+        text: postgresExplain,
+        plan: null,
         is_analyzed: false,
       },
     })
@@ -274,7 +278,8 @@ describe('PlanView', () => {
       data: {
         status: 'plan',
         statement: 'x',
-        json: duckdbAnalyze,
+        text: duckdbAnalyze,
+        plan: null,
         is_analyzed: true,
       },
     })
@@ -325,7 +330,8 @@ describe('PlanView', () => {
       data: {
         status: 'plan',
         statement: 'x',
-        json: postgresExplain,
+        text: postgresExplain,
+        plan: null,
         is_analyzed: false,
       },
     })
@@ -340,5 +346,112 @@ describe('PlanView', () => {
     expect(screen.getByLabelText('Original plan')).toHaveTextContent(
       '"Node Type"',
     )
+  })
+
+  test('shows the steps, the explanations, and the hints of the common form', async () => {
+    planRead.mockResolvedValue({
+      status: 'ok',
+      data: {
+        status: 'plan',
+        statement: 'explain',
+        text: '{"queryPlanner": {}}',
+        is_analyzed: true,
+        plan: {
+          isMeasured: true,
+          totalMs: 3,
+          planningMs: null,
+          costUnit: 'documents',
+          totals: [
+            {
+              name: 'rejectedPlans',
+              value: '0',
+              explanation: 'Plans that the planner did not use.',
+            },
+          ],
+          hints: [
+            {
+              step: '0.0',
+              level: 'warning',
+              title: 'Sort in memory',
+              text: 'An index with the sort key makes the sort unnecessary.',
+            },
+          ],
+          root: {
+            operation: 'FETCH',
+            target: null,
+            explanation: 'Reads the documents.',
+            fields: [],
+            estimatedRows: null,
+            actualRows: 12,
+            loops: null,
+            selfCost: 12,
+            selfMs: 1,
+            children: [
+              {
+                operation: 'SORT',
+                target: null,
+                explanation: 'Sorts the documents in memory.',
+                fields: [
+                  {
+                    name: 'memLimit',
+                    value: '104857600',
+                    explanation: 'The memory limit of the sort, in bytes.',
+                  },
+                ],
+                estimatedRows: null,
+                actualRows: 12,
+                loops: null,
+                selfCost: 12,
+                selfMs: 2,
+                children: [],
+              },
+            ],
+          },
+        },
+      },
+    })
+    const user = renderWith('postgres')
+
+    await user.click(screen.getByRole('button', { name: 'Explain' }))
+
+    const tree = await screen.findByRole('list', { name: 'Plan steps' })
+    expect(within(tree).getByText(/Reads the documents\./)).toBeInTheDocument()
+    expect(
+      within(tree).getByText(/Sorts the documents in memory\./),
+    ).toBeInTheDocument()
+    expect(
+      within(tree).getByText('The memory limit of the sort, in bytes.'),
+    ).toBeInTheDocument()
+    expect(
+      within(screen.getByRole('list', { name: 'Hints for SORT' })).getByText(
+        /Sort in memory\. An index with the sort key/,
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Measured')).toBeInTheDocument()
+  })
+
+  test('a plan without steps shows only the original text', async () => {
+    planRead.mockResolvedValue({
+      status: 'ok',
+      data: {
+        status: 'plan',
+        statement: 'explain',
+        text: '{"queryPlanner":{"winningPlan":{"stage":"COLLSCAN"}}}',
+        is_analyzed: false,
+        plan: null,
+      },
+    })
+    const user = renderWith('postgres')
+    // A JSON that is not a plan of PostgreSQL gives no steps.
+
+    await user.click(screen.getByRole('button', { name: 'Explain' }))
+
+    expect(
+      await screen.findByText(/The engine gives this plan only as text/),
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText('Original plan')).toHaveTextContent(
+      '"stage": "COLLSCAN"',
+    )
+    expect(screen.getByRole('radio', { name: 'Steps' })).toBeDisabled()
   })
 })

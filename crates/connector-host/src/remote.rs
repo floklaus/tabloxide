@@ -342,10 +342,7 @@ impl Session for RemoteSession {
             Err(status) => return Err(lost(&status)),
         };
         response_error(response.error.as_ref())?;
-        Ok(PlanText {
-            text: response.text,
-            statement: response.statement,
-        })
+        Ok(convert::plan_text_from_wire(response))
     }
 }
 

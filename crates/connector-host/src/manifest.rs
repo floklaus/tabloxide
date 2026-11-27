@@ -116,6 +116,7 @@ impl Manifest {
                 unix_socket: false,
                 file_database: self.file_database,
                 explain_plan: false,
+                measured_plan: false,
             },
         }
     }

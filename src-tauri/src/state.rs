@@ -24,7 +24,6 @@ pub struct SessionEntry {
     pub session: Arc<QuerySession>,
     pub connection_id: ConnectionId,
     pub connection_name: String,
-    pub engine: Engine,
     /// What the engine of the session can do, and its query language.
     pub info: EngineInfo,
 }

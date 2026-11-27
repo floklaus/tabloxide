@@ -437,3 +437,32 @@ async fn a_read_only_session_refuses_changes_and_a_lost_connection_is_reported()
     let error = run(session.as_mut(), "SELECT 1").await.unwrap_err();
     assert_eq!(error.kind, QueryErrorKind::ConnectionLost, "{error:?}");
 }
+
+#[tokio::test]
+#[ignore = "needs Docker"]
+async fn reads_the_plan_as_json_with_and_without_a_measure() {
+    let (_container, profile) = start_server(false).await;
+    let mut session = connect(&profile).await;
+    let session = session.as_mut();
+    let statement = "SELECT count(*) FROM generate_series(1, 1000) AS i WHERE i % 7 = 0";
+
+    let estimate = session.read_plan(statement, false).await.unwrap();
+    let measured = session.read_plan(statement, true).await.unwrap();
+
+    assert_eq!(
+        estimate.statement,
+        format!("EXPLAIN (VERBOSE, FORMAT JSON) {statement}")
+    );
+    assert!(
+        estimate.text.trim_start().starts_with('['),
+        "{}",
+        estimate.text
+    );
+    assert!(!estimate.text.contains("Execution Time"));
+    assert!(
+        measured.text.contains("Execution Time"),
+        "{}",
+        measured.text
+    );
+    assert!(measured.plan.is_none());
+}

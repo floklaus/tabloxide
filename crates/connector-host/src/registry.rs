@@ -62,6 +62,7 @@ fn official_connectors() -> Vec<EngineInfo> {
             unix_socket: false,
             file_database: false,
             explain_plan: false,
+            measured_plan: false,
         },
     }]
 }

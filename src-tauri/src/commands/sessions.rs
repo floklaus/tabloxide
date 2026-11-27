@@ -60,7 +60,6 @@ pub async fn session_open(
         session,
         connection_id: connection_id.clone(),
         connection_name: profile.name.clone(),
-        engine: profile.engine.clone(),
         info,
     });
     Ok(SessionOpenResult::Connected {

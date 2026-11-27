@@ -9,8 +9,8 @@ use std::sync::Arc;
 use std::sync::mpsc::Sender;
 use std::time::Duration;
 use tabloxide_core::{
-    CancelHandle, Column, Page, QueryError, QueryErrorKind, RelationDetail, RelationInfo,
-    ResultStream, SchemaInfo, ServerInfo, Session,
+    CancelHandle, Column, Page, PlanText, QueryError, QueryErrorKind, RelationDetail, RelationInfo,
+    ResultStream, SchemaInfo, ServerInfo, Session, read_explain_json,
 };
 use tokio::sync::oneshot;
 
@@ -117,6 +117,27 @@ impl Session for DuckSession {
     async fn sample_statement(&self, schema: &str, relation: &str, limit: u32) -> String {
         crate::catalog::sample_statement(schema, relation, limit)
     }
+
+    async fn read_plan(&mut self, statement: &str, run: bool) -> Result<PlanText, QueryError> {
+        let explain = explain_statement(statement, run);
+        let text = read_explain_json(self, &explain).await?;
+        Ok(PlanText {
+            text,
+            statement: explain,
+            plan: None,
+        })
+    }
+}
+
+/// The `EXPLAIN` statement that gives the plan of `statement` as JSON. With `run`,
+/// the database runs the statement and measures it.
+fn explain_statement(statement: &str, run: bool) -> String {
+    let options = if run {
+        "EXPLAIN (ANALYZE, FORMAT JSON) "
+    } else {
+        "EXPLAIN (FORMAT JSON) "
+    };
+    format!("{options}{statement}")
 }
 
 /// The result of one statement. The session thread holds the data.

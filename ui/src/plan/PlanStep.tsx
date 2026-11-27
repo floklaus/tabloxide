@@ -29,7 +29,7 @@ function Fields({ node }: { node: PlanNode }) {
     const info = fieldInfo(key)
     groups.set(info.group, [
       ...(groups.get(info.group) ?? []),
-      [key, value, info.text],
+      [key, value, node.fieldTexts?.[key] ?? info.text],
     ])
   }
   return (
@@ -59,8 +59,18 @@ export function PlanStep({ node, plan, hot, showsFields }: StepProps) {
   const isHot = hot.has(node.id)
   const measure = measureText(node, plan.isAnalyzed)
   const rows = rowsText(node)
-  const about = operationText(plan.engine, node.operation)
-  const hints = hintsOf(node, plan, hot)
+  const about =
+    node.about !== undefined
+      ? node.about
+      : operationText(plan.engine, node.operation)
+  const hints = plan.hints
+    ? plan.hints
+        .filter((hint) => hint.step === node.id)
+        .map((hint) => ({
+          level: hint.level,
+          text: `${hint.title}. ${hint.text}`,
+        }))
+    : hintsOf(node, plan, hot)
   return (
     <li className={`plan__step${isHot ? ' plan__step--hot' : ''}`}>
       <details open>

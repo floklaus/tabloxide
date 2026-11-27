@@ -43,7 +43,7 @@ The file [`connector.proto`](https://tabloxide.org/connectors/v1/connector.proto
 | `Cancel` | Stops the active statement of a session. |
 | `ListSchemas`, `ListRelations`, `DescribeRelation` | The catalog. |
 | `SampleStatement` | The statement that reads the first rows of a table, with the quotes of the engine. |
-| `ReadPlan` | Gives the execution plan of one statement as text. With `run`, the engine runs the statement to measure it. Since minor version 2. A connector without plans answers with the status `UNIMPLEMENTED`, and sets the capability `explain_plan` to false. |
+| `ReadPlan` | Gives the execution plan of one statement: as text, and since minor version 3 also in the common form `Plan`. With `run`, the engine runs the statement to measure it. Since minor version 2. A connector without plans answers with the status `UNIMPLEMENTED`, and sets the capability `explain_plan` to false. |
 
 Obey these rules:
 
@@ -58,8 +58,27 @@ The assistant of Tabloxide uses the data of your connector. Your connector never
 
 - **The catalog is the structure that the AI gets.** The assistant reads `ListSchemas`, `ListRelations`, and `DescribeRelation`, and sends the names, the types, the indexes, and the constraints. Do not put values of rows into the catalog. A column has no default value in the text for the AI.
 - **Columns from a sample.** If your engine has no fixed structure, you can make the columns from a sample of documents. Then set `columns_from_sample` in `RelationDetail` (since minor version 2). Give the names and the types of the fields only, never a value. Tabloxide tells the AI and the user that the list can be incomplete.
-- **The plan.** If the capability `explain_plan` is true, the assistant asks `ReadPlan` for its plan analysis. Tabloxide sends `run` only for a statement that its check of the language marks as a read. For a language that Tabloxide does not know, `run` is never true. Give the plan as text that a person can read, for example JSON.
+- **The plan.** If the capability `explain_plan` is true, the assistant asks `ReadPlan` for its plan analysis. The assistant uses the `text` of the answer. See "The execution plan" below.
 - **The language guide.** The assistant has a guide for `sql` and for `mongodb-shell`. For a different language it uses a general guide, and the user sees that the answers can be less exact. A connector cannot send its own guide, because Tabloxide does not send text of a connector to the AI service as instructions.
+
+### The execution plan
+
+The Plan tab of Tabloxide shows the plan of the statement at the cursor. The user selects **Explain** or **Explain and measure**. Tabloxide then calls `ReadPlan`.
+
+- **Capabilities.** Set `explain_plan` if your engine gives plans. Set `measured_plan` (since minor version 3) if your engine can run the statement to measure its plan. For a connector of minor version 2, Tabloxide uses the value of `explain_plan` for both.
+- **The statement.** The statement has no `EXPLAIN`. Your connector adds what the engine needs.
+- **`run`.** Tabloxide sends `run` only for a statement that its check of the language marks as a read. For a language that Tabloxide does not know, `run` is never true. The user confirms each measured plan first.
+- **`text`.** Give the plan as the engine gives it, for example JSON. Tabloxide shows it in the "Original" view, and the assistant reads it.
+- **`plan`** (since minor version 3). Give the plan also in the common form, so that the Plan tab can show the steps. Without it, the tab shows only the original text.
+
+The common form has these rules:
+
+- `root` is the last step, the step that gives the result. `children` are the steps that give their rows to a step.
+- `self_cost` and `self_ms` are for the step alone, without its child steps. Tabloxide adds them for the totals and marks the three largest steps.
+- `estimated_rows` and `actual_rows` are for one run of the step. Tabloxide marks a step if the two values differ by a factor of 10 or more.
+- `explanation` is one or two sentences about the operation, for a person who does not know your engine.
+- A field has the name of your engine, for example `keysExamined`. Add an `explanation` if the name is not clear.
+- A hint names its step with a path: `0` is the root, `0.1` is the second child of the root. Give a hint only for a probable cause of a slow statement, with what to do.
 
 ### Query languages
 

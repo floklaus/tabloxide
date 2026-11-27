@@ -40,6 +40,7 @@ impl DbAdapter for MongoAdapter {
                 unix_socket: false,
                 file_database: false,
                 explain_plan: true,
+                measured_plan: true,
             },
         }
     }

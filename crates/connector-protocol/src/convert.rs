@@ -6,8 +6,9 @@ use std::collections::BTreeMap;
 use tabloxide_core::{
     Capabilities, Column, ColumnInfo, ColumnKind, Completion, ConnectError, ConnectErrorKind,
     ConnectionId, ConnectionProfile, ConstraintInfo, ConstraintKind, Engine, EngineInfo,
-    Environment, IndexInfo, Page, QueryError, QueryErrorKind, QueryLanguage, RelationDetail,
-    RelationInfo, RelationKind, Row, SchemaInfo, SecretSource, ServerInfo, TlsMode,
+    Environment, HintLevel, IndexInfo, Page, Plan, PlanField, PlanHint, PlanStep, PlanText,
+    QueryError, QueryErrorKind, QueryLanguage, RelationDetail, RelationInfo, RelationKind, Row,
+    SchemaInfo, SecretSource, ServerInfo, TlsMode,
 };
 
 // ---------- Describe ----------
@@ -26,6 +27,7 @@ pub fn describe_response(info: &EngineInfo, connector_version: &str) -> v1::Desc
             unix_socket: capabilities.unix_socket,
             file_database: capabilities.file_database,
             explain_plan: capabilities.explain_plan,
+            measured_plan: capabilities.measured_plan,
         }),
         query_language: info.language.name().to_owned(),
         default_port: info.default_port.map(u32::from),
@@ -48,7 +50,145 @@ pub fn engine_info(response: &v1::DescribeResponse) -> EngineInfo {
             unix_socket: capabilities.unix_socket,
             file_database: capabilities.file_database,
             explain_plan: capabilities.explain_plan,
+            // A connector of an earlier minor version has no field for it. Its
+            // plans can be measured if it has plans.
+            measured_plan: if response.protocol_minor < 3 {
+                capabilities.explain_plan
+            } else {
+                capabilities.measured_plan
+            },
         },
+    }
+}
+
+// ---------- Plan ----------
+
+fn field_to_wire(field: &PlanField) -> v1::PlanField {
+    v1::PlanField {
+        name: field.name.clone(),
+        value: field.value.clone(),
+        explanation: field.explanation.clone(),
+    }
+}
+
+fn field_from_wire(field: &v1::PlanField) -> PlanField {
+    PlanField {
+        name: field.name.clone(),
+        value: field.value.clone(),
+        explanation: field.explanation.clone(),
+    }
+}
+
+fn step_to_wire(step: &PlanStep) -> v1::PlanStep {
+    v1::PlanStep {
+        operation: step.operation.clone(),
+        target: step.target.clone(),
+        explanation: step.explanation.clone(),
+        fields: step.fields.iter().map(field_to_wire).collect(),
+        estimated_rows: step.estimated_rows,
+        actual_rows: step.actual_rows,
+        loops: step.loops,
+        self_cost: step.self_cost,
+        self_ms: step.self_ms,
+        children: step.children.iter().map(step_to_wire).collect(),
+    }
+}
+
+fn step_from_wire(step: &v1::PlanStep) -> PlanStep {
+    PlanStep {
+        operation: step.operation.clone(),
+        target: step.target.clone(),
+        explanation: step.explanation.clone(),
+        fields: step.fields.iter().map(field_from_wire).collect(),
+        estimated_rows: step.estimated_rows,
+        actual_rows: step.actual_rows,
+        loops: step.loops,
+        self_cost: step.self_cost,
+        self_ms: step.self_ms,
+        children: step.children.iter().map(step_from_wire).collect(),
+    }
+}
+
+fn hint_to_wire(hint: &PlanHint) -> v1::PlanHint {
+    let level = match hint.level {
+        HintLevel::Info => v1::HintLevel::Info,
+        HintLevel::Warning => v1::HintLevel::Warning,
+    };
+    v1::PlanHint {
+        step: hint.step.clone(),
+        level: level.into(),
+        title: hint.title.clone(),
+        text: hint.text.clone(),
+    }
+}
+
+fn hint_from_wire(hint: &v1::PlanHint) -> PlanHint {
+    let level = match v1::HintLevel::try_from(hint.level) {
+        Ok(v1::HintLevel::Warning) => HintLevel::Warning,
+        _ => HintLevel::Info,
+    };
+    PlanHint {
+        step: hint.step.clone(),
+        level,
+        title: hint.title.clone(),
+        text: hint.text.clone(),
+    }
+}
+
+/// Converts a plan into the protocol form.
+#[must_use]
+pub fn plan_to_wire(plan: &Plan) -> v1::Plan {
+    v1::Plan {
+        root: Some(step_to_wire(&plan.root)),
+        is_measured: plan.is_measured,
+        total_ms: plan.total_ms,
+        planning_ms: plan.planning_ms,
+        cost_unit: plan.cost_unit.clone(),
+        totals: plan.totals.iter().map(field_to_wire).collect(),
+        hints: plan.hints.iter().map(hint_to_wire).collect(),
+    }
+}
+
+/// Reads a plan of the protocol. A plan without a root step is no plan.
+#[must_use]
+pub fn plan_from_wire(plan: &v1::Plan) -> Option<Plan> {
+    Some(Plan {
+        root: step_from_wire(plan.root.as_ref()?),
+        is_measured: plan.is_measured,
+        total_ms: plan.total_ms,
+        planning_ms: plan.planning_ms,
+        cost_unit: plan.cost_unit.clone(),
+        totals: plan.totals.iter().map(field_from_wire).collect(),
+        hints: plan.hints.iter().map(hint_from_wire).collect(),
+    })
+}
+
+/// Makes the `ReadPlan` answer of a connector.
+#[must_use]
+pub fn read_plan_response(result: Result<PlanText, QueryError>) -> v1::ReadPlanResponse {
+    match result {
+        Ok(plan) => v1::ReadPlanResponse {
+            plan: plan.plan.as_ref().map(plan_to_wire),
+            text: plan.text,
+            statement: plan.statement,
+            error: None,
+        },
+        Err(error) => v1::ReadPlanResponse {
+            text: String::new(),
+            statement: String::new(),
+            error: Some(query_error_to_wire(&error)),
+            plan: None,
+        },
+    }
+}
+
+/// Reads the `ReadPlan` answer of a connector, without its error.
+#[must_use]
+pub fn plan_text_from_wire(response: v1::ReadPlanResponse) -> PlanText {
+    PlanText {
+        plan: response.plan.as_ref().and_then(plan_from_wire),
+        text: response.text,
+        statement: response.statement,
     }
 }
 
@@ -454,6 +594,7 @@ mod tests {
                 unix_socket: false,
                 file_database: false,
                 explain_plan: false,
+                measured_plan: false,
             },
         }
     }
@@ -514,5 +655,99 @@ mod tests {
         let row = vec![Some("a".to_owned()), None];
 
         assert_eq!(row_from_wire(row_to_wire(row.clone())), row);
+    }
+
+    fn sample_plan() -> Plan {
+        let leaf = PlanStep {
+            operation: "IXSCAN".to_owned(),
+            target: Some("status_1".to_owned()),
+            explanation: Some("Reads the index.".to_owned()),
+            fields: vec![PlanField {
+                name: "keysExamined".to_owned(),
+                value: "12".to_owned(),
+                explanation: None,
+            }],
+            estimated_rows: None,
+            actual_rows: Some(12.0),
+            loops: None,
+            self_cost: Some(12.0),
+            self_ms: Some(0.5),
+            children: vec![],
+        };
+        Plan {
+            root: PlanStep {
+                operation: "FETCH".to_owned(),
+                target: None,
+                explanation: None,
+                fields: vec![],
+                estimated_rows: Some(10.0),
+                actual_rows: Some(12.0),
+                loops: Some(1.0),
+                self_cost: None,
+                self_ms: None,
+                children: vec![leaf],
+            },
+            is_measured: true,
+            total_ms: Some(1.5),
+            planning_ms: None,
+            cost_unit: "documents".to_owned(),
+            totals: vec![PlanField {
+                name: "rejectedPlans".to_owned(),
+                value: "0".to_owned(),
+                explanation: Some("Plans that the planner did not use.".to_owned()),
+            }],
+            hints: vec![PlanHint {
+                step: "0.0".to_owned(),
+                level: HintLevel::Warning,
+                title: "Sort in memory".to_owned(),
+                text: "Add an index.".to_owned(),
+            }],
+        }
+    }
+
+    #[test]
+    fn a_plan_keeps_its_steps_its_totals_and_its_hints() {
+        let plan = sample_plan();
+
+        assert_eq!(plan_from_wire(&plan_to_wire(&plan)), Some(plan));
+    }
+
+    #[test]
+    fn a_plan_answer_keeps_the_text_and_the_plan() {
+        let text = PlanText {
+            text: "{}".to_owned(),
+            statement: "explain".to_owned(),
+            plan: Some(sample_plan()),
+        };
+
+        assert_eq!(
+            plan_text_from_wire(read_plan_response(Ok(text.clone()))),
+            text
+        );
+    }
+
+    #[test]
+    fn an_earlier_connector_with_plans_can_measure_them() {
+        let mut response = describe_response(
+            &EngineInfo {
+                engine: Engine::new("old"),
+                display_name: "Old".to_owned(),
+                language: QueryLanguage::Unknown,
+                default_port: None,
+                capabilities: Capabilities {
+                    cancel: false,
+                    unix_socket: false,
+                    file_database: false,
+                    explain_plan: true,
+                    measured_plan: false,
+                },
+            },
+            "1.0.0",
+        );
+        assert!(!engine_info(&response).capabilities.measured_plan);
+
+        response.protocol_minor = 2;
+
+        assert!(engine_info(&response).capabilities.measured_plan);
     }
 }

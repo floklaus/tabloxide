@@ -27,6 +27,7 @@ const capabilities = (fileDatabase: boolean, unixSocket: boolean) => ({
   unixSocket,
   fileDatabase,
   explainPlan: true,
+  measuredPlan: true,
 })
 
 /**
@@ -94,14 +95,9 @@ export function findEngine(engine: Engine): EngineEntry_Serialize | undefined {
     .engines.find((entry) => entry.info.engine === engine)
 }
 
-/**
- * `true` if the Plan tab can show the plan of the engine. The tab reads the JSON
- * of EXPLAIN, thus it is only for the SQL engines with plans. A connector engine
- * with plans gives them to the assistant only, until its plan comes in the common
- * form (docs/Plan Design.md, stage 1).
- */
+/** `true` if the engine gives execution plans. */
 export function hasPlanView(entry: EngineEntry_Serialize | undefined): boolean {
-  return entry?.info.language === 'sql' && entry.info.capabilities.explainPlan
+  return entry?.info.capabilities.explainPlan ?? false
 }
 
 /** Returns the name of an engine for the user, for example "MongoDB". */

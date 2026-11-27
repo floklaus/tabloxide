@@ -1,16 +1,16 @@
 //! The database interface that the other parts of the application use.
 
 use crate::{
-    Column, ConnectError, ConnectionProfile, Engine, Page, QueryError, QueryErrorKind,
+    Column, ConnectError, ConnectionProfile, Engine, Page, PlanText, QueryError, QueryErrorKind,
     QueryLanguage, RelationDetail, RelationInfo, SchemaInfo, Secret, ServerInfo,
 };
 use async_trait::async_trait;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::sync::Arc;
 
 /// Functions that a database engine supports. The UI hides a function that is not supported.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "camelCase")]
 pub struct Capabilities {
@@ -18,8 +18,10 @@ pub struct Capabilities {
     pub unix_socket: bool,
     /// The database is a file on the machine of the user, not a server.
     pub file_database: bool,
-    /// The engine shows the execution plan of an SQL statement with `EXPLAIN`.
+    /// The engine gives the execution plan of a statement.
     pub explain_plan: bool,
+    /// The engine can run the statement to measure its plan.
+    pub measured_plan: bool,
 }
 
 /// What a database engine is and what it can do.
@@ -96,23 +98,14 @@ pub trait Session: Send {
     /// statement and measures it. The caller permits `run` only for a statement that
     /// reads data.
     ///
-    /// The SQL engines of the application read their plans with `EXPLAIN` through
-    /// `execute`. An engine without a plan keeps this default, which is an error.
+    /// The statement has no `EXPLAIN`. The engine adds what it needs. An engine
+    /// without a plan keeps this default, which is an error.
     async fn read_plan(&mut self, _statement: &str, _run: bool) -> Result<PlanText, QueryError> {
         Err(QueryError::new(
             QueryErrorKind::Other,
             "The engine of this connection gives no execution plan.",
         ))
     }
-}
-
-/// The execution plan of a statement, as text of the engine.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PlanText {
-    /// The plan, for example a JSON document.
-    pub text: String,
-    /// What the engine ran to make the plan, for the user.
-    pub statement: String,
 }
 
 /// Cancels the active statement of a session.

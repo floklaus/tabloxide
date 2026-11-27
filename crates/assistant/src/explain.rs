@@ -2,7 +2,7 @@
 
 use serde::Serialize;
 use tabloxide_core::sql::{first_keyword, has_word, is_pageable, split_statements};
-use tabloxide_core::{Engine, QueryLanguage, Row};
+use tabloxide_core::{QueryLanguage, Row};
 
 /// Why the application does not read a plan.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, thiserror::Error)]
@@ -25,8 +25,8 @@ pub enum ExplainRejection {
          that reads data. Use Explain for this statement."
     )]
     AnalyzeChangesData,
-    #[error("The application shows a plan only for PostgreSQL and DuckDB.")]
-    NotSupported,
+    #[error("The engine of this connection cannot measure a plan. Use Explain.")]
+    NoMeasuredPlan,
     #[error(
         "A plan with measured times runs the statement. Thus it is available only for a \
          statement that reads data. Read the plan without measured times."
@@ -117,41 +117,32 @@ pub fn explain_statement(sql: &str, analyze: bool) -> Result<String, ExplainReje
     Ok(format!("EXPLAIN ANALYZE {statement}"))
 }
 
-/// Returns the statement that reads the plan of the one statement in `sql` as JSON.
-/// PostgreSQL and DuckDB accept the same options. The checks are the same as for
-/// [`explain_statement`].
+/// Returns the one statement of `text` for the plan read of an adapter or a
+/// connector, without `EXPLAIN`. The engine adds what it needs.
+///
+/// An SQL statement gets the checks of [`explain_statement`]. A statement of a
+/// different language gets the checks of [`plan_statement`]. Thus a measured plan
+/// is permitted only for a statement that reads data.
 ///
 /// # Errors
 ///
-/// Returns the reason if [`explain_statement`] rejects `sql`.
-pub fn explain_json_statement(
-    sql: &str,
-    analyze: bool,
-    engine: &Engine,
+/// Returns the reason if the statement does not pass the checks.
+pub fn checked_plan_statement(
+    language: QueryLanguage,
+    text: &str,
+    measure: bool,
 ) -> Result<String, ExplainRejection> {
-    let text = explain_statement(sql, analyze)?;
-    // PostgreSQL adds the output columns with VERBOSE, and the block reads of the
-    // cache and the disk with BUFFERS. DuckDB does not know these options.
-    let (prefix, options) = match (engine.as_str(), analyze) {
-        (Engine::POSTGRES, true) => (
-            "EXPLAIN ANALYZE ",
-            "EXPLAIN (ANALYZE, VERBOSE, BUFFERS, FORMAT JSON) ",
-        ),
-        (Engine::POSTGRES, false) => ("EXPLAIN ", "EXPLAIN (VERBOSE, FORMAT JSON) "),
-        (Engine::DUCKDB, true) => ("EXPLAIN ANALYZE ", "EXPLAIN (ANALYZE, FORMAT JSON) "),
-        (Engine::DUCKDB, false) => ("EXPLAIN ", "EXPLAIN (FORMAT JSON) "),
-        _ => return Err(ExplainRejection::NotSupported),
+    if language != QueryLanguage::Sql {
+        return plan_statement(language, text, measure);
+    }
+    let explain = explain_statement(text, measure)?;
+    let prefix = if measure {
+        "EXPLAIN ANALYZE "
+    } else {
+        "EXPLAIN "
     };
     // `explain_statement` always starts its text with the prefix.
-    let statement = text.strip_prefix(prefix).unwrap_or(&text);
-    Ok(format!("{options}{statement}"))
-}
-
-/// Returns the JSON text of a plan from the rows of an `EXPLAIN (FORMAT JSON)` result.
-/// PostgreSQL gives one cell. DuckDB gives a name and the plan, and the plan is last.
-#[must_use]
-pub fn plan_json(rows: &[Row]) -> Option<String> {
-    rows.first()?.iter().rev().flatten().next().cloned()
+    Ok(explain.strip_prefix(prefix).unwrap_or(&explain).to_owned())
 }
 
 /// Returns the text of a plan from the rows of an `EXPLAIN` result.
@@ -238,47 +229,39 @@ mod tests {
     }
 
     #[test]
-    fn asks_postgres_for_the_plan_as_json_with_all_details() {
+    fn an_sql_plan_statement_has_no_explain_and_keeps_the_checks() {
+        let sql = QueryLanguage::Sql;
+
         assert_eq!(
-            explain_json_statement("select * from t;", false, &Engine::postgres()).unwrap(),
-            "EXPLAIN (VERBOSE, FORMAT JSON) select * from t"
+            checked_plan_statement(sql, "select * from t;", false),
+            Ok("select * from t".to_owned())
         );
         assert_eq!(
-            explain_json_statement("select * from t", true, &Engine::postgres()).unwrap(),
-            "EXPLAIN (ANALYZE, VERBOSE, BUFFERS, FORMAT JSON) select * from t"
+            checked_plan_statement(sql, "select * from t", true),
+            Ok("select * from t".to_owned())
         );
         assert_eq!(
-            explain_json_statement("delete from t", true, &Engine::postgres()),
+            checked_plan_statement(sql, "delete from t", true),
             Err(ExplainRejection::AnalyzeChangesData)
         );
-    }
-
-    #[test]
-    fn asks_duckdb_for_the_plan_as_json_without_postgres_options() {
         assert_eq!(
-            explain_json_statement("select * from t;", false, &Engine::duckdb()).unwrap(),
-            "EXPLAIN (FORMAT JSON) select * from t"
-        );
-        assert_eq!(
-            explain_json_statement("select * from t", true, &Engine::duckdb()).unwrap(),
-            "EXPLAIN (ANALYZE, FORMAT JSON) select * from t"
+            checked_plan_statement(sql, "explain select 1", false),
+            Err(ExplainRejection::AlreadyExplain)
         );
     }
 
     #[test]
-    fn reads_the_json_of_the_two_engines() {
-        let postgres = vec![vec![Some("[{\"Plan\": {}}]".to_owned())]];
-        let duckdb = vec![vec![
-            Some("physical_plan".to_owned()),
-            Some("[{\"name\": \"SEQ_SCAN\"}]".to_owned()),
-        ]];
+    fn a_plan_statement_of_a_different_language_uses_its_language() {
+        let mongo = QueryLanguage::MongodbShell;
 
-        assert_eq!(plan_json(&postgres).as_deref(), Some("[{\"Plan\": {}}]"));
         assert_eq!(
-            plan_json(&duckdb).as_deref(),
-            Some("[{\"name\": \"SEQ_SCAN\"}]")
+            checked_plan_statement(mongo, "db.a.deleteMany({})", true),
+            Err(ExplainRejection::MeasureChangesData)
         );
-        assert_eq!(plan_json(&[]), None);
+        assert_eq!(
+            checked_plan_statement(mongo, "db.a.find()", true),
+            Ok("db.a.find()".to_owned())
+        );
     }
 
     #[test]

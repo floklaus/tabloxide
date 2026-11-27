@@ -628,7 +628,6 @@ mod tests {
             )),
             connection_id: tabloxide_core::ConnectionId::from("c1"),
             connection_name: "Shop".to_owned(),
-            engine: tabloxide_core::Engine::new("postgres"),
             info: tabloxide_core::EngineInfo {
                 engine: tabloxide_core::Engine::new("postgres"),
                 display_name: "PostgreSQL".to_owned(),
@@ -639,6 +638,7 @@ mod tests {
                     unix_socket: false,
                     file_database: false,
                     explain_plan: true,
+                    measured_plan: true,
                 },
             },
         });
@@ -729,7 +729,6 @@ mod tests {
             )),
             connection_id: tabloxide_core::ConnectionId::from("m1"),
             connection_name: "Users".to_owned(),
-            engine: tabloxide_core::Engine::new("mongodb"),
             info: tabloxide_core::EngineInfo {
                 engine: tabloxide_core::Engine::new("mongodb"),
                 display_name: "MongoDB".to_owned(),
@@ -740,6 +739,7 @@ mod tests {
                     unix_socket: false,
                     file_database: false,
                     explain_plan,
+                    measured_plan: explain_plan,
                 },
             },
         }

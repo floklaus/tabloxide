@@ -371,17 +371,6 @@ impl Connector for ConnectorService {
             .await
             .read_plan(&request.statement, request.run)
             .await;
-        Ok(Response::new(match result {
-            Ok(plan) => ReadPlanResponse {
-                text: plan.text,
-                statement: plan.statement,
-                error: None,
-            },
-            Err(error) => ReadPlanResponse {
-                text: String::new(),
-                statement: String::new(),
-                error: Some(convert::query_error_to_wire(&error)),
-            },
-        }))
+        Ok(Response::new(convert::read_plan_response(result)))
     }
 }

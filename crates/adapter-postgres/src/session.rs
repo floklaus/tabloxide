@@ -6,8 +6,8 @@ use async_trait::async_trait;
 use std::sync::Arc;
 use std::time::Duration;
 use tabloxide_core::{
-    CancelHandle, QueryError, QueryErrorKind, RelationDetail, RelationInfo, ResultStream,
-    SchemaInfo, ServerInfo, Session, TlsMode,
+    CancelHandle, PlanText, QueryError, QueryErrorKind, RelationDetail, RelationInfo, ResultStream,
+    SchemaInfo, ServerInfo, Session, TlsMode, read_explain_json,
 };
 use tokio_postgres::{CancelToken, Client, NoTls};
 
@@ -100,4 +100,25 @@ impl Session for PgSession {
     async fn sample_statement(&self, schema: &str, relation: &str, limit: u32) -> String {
         introspect::sample_statement(schema, relation, limit)
     }
+
+    async fn read_plan(&mut self, statement: &str, run: bool) -> Result<PlanText, QueryError> {
+        let explain = explain_statement(statement, run);
+        let text = read_explain_json(self, &explain).await?;
+        Ok(PlanText {
+            text,
+            statement: explain,
+            plan: None,
+        })
+    }
+}
+
+/// The `EXPLAIN` statement that gives the plan of `statement` as JSON. With `run`,
+/// the database runs the statement and measures it.
+fn explain_statement(statement: &str, run: bool) -> String {
+    let options = if run {
+        "EXPLAIN (ANALYZE, VERBOSE, BUFFERS, FORMAT JSON) "
+    } else {
+        "EXPLAIN (VERBOSE, FORMAT JSON) "
+    };
+    format!("{options}{statement}")
 }

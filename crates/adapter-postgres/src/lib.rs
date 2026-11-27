@@ -34,6 +34,7 @@ impl DbAdapter for PostgresAdapter {
                 unix_socket: cfg!(unix),
                 file_database: false,
                 explain_plan: true,
+                measured_plan: true,
             },
         }
     }

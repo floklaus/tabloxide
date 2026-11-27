@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { useEngineStore } from '../engines/engineStore'
 import { getQueryStore, resetQueryStores } from '../query/queryStore'
 import { useTabsStore, type Tab } from '../tabs/tabsStore'
 import { makeProfile, makeWorkspace } from '../test/fixtures'
@@ -29,8 +30,11 @@ function explainEnabled(engine: string): boolean {
   )
 }
 
+const ENGINES = useEngineStore.getState().engines
+
 describe('the plan tree commands', () => {
   beforeEach(() => {
+    useEngineStore.setState({ engines: ENGINES })
     resetQueryStores()
     useTabsStore.setState({
       tabs: [tab],
@@ -44,8 +48,30 @@ describe('the plan tree commands', () => {
     })
   })
 
-  test('are for the SQL engines only, also when a connector gives plans', () => {
+  test('are for each engine that gives plans, also a connector engine', () => {
     expect(explainEnabled('postgres')).toBe(true)
+    expect(explainEnabled('mongodb')).toBe(true)
+  })
+
+  test('are not for an engine without plans', () => {
+    useEngineStore.setState({
+      engines: useEngineStore.getState().engines.map((entry) =>
+        entry.info.engine === 'mongodb'
+          ? {
+              ...entry,
+              info: {
+                ...entry.info,
+                capabilities: {
+                  ...entry.info.capabilities,
+                  explainPlan: false,
+                  measuredPlan: false,
+                },
+              },
+            }
+          : entry,
+      ),
+    })
+
     expect(explainEnabled('mongodb')).toBe(false)
   })
 })

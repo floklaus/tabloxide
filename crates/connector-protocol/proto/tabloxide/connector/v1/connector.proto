@@ -89,9 +89,13 @@ message Capabilities {
   bool unix_socket = 2;
   // The database is a file on the machine of the user, not a server.
   bool file_database = 3;
-  // The engine shows the plan of an SQL statement with `EXPLAIN (FORMAT JSON)`.
+  // The engine gives the execution plan of a statement (`ReadPlan`).
   // Since minor version 1.
   bool explain_plan = 4;
+  // The engine can run the statement to measure its plan (`ReadPlan` with `run`).
+  // Since minor version 3. For a connector of an earlier minor version, Tabloxide
+  // uses the value of `explain_plan`.
+  bool measured_plan = 5;
 }
 
 // ---------- Connection ----------
@@ -389,9 +393,75 @@ message ReadPlanRequest {
 }
 
 message ReadPlanResponse {
-  // The plan, for example a JSON document.
+  // The plan as the engine gives it, for example a JSON document. Tabloxide shows
+  // it in the "Original" view and gives it to the AI.
   string text = 1;
   // What the engine ran to make the plan, for the user.
   string statement = 2;
   optional QueryError error = 3;
+  // The plan in the common form. Without it, Tabloxide shows only `text`.
+  // Since minor version 3.
+  optional Plan plan = 4;
+}
+
+// A plan in a form that does not depend on the engine. Since minor version 3.
+message Plan {
+  PlanStep root = 1;
+  // `true` if the engine ran the statement and measured it.
+  bool is_measured = 2;
+  // The total time in milliseconds. Only for a measured plan.
+  optional double total_ms = 3;
+  // The time of the planner in milliseconds, if the engine gives it.
+  optional double planning_ms = 4;
+  // The unit of the cost, for example `cost units` or `documents`.
+  string cost_unit = 5;
+  // The data of the complete statement.
+  repeated PlanField totals = 6;
+  repeated PlanHint hints = 7;
+}
+
+// One step of a plan.
+message PlanStep {
+  // The operation, for example `Hash Join` or `IXSCAN`.
+  string operation = 1;
+  // The table, the collection, or the index that the step reads.
+  optional string target = 2;
+  // One or two sentences for the user about the operation.
+  optional string explanation = 3;
+  // All other data of the step, as the engine names it.
+  repeated PlanField fields = 4;
+  optional double estimated_rows = 5;
+  optional double actual_rows = 6;
+  // How many times the step ran. Only for a measured plan.
+  optional double loops = 7;
+  // The cost of this step without its child steps, in `Plan.cost_unit`.
+  optional double self_cost = 8;
+  // The time of this step without its child steps, in milliseconds.
+  optional double self_ms = 9;
+  repeated PlanStep children = 10;
+}
+
+// One value of a step or of the complete statement.
+message PlanField {
+  string name = 1;
+  string value = 2;
+  // What the value means, for the user.
+  optional string explanation = 3;
+}
+
+enum HintLevel {
+  HINT_LEVEL_UNSPECIFIED = 0;
+  HINT_LEVEL_INFO = 1;
+  HINT_LEVEL_WARNING = 2;
+}
+
+// A probable cause of a slow statement, with what to do.
+message PlanHint {
+  // The path of the step: `0` is the root, `0.1` is the second child of the root.
+  string step = 1;
+  HintLevel level = 2;
+  // For example `No index for the filter`.
+  string title = 3;
+  // What to do.
+  string text = 4;
 }

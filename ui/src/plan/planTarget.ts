@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { commands, type PlanBlock } from '../bindings'
 import { activeEditor } from '../editor/editorBridge'
-import { connectionLanguage } from '../engines/engineStore'
+import { connectionLanguage, findEngine } from '../engines/engineStore'
 import { sqlTabForTools } from '../tabs/tabsStore'
 import { useWorkspaceStore } from '../workspace/workspaceStore'
 
@@ -47,10 +47,16 @@ export async function refreshPlanTarget(): Promise<void> {
     return
   }
   try {
+    const info = findEngine(connection.engine ?? 'postgres')?.info
+    if (!info) {
+      usePlanTarget.setState(EMPTY)
+      return
+    }
     const statement = await targetStatement(tab.content)
     const check = await commands.planCheck(
       statement,
-      connection.engine ?? 'postgres',
+      info.language,
+      info.capabilities,
     )
     if (call !== latest) return
     usePlanTarget.setState({

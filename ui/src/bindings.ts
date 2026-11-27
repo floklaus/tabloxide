@@ -21,13 +21,13 @@ export const commands = {
 	 *  Checks the statement at the cursor for the plan actions. The editor uses the
 	 *  result to show which actions are available. Nothing goes to the database.
 	 */
-	planCheck: (sql: string, engine: Engine, options?: InvokeOptions) => __TAURI_INVOKE<PlanCheck_Serialize>("plan_check", { sql, engine }, options),
+	planCheck: (sql: string, language: QueryLanguage_Deserialize, capabilities: Capabilities, options?: InvokeOptions) => __TAURI_INVOKE<PlanCheck_Serialize>("plan_check", { sql, language, capabilities }, options),
 	/**
-	 *  Reads the execution plan of the one statement in `sql` as JSON.
+	 *  Reads the execution plan of the one statement in `sql`.
 	 * 
-	 *  Without `analyze`, the database does not run the statement. With `analyze`, the
-	 *  database runs it. Thus `analyze` is permitted only for a statement that reads data.
-	 *  The query history does not record the plan read. This closes the open result.
+	 *  Without `measure`, the database does not run the statement. With `measure`, the
+	 *  database runs it. Thus `measure` is permitted only for a statement that reads
+	 *  data. The query history does not record the plan read. This closes the open result.
 	 */
 	planRead: (sessionId: number, sql: string, analyze: boolean, options?: InvokeOptions) => typedError<PlanRead_Serialize, CommandError>(__TAURI_INVOKE("plan_read", { sessionId, sql, analyze }, options)),
 	/**  Opens the folder `path` as the workspace and adds it to the recent list. */
@@ -500,8 +500,10 @@ export type Capabilities = {
 	unixSocket: boolean,
 	/**  The database is a file on the machine of the user, not a server. */
 	fileDatabase: boolean,
-	/**  The engine shows the execution plan of an SQL statement with `EXPLAIN`. */
+	/**  The engine gives the execution plan of a statement. */
 	explainPlan: boolean,
+	/**  The engine can run the statement to measure its plan. */
+	measuredPlan: boolean,
 };
 
 export type ChangeKind = "added" | "modified" | "deleted" | "renamed" | "copied" | "type-changed";
@@ -965,7 +967,7 @@ export type EngineSource_Serialize =
 export type Environment = "development" | "staging" | "production";
 
 /**  Why the application does not read a plan. */
-export type ExplainRejection = "no-statement" | "many-statements" | "already-explain" | "not-explainable" | "analyze-changes-data" | "not-supported" | "measure-changes-data" | "no-plan";
+export type ExplainRejection = "no-statement" | "many-statements" | "already-explain" | "not-explainable" | "analyze-changes-data" | "no-measured-plan" | "measure-changes-data" | "no-plan";
 
 /**  Result of a plan read. A statement that fails is a normal result, not a command error. */
 export type ExplainResult = ExplainResult_Serialize | ExplainResult_Deserialize;
@@ -1124,6 +1126,9 @@ export type Guardrails_Serialize = {
 	staging: ConfirmRule,
 	production: ConfirmRule,
 };
+
+/**  How important a hint is. */
+export type HintLevel = "info" | "warning";
 
 /**  A statement in the history. */
 export type HistoryEntry = HistoryEntry_Serialize | HistoryEntry_Deserialize;
@@ -1350,6 +1355,9 @@ export type PackageInfo_Serialize = {
 	sha256: string,
 };
 
+/**  A plan in the common form. */
+export type Plan = Plan_Serialize | Plan_Deserialize;
+
 /**  Why a plan action is not available, for the user. */
 export type PlanBlock = {
 	reason: ExplainRejection,
@@ -1380,26 +1388,137 @@ export type PlanCheck_Serialize = {
 	measure: PlanBlock | null,
 };
 
+/**  One value of a step or of the complete statement. */
+export type PlanField = PlanField_Serialize | PlanField_Deserialize;
+
+/**  One value of a step or of the complete statement. */
+export type PlanField_Deserialize = {
+	name: string,
+	value: string,
+	/**  What the value means, for the user. */
+	explanation?: string | null,
+};
+
+/**  One value of a step or of the complete statement. */
+export type PlanField_Serialize = {
+	name: string,
+	value: string,
+	/**  What the value means, for the user. */
+	explanation: string | null,
+};
+
+/**  A probable cause of a slow statement, with what to do. */
+export type PlanHint = {
+	/**  The path of the step: `0` is the root, `0.1` is the second child of the root. */
+	step: string,
+	level: HintLevel,
+	/**  For example `No index for the filter`. */
+	title: string,
+	/**  What to do. */
+	text: string,
+};
+
 /**  Result of a plan read. A statement that fails is a normal result, not a command error. */
 export type PlanRead = PlanRead_Serialize | PlanRead_Deserialize;
 
 /**  Result of a plan read. A statement that fails is a normal result, not a command error. */
 export type PlanRead_Deserialize = { status: "plan"; 
-/**  The statement that the database ran. */
+/**  What the engine ran to make the plan. */
 statement: string; 
-/**  The plan in the JSON form of the database engine. */
-json: string; 
+/**  The plan as the engine gives it, for example a JSON document. */
+text: string; 
+/**  The plan in the common form. `None` if the engine gives only `text`. */
+plan?: Plan_Deserialize | null; 
 /**  `true` if the database ran the statement and measured it. */
 is_analyzed: boolean } | { status: "rejected"; reason: ExplainRejection; message: string } | { status: "failed"; error: QueryError_Deserialize };
 
 /**  Result of a plan read. A statement that fails is a normal result, not a command error. */
 export type PlanRead_Serialize = { status: "plan"; 
-/**  The statement that the database ran. */
+/**  What the engine ran to make the plan. */
 statement: string; 
-/**  The plan in the JSON form of the database engine. */
-json: string; 
+/**  The plan as the engine gives it, for example a JSON document. */
+text: string; 
+/**  The plan in the common form. `None` if the engine gives only `text`. */
+plan: Plan_Serialize | null; 
 /**  `true` if the database ran the statement and measured it. */
 is_analyzed: boolean } | { status: "rejected"; reason: ExplainRejection; message: string } | { status: "failed"; error: QueryError_Serialize };
+
+/**  One step of a plan. */
+export type PlanStep = PlanStep_Serialize | PlanStep_Deserialize;
+
+/**  One step of a plan. */
+export type PlanStep_Deserialize = {
+	/**  The operation, for example `Hash Join` or `IXSCAN`. */
+	operation: string,
+	/**  The table, the collection, or the index that the step reads. */
+	target?: string | null,
+	/**  One or two sentences for the user about the operation. */
+	explanation?: string | null,
+	/**  All other data of the step, as the engine names it. */
+	fields: PlanField_Deserialize[],
+	estimatedRows?: number | null,
+	actualRows?: number | null,
+	/**  How many times the step ran. Only for a measured plan. */
+	loops?: number | null,
+	/**  The cost of this step without its child steps, in [`Plan::cost_unit`]. */
+	selfCost?: number | null,
+	/**  The time of this step without its child steps, in milliseconds. */
+	selfMs?: number | null,
+	children: PlanStep_Deserialize[],
+};
+
+/**  One step of a plan. */
+export type PlanStep_Serialize = {
+	/**  The operation, for example `Hash Join` or `IXSCAN`. */
+	operation: string,
+	/**  The table, the collection, or the index that the step reads. */
+	target: string | null,
+	/**  One or two sentences for the user about the operation. */
+	explanation: string | null,
+	/**  All other data of the step, as the engine names it. */
+	fields: PlanField_Serialize[],
+	estimatedRows: number | null,
+	actualRows: number | null,
+	/**  How many times the step ran. Only for a measured plan. */
+	loops: number | null,
+	/**  The cost of this step without its child steps, in [`Plan::cost_unit`]. */
+	selfCost: number | null,
+	/**  The time of this step without its child steps, in milliseconds. */
+	selfMs: number | null,
+	children: PlanStep_Serialize[],
+};
+
+/**  A plan in the common form. */
+export type Plan_Deserialize = {
+	root: PlanStep_Deserialize,
+	/**  `true` if the engine ran the statement and measured it. */
+	isMeasured: boolean,
+	/**  The total time in milliseconds. Only for a measured plan. */
+	totalMs?: number | null,
+	/**  The time of the planner in milliseconds, if the engine gives it. */
+	planningMs?: number | null,
+	/**  The unit of the cost, for example `cost units` or `documents`. */
+	costUnit: string,
+	/**  The data of the complete statement. */
+	totals: PlanField_Deserialize[],
+	hints: PlanHint[],
+};
+
+/**  A plan in the common form. */
+export type Plan_Serialize = {
+	root: PlanStep_Serialize,
+	/**  `true` if the engine ran the statement and measured it. */
+	isMeasured: boolean,
+	/**  The total time in milliseconds. Only for a measured plan. */
+	totalMs: number | null,
+	/**  The time of the planner in milliseconds, if the engine gives it. */
+	planningMs: number | null,
+	/**  The unit of the cost, for example `cost units` or `documents`. */
+	costUnit: string,
+	/**  The data of the complete statement. */
+	totals: PlanField_Serialize[],
+	hints: PlanHint[],
+};
 
 export type Preferences = Preferences_Serialize | Preferences_Deserialize;
 
