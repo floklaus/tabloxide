@@ -1,6 +1,7 @@
 import type { Column, Row } from '../../results/gridModel'
 import {
   aggregateOf,
+  effectiveColumns,
   type Aggregate,
   type ChartSettings,
   type Sort,
@@ -21,6 +22,8 @@ export const MAX_SERIES = 8
 const MAX_BINS = 60
 /** The name of the series of the rows that have no value in the series column. */
 const EMPTY_SERIES = '(empty)'
+/** The name of the category and of the series that has the rest. */
+export const OTHER_NAME = 'Other'
 /** The name of the series and of the axis when the chart counts rows. */
 export const ROW_COUNT_NAME = 'Number of rows'
 
@@ -31,7 +34,8 @@ export type ChartNote =
   | { id: 'not-numbers'; column: string; count: number }
   | { id: 'not-times'; column: string; count: number }
   | { id: 'empty-x'; count: number }
-  | { id: 'series-limit'; shown: number; total: number }
+  | { id: 'series-limit'; shown: number; total: number; hasOther: boolean }
+  | { id: 'category-limit'; shown: number; total: number; hasOther: boolean }
   | { id: 'duplicates'; count: number }
   | { id: 'not-positive'; count: number }
   | { id: 'first-row'; rows: number }
@@ -66,6 +70,10 @@ export type CartesianChart = {
   timeUnit: TimeUnit | null
   /** The column that divides the rows into series. */
   seriesColumn: string | null
+  /** The limit of the categories, if the chart has more categories than the limit. */
+  limit: { shown: number; hasOther: boolean } | null
+  /** The positions of the series "Other", which have the rest of the series. */
+  otherSeries: number[]
   categories: string[]
   series: ChartSeries[]
   /** The number of marks of all series. */
@@ -81,7 +89,12 @@ export type PreparedChart =
 class Notes {
   private readonly counts = new Map<string, ChartNote>()
 
-  count(note: Exclude<ChartNote, { id: 'series-limit' | 'first-row' }>): void {
+  count(
+    note: Exclude<
+      ChartNote,
+      { id: 'series-limit' | 'category-limit' | 'first-row' }
+    >,
+  ): void {
     if (note.count === 0) return
     const key = 'column' in note ? `${note.id}:${note.column}` : note.id
     const found = this.counts.get(key)
@@ -163,6 +176,8 @@ type SeriesPlan = {
   /** Returns the position of the `y` column of a series. */
   yOf: (series: number) => number
   names: string[]
+  /** The positions of the series "Other". */
+  other: number[]
 }
 
 /** Decides the series of the chart: one for each `y` column and each value of the series column. */
@@ -179,6 +194,7 @@ function planSeries(
         id: 'series-limit',
         shown: shownY.length,
         total: yNames.length,
+        hasOther: false,
       })
     }
     return {
@@ -187,6 +203,7 @@ function planSeries(
       groupOf: () => '',
       yOf: (series) => series,
       names: shownY,
+      other: [],
     }
   }
   const groups = new Map<string, number>()
@@ -194,26 +211,35 @@ function planSeries(
     const key = row[seriesIndex] ?? EMPTY_SERIES
     if (!groups.has(key)) groups.set(key, groups.size)
   }
-  const shownGroups = Math.max(1, Math.floor(MAX_SERIES / shownY.length))
-  const total = groups.size * yNames.length
-  const groupNames = [...groups.keys()].slice(0, shownGroups)
+  const room = Math.max(1, Math.floor(MAX_SERIES / shownY.length))
+  // The last place is for "Other", which has the rows of the groups without a place.
+  const hasOther = groups.size > room && room > 1
+  const kept = hasOther ? room - 1 : Math.min(room, groups.size)
+  const groupNames = [...groups.keys()].slice(0, kept)
+  if (hasOther) groupNames.push(OTHER_NAME)
   const names = groupNames.flatMap((group) =>
     shownY.length === 1 ? [group] : shownY.map((y) => `${group} · ${y}`),
   )
-  if (total > names.length) {
-    notes.add({ id: 'series-limit', shown: names.length, total })
+  const total = groups.size * yNames.length
+  const shown = kept * shownY.length
+  if (total > shown) {
+    notes.add({ id: 'series-limit', shown, total, hasOther })
+  }
+  const groupOf = (row: Row): number => {
+    const group = groups.get(row[seriesIndex] ?? EMPTY_SERIES) ?? -1
+    if (group < kept) return group
+    return hasOther ? kept : -1
   }
   return {
     seriesOf: (row, yPosition) => {
-      const group = groups.get(row[seriesIndex] ?? EMPTY_SERIES) ?? -1
-      if (group < 0 || group >= shownGroups || yPosition >= shownY.length) {
-        return -1
-      }
+      const group = groupOf(row)
+      if (group < 0 || yPosition >= shownY.length) return -1
       return group * shownY.length + yPosition
     },
-    groupOf: (row) => row[seriesIndex] ?? EMPTY_SERIES,
+    groupOf: (row) => String(groupOf(row)),
     yOf: (series) => series % shownY.length,
     names,
+    other: hasOther ? shownY.map((_, y) => kept * shownY.length + y) : [],
   }
 }
 
@@ -305,7 +331,7 @@ function hasRepeats(input: Input, layout: Layout): boolean {
 function prepareCategories(
   input: Input,
   layout: Layout,
-): Pick<CartesianChart, 'categories' | 'series'> {
+): Pick<CartesianChart, 'categories' | 'series' | 'limit'> {
   const { settings, rows, notes } = input
   const { series: plan } = layout
   const read = xReader('category', layout.xName, layout.unit, notes)
@@ -348,25 +374,67 @@ function prepareCategories(
       cells[series][position] = target
     })
   }
+  // A column without an aggregate has one row in each cell. The sum is that row.
+  const valueOf = (series: number, cell: Accumulator | undefined) =>
+    cell ? result(cell, layout.y[plan.yOf(series)].aggregate ?? 'sum') : null
   const data = {
     categories,
     series: plan.names.map((name, index) => ({
       name,
-      values: categories.map((_, position) => {
-        const cell = cells[index][position]
-        // A column without an aggregate has one row in each cell. The sum is that row.
-        return cell
-          ? result(cell, layout.y[plan.yOf(index)].aggregate ?? 'sum')
-          : null
-      }),
+      values: categories.map((_, position) =>
+        valueOf(index, cells[index][position]),
+      ),
       points: [],
     })),
   }
   // Time buckets are in the sequence of the time. Other categories use the sort setting.
-  if (layout.unit !== null) return reorder(data, byNumber(orders))
-  return settings.sort === undefined
-    ? data
-    : reorder(data, sortOrder(data, settings.sort))
+  if (layout.unit !== null) {
+    return { ...reorder(data, byNumber(orders)), limit: null }
+  }
+  const order =
+    settings.sort === undefined
+      ? categories.map((_, index) => index)
+      : sortOrder(data, settings.sort)
+  const { limit } = settings
+  if (limit === undefined || order.length <= limit) {
+    return { ...reorder(data, order), limit: null }
+  }
+  // The category "Other" has the rows of the categories after the limit.
+  const shown = reorder(data, order.slice(0, limit))
+  const rest = order.slice(limit)
+  const hasOther = settings.other === true
+  notes.add({
+    id: 'category-limit',
+    shown: limit,
+    total: order.length,
+    hasOther,
+  })
+  if (!hasOther) return { ...shown, limit: { shown: limit, hasOther } }
+  return {
+    categories: [...shown.categories, OTHER_NAME],
+    series: shown.series.map((series, index) => ({
+      ...series,
+      values: [
+        ...series.values,
+        valueOf(index, merge(rest.map((position) => cells[index][position]))),
+      ],
+    })),
+    limit: { shown: limit, hasOther },
+  }
+}
+
+/** Combines the cells of some categories into one cell. */
+function merge(cells: (Accumulator | undefined)[]): Accumulator | undefined {
+  let total: Accumulator | undefined
+  for (const cell of cells) {
+    if (!cell) continue
+    total ??= newAccumulator()
+    total.sum += cell.sum
+    total.count += cell.count
+    total.min = Math.min(total.min, cell.min)
+    total.max = Math.max(total.max, cell.max)
+  }
+  return total
 }
 
 type Categories = Pick<CartesianChart, 'categories' | 'series'>
@@ -419,7 +487,7 @@ function reorder(data: Categories, order: number[]): Categories {
 function preparePoints(
   input: Input,
   layout: Layout,
-): Pick<CartesianChart, 'categories' | 'series'> {
+): Pick<CartesianChart, 'categories' | 'series' | 'limit'> {
   const { rows, notes } = input
   const { series: plan } = layout
   const read = xReader(layout.axis, layout.xName, layout.unit, notes)
@@ -454,6 +522,7 @@ function preparePoints(
   }
 
   return {
+    limit: null,
     categories: [],
     series: plan.names.map((name, index) => {
       const { aggregate } = layout.y[plan.yOf(index)]
@@ -515,7 +584,9 @@ function planLayout(input: Input, type: Layout['type']): Layout | null {
         }))
   if (xIndex < 0 || y.length === 0) return null
 
-  const isDate = hasDates(columns[xIndex], rows, xIndex)
+  // A kind of the settings is a decision of the user. The axis does not fall back to categories.
+  const isForcedDate = settings.kinds?.[columns[xIndex].name] === 'temporal'
+  const isDate = isForcedDate || hasDates(columns[xIndex], rows, xIndex)
   const isNumber = columns[xIndex].kind === 'number'
   // A bar always has categories. A line or a point has a position, if the column gives one.
   const axis: AxisKind =
@@ -613,6 +684,8 @@ function prepareCartesian(
     isAutoAggregate: isAuto,
     timeUnit: layout.unit,
     seriesColumn: settings.series ?? null,
+    limit: data.limit,
+    otherSeries: layout.series.other,
     categories: data.categories,
     series,
     pointCount,
@@ -673,6 +746,8 @@ function prepareHistogram(input: Input): PreparedChart {
     isAutoAggregate: false,
     timeUnit: null,
     seriesColumn: null,
+    limit: null,
+    otherSeries: [],
     categories: counts.map((_, bin) => {
       const from = start + bin * step
       return `${formatNumber(from)} to ${formatNumber(from + step)}`
@@ -729,7 +804,12 @@ export function prepareChart(
   columns: Column[],
   rows: Row[],
 ): PreparedChart {
-  const input: Input = { settings, columns, rows, notes: new Notes() }
+  const input: Input = {
+    settings,
+    columns: effectiveColumns(columns, settings.kinds),
+    rows,
+    notes: new Notes(),
+  }
   if (settings.type === 'histogram') return prepareHistogram(input)
   if (settings.type === 'value') return prepareValue(input)
   return prepareCartesian(input, settings.type)
@@ -755,7 +835,9 @@ export function noteText(note: ChartNote): string {
     case 'empty-x':
       return `${rowsText(note.count)} ${note.count === 1 ? 'has' : 'have'} no value for the horizontal axis. The chart does not show ${note.count === 1 ? 'it' : 'them'}.`
     case 'series-limit':
-      return `The chart shows the first ${note.shown} of ${count.format(note.total)} series.`
+      return `The chart shows the first ${note.shown} of ${count.format(note.total)} series.${note.hasOther ? ` The series "${OTHER_NAME}" has the rest.` : ''}`
+    case 'category-limit':
+      return `The chart shows the first ${note.shown} of ${count.format(note.total)} categories.${note.hasOther ? ` The category "${OTHER_NAME}" has the rest.` : ''}`
     case 'duplicates':
       return `${cells(note.count)} ${note.count === 1 ? 'has' : 'have'} the same horizontal value and the same series as an earlier row. The chart does not show ${note.count === 1 ? 'it' : 'them'}. Select an aggregate to combine such rows.`
     case 'not-positive':

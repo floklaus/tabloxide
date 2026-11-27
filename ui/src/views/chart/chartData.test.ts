@@ -369,9 +369,45 @@ describe('the number of series', () => {
     )
 
     expect(chart.series).toHaveLength(MAX_SERIES)
+    expect(chart.series.at(-1)).toMatchObject({ name: 'Other' })
+    // The series "Other" has the 5 groups that have no place.
+    expect(chart.series.at(-1)?.points).toHaveLength(5)
+    expect(chart.otherSeries).toEqual([MAX_SERIES - 1])
     expect(chart.notes).toEqual([
-      { id: 'series-limit', shown: MAX_SERIES, total: groups },
+      {
+        id: 'series-limit',
+        shown: MAX_SERIES - 1,
+        total: groups,
+        hasOther: true,
+      },
     ])
+  })
+
+  test('the series "Other" combines its rows with the aggregate of the column', () => {
+    const groups = 10
+    const rows: Row[] = Array.from({ length: groups }, (_, index) => [
+      'DE',
+      `g${index}`,
+      String(index),
+      null,
+    ])
+
+    const chart = cartesian(
+      prepareChart(
+        {
+          type: 'bar',
+          x: 'country',
+          y: ['amount'],
+          series: 'kind',
+          aggregate: 'sum',
+        },
+        SALES,
+        rows,
+      ),
+    )
+
+    // The groups g7, g8, and g9 have no place: 7 + 8 + 9.
+    expect(chart.series.at(-1)).toMatchObject({ name: 'Other', values: [24] })
   })
 
   test('a series column with two y columns gives one series for each pair', () => {
@@ -549,8 +585,13 @@ describe('noteText', () => {
   })
 
   test('gives the number of series', () => {
-    expect(noteText({ id: 'series-limit', shown: 8, total: 23 })).toBe(
-      'The chart shows the first 8 of 23 series.',
+    expect(
+      noteText({ id: 'series-limit', shown: 8, total: 23, hasOther: false }),
+    ).toBe('The chart shows the first 8 of 23 series.')
+    expect(
+      noteText({ id: 'series-limit', shown: 7, total: 23, hasOther: true }),
+    ).toBe(
+      'The chart shows the first 7 of 23 series. The series "Other" has the rest.',
     )
   })
 })
@@ -968,6 +1009,151 @@ describe('an aggregate for each column', () => {
       { name: 'a · tax', values: [2, 1] },
       { name: 'b · amount', values: [20, null] },
       { name: 'b · tax', values: [1, null] },
+    ])
+  })
+})
+
+describe('a limit of the categories', () => {
+  const rows: Row[] = [
+    ['DE', 'a', '10', null],
+    ['FR', 'a', '40', null],
+    ['IT', 'a', '30', null],
+    ['ES', 'a', '20', null],
+    ['FR', 'a', '2', null],
+    ['ES', 'a', '4', null],
+  ]
+  const limited = (settings: object) =>
+    cartesian(
+      prepareChart(
+        { type: 'bar', x: 'country', y: ['amount'], limit: 2, ...settings },
+        SALES,
+        rows,
+      ),
+    )
+
+  test('the chart shows the first categories in the sequence of the sort, and a note gives the total', () => {
+    const chart = limited({ sort: 'value-desc' })
+
+    expect(chart.categories).toEqual(['FR', 'IT'])
+    expect(chart.series[0].values).toEqual([42, 30])
+    expect(chart.limit).toEqual({ shown: 2, hasOther: false })
+    expect(chart.notes).toEqual([
+      { id: 'category-limit', shown: 2, total: 4, hasOther: false },
+    ])
+  })
+
+  test('without a sort, the first categories of the result show', () => {
+    expect(limited({}).categories).toEqual(['DE', 'FR'])
+  })
+
+  test('"Other" has the sum of the categories after the limit', () => {
+    const chart = limited({ sort: 'value-desc', other: true })
+
+    expect(chart.categories).toEqual(['FR', 'IT', 'Other'])
+    // ES has 20 + 4, and DE has 10.
+    expect(chart.series[0].values).toEqual([42, 30, 34])
+    expect(chart.limit).toEqual({ shown: 2, hasOther: true })
+  })
+
+  test('"Other" has the mean of all its rows, not the mean of the means', () => {
+    const chart = limited({
+      sort: 'value-desc',
+      other: true,
+      aggregate: 'mean',
+    })
+
+    // IT 30, FR 21, ES 12, DE 10. "Other" has the rows 20, 4, and 10.
+    expect(chart.categories).toEqual(['IT', 'FR', 'Other'])
+    expect(chart.series[0].values[2]).toBeCloseTo(34 / 3)
+  })
+
+  test('a chart with fewer categories than the limit has no limit and no "Other"', () => {
+    const chart = limited({ limit: 10, other: true })
+
+    expect(chart.categories).toHaveLength(4)
+    expect(chart.limit).toBeNull()
+    expect(chart.notes).toEqual([])
+  })
+
+  test('the note says that "Other" has the rest', () => {
+    expect(
+      noteText({ id: 'category-limit', shown: 10, total: 109, hasOther: true }),
+    ).toBe(
+      'The chart shows the first 10 of 109 categories. The category "Other" has the rest.',
+    )
+  })
+})
+
+describe('the kind of a column from the settings', () => {
+  test('a number column as a category gives a line chart with categories', () => {
+    const columns = [column('year', 'number'), column('total', 'number')]
+    const rows: Row[] = [
+      ['2025', '1'],
+      ['2026', '2'],
+    ]
+
+    const asNumber = cartesian(
+      prepareChart({ type: 'line', x: 'year', y: ['total'] }, columns, rows),
+    )
+    const asCategory = cartesian(
+      prepareChart(
+        { type: 'line', x: 'year', y: ['total'], kinds: { year: 'text' } },
+        columns,
+        rows,
+      ),
+    )
+
+    expect(asNumber.xAxis).toBe('value')
+    expect(asCategory.xAxis).toBe('category')
+    expect(asCategory.categories).toEqual(['2025', '2026'])
+  })
+
+  test('a text column as a date gives a time axis and can have a time unit', () => {
+    const columns = [column('created', 'text'), column('total', 'number')]
+
+    const chart = cartesian(
+      prepareChart(
+        {
+          type: 'line',
+          x: 'created',
+          y: ['total'],
+          kinds: { created: 'temporal' },
+          timeUnit: 'month',
+        },
+        columns,
+        [
+          ['2026-01-15', '1'],
+          ['2026-01-20', '2'],
+        ],
+      ),
+    )
+
+    expect(chart).toMatchObject({ xAxis: 'time', timeUnit: 'month' })
+    expect(chart.series[0].points).toEqual([[Date.UTC(2026, 0, 1), 3]])
+  })
+
+  test('a column as a date counts the cells that are not dates, and does not fall back to categories', () => {
+    const columns = [column('created', 'text'), column('total', 'number')]
+
+    const chart = cartesian(
+      prepareChart(
+        {
+          type: 'line',
+          x: 'created',
+          y: ['total'],
+          kinds: { created: 'temporal' },
+        },
+        columns,
+        [
+          ['soon', '1'],
+          ['2026-01-20', '2'],
+        ],
+      ),
+    )
+
+    expect(chart.xAxis).toBe('time')
+    expect(chart.notes).toEqual([
+      { id: 'not-times', column: 'created', count: 1 },
     ])
   })
 })

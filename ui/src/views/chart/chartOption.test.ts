@@ -42,6 +42,8 @@ function chart(part: Partial<CartesianChart>): CartesianChart {
     isAutoAggregate: false,
     timeUnit: null,
     seriesColumn: null,
+    limit: null,
+    otherSeries: [],
     categories: ['DE', 'FR'],
     series: [{ name: 'amount', values: [10, 20], points: [] }],
     pointCount: 2,
@@ -237,6 +239,36 @@ describe('the description of a chart for ECharts', () => {
       (series) => (series.lineStyle as { type: unknown }).type,
     )
     expect(new Set(styles).size).toBe(2)
+  })
+
+  test('the series "Other" has a neutral colour, not the colour of one more series', () => {
+    const lines = chart({
+      type: 'line',
+      series: [
+        { name: 'a', values: [1, 2], points: [] },
+        { name: 'Other', values: [3, 4], points: [] },
+      ],
+      otherSeries: [1],
+    })
+
+    const result = option(lines, { type: 'line', x: 'x', y: ['v'] })
+
+    expect(result.series[0].lineStyle).not.toHaveProperty('color')
+    expect(result.series[1].lineStyle).toMatchObject({ color: THEME.textMuted })
+  })
+
+  test('the bar of the category "Other" has a neutral colour', () => {
+    const bars = chart({
+      categories: ['DE', 'Other'],
+      limit: { shown: 1, hasOther: true },
+    })
+
+    const result = option(bars, BAR)
+
+    expect(result.series[0].data).toEqual([
+      10,
+      { value: 20, itemStyle: { color: THEME.textMuted } },
+    ])
   })
 
   test('the chart view gives the text for a screen reader, thus ECharts makes none', () => {

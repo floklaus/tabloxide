@@ -9,12 +9,14 @@ import {
   type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
+import { ContextMenu, type ContextMenuState } from '../view/ContextMenu'
 import {
   isRightAligned,
   nextSort,
   rowsToTsv,
   sortedIndexes,
   type Column,
+  type ColumnAction,
   type Row,
   type SortState,
 } from './gridModel'
@@ -56,6 +58,11 @@ type Props = {
   /** `true` if the server has more rows for this result. */
   hasMore: boolean
   onNeedMore: () => void
+  /**
+   * Actions for columns, for example "Chart these columns". With them, the user
+   * can select columns, and a column header has a menu.
+   */
+  columnActions?: ColumnAction[]
 }
 
 async function copyText(text: string): Promise<void> {
@@ -90,8 +97,13 @@ function startResize(
   window.addEventListener('pointerup', onEnd)
 }
 
-export function ResultGrid({ columns, rows, hasMore, onNeedMore }: Props) {
+export function ResultGrid(props: Props) {
+  const { columns, rows, hasMore, onNeedMore, columnActions = [] } = props
   const scrollRef = useRef<HTMLDivElement>(null)
+  /** The columns that the user selected for a column action. */
+  const [picked, setPicked] = useState<ReadonlySet<number>>(new Set())
+  const [menu, setMenu] = useState<ContextMenuState | null>(null)
+  const canPick = columnActions.length > 0
   const [sort, setSort] = useState<SortState>(null)
   const [widths, setWidths] = useState<Record<number, number>>({})
   const [hidden, setHidden] = useState<ReadonlySet<number>>(new Set())
@@ -212,6 +224,12 @@ export function ResultGrid({ columns, rows, hasMore, onNeedMore }: Props) {
       copyCell()
       return
     }
+    // Ctrl+Space selects the column of the selected cell, as in a spreadsheet.
+    if (canPick && (event.ctrlKey || event.metaKey) && event.key === ' ') {
+      event.preventDefault()
+      if (selected) togglePicked(selected.column)
+      return
+    }
     if (resizeWithKey(event)) {
       event.preventDefault()
       return
@@ -225,6 +243,47 @@ export function ResultGrid({ columns, rows, hasMore, onNeedMore }: Props) {
     const next = new Set(hidden)
     if (!next.delete(index)) next.add(index)
     setHidden(next)
+  }
+  const togglePicked = (index: number) => {
+    const next = new Set(picked)
+    if (!next.delete(index)) next.add(index)
+    setPicked(next)
+  }
+  /** The names of the selected columns, in the sequence of the result. */
+  const pickedNames = (indexes: Iterable<number>): string[] => [
+    ...new Set(
+      [...indexes].sort((a, b) => a - b).map((index) => columns[index].name),
+    ),
+  ]
+  /** Opens the menu of a column header. Its actions apply to the selected columns, if the column is one of them. */
+  const openMenu = (index: number, x: number, y: number) => {
+    const names = pickedNames(picked.has(index) ? picked : [index])
+    setMenu({
+      label: `Actions for the column ${columns[index].name}`,
+      x,
+      y,
+      items: columnActions.map((action) => ({
+        kind: 'action' as const,
+        label: action.label(names),
+        run: () => action.run(names),
+      })),
+    })
+  }
+  /** The keys of a column header: Ctrl+Space selects the column, and the menu key opens the menu. */
+  const onHeaderKeyDown = (
+    event: KeyboardEvent<HTMLElement>,
+    index: number,
+  ) => {
+    if (!canPick) return
+    const isMenuKey =
+      event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey)
+    const isPickKey = event.key === ' ' && (event.ctrlKey || event.metaKey)
+    if (!isMenuKey && !isPickKey) return
+    event.preventDefault()
+    event.stopPropagation()
+    if (isPickKey) return togglePicked(index)
+    const box = event.currentTarget.getBoundingClientRect()
+    openMenu(index, box.left, box.bottom)
   }
 
   return (
@@ -263,6 +322,29 @@ export function ResultGrid({ columns, rows, hasMore, onNeedMore }: Props) {
         >
           Copy row
         </button>
+        {picked.size > 0 &&
+          columnActions.map((action) => {
+            const label = action.label(pickedNames(picked))
+            return (
+              <button
+                key={label}
+                type="button"
+                className="button button--small"
+                onClick={() => action.run(pickedNames(picked))}
+              >
+                {label}
+              </button>
+            )
+          })}
+        {picked.size > 0 && (
+          <button
+            type="button"
+            className="link-button"
+            onClick={() => setPicked(new Set())}
+          >
+            Clear the column selection
+          </button>
+        )}
         {sort && hasMore && (
           <span className="grid__note">
             The sort applies only to the loaded rows.
@@ -298,11 +380,17 @@ export function ResultGrid({ columns, rows, hasMore, onNeedMore }: Props) {
             return (
               <div
                 key={index}
-                className="grid__cell grid__cell--header"
+                className={`grid__cell grid__cell--header${picked.has(index) ? ' grid__cell--picked' : ''}`}
                 role="columnheader"
                 aria-colindex={item.index + FIRST_DATA_COLUMN}
                 aria-sort={ariaSort(sort, index)}
+                aria-selected={canPick ? picked.has(index) : undefined}
                 style={{ gridColumnStart: trackOf(rendered) }}
+                onContextMenu={(event) => {
+                  if (!canPick) return
+                  event.preventDefault()
+                  openMenu(index, event.clientX, event.clientY)
+                }}
               >
                 <button
                   type="button"
@@ -312,7 +400,13 @@ export function ResultGrid({ columns, rows, hasMore, onNeedMore }: Props) {
                       : 'grid__sort'
                   }
                   title={columns[index].type_name ?? undefined}
+                  onKeyDown={(event) => onHeaderKeyDown(event, index)}
                   onClick={(event) => {
+                    // Ctrl and a click select the column. A click without Ctrl sorts.
+                    if (canPick && (event.ctrlKey || event.metaKey)) {
+                      togglePicked(index)
+                      return
+                    }
                     setSort(nextSort(sort, index))
                     // A header leaves the DOM when the user scrolls it out of view,
                     // and its focus would go to the page. After a click with the
@@ -374,6 +468,7 @@ export function ResultGrid({ columns, rows, hasMore, onNeedMore }: Props) {
                     'grid__cell',
                     isRightAligned(columns[column].kind) && 'grid__cell--right',
                     isSelected && 'grid__cell--selected',
+                    picked.has(column) && 'grid__cell--picked',
                   ]
                   return (
                     <div
@@ -401,7 +496,18 @@ export function ResultGrid({ columns, rows, hasMore, onNeedMore }: Props) {
       <p id={hintId} className="visually-hidden">
         Use the arrow keys to move between the cells. Press Alt+Shift+Left or
         Alt+Shift+Right to change the width of the column of the selected cell.
+        {canPick &&
+          ' Press Ctrl+Space to select the column of the selected cell or of a column header. The menu of a column header has the actions for the selected columns.'}
       </p>
+      {menu && (
+        <ContextMenu
+          menu={menu}
+          onClose={(restoreFocus) => {
+            setMenu(null)
+            if (restoreFocus) scrollRef.current?.focus()
+          }}
+        />
+      )}
     </div>
   )
 }

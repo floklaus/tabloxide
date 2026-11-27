@@ -1,6 +1,14 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from 'vitest'
 import { commands } from '../bindings'
 import { activeQueryStore, resetQueryStores } from '../query/queryStore'
 import type { Column, Row } from '../results/gridModel'
@@ -133,5 +141,68 @@ describe('the number of the statement', () => {
     await userEvent.click(viewButton('Chart'))
 
     expect(Object.keys(useViewStore.getState().tabs[''])).toEqual(['3'])
+  })
+})
+
+describe('a chart from the grid', () => {
+  // jsdom has no layout. The grid reads these sizes to decide which columns to render.
+  const sizes = { clientHeight: 400, clientWidth: 800 }
+  const original = Object.getOwnPropertyDescriptors(Element.prototype)
+
+  beforeAll(() => {
+    for (const [name, value] of Object.entries(sizes)) {
+      Object.defineProperty(Element.prototype, name, {
+        configurable: true,
+        get: () => value,
+      })
+    }
+  })
+
+  afterAll(() => {
+    Object.defineProperty(
+      Element.prototype,
+      'clientHeight',
+      original.clientHeight,
+    )
+    Object.defineProperty(
+      Element.prototype,
+      'clientWidth',
+      original.clientWidth,
+    )
+  })
+
+  test('the action of a column header shows the chart of that column', async () => {
+    render(host())
+    await waitFor(() => expect(viewButton('Chart')).toBeEnabled())
+
+    await userEvent.pointer({
+      keys: '[MouseRight]',
+      target: screen.getByRole('columnheader', { name: 'total' }),
+    })
+    await userEvent.click(
+      screen.getByRole('menuitem', { name: 'Chart the column total' }),
+    )
+
+    expect(viewButton('Chart')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('img')).toHaveAttribute('data-type', 'histogram')
+  })
+
+  test('"Add to the chart" adds the column to the chart of the result', async () => {
+    const columns: Column[] = [
+      ...COLUMNS,
+      { name: 'tax', type_name: 'int4', kind: 'number' },
+    ]
+    render(host({ columns, rows: ROWS.map((row) => [...row, '1']) }))
+    await waitFor(() => expect(viewButton('Chart')).toBeEnabled())
+
+    await userEvent.pointer({
+      keys: '[MouseRight]',
+      target: screen.getByRole('columnheader', { name: 'tax' }),
+    })
+    await userEvent.click(
+      screen.getByRole('menuitem', { name: 'Add tax to the chart' }),
+    )
+
+    expect(screen.getByRole('img')).toHaveAttribute('data-series', 'total|tax')
   })
 })

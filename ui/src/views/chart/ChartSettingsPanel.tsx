@@ -8,6 +8,10 @@ import {
   CHART_ROLES,
   CHART_TYPE_LABELS,
   CHART_TYPES,
+  effectiveColumns,
+  KIND_OVERRIDE_LABELS,
+  KIND_OVERRIDES,
+  LIMITS,
   normalize,
   SORT_LABELS,
   SORTS,
@@ -15,16 +19,20 @@ import {
   TIME_UNITS,
   typeProblem,
   withAggregate,
+  withKind,
+  withLimit,
   withType,
   withX,
   type Aggregate,
   type AggregateSetting,
   type ChartSettings,
   type ChartType,
+  type KindOverride,
   type Sort,
   type TimeUnit,
 } from './chartSettings'
 import { ChartTypeIcon } from './ChartTypeIcon'
+import { KIND_LABELS } from './columnKinds'
 import { ColumnPicker, NO_COLUMN } from './ColumnPicker'
 import { KindIcon, RowsIcon, WarningIcon } from './KindIcon'
 
@@ -42,6 +50,8 @@ type Props = {
   /** Removes the settings, thus the first suggested chart shows again. */
   onReset?: () => void
   onClose: () => void
+  /** The columns as the result gives them. `columns` has the kinds of the settings. */
+  realColumns?: Column[]
 }
 
 const NONE = ''
@@ -273,6 +283,14 @@ function HorizontalAxis(props: Props) {
   const controls = axisControls(settings, columns)
   const change = (part: Partial<ChartSettings>) =>
     onChange(normalize({ ...settings, ...part }))
+  /** The column as the result gives it, without a kind of the settings. */
+  const real = (props.realColumns ?? columns).find(
+    (column) => column.name === settings.x,
+  )
+  // A limit of a file that is not in the list stays a choice.
+  const limits = [...new Set([...LIMITS, settings.limit ?? LIMITS[0]])].sort(
+    (a, b) => a - b,
+  )
   return (
     <>
       <ColumnPicker
@@ -283,6 +301,32 @@ function HorizontalAxis(props: Props) {
         warnings={settings.x === undefined ? [] : warnings[settings.x]}
         onChange={(names) => onChange(withX(settings, names[0], columns))}
       />
+      {real !== undefined && settings.type !== 'histogram' && (
+        <label className="chart__inline">
+          <span>Use as</span>
+          <select
+            value={settings.kinds?.[real.name] ?? NONE}
+            onChange={(event) =>
+              onChange(
+                withKind(
+                  settings,
+                  event.target.value === NONE
+                    ? undefined
+                    : (event.target.value as KindOverride),
+                  columns,
+                ),
+              )
+            }
+          >
+            <option value={NONE}>Automatic ({KIND_LABELS[real.kind]})</option>
+            {KIND_OVERRIDES.map((kind) => (
+              <option key={kind} value={kind}>
+                {KIND_OVERRIDE_LABELS[kind]}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       {controls.timeUnit && (
         <label className="chart__inline">
           <span>Group by</span>
@@ -329,6 +373,41 @@ function HorizontalAxis(props: Props) {
           </select>
         </label>
       )}
+      {controls.sort && (
+        <label className="chart__inline">
+          <span>Show</span>
+          <select
+            value={settings.limit ?? NONE}
+            onChange={(event) =>
+              onChange(
+                withLimit(
+                  settings,
+                  event.target.value === NONE
+                    ? undefined
+                    : Number(event.target.value),
+                ),
+              )
+            }
+          >
+            <option value={NONE}>All categories</option>
+            {limits.map((limit) => (
+              <option key={limit} value={limit}>
+                The first {limit}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {controls.sort && settings.limit !== undefined && (
+        <label className="chart__check">
+          <input
+            type="checkbox"
+            checked={settings.other ?? false}
+            onChange={(event) => change({ other: event.target.checked })}
+          />
+          Show the rest as &quot;Other&quot;
+        </label>
+      )}
     </>
   )
 }
@@ -371,7 +450,13 @@ function Display({ settings, onChange }: Props) {
  * display. The panel is at the right of the chart. In a narrow results pane, it
  * is above the chart.
  */
-export function ChartSettingsPanel(props: Props) {
+export function ChartSettingsPanel(given: Props) {
+  // The lists and the checks use the kinds that the settings give to the columns.
+  const props: Props = {
+    ...given,
+    columns: effectiveColumns(given.columns, given.settings.kinds),
+    realColumns: given.columns,
+  }
   const { settings, columns, onChange } = props
   const roles = CHART_ROLES[settings.type]
   const titleId = useId()

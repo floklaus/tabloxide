@@ -829,3 +829,131 @@ describe('the settings panel', () => {
     ).toBeInTheDocument()
   })
 })
+
+describe('the limit of the categories', () => {
+  test('a limit also sets the sort by value and "Other"', async () => {
+    const view = props()
+    render(<ChartView {...view} />)
+
+    await userEvent.selectOptions(screen.getByLabelText('Show'), 'The first 5')
+
+    expect(view.onSettings).toHaveBeenCalledWith({
+      type: 'bar',
+      x: 'country',
+      y: ['amount'],
+      sort: 'value-desc',
+      limit: 5,
+      other: true,
+    })
+  })
+
+  test('the check box for "Other" shows only with a limit', async () => {
+    const view = props({
+      settings: { type: 'bar', x: 'country', y: ['amount'], limit: 5 },
+    })
+    const { rerender } = render(<ChartView {...props()} />)
+    expect(screen.queryByLabelText(/Show the rest/)).not.toBeInTheDocument()
+    rerender(<ChartView {...view} />)
+
+    await userEvent.click(screen.getByLabelText('Show the rest as "Other"'))
+
+    expect(view.onSettings).toHaveBeenCalledWith({
+      type: 'bar',
+      x: 'country',
+      y: ['amount'],
+      limit: 5,
+      other: true,
+    })
+  })
+
+  test('a chart with more categories than the limit says so', () => {
+    render(
+      <ChartView
+        {...props({
+          rows: [
+            ['DE', '10', '1'],
+            ['FR', '20', '2'],
+            ['IT', '5', '2'],
+          ],
+          totalRows: 3,
+          settings: {
+            type: 'bar',
+            x: 'country',
+            y: ['amount'],
+            sort: 'value-desc',
+            limit: 1,
+            other: true,
+          },
+        })}
+      />,
+    )
+
+    expect(
+      screen.getByText(
+        'amount against country, one bar for each row, the first 1 and "Other".',
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'The chart shows the first 1 of 3 categories. The category "Other" has the rest.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('img')).toHaveAttribute('data-points', '2')
+  })
+})
+
+describe('the kind of the column of the horizontal axis', () => {
+  const YEARS = [column('year', 'number'), column('total', 'number')]
+  const years = (settings: object) =>
+    props({
+      columns: YEARS,
+      rows: [
+        ['2025', '1'],
+        ['2026', '2'],
+      ],
+      settings,
+    })
+
+  test('"Use as" shows the kind of the result, and "Category" changes it', async () => {
+    const view = years({ type: 'line', x: 'year', y: ['total'] })
+    render(<ChartView {...view} />)
+    expect(
+      screen.getByRole('option', { name: 'Automatic (number)' }),
+    ).toBeInTheDocument()
+
+    await userEvent.selectOptions(screen.getByLabelText('Use as'), 'Category')
+
+    expect(view.onSettings).toHaveBeenCalledWith({
+      type: 'line',
+      x: 'year',
+      y: ['total'],
+      kinds: { year: 'text' },
+    })
+  })
+
+  test('a number column as a category has a sort and no time unit', () => {
+    render(
+      <ChartView
+        {...years({
+          type: 'line',
+          x: 'year',
+          y: ['total'],
+          kinds: { year: 'text' },
+        })}
+      />,
+    )
+
+    expect(screen.getByLabelText('Sort')).toBeInTheDocument()
+    expect(screen.getByLabelText('Use as')).toHaveValue('text')
+    // The list shows the column with the kind that the settings give it.
+    expect(picked('Horizontal axis', 'year')).toHaveAccessibleName(
+      /^year\s*, text$/,
+    )
+  })
+
+  test('a histogram has no "Use as", because it needs numbers', () => {
+    render(<ChartView {...years({ type: 'histogram', x: 'total', y: [] })} />)
+
+    expect(screen.queryByLabelText('Use as')).not.toBeInTheDocument()
+  })
+})

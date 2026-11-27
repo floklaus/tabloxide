@@ -260,3 +260,104 @@ describe('ResultGrid', () => {
     expect(screen.getByRole('button', { name: /^id/ })).toHaveFocus()
   })
 })
+
+describe('the column actions of the grid', () => {
+  const run = vi.fn()
+  const chart = {
+    label: (names: string[]) => `Chart ${names.join(' and ')}`,
+    run,
+  }
+  const header = (name: string) => screen.getByRole('columnheader', { name })
+  const sortButton = (name: string) => screen.getByRole('button', { name })
+
+  test('Ctrl and a click select a column, and a button runs the action for the selected columns', async () => {
+    const { user } = renderGrid({ columnActions: [chart] })
+
+    await user.keyboard('{Control>}')
+    await user.click(sortButton('name'))
+    await user.click(sortButton('id'))
+    await user.keyboard('{/Control}')
+
+    expect(header('id')).toHaveAttribute('aria-selected', 'true')
+    expect(header('name')).toHaveAttribute('aria-selected', 'true')
+    // Ctrl and a click do not sort.
+    expect(header('id')).toHaveAttribute('aria-sort', 'none')
+    await user.click(screen.getByRole('button', { name: 'Chart id and name' }))
+    expect(run).toHaveBeenCalledWith(['id', 'name'])
+  })
+
+  test('"Clear the column selection" removes the selection and the buttons', async () => {
+    const { user } = renderGrid({ columnActions: [chart] })
+    await user.keyboard('{Control>}')
+    await user.click(sortButton('id'))
+    await user.keyboard('{/Control}')
+
+    await user.click(
+      screen.getByRole('button', { name: 'Clear the column selection' }),
+    )
+
+    expect(header('id')).toHaveAttribute('aria-selected', 'false')
+    expect(screen.queryByRole('button', { name: 'Chart id' })).toBeNull()
+  })
+
+  test('the menu of a column header has the action for that column', async () => {
+    run.mockClear()
+    const { user } = renderGrid({ columnActions: [chart] })
+
+    await user.pointer({ keys: '[MouseRight]', target: header('name') })
+    await user.click(screen.getByRole('menuitem', { name: 'Chart name' }))
+
+    expect(run).toHaveBeenCalledWith(['name'])
+    expect(screen.queryByRole('menuitem')).toBeNull()
+  })
+
+  test('the menu of a selected column has the action for all selected columns', async () => {
+    const { user } = renderGrid({ columnActions: [chart] })
+    await user.keyboard('{Control>}')
+    await user.click(sortButton('id'))
+    await user.click(sortButton('name'))
+    await user.keyboard('{/Control}')
+
+    await user.pointer({ keys: '[MouseRight]', target: header('name') })
+
+    expect(
+      screen.getByRole('menuitem', { name: 'Chart id and name' }),
+    ).toBeInTheDocument()
+  })
+
+  test('Ctrl+Space selects the column of a header, and Shift+F10 opens its menu', async () => {
+    const { user } = renderGrid({ columnActions: [chart] })
+    sortButton('name').focus()
+
+    await user.keyboard('{Control>} {/Control}')
+    await user.keyboard('{Shift>}{F10}{/Shift}')
+
+    expect(header('name')).toHaveAttribute('aria-selected', 'true')
+    expect(
+      screen.getByRole('menuitem', { name: 'Chart name' }),
+    ).toBeInTheDocument()
+  })
+
+  test('Ctrl+Space selects the column of the selected cell', async () => {
+    const { user } = renderGrid({ columnActions: [chart] })
+    screen.getByRole('grid').focus()
+    // The first key selects the first cell. The second key moves to the column `name`.
+    await user.keyboard('{ArrowRight}{ArrowRight}')
+
+    await user.keyboard('{Control>} {/Control}')
+
+    expect(header('name')).toHaveAttribute('aria-selected', 'true')
+  })
+
+  test('a grid without column actions has no column selection and no menu', async () => {
+    const { user } = renderGrid()
+
+    await user.keyboard('{Control>}')
+    await user.click(sortButton('id'))
+    await user.keyboard('{/Control}')
+    await user.pointer({ keys: '[MouseRight]', target: header('name') })
+
+    expect(header('id ▲')).not.toHaveAttribute('aria-selected')
+    expect(screen.queryByRole('menuitem')).toBeNull()
+  })
+})

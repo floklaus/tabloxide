@@ -84,6 +84,19 @@ describe('chartSentence', () => {
     ).toBe('Maximum of amount and tax for each staff.')
   })
 
+  test('names the limit and the category "Other"', () => {
+    expect(
+      sentence({
+        type: 'bar',
+        x: 'staff',
+        y: ['amount'],
+        aggregate: 'sum',
+        limit: 1,
+        other: true,
+      })?.what,
+    ).toBe('Sum of amount for each staff, the first 1 and "Other".')
+  })
+
   test('describes a histogram', () => {
     expect(sentence({ type: 'histogram', x: 'amount', y: [] })?.what).toBe(
       'Number of rows for each range of amount.',

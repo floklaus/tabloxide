@@ -9,6 +9,8 @@ import {
   typeProblem,
   withAggregate,
   withEachRow,
+  withKind,
+  withLimit,
   withType,
   withX,
 } from './chartSettings'
@@ -383,5 +385,99 @@ describe('typeProblem', () => {
     for (const type of ['line', 'area', 'bar', 'value'] as const) {
       expect(typeProblem(type, text)).toBeNull()
     }
+  })
+})
+
+describe('the limit and the kind of a column', () => {
+  const bar = { type: 'bar' as const, x: 'country', y: ['amount'] }
+  const columns = [
+    column('country', 'text'),
+    column('year', 'number'),
+    column('created', 'text'),
+    column('amount', 'number'),
+  ]
+
+  test('parseChartSettings reads the limit, "other", and the kinds', () => {
+    const value = {
+      ...bar,
+      sort: 'value-desc',
+      limit: 10,
+      other: true,
+      kinds: { country: 'text' },
+    }
+
+    expect(parseChartSettings(value)).toEqual({ settings: value })
+  })
+
+  test.each([
+    [{ ...bar, limit: 0 }, '"limit"'],
+    [{ ...bar, limit: 2.5 }, '"limit"'],
+    [{ ...bar, limit: 5000 }, '"limit"'],
+    [{ ...bar, limit: 5, other: 'yes' }, '"other"'],
+    [{ ...bar, kinds: { country: 'json' } }, '"kinds"'],
+  ])('parseChartSettings refuses %j', (value, part) => {
+    const parsed = parseChartSettings(value)
+
+    expect('error' in parsed && parsed.error).toContain(part)
+  })
+
+  test('normalize removes "other" without a limit, and the kind of a column that is not the horizontal axis', () => {
+    expect(
+      normalize({ ...bar, other: true, kinds: { amount: 'text' } }),
+    ).toEqual(bar)
+  })
+
+  test('a new limit also sets the sort by value and "Other"', () => {
+    expect(withLimit(bar, 10)).toEqual({
+      ...bar,
+      sort: 'value-desc',
+      limit: 10,
+      other: true,
+    })
+  })
+
+  test('a change of the limit keeps the sort and the choice for "Other"', () => {
+    const settings = { ...bar, sort: 'name' as const, limit: 10 }
+
+    expect(withLimit(settings, 20)).toEqual({ ...settings, limit: 20 })
+    expect(withLimit(settings, undefined)).toEqual({ ...bar, sort: 'name' })
+  })
+
+  test('a number column as a category has a sort in a line chart', () => {
+    const line = { type: 'line' as const, x: 'year', y: ['amount'] }
+
+    const settings = withKind(line, 'text', columns)
+
+    expect(settings.kinds).toEqual({ year: 'text' })
+    expect(axisControls(settings, columns)).toEqual({
+      timeUnit: false,
+      sort: true,
+    })
+  })
+
+  test('a text column as a date has a time unit, and loses its sort and its limit', () => {
+    const settings = withKind(
+      { type: 'line', x: 'created', y: ['amount'], sort: 'name', limit: 5 },
+      'temporal',
+      columns,
+    )
+
+    expect(settings).toEqual({
+      type: 'line',
+      x: 'created',
+      y: ['amount'],
+      kinds: { created: 'temporal' },
+    })
+    expect(axisControls(settings, columns).timeUnit).toBe(true)
+  })
+
+  test('a different column of the horizontal axis removes the kind of the old one', () => {
+    const settings = withX(
+      { ...bar, kinds: { country: 'text' } },
+      'year',
+      columns,
+    )
+
+    expect(settings.kinds).toBeUndefined()
   })
 })

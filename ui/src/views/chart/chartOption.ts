@@ -91,9 +91,26 @@ function seriesOption(
   index: number,
   context: OptionContext,
 ) {
-  const data = isContinuous(chart) ? series.points : series.values
+  const { theme } = context
+  const isOther = chart.otherSeries.includes(index)
+  // "Other" is not one more series or category. It has a neutral colour.
+  const neutral = { color: theme.textMuted }
+  const hasOtherBar =
+    chart.limit?.hasOther === true && chart.series.length === 1
+  const data = isContinuous(chart)
+    ? series.points
+    : series.values.map((value, position) =>
+        hasOtherBar && position === series.values.length - 1
+          ? { value, itemStyle: neutral }
+          : value,
+      )
   const stack = settings.stacked ? 'total' : undefined
-  const base = { name: series.name, data, emphasis: { focus: 'series' } }
+  const base = {
+    name: series.name,
+    data,
+    emphasis: { focus: 'series' },
+  }
+  const tint = isOther ? neutral : {}
   const symbol = SYMBOLS[index % SYMBOLS.length]
 
   if (chart.type === 'scatter') {
@@ -106,7 +123,7 @@ function seriesOption(
       // Without the large mode, 100 000 points need more than 20 seconds.
       large: true,
       largeThreshold: LARGE_SCATTER,
-      itemStyle: { opacity: SCATTER_OPACITY },
+      itemStyle: { opacity: SCATTER_OPACITY, ...tint },
     }
   }
   if (chart.type === 'bar' || chart.type === 'histogram') {
@@ -121,6 +138,7 @@ function seriesOption(
         ? { barCategoryGap: '4%' }
         : { barMaxWidth: BAR_MAX_WIDTH }),
       itemStyle: {
+        ...tint,
         borderRadius: stack ? 0 : [BAR_RADIUS, BAR_RADIUS, 0, 0],
         // The gap between the parts of a stacked bar has the colour of the background.
         ...(stack
@@ -139,7 +157,9 @@ function seriesOption(
     showSymbol: data.length <= MAX_LINE_SYMBOLS,
     // The chart reduces the points of a line that has more points than pixels.
     sampling: 'lttb',
+    itemStyle: tint,
     lineStyle: {
+      ...tint,
       width: LINE_WIDTH,
       type: context.theme.isHighContrast
         ? DASHES[index % DASHES.length]

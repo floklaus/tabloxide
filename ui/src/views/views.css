@@ -1,5 +1,10 @@
 /* The view switch of a result and the built-in chart view. */
 
+/* A column of the grid that the user selected for a column action. */
+.grid__row .grid__cell--picked {
+  background: color-mix(in srgb, var(--color-focus) 14%, var(--color-bg));
+}
+
 .view-switch {
   display: flex;
   flex: none;

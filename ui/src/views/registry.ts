@@ -1,4 +1,5 @@
 import type { Column } from '../results/gridModel'
+import { CHART_COLUMN_ACTIONS } from './chart/chartFromColumns'
 import { ChartView } from './chart/ChartView'
 import { chartScore } from './chart/proposeChart'
 import { GridView } from './GridView'
@@ -18,6 +19,7 @@ const OTHER_VIEWS: ResultView[] = [
     name: 'Chart',
     accepts: chartScore,
     Component: ChartView,
+    columnActions: CHART_COLUMN_ACTIONS,
   },
 ]
 

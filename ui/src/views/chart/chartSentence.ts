@@ -1,5 +1,5 @@
 import type { PreparedChart } from './chartData'
-import { ROW_COUNT_NAME } from './chartData'
+import { OTHER_NAME, ROW_COUNT_NAME } from './chartData'
 import { AGGREGATE_LABELS } from './chartSettings'
 
 const count = new Intl.NumberFormat('en-US')
@@ -43,10 +43,15 @@ export function chartSentence(
     chart.timeUnit === null
       ? chart.xName
       : `${chart.timeUnit} of ${chart.xName}`
-  const series =
-    chart.seriesColumn === null
+  const limit =
+    chart.limit === null
       ? ''
-      : `, one series for each value of ${chart.seriesColumn}`
+      : `, the first ${chart.limit.shown}${chart.limit.hasOther ? ` and "${OTHER_NAME}"` : ''}`
+  const series =
+    limit +
+    (chart.seriesColumn === null
+      ? ''
+      : `, one series for each value of ${chart.seriesColumn}`)
   if (chart.countsRows) {
     return { what: `${ROW_COUNT_NAME} for each ${x}${series}.`, size }
   }

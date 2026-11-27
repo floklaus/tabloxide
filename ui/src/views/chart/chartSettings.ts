@@ -56,6 +56,20 @@ export const SORT_LABELS: Record<Sort, string> = {
   'value-asc': 'By value, smallest first',
 }
 
+/** The numbers of categories that the user can select as a limit. */
+export const LIMITS = [5, 10, 20, 50] as const
+const MAX_LIMIT = 1000
+
+/** How the chart uses a column, when the kind of the result is not what the user wants. */
+export const KIND_OVERRIDES = ['number', 'temporal', 'text'] as const
+export type KindOverride = (typeof KIND_OVERRIDES)[number]
+
+export const KIND_OVERRIDE_LABELS: Record<KindOverride, string> = {
+  number: 'Number',
+  temporal: 'Date',
+  text: 'Category',
+}
+
 /**
  * The settings of the chart view. The view settings file has this form. The
  * settings have column names and no part of the chart library, thus a file stays
@@ -86,6 +100,16 @@ export type ChartSettings = {
   timeUnit?: TimeUnit
   /** The sequence of the categories of `x`. Without it, they are as in the result. */
   sort?: Sort
+  /** The chart shows only the first `limit` categories of `x`, in the sequence of the sort. */
+  limit?: number
+  /** With `limit`: the chart shows the other categories as one category "Other". */
+  other?: boolean
+  /**
+   * How the chart uses a column, by the name of the column. For example, a
+   * year is a number, but the user wants categories. Without an entry, the
+   * chart uses the kind that the result gives.
+   */
+  kinds?: Record<string, KindOverride>
   stacked?: boolean
   /** The scale of the vertical axis. Without it, the scale is linear. */
   scale?: Scale
@@ -183,6 +207,31 @@ function isAggregateSetting(value: unknown): value is AggregateSetting {
   return value === 'none' || isOneOf(AGGREGATES, value)
 }
 
+function isLimit(value: unknown): value is number {
+  return Number.isInteger(value) && (value as number) >= 1
+    ? (value as number) <= MAX_LIMIT
+    : false
+}
+
+function isKinds(value: unknown): value is Record<string, KindOverride> {
+  return (
+    isRecord(value) &&
+    Object.values(value).every((kind) => isOneOf(KIND_OVERRIDES, kind))
+  )
+}
+
+/** Returns the columns with the kinds that the settings give them. */
+export function effectiveColumns(
+  columns: Column[],
+  kinds: ChartSettings['kinds'],
+): Column[] {
+  if (kinds === undefined) return columns
+  return columns.map((column) => {
+    const kind = kinds[column.name]
+    return kind === undefined ? column : { ...column, kind }
+  })
+}
+
 function isAggregates(
   value: unknown,
 ): value is Record<string, AggregateSetting> {
@@ -208,7 +257,7 @@ export function parseChartSettings(
 ): { settings: ChartSettings } | { error: string } {
   if (!isRecord(value)) return { error: 'The settings are not an object.' }
   const { type, x, y, series, aggregate, stacked, scale } = value
-  const { countRows, timeUnit, sort, aggregates } = value
+  const { countRows, timeUnit, sort, aggregates, limit, other, kinds } = value
   if (!isOneOf(CHART_TYPES, type)) {
     return { error: `The chart type ${JSON.stringify(type)} is not known.` }
   }
@@ -249,6 +298,20 @@ export function parseChartSettings(
   if (sort !== undefined && !isOneOf(SORTS, sort)) {
     return { error: `The sort ${JSON.stringify(sort)} is not known.` }
   }
+  if (limit !== undefined && !isLimit(limit)) {
+    return {
+      error: `The setting "limit" must be a number from 1 to ${MAX_LIMIT}.`,
+    }
+  }
+  if (other !== undefined && typeof other !== 'boolean') {
+    return { error: 'The setting "other" must be true or false.' }
+  }
+  if (kinds !== undefined && !isKinds(kinds)) {
+    return {
+      error:
+        'The setting "kinds" must give "number", "temporal", or "text" for column names.',
+    }
+  }
   if (stacked !== undefined && typeof stacked !== 'boolean') {
     return { error: 'The setting "stacked" must be true or false.' }
   }
@@ -266,6 +329,9 @@ export function parseChartSettings(
       aggregate,
       timeUnit,
       sort,
+      limit,
+      other,
+      kinds,
       stacked,
       scale,
     }),
@@ -293,6 +359,11 @@ export function normalize(settings: ChartSettings): ChartSettings {
     const aggregate = aggregateOf(settings, name)
     return aggregate === undefined ? [] : [[name, aggregate]]
   })
+  const hasLimit = roles.grouping && hasX && settings.limit !== undefined
+  const xKind =
+    hasX && settings.type !== 'histogram'
+      ? settings.kinds?.[settings.x!]
+      : undefined
   return {
     type: settings.type,
     ...(hasX ? { x: settings.x } : {}),
@@ -311,6 +382,10 @@ export function normalize(settings: ChartSettings): ChartSettings {
     ...(roles.grouping && hasX && settings.sort !== undefined
       ? { sort: settings.sort }
       : {}),
+    ...(hasLimit ? { limit: settings.limit } : {}),
+    ...(hasLimit && settings.other ? { other: true } : {}),
+    // Only the column of the horizontal axis can have a different kind.
+    ...(xKind === undefined ? {} : { kinds: { [settings.x!]: xKind } }),
     ...(roles.stacked && settings.stacked ? { stacked: true } : {}),
     ...(roles.scale && settings.scale === 'log' ? { scale: 'log' } : {}),
   }
@@ -409,18 +484,23 @@ function fitAxisControls(
     ...settings,
     timeUnit: controls.timeUnit ? settings.timeUnit : undefined,
     sort: controls.sort ? settings.sort : undefined,
+    // A limit is for categories, as the sort is.
+    limit: controls.sort ? settings.limit : undefined,
   })
 }
 
 /**
  * Tells which controls the horizontal axis has for the column `x`: a time unit
- * for a date, and a sort for categories. A number axis has no control.
+ * for a date, and a sort with a limit for categories. A number axis has no
+ * control. The kind of the column is the kind that the settings give it.
  */
 export function axisControls(
   settings: ChartSettings,
   columns: Column[],
 ): { timeUnit: boolean; sort: boolean } {
-  const column = columns.find((item) => item.name === settings.x)
+  const column = effectiveColumns(columns, settings.kinds).find(
+    (item) => item.name === settings.x,
+  )
   if (!CHART_ROLES[settings.type].grouping || !column) {
     return { timeUnit: false, sort: false }
   }
@@ -465,4 +545,39 @@ export function withEachRow(settings: ChartSettings): ChartSettings {
     settings.y.map((name) => [name, aggregateOf(settings, name) ?? 'none']),
   )
   return normalize({ ...settings, aggregates, aggregate: undefined })
+}
+
+/**
+ * Sets how the chart uses the column of the horizontal axis. `undefined` uses
+ * the kind that the result gives. The time unit, the sort, and the limit stay
+ * only if the new kind can use them.
+ */
+export function withKind(
+  settings: ChartSettings,
+  kind: KindOverride | undefined,
+  columns: Column[],
+): ChartSettings {
+  if (settings.x === undefined) return settings
+  const kinds = kind === undefined ? undefined : { [settings.x]: kind }
+  return fitAxisControls(normalize({ ...settings, kinds }), columns)
+}
+
+/**
+ * Sets the number of categories that the chart shows. A new limit also sets the
+ * sort by value and the category "Other", because the user then sees the
+ * largest categories and loses no value.
+ */
+export function withLimit(
+  settings: ChartSettings,
+  limit: number | undefined,
+): ChartSettings {
+  if (limit === undefined || settings.limit !== undefined) {
+    return normalize({ ...settings, limit })
+  }
+  return normalize({
+    ...settings,
+    limit,
+    other: true,
+    sort: settings.sort ?? 'value-desc',
+  })
 }

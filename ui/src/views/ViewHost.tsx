@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { ColumnAction } from '../results/gridModel'
 import { sqlTabIdOf, useTabsStore } from '../tabs/tabsStore'
 import { viewsFor } from './registry'
 import { SavedViews } from './SavedViews'
@@ -78,6 +79,30 @@ export function ViewHost(props: Props) {
     else change(tabId, statement, { view: id })
   }
 
+  // The actions of the other views for columns of the grid, for example "Chart these columns".
+  const columnActions = useMemo<ColumnAction[]>(
+    () =>
+      views.flatMap((item) =>
+        (item.columnActions ?? []).map((source) => ({
+          label: source.label,
+          run: (names: string[]) => {
+            if (statement === null) return
+            const settings = source.settings({
+              columns: data.columns,
+              names,
+              rowCount: data.rows.length,
+              current: state.settings[item.id],
+            })
+            change(tabId, statement, {
+              view: item.id,
+              settings: { ...state.settings, [item.id]: settings },
+            })
+          },
+        })),
+      ),
+    [views, statement, data.columns, data.rows.length, state, change, tabId],
+  )
+
   return (
     <>
       {views.length > 1 && (
@@ -114,6 +139,7 @@ export function ViewHost(props: Props) {
           })
         }
         onShownSettings={onShownSettings}
+        columnActions={view.id === GRID_VIEW_ID ? columnActions : undefined}
       />
       {view.id !== GRID_VIEW_ID && canChange && (
         <SavedViews

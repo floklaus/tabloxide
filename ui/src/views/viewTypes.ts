@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react'
-import type { Column, Row } from '../results/gridModel'
+import type { Column, ColumnAction, Row } from '../results/gridModel'
 
 /** The result that a view shows. A view gets the rows that the application loaded. */
 export type ResultData = {
@@ -29,6 +29,24 @@ export type ViewProps = ResultData & {
    * shows nothing that the host can save.
    */
   onShownSettings?: (settings: unknown) => void
+  /**
+   * The actions of the other views for columns. The grid shows them in the menu
+   * of a column header. An action shows its view with new settings.
+   */
+  columnActions?: ColumnAction[]
+}
+
+/** How a view makes its settings from columns that the user selected in the grid. */
+export type ColumnActionSource = {
+  /** The text of the action for the names of the columns. */
+  label: (names: string[]) => string
+  /** Returns the new settings of the view. `current` has its settings now. */
+  settings: (input: {
+    columns: Column[]
+    names: string[]
+    rowCount: number
+    current: unknown
+  }) => unknown
 }
 
 /** One view of a result. The built-in views and, later, the view packs have this form. */
@@ -43,6 +61,8 @@ export type ResultView = {
    */
   accepts: (columns: Column[]) => number
   Component: ComponentType<ViewProps>
+  /** The actions that the grid offers for columns, to show this view. */
+  columnActions?: ColumnActionSource[]
 }
 
 /** The identifier of the grid. It is the default view of each result. */

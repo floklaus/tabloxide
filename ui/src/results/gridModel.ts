@@ -69,3 +69,13 @@ export function rowsToTsv(rows: Row[], columnIndexes: number[]): string {
 export function isRightAligned(kind: ColumnKind): boolean {
   return kind === 'number'
 }
+
+/**
+ * An action of a different view for columns of the grid, for example "Chart
+ * these columns". The menu of a column header shows it.
+ */
+export type ColumnAction = {
+  /** The text of the menu item for the names of the columns. */
+  label: (names: string[]) => string
+  run: (names: string[]) => void
+}
