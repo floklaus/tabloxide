@@ -20,27 +20,28 @@ pnpm --dir ui exec playwright install chromium   # only if Chromium is missing
 pnpm --dir ui screenshots
 ```
 
-To make only some images, give their names:
+To make only some images, give their names. A name without a theme makes the image in all four themes:
 
 ```sh
-pnpm --dir ui screenshots main-light plan
+pnpm --dir ui screenshots main plan-dark
 ```
 
 The fonts come from the operating system. A different machine can give different fonts.
 
 ## Images
 
+The script makes each image in the four themes of the application: `light`, `dark`, `neon`, and `high-contrast`. The theme is the last part of the file name, for example `plan-neon.png`.
+
 | File | Content |
 |---|---|
-| `main-light.png` | Main window, light theme: Schema view, `items.sql` with results, and the assistant with an SQL answer |
-| `main-dark.png` | The same window in the dark theme |
-| `git-changes.png` | Git view, Changes mode, with a commit message and the diff of a staged file |
-| `git-history.png` | Git view, History mode, with the detail of a commit that is not pushed |
-| `git-console.png` | Git console with `git log --oneline -5`, `git status -sb`, and `git branch` |
-| `plan.png` | Measured plan (EXPLAIN ANALYZE) of a query with two joins |
-| `ai-query-error.png` | A query error with **Explain and fix**, and the answer of the assistant |
-| `table-detail.png` | Structure of the table `public.orders` |
-| `connections.png` | Connections view in groups by environment, and the detail of the production connection |
-| `connectors.png` | Preferences, Connectors tab, with the official MongoDB connector |
-| `mongodb.png` | A MongoDB `find` query, the documents, and the fields of the collection |
-| `history.png` | History view in groups by day, and the detail of one run |
+| `main-<theme>.png` | Main window: Schema view, `items.sql` with results, and the assistant with an SQL answer |
+| `git-changes-<theme>.png` | Git view, Changes mode, with a commit message and the diff of a staged file |
+| `git-history-<theme>.png` | Git view, History mode, with the detail of a commit that is not pushed |
+| `git-console-<theme>.png` | Git console with `git log --oneline -5`, `git status -sb`, and `git branch` |
+| `plan-<theme>.png` | Measured plan (EXPLAIN ANALYZE) of a query with two joins |
+| `ai-query-error-<theme>.png` | A query error with **Explain and fix**, and the answer of the assistant |
+| `table-detail-<theme>.png` | Structure of the table `public.orders` |
+| `connections-<theme>.png` | Connections view in groups by environment, and the detail of the production connection |
+| `connectors-<theme>.png` | Preferences, Connectors tab, with the official MongoDB connector |
+| `mongodb-<theme>.png` | A MongoDB `find` query, the documents, and the fields of the collection |
+| `history-<theme>.png` | History view in groups by day, and the detail of one run |

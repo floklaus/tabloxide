@@ -2,9 +2,8 @@ import type { Page } from 'playwright'
 
 /** One screenshot: the start state of the page, and the steps that make the final state. */
 export type Shot = {
-  /** The file name in docs/screenshots, without `.png`. */
+  /** The first part of the file name in docs/screenshots. The theme follows it, for example `plan-dark.png`. */
   name: string
-  theme?: 'light' | 'dark'
   /** The stored layout of the window (`tabloxide.shell` in the local storage). */
   shell?: Record<string, unknown>
   /** The file tabs that the window restores at the start. */
@@ -84,13 +83,7 @@ async function mainWindow(page: Page): Promise<void> {
 
 export const SHOTS: Shot[] = [
   {
-    name: 'main-light',
-    shell: layout('schema', { assistant: true }),
-    drive: mainWindow,
-  },
-  {
-    name: 'main-dark',
-    theme: 'dark',
+    name: 'main',
     shell: layout('schema', { assistant: true }),
     drive: mainWindow,
   },

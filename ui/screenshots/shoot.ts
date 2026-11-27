@@ -20,6 +20,10 @@ const CONFIG = fileURLToPath(new URL('./vite.config.ts', import.meta.url))
 const NOW = new Date('2026-11-26T14:30:00+01:00')
 const VIEWPORT = { width: 1440, height: 900 }
 
+/** The themes of the application. The system theme gives no other image. */
+const THEMES = ['light', 'dark', 'neon', 'high-contrast'] as const
+type ShotTheme = (typeof THEMES)[number]
+
 /** Stops carets, animations, and transitions, so that each run gives the same image. */
 const STILL_CSS = `
 *, *::before, *::after {
@@ -33,11 +37,12 @@ async function openPage(
   browser: Browser,
   url: string,
   shot: Shot,
+  theme: ShotTheme,
 ): Promise<Page> {
   const context = await browser.newContext({
     viewport: VIEWPORT,
     deviceScaleFactor: 2,
-    colorScheme: shot.theme ?? 'light',
+    colorScheme: theme === 'light' ? 'light' : 'dark',
     locale: 'en-US',
     timezoneId: 'Europe/Berlin',
   })
@@ -57,7 +62,7 @@ async function openPage(
       Object.assign(window, { __SCREENSHOT_TABS__: tabs })
     },
     {
-      theme: shot.theme ?? 'light',
+      theme,
       shell: shot.shell ?? {},
       tabs: shot.tabs ?? null,
     },
@@ -76,25 +81,30 @@ async function settle(page: Page): Promise<void> {
 }
 
 async function main(): Promise<void> {
+  // A name selects a shot in all themes (`plan`), or in one theme (`plan-dark`).
   const names = process.argv.slice(2)
-  const shots =
-    names.length > 0 ? SHOTS.filter((shot) => names.includes(shot.name)) : SHOTS
+  const jobs = SHOTS.flatMap((shot) =>
+    THEMES.map((theme) => ({ shot, theme, file: `${shot.name}-${theme}` })),
+  ).filter(
+    ({ shot, file }) =>
+      names.length === 0 || names.includes(shot.name) || names.includes(file),
+  )
   await mkdir(OUTPUT, { recursive: true })
   const server = await createServer({ configFile: CONFIG })
   await server.listen()
   const url = server.resolvedUrls?.local[0] ?? 'http://localhost:1431/'
   const browser = await chromium.launch()
   try {
-    for (const shot of shots) {
-      const page = await openPage(browser, url, shot)
+    for (const { shot, theme, file } of jobs) {
+      const page = await openPage(browser, url, shot, theme)
       await shot.drive(page)
       await settle(page)
       await page.screenshot({
-        path: `${OUTPUT}${shot.name}.png`,
+        path: `${OUTPUT}${file}.png`,
         animations: 'disabled',
         caret: 'hide',
       })
-      console.log(`docs/screenshots/${shot.name}.png`)
+      console.log(`docs/screenshots/${file}.png`)
       await page.context().close()
     }
   } finally {
