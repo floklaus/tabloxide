@@ -391,6 +391,12 @@ function Results() {
 export function ResultsPane() {
   const view = useResultsViewStore((state) => state.view)
   const setView = useResultsViewStore((state) => state.setView)
+  // A run shows the Results view. Without this, the status and the time of a
+  // statement stay hidden behind the Plan view or the Git console.
+  const runStartedAt = useQuery((state) => state.runStartedAt)
+  useEffect(() => {
+    if (runStartedAt !== null) setView('results')
+  }, [runStartedAt, setView])
   const views: { id: ResultsView; label: string }[] = [
     { id: 'results', label: 'Results' },
     { id: 'plan', label: 'Plan' },

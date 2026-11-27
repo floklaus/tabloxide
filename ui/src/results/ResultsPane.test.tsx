@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { commands } from '../bindings'
@@ -10,6 +10,7 @@ import {
 } from '../query/queryStore'
 import { useTabsStore } from '../tabs/tabsStore'
 import { ResultsPane } from './ResultsPane'
+import { useResultsViewStore } from './resultsViewStore'
 
 vi.mock('../bindings', async () =>
   (await import('../test/mockBindings')).createBindingsMock(),
@@ -62,6 +63,7 @@ describe('the run time in the results', () => {
     vi.clearAllMocks()
     useTabsStore.getState().reset()
     resetQueryStores()
+    useResultsViewStore.getState().setView('results')
   })
 
   test('shows the time first in the status of a complete result', () => {
@@ -127,6 +129,21 @@ describe('the run time in the results', () => {
     expect(queryCancel).toHaveBeenCalledWith(7)
     expect(screen.getByText('Cancelling…')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled()
+  })
+
+  test('a run shows the Results view when a different view is open', () => {
+    useResultsViewStore.getState().setView('plan')
+    show({})
+
+    act(() => {
+      activeQueryStore().setState({
+        runState: 'running',
+        runStartedAt: Date.now(),
+      })
+    })
+
+    expect(useResultsViewStore.getState().view).toBe('results')
+    expect(screen.getByText('Running…')).toBeInTheDocument()
   })
 
   test('has no Cancel button when no run is active', () => {
