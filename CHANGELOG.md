@@ -6,6 +6,16 @@ The section `Unreleased` collects the changes after the last release. Before you
 
 ## Unreleased
 
+### Charts
+
+- A result with rows has a view switch with **Grid** and **Chart**. The chart shows the loaded rows as a line chart, an area chart, a bar chart, a scatter plot, a histogram, or a single value.
+- Tabloxide proposes a chart from the types of the columns, for example a line chart for a date column with number columns. You can change the chart type, the columns of the axes, a series column, an aggregate, the stack, and the scale.
+- Notes above the chart tell you when the chart does not show the complete result. Examples are the first 100,000 of 5,000,000 rows, and cells that are not numbers. **Load all rows** loads an open result to the row limit.
+- **Save as new view** writes the chart settings to a file next to the query file, for example `revenue.view.json` for `revenue.sql`. You can commit the file to Git. Tabloxide writes the file only when you save or remove a view.
+- **Save image…** saves the chart as a PNG image or an SVG image.
+- A chart follows the four themes. In the High contrast theme, each series also has a pattern and its own line style. A screen reader gets a text about the chart, and the grid always has the values.
+- `docs/user/charts.md` describes the charts.
+
 ### Run time and cancel
 
 - The status line of each result starts with the run time of the statement. A statement that failed or that you cancelled also shows its time.

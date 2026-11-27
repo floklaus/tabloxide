@@ -6,6 +6,8 @@ Status on 2026-11-26: this is a proposal. The product owner made no decision yet
 
 Status on 2026-11-26, later: the measurement of stage 1 is complete for Linux. Section 14 gives the results. Apache ECharts works with the content security policy of the application. The measurement on Windows and macOS is open.
 
+Status on 2026-11-27: the product owner selected Apache ECharts (question 1). Stage 2 is built. Section 15 gives its state and the differences between this design and the code. Question 2 has no decision yet. The code uses the proposal.
+
 The design covers these backlog items: F8 (result views), T2 (chart view), G5 (graph view), and D3 (document view). It uses F7 (typed result values) when F7 exists, but the first stages do not need it.
 
 ## 1. Why this design
@@ -27,7 +29,7 @@ The design has three layers:
 | Topic             | Proposal                                                                                                                                             |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | View interface    | One contract for all views: the accepted result shapes, the data, the theme, and the settings.                                                      |
-| Chart library     | Apache ECharts. The measurement of stage 1 has a good result on Linux (section 14). Section 5 compares the alternatives.                                                |
+| Chart library     | Apache ECharts. The product owner decided this on 2026-11-27. Section 5 compares the alternatives.                                                   |
 | View settings     | A JSON file next to the query file, for example `revenue.sql` and `revenue.view.json`. The file is in the Git repository of the user.                |
 | Built-in views    | Grid, document tree, chart, and column profile. All other views are view packs.                                                                      |
 | View packs        | Web content in a frame with no network access and no access to the application commands. Delivery and signature as for connectors.                  |
@@ -74,7 +76,7 @@ Results pane
 
 ### 4.2 Default view
 
-The grid is always the default view of a new result. The view switch shows the other views that accept the result, with the best score first. The chart view also proposes a chart type from the column kinds (`ColumnKind` of `crates/core/src/query.rs`):
+The grid is always the default view of a new result. A new run of a statement keeps the view of its last run. The view switch shows the other views that accept the result, with the best score first. The chart view also proposes a chart type from the column kinds (`ColumnKind` of `crates/core/src/query.rs`):
 
 | Columns of the result                         | Proposed chart   |
 | --------------------------------------------- | ---------------- |
@@ -82,7 +84,7 @@ The grid is always the default view of a new result. The view switch shows the o
 | One text column and one number column         | Bar chart        |
 | Two number columns                            | Scatter plot     |
 | One number column                             | Histogram        |
-| Two text columns and one number column        | Heat map         |
+| Two text columns and one number column        | Heat map (stage 3) |
 | One row with one number                       | Single value     |
 
 The rules are fixed code. They need no AI and no network.
@@ -128,7 +130,7 @@ The chart view uses one library that draws a chart from a description. The candi
 | Observable Plot        | A medium number of types.                                                                                     | Draws SVG only. This is the weakest candidate.   | The description is JavaScript code, not JSON.                                                                                                      |
 | Own code for each type | Only what the project writes.                                                                                 | As good as the code.                             | The most work. Refer to section 1.                                                                                                                 |
 
-The proposal is Apache ECharts. It has the largest number of chart types, it draws on a canvas, and its licence is Apache 2.0. Stage 1 measured the speed and the size of ECharts (section 14). The statements of this table about the other libraries are not measured.
+The product owner selected Apache ECharts on 2026-11-27. It has the largest number of chart types, it draws on a canvas, and its licence is Apache 2.0. Stage 1 measured the speed and the size of ECharts (section 14). The statements of this table about the other libraries are not measured.
 
 ### 5.2 Chart settings
 
@@ -265,7 +267,7 @@ The cells of a result are text now. The chart view converts the cells of number 
 | Stage | Content                                                                                                                                                                                   | Needs from the product owner                  | Status      |
 | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- | ----------- |
 | 1     | A measurement of the chart library. Does it work with the content security policy of the application? How much larger is the installer? How long does a chart of 100 000 points take? | Nothing                                       | Complete for Linux (section 14). Windows and macOS are open. |
-| 2     | The view interface, the view switch, the chart view with the basic types, the default rules, the view settings file, and the image export.                                                | The decision of questions 1 and 2, and a design | Not started |
+| 2     | The view interface, the view switch, the chart view with the basic types, the default rules, the view settings file, and the image export.                                                | The decision of questions 1 and 2, and a design | Complete, with the limits of section 15. Question 2 and the design are open. |
 | 3     | The other chart types, the column profile, and the action "Propose a chart".                                                                                                              | Nothing                                       | Not started |
 | 4     | The security test of the sandbox on Windows, macOS, and Linux. Then the view pack host, the SDK, the index, and the first view packs.                                                      | The decision of questions 3 and 4             | Not started |
 | 5     | Charts of a complete result through DuckDB.                                                                                                                                               | Nothing                                       | Not started |
@@ -276,8 +278,8 @@ Stage 2 gives the chart view of backlog item T2 and the first part of F8. Each s
 
 | No. | Question                                                                                                                                              | Proposal                                       |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| 1   | **The chart library:** Apache ECharts, Vega-Lite, or Observable Plot.                                                                                 | ECharts. The measurement has a good result.    |
-| 2   | **The view settings file:** next to the query file in the Git repository, or in the local state of the application.                                   | Next to the query file.                        |
+| 1   | **The chart library:** Apache ECharts, Vega-Lite, or Observable Plot.                                                                                 | Decided on 2026-11-27: ECharts.                |
+| 2   | **The view settings file:** next to the query file in the Git repository, or in the local state of the application.                                   | Next to the query file. Stage 2 uses this proposal. The decision is open. |
 | 3   | **View packs of other publishers:** from the first release, after the security test, or never.                                                        | After the security test.                       |
 | 4   | **Map tiles:** a map view with tiles from the network, or only the outline in the pack. Tiles send the map position of the user's data to a service.  | Only the outline.                              |
 | 5   | **The scope:** the product is a query workbench. Saved charts are near to a dashboard. Is a page with more than one chart in the scope.               | No. One view of one result.                    |
@@ -375,7 +377,7 @@ In the default mode, ECharts draws the points in steps. The complete chart needs
 ### 14.6 Defects found
 
 - The action `showTip` with a data index fails for a parallel coordinates series, with a `TypeError`. The chart itself draws correctly. The chart view must not use this action for that chart type.
-- A heat map with zoom gives a `TypeError` in a frame after the test disposed the chart (`layerStack` of `null`). This occurred in the two engines, but not in each run. A wait of some frames before the dispose did not prevent it. The cause is not known. Stage 2 must examine it.
+- A heat map with zoom gives a `TypeError` in a frame after the test disposed the chart (`layerStack` of `null`). This occurred in the two engines, but not in each run. A wait of some frames before the dispose did not prevent it. The cause is not known. Stage 2 has no heat map, thus it did not examine the defect. A line chart with zoom gave no error after its dispose in one check in Chrome. Stage 3 must examine the defect before it adds the heat map.
 
 ### 14.7 Limits of the measurement
 
@@ -385,7 +387,87 @@ In the default mode, ECharts draws the points in steps. The complete chart needs
 - The installer size is an estimate from the compressed size of the library.
 - The measurement did not examine the look of the charts in the four themes, and it did not examine the keys. These are part of stage 2.
 
-## 15. Sources
+## 15. Stage 2 as built
+
+Date: 2026-11-27. The user guide is `docs/user/charts.md`.
+
+### 15.1 Content
+
+- A result with rows has a view switch with "Grid" and "Chart".
+- The chart view has six chart types: line, area, bar, scatter plot, histogram, and single value.
+- The fixed rules of section 4.2 propose a chart.
+- The view settings file keeps named views next to the query file.
+- The chart view saves a PNG image or an SVG image.
+
+### 15.2 Code
+
+| Part                                   | Content                                                                                                             |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `ui/src/views/viewTypes.ts`            | The contract of a view.                                                                                             |
+| `ui/src/views/ViewHost.tsx`            | The view switch and the host. `ui/src/results/ResultsPane.tsx` gives each result to it.                             |
+| `ui/src/views/registry.ts`             | The built-in views and their sequence.                                                                              |
+| `ui/src/views/statementNumber.ts`      | The number of a statement in its script.                                                                            |
+| `ui/src/views/viewFile.ts`             | The format of the view settings file. `viewFileStore.ts` reads and writes it. `SavedViews.tsx` has the controls.    |
+| `ui/src/views/chart/chartSettings.ts`  | The chart settings of section 5.2 and their check.                                                                  |
+| `ui/src/views/chart/proposeChart.ts`   | The default rules.                                                                                                  |
+| `ui/src/views/chart/chartData.ts`      | The series of a chart from the rows. It does not know the chart library.                                            |
+| `ui/src/views/chart/chartOption.ts`    | The mapping to ECharts. It is the only module that knows the options of the library.                                |
+| `ui/src/views/chart/ChartCanvas.tsx`   | The only component with an ECharts instance. `echartsSetup.ts` lists the parts of ECharts that the build includes.  |
+| `src-tauri/src/commands/images.rs`     | The command that writes an image.                                                                                   |
+
+### 15.3 Differences from the design
+
+| Topic                | Design                                                           | Code                                                                                                                                                                                              |
+| -------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Contract             | A view has an icon.                                              | The view switch shows names. A view has no icon yet.                                                                                                                                              |
+| Contract             | A view tells the host the selected rows.                         | Not built. No built-in view of stage 2 needs it.                                                                                                                                                  |
+| Contract             | The host gives the settings, and the view gives new settings.    | In addition, a view tells the host the settings that it shows, also its defaults. Without this, the host cannot save a proposed chart.                                                            |
+| Default view         | The grid is the view of a new result.                            | A new run of a statement keeps its view and its settings. The first run shows the grid.                                                                                                           |
+| Default rules        | Six rules.                                                       | Five rules, and one new rule. A temporal column, a text column, and a number column give one line for each value of the text column. The heat map rule comes with the heat map in stage 3.       |
+| Chart settings       | `size` and `colour`.                                             | Not built. They are for the bubble chart of stage 3.                                                                                                                                              |
+| Number of series     | No limit.                                                        | A chart shows a maximum of 8 series, because the colour set has 8 colours. A note gives the number of series that the chart does not show.                                                        |
+| Aggregate            | An aggregate combines the rows with the same `x`.                | Without an aggregate, each row is one mark. With a series column, the chart shows the first of the rows with the same `x` and the same series, and a note says so.                                |
+| Statement number     | The number of the statement in the file.                         | The backend gives the number through the command `query_preview`. A run of one statement of a script has the position 0 in its run, thus the position is not the number.                         |
+| View settings file   | One file next to the query file.                                 | As designed. The application writes the file only when the user saves or removes a view. One statement can have more than one named view. A chart without settings starts with the first of them. |
+| `crates/workspace`   | Read and write of the view settings file.                        | No change. The UI uses the file commands of the workspace.                                                                                                                                        |
+| Time axis            | Not specified.                                                   | The axis shows the times as the grid shows them. The offset of the first value is the offset of the axis.                                                                                         |
+
+### 15.4 Colours
+
+- The style sheet has the tokens `--chart-1` to `--chart-8` for each theme. The dark, the neon, and the high contrast theme use the same eight colours.
+- A check of the sequence measured the difference of adjacent colours for people with a colour vision deficiency. The smallest difference is 11.8 in the light theme and 10.1 in the dark themes. The target is 8 or more (OKLab distance times 100).
+- In the dark themes, each colour has a contrast of 3:1 or more to the background.
+- In the light theme, four colours have a contrast of 2.0:1 to 2.9:1 to the background. No set of eight different colours has more. The grid gives the values as text, a chart with two or more series has a legend, and each series has its own mark.
+- In the high contrast theme, each series also has a pattern, and each line has its own line style.
+- `ui/src/theme/contrast.test.ts` checks the contrast of the tokens.
+
+### 15.5 Size
+
+The build of the UI puts ECharts into a separate file of 600 kB (203 kB with gzip). The file has the line, the bar, and the scatter series and the two renderers. The application loads it when the user opens the first chart.
+
+### 15.6 Checks
+
+- The UI has 937 automatic tests, and all pass. 210 of them are new: 174 for the views and 36 for the chart colours. The tests of the chart view use a replacement of the ECharts component, because the test environment has no canvas.
+- The command that writes an image has 5 tests.
+- A preview page showed the chart view with ECharts in Chrome 158. The light theme and the high contrast theme showed 10 cases, and the dark theme showed one case. The cases included 100 000 points, 8 series, the notes, and a missing column. The page had no error.
+- The PNG export and the SVG export of the ECharts component gave valid images in Chrome 158.
+
+Not checked:
+
+- **The chart in the application window.** No person and no test opened a chart in the Tauri window. WebKitGTK showed ECharts correctly in the measurement of stage 1, but not this view.
+- **The neon theme.** It has the colours of the dark theme, but nobody looked at a chart in it.
+- **Windows and macOS.**
+- **A screen reader.**
+
+### 15.7 Open points of stage 2
+
+- **The design.** The design canvas has no board for the chart view. The view uses the view standards and the tabs "Chart" and "Grid" of the board for time-series databases.
+- **The keys of the zoom.** The zoom control has no keys. The settings and the buttons have keys, and the grid has the values.
+- **The grid after a view change.** The grid loses its sort and its scroll position when the user shows the chart and then the grid again.
+- **The zoom control in an image.** A saved image also shows the zoom control.
+- **The view state of a closed tab.** It stays in memory until the application closes. It is small.
+
+## 16. Sources
 
 - Security guidelines of Apache ECharts: <https://echarts.apache.org/handbook/en/best-practices/security>
 - Expression interpreter of Vega: <https://vega.github.io/vega/usage/interpreter>

@@ -123,8 +123,8 @@ export function SavedViews(props: Props) {
     return (
       <p className="saved-views saved-views__error" role="alert">
         The application cannot use the view file {fileName(path)}.{' '}
-        {loaded.error} Correct the file or delete it. Then run the statement
-        again.
+        {loaded.error} Correct the file or remove it from the folder. Then run
+        the statement again.
       </p>
     )
   }
