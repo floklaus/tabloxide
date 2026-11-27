@@ -27,8 +27,9 @@ function Fields({ node }: { node: PlanNode }) {
   const groups = new Map<FieldGroup, [string, string, string | null][]>()
   for (const [key, value] of node.details) {
     const info = fieldInfo(key)
-    groups.set(info.group, [
-      ...(groups.get(info.group) ?? []),
+    const group = node.fieldGroups?.[key] ?? info.group
+    groups.set(group, [
+      ...(groups.get(group) ?? []),
       [key, value, node.fieldTexts?.[key] ?? info.text],
     ])
   }

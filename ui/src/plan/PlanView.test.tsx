@@ -366,6 +366,7 @@ describe('PlanView', () => {
               name: 'rejectedPlans',
               value: '0',
               explanation: 'Plans that the planner did not use.',
+              group: 'step',
             },
           ],
           hints: [
@@ -396,6 +397,7 @@ describe('PlanView', () => {
                     name: 'memLimit',
                     value: '104857600',
                     explanation: 'The memory limit of the sort, in bytes.',
+                    group: 'memory',
                   },
                 ],
                 estimatedRows: null,

@@ -6,9 +6,9 @@ use std::collections::BTreeMap;
 use tabloxide_core::{
     Capabilities, Column, ColumnInfo, ColumnKind, Completion, ConnectError, ConnectErrorKind,
     ConnectionId, ConnectionProfile, ConstraintInfo, ConstraintKind, Engine, EngineInfo,
-    Environment, HintLevel, IndexInfo, Page, Plan, PlanField, PlanHint, PlanStep, PlanText,
-    QueryError, QueryErrorKind, QueryLanguage, RelationDetail, RelationInfo, RelationKind, Row,
-    SchemaInfo, SecretSource, ServerInfo, TlsMode,
+    Environment, FieldGroup, HintLevel, IndexInfo, Page, Plan, PlanField, PlanHint, PlanStep,
+    PlanText, QueryError, QueryErrorKind, QueryLanguage, RelationDetail, RelationInfo,
+    RelationKind, Row, SchemaInfo, SecretSource, ServerInfo, TlsMode,
 };
 
 // ---------- Describe ----------
@@ -64,18 +64,34 @@ pub fn engine_info(response: &v1::DescribeResponse) -> EngineInfo {
 // ---------- Plan ----------
 
 fn field_to_wire(field: &PlanField) -> v1::PlanField {
+    let group = match field.group {
+        FieldGroup::Step => v1::FieldGroup::Step,
+        FieldGroup::Estimate => v1::FieldGroup::Estimate,
+        FieldGroup::Measured => v1::FieldGroup::Measured,
+        FieldGroup::Memory => v1::FieldGroup::Memory,
+        FieldGroup::Io => v1::FieldGroup::Io,
+    };
     v1::PlanField {
         name: field.name.clone(),
         value: field.value.clone(),
         explanation: field.explanation.clone(),
+        group: group.into(),
     }
 }
 
 fn field_from_wire(field: &v1::PlanField) -> PlanField {
+    let group = match v1::FieldGroup::try_from(field.group) {
+        Ok(v1::FieldGroup::Estimate) => FieldGroup::Estimate,
+        Ok(v1::FieldGroup::Measured) => FieldGroup::Measured,
+        Ok(v1::FieldGroup::Memory) => FieldGroup::Memory,
+        Ok(v1::FieldGroup::Io) => FieldGroup::Io,
+        _ => FieldGroup::Step,
+    };
     PlanField {
         name: field.name.clone(),
         value: field.value.clone(),
         explanation: field.explanation.clone(),
+        group,
     }
 }
 
@@ -666,6 +682,7 @@ mod tests {
                 name: "keysExamined".to_owned(),
                 value: "12".to_owned(),
                 explanation: None,
+                group: FieldGroup::Measured,
             }],
             estimated_rows: None,
             actual_rows: Some(12.0),
@@ -695,6 +712,7 @@ mod tests {
                 name: "rejectedPlans".to_owned(),
                 value: "0".to_owned(),
                 explanation: Some("Plans that the planner did not use.".to_owned()),
+                group: FieldGroup::Step,
             }],
             hints: vec![PlanHint {
                 step: "0.0".to_owned(),

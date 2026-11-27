@@ -447,6 +447,23 @@ message PlanField {
   string value = 2;
   // What the value means, for the user.
   optional string explanation = 3;
+  // The section of the field in the view of a step.
+  FieldGroup group = 4;
+}
+
+enum FieldGroup {
+  // Tabloxide shows the field with the fields of FIELD_GROUP_STEP.
+  FIELD_GROUP_UNSPECIFIED = 0;
+  // What the step does, for example the filter or the join condition.
+  FIELD_GROUP_STEP = 1;
+  // Estimates of the planner.
+  FIELD_GROUP_ESTIMATE = 2;
+  // Values that the engine measured when the statement ran.
+  FIELD_GROUP_MEASURED = 3;
+  // Memory and temporary files.
+  FIELD_GROUP_MEMORY = 4;
+  // Reads and writes of pages or bytes.
+  FIELD_GROUP_IO = 5;
 }
 
 enum HintLevel {

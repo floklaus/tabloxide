@@ -70,6 +70,65 @@ pub struct PlanField {
     pub value: String,
     /// What the value means, for the user.
     pub explanation: Option<String>,
+    /// The section of the field in the view of a step.
+    pub group: FieldGroup,
+}
+
+impl PlanField {
+    /// A field without an explanation in the group [`FieldGroup::Step`].
+    #[must_use]
+    pub fn new(name: impl Into<String>, value: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            value: value.into(),
+            explanation: None,
+            group: FieldGroup::Step,
+        }
+    }
+}
+
+/// The section of a field in the view of a step.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(rename_all = "kebab-case")]
+pub enum FieldGroup {
+    /// What the step does, for example the filter or the join condition.
+    Step,
+    /// Estimates of the planner.
+    Estimate,
+    /// Values that the engine measured when the statement ran.
+    Measured,
+    /// Memory and temporary files.
+    Memory,
+    /// Reads and writes of pages or bytes.
+    Io,
+}
+
+/// Returns a JSON value of a plan as text for a field, or `None` for no value.
+/// An empty text, an empty list, and `null` are no value. A list becomes the items
+/// with commas. An object becomes its JSON text.
+#[must_use]
+pub fn json_field_text(value: &serde_json::Value) -> Option<String> {
+    use serde_json::Value;
+    match value {
+        Value::Null => None,
+        Value::Bool(flag) => Some(if *flag { "yes" } else { "no" }.to_owned()),
+        Value::Number(number) => Some(number.to_string()),
+        Value::String(text) if text.is_empty() => None,
+        Value::String(text) => Some(text.clone()),
+        Value::Array(items) if items.is_empty() => None,
+        Value::Array(items) => Some(
+            items
+                .iter()
+                .map(|item| match item {
+                    Value::String(text) => text.clone(),
+                    other => other.to_string(),
+                })
+                .collect::<Vec<_>>()
+                .join(", "),
+        ),
+        Value::Object(_) => Some(value.to_string()),
+    }
 }
 
 /// How important a hint is.
@@ -124,6 +183,25 @@ const MAX_PLAN_ROWS: usize = 10;
 mod tests {
     use super::*;
     use crate::testing::{Scripted, ScriptedSession};
+
+    #[test]
+    fn a_json_value_becomes_the_text_of_a_field() {
+        use serde_json::json;
+
+        assert_eq!(json_field_text(&json!(null)), None);
+        assert_eq!(json_field_text(&json!("")), None);
+        assert_eq!(json_field_text(&json!([])), None);
+        assert_eq!(json_field_text(&json!(true)).as_deref(), Some("yes"));
+        assert_eq!(json_field_text(&json!(2.5)).as_deref(), Some("2.5"));
+        assert_eq!(
+            json_field_text(&json!(["a", 1, {"b": 2}])).as_deref(),
+            Some("a, 1, {\"b\":2}")
+        );
+        assert_eq!(
+            json_field_text(&json!({"b": 2})).as_deref(),
+            Some("{\"b\":2}")
+        );
+    }
 
     #[tokio::test]
     async fn takes_the_last_cell_with_a_value_of_the_first_row() {

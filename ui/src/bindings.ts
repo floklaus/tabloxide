@@ -29,7 +29,7 @@ export const commands = {
 	 *  database runs it. Thus `measure` is permitted only for a statement that reads
 	 *  data. The query history does not record the plan read. This closes the open result.
 	 */
-	planRead: (sessionId: number, sql: string, analyze: boolean, options?: InvokeOptions) => typedError<PlanRead_Serialize, CommandError>(__TAURI_INVOKE("plan_read", { sessionId, sql, analyze }, options)),
+	planRead: (sessionId: number, sql: string, measure: boolean, options?: InvokeOptions) => typedError<PlanRead_Serialize, CommandError>(__TAURI_INVOKE("plan_read", { sessionId, sql, measure }, options)),
 	/**  Opens the folder `path` as the workspace and adds it to the recent list. */
 	workspaceOpen: (path: string, options?: InvokeOptions) => typedError<WorkspaceSnapshot_Serialize, CommandError>(__TAURI_INVOKE("workspace_open", { path }, options)),
 	/**  Returns the open workspace, or `null` if no workspace is open. */
@@ -1020,6 +1020,19 @@ export type FetchedPage_Serialize = {
 	error: QueryError_Serialize | null,
 };
 
+/**  The section of a field in the view of a step. */
+export type FieldGroup = 
+/**  What the step does, for example the filter or the join condition. */
+"step" | 
+/**  Estimates of the planner. */
+"estimate" | 
+/**  Values that the engine measured when the statement ran. */
+"measured" | 
+/**  Memory and temporary files. */
+"memory" | 
+/**  Reads and writes of pages or bytes. */
+"io";
+
 /**  The two sides of the diff of one file. */
 export type FileDiff = {
 	original: string,
@@ -1397,6 +1410,8 @@ export type PlanField_Deserialize = {
 	value: string,
 	/**  What the value means, for the user. */
 	explanation?: string | null,
+	/**  The section of the field in the view of a step. */
+	group: FieldGroup,
 };
 
 /**  One value of a step or of the complete statement. */
@@ -1405,6 +1420,8 @@ export type PlanField_Serialize = {
 	value: string,
 	/**  What the value means, for the user. */
 	explanation: string | null,
+	/**  The section of the field in the view of a step. */
+	group: FieldGroup,
 };
 
 /**  A probable cause of a slow statement, with what to do. */

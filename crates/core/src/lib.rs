@@ -25,7 +25,10 @@ pub use connection::{
 };
 pub use error::{ConnectError, ConnectErrorKind};
 pub use language::QueryLanguage;
-pub use plan::{HintLevel, Plan, PlanField, PlanHint, PlanStep, PlanText, read_explain_json};
+pub use plan::{
+    FieldGroup, HintLevel, Plan, PlanField, PlanHint, PlanStep, PlanText, json_field_text,
+    read_explain_json,
+};
 pub use query::{Column, ColumnKind, Completion, Page, QueryError, QueryErrorKind, Row};
 pub use runner::{
     Outcome, RunLimits, RunOutput, RunTarget, StatementPreview, StatementReport, TextRange,

@@ -1,4 +1,9 @@
-import type { Engine, PlanStep_Serialize, Plan_Serialize } from '../bindings'
+import type {
+  Engine,
+  FieldGroup,
+  PlanStep_Serialize,
+  Plan_Serialize,
+} from '../bindings'
 
 /** One step of an execution plan, in a form that does not depend on the engine. */
 export type PlanNode = {
@@ -40,6 +45,8 @@ export type PlanNode = {
   about?: string | null
   /** The explanations of the fields from the engine, by field name. */
   fieldTexts?: Record<string, string>
+  /** The sections of the fields from the engine, by field name. */
+  fieldGroups?: Record<string, FieldGroup>
   children: PlanNode[]
 }
 
@@ -372,6 +379,9 @@ function commonNode(step: PlanStep_Serialize): RawNode {
     selfTime: step.selfMs,
     about: step.explanation ?? undefined,
     fieldTexts: texts(step.fields),
+    fieldGroups: Object.fromEntries(
+      step.fields.map((field) => [field.name, field.group]),
+    ),
     children: step.children.map(commonNode),
   }
 }
