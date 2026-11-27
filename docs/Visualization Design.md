@@ -4,6 +4,8 @@ A visualization is a view of a result that is not the grid: a chart, a map, a gr
 
 Status on 2026-11-26: this is a proposal. The product owner made no decision yet. Section 2 lists the proposals, and section 12 lists the questions. No part is built or measured.
 
+Status on 2026-11-26, later: the measurement of stage 1 is complete for Linux. Section 14 gives the results. Apache ECharts works with the content security policy of the application. The measurement on Windows and macOS is open.
+
 The design covers these backlog items: F8 (result views), T2 (chart view), G5 (graph view), and D3 (document view). It uses F7 (typed result values) when F7 exists, but the first stages do not need it.
 
 ## 1. Why this design
@@ -25,7 +27,7 @@ The design has three layers:
 | Topic             | Proposal                                                                                                                                             |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | View interface    | One contract for all views: the accepted result shapes, the data, the theme, and the settings.                                                      |
-| Chart library     | Apache ECharts, if the measurement of stage 1 has a good result. Section 5 compares the alternatives.                                                |
+| Chart library     | Apache ECharts. The measurement of stage 1 has a good result on Linux (section 14). Section 5 compares the alternatives.                                                |
 | View settings     | A JSON file next to the query file, for example `revenue.sql` and `revenue.view.json`. The file is in the Git repository of the user.                |
 | Built-in views    | Grid, document tree, chart, and column profile. All other views are view packs.                                                                      |
 | View packs        | Web content in a frame with no network access and no access to the application commands. Delivery and signature as for connectors.                  |
@@ -121,12 +123,12 @@ The chart view uses one library that draws a chart from a description. The candi
 
 | Library                | Chart types                                                                                                   | Large results                                    | Concern                                                                                                                                            |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Apache ECharts         | Very many, also tree map, sunburst, Sankey, candlestick, parallel coordinates, calendar, simple graphs, maps. | Draws on a canvas. Can reduce the points.        | Its description is long. Options that are functions can need script evaluation, which the content security policy of the application refuses.     |
+| Apache ECharts         | Very many, also tree map, sunburst, Sankey, candlestick, parallel coordinates, calendar, simple graphs, maps. | Draws on a canvas. Can reduce the points.        | Its description is long. The measurement found no script evaluation (section 14).     |
 | Vega-Lite              | Fewer types. A clean grammar with layers and facets.                                                          | Slower with many points.                         | The default mode needs script evaluation. A second mode does not, but it is slower, and it had a security defect that version 6.2.0 of Vega fixed. |
 | Observable Plot        | A medium number of types.                                                                                     | Draws SVG only. This is the weakest candidate.   | The description is JavaScript code, not JSON.                                                                                                      |
 | Own code for each type | Only what the project writes.                                                                                 | As good as the code.                             | The most work. Refer to section 1.                                                                                                                 |
 
-The proposal is Apache ECharts. It has the largest number of chart types, it draws on a canvas, and its licence is Apache 2.0. The statements of this table about speed and size are not measured. Stage 1 measures them before the decision.
+The proposal is Apache ECharts. It has the largest number of chart types, it draws on a canvas, and its licence is Apache 2.0. Stage 1 measured the speed and the size of ECharts (section 14). The statements of this table about the other libraries are not measured.
 
 ### 5.2 Chart settings
 
@@ -262,7 +264,7 @@ The cells of a result are text now. The chart view converts the cells of number 
 
 | Stage | Content                                                                                                                                                                                   | Needs from the product owner                  | Status      |
 | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- | ----------- |
-| 1     | A measurement of the chart library. Does it work with the content security policy of the application? How much larger is the installer? How long does a chart of 100 000 points take? | Nothing                                       | Not started |
+| 1     | A measurement of the chart library. Does it work with the content security policy of the application? How much larger is the installer? How long does a chart of 100 000 points take? | Nothing                                       | Complete for Linux (section 14). Windows and macOS are open. |
 | 2     | The view interface, the view switch, the chart view with the basic types, the default rules, the view settings file, and the image export.                                                | The decision of questions 1 and 2, and a design | Not started |
 | 3     | The other chart types, the column profile, and the action "Propose a chart".                                                                                                              | Nothing                                       | Not started |
 | 4     | The security test of the sandbox on Windows, macOS, and Linux. Then the view pack host, the SDK, the index, and the first view packs.                                                      | The decision of questions 3 and 4             | Not started |
@@ -274,7 +276,7 @@ Stage 2 gives the chart view of backlog item T2 and the first part of F8. Each s
 
 | No. | Question                                                                                                                                              | Proposal                                       |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| 1   | **The chart library:** Apache ECharts, Vega-Lite, or Observable Plot.                                                                                 | ECharts, after the measurement of stage 1.     |
+| 1   | **The chart library:** Apache ECharts, Vega-Lite, or Observable Plot.                                                                                 | ECharts. The measurement has a good result.    |
 | 2   | **The view settings file:** next to the query file in the Git repository, or in the local state of the application.                                   | Next to the query file.                        |
 | 3   | **View packs of other publishers:** from the first release, after the security test, or never.                                                        | After the security test.                       |
 | 4   | **Map tiles:** a map view with tiles from the network, or only the outline in the pack. Tiles send the map position of the user's data to a service.  | Only the outline.                              |
@@ -287,7 +289,101 @@ Stage 2 gives the chart view of backlog item T2 and the first part of F8. Each s
 - **The size of a pack message.** 100 000 rows as one JSON message can be slow. The messages give the rows in pages, but the measurement is open.
 - **Shared code with connectors.** The index and the signature code are in `crates/connector-host`. The move to shared code must not change the behaviour of connectors.
 
-## 14. Sources
+## 14. Measurement of stage 1
+
+Date: 2026-11-26. Library: Apache ECharts 6.1.0, licence Apache 2.0. Build tool: Vite 8.3.8, the version of the UI.
+
+### 14.1 Method
+
+- A test page draws charts with ECharts. A local server gives the page with the content security policy of `src-tauri/tauri.conf.json`, without a change.
+- Two engines loaded the page. WebKitGTK 2.52.6 is the engine of Tauri on Linux. It ran in an off-screen window. Chrome 158 in headless mode is of the same family as WebView2, the engine of Tauri on Windows.
+- The machine has an AMD Ryzen 7 PRO 4750U processor, 30 GB of memory, and Ubuntu 24.04.
+- A time is from the start of the chart to the event `finished` of ECharts. Each number is the median of 5 runs. The chart is 1200 by 500 pixels. Animation is off.
+
+### 14.2 Content security policy
+
+| Check                                                                                         | WebKitGTK    | Chrome       |
+| --------------------------------------------------------------------------------------------- | ------------ | ------------ |
+| The policy refuses `new Function` in the test page (control)                                  | Yes          | Yes          |
+| 23 chart cases, each with the canvas renderer and the SVG renderer: cases that drew a chart   | 46 of 46     | 46 of 46     |
+| Violations of the policy by ECharts                                                           | 0            | 0            |
+
+The 23 cases have all chart types of section 5.3 and a simple graph. They also have these functions:
+
+- A time axis, a logarithmic axis, and zoom.
+- A data set with a transform.
+- The toolbox and an image export.
+- The text for screen readers, and patterns in addition to colours.
+- Labels from a text template and from a function.
+
+A search of the complete ECharts build found no `eval` and no `new Function`.
+
+Result: ECharts needs no change of the content security policy.
+
+### 14.3 Size
+
+| Build                                                                    | Minified | gzip   | Brotli |
+| ------------------------------------------------------------------------ | -------- | ------ | ------ |
+| Line, bar, and scatter with the canvas renderer (stage 2)                | 569 kB   | 189 kB | 159 kB |
+| The 14 series types for section 5.3 and a simple graph, with the two renderers (stage 3)       | 851 kB   | 281 kB | 232 kB |
+| Complete ECharts                                                         | 1091 kB  | 358 kB | 291 kB |
+| For comparison: the JavaScript of the UI now                             | 1310 kB  | —      | 337 kB |
+
+- Tauri compresses the UI files in the program with Brotli. Thus the installer becomes approximately 0.2 MB to 0.3 MB larger. This is an estimate. No installer was built for the measurement.
+- The chart library is 65 % of the size of the UI code of today. Thus the build must load it only when the user opens a chart, as section 10 says.
+
+### 14.4 Speed
+
+| Chart                                                           | WebKitGTK         | Chrome   |
+| --------------------------------------------------------------- | ----------------- | -------- |
+| Line, 100 000 points, no reduction of points                    | 55 ms             | 58 ms    |
+| Line, 100 000 points, reduction of points (`sampling: 'lttb'`)  | 44 ms             | 49 ms    |
+| Line, 10 series of 10 000 points, reduction of points           | 42 ms             | 54 ms    |
+| Line, 1 000 000 points, reduction of points                     | 275 ms            | 431 ms   |
+| Scatter plot, 100 000 points, large mode (`large: true`)        | 361 ms            | 264 ms   |
+| Scatter plot, 100 000 points, default mode                      | More than 30 s    | 20.8 s   |
+| Bar, 100 000 bars, large mode                                   | 610 ms            | 760 ms   |
+| Heat map, 100 000 cells                                         | 432 ms            | 419 ms   |
+| Line, 100 000 points, reduction of points, SVG renderer         | 43 ms             | 46 ms    |
+
+- The conversion of 100 000 text cells to dates and numbers takes 28 ms to 35 ms.
+- A zoom through the API draws the next frame in 6 ms to 30 ms. The heat map is slower: 206 ms to 245 ms.
+- The first draw of a page is slower. The first run of the first case took approximately 140 ms, not 55 ms.
+- In WebKitGTK, two of the 5 runs of the scatter plot in large mode were slow (2.5 s and 4.2 s). The probable cause is the test: the chart of the case before it was not stopped.
+
+The default mode of the scatter plot is slow. In Chrome, the median of 3 runs is:
+
+| Points  | Default mode | Large mode |
+| ------- | ------------ | ---------- |
+| 2 000   | 148 ms       | 28 ms      |
+| 5 000   | 659 ms       | 32 ms      |
+| 10 000  | 1.3 s        | 37 ms      |
+| 50 000  | 5.9 s        | 83 ms      |
+| 100 000 | 20.8 s       | 264 ms     |
+
+In the default mode, ECharts draws the points in steps. The complete chart needs too much time.
+
+### 14.5 Rules for the chart view
+
+1. The chart view always sets the large mode (`large: true`) for a scatter plot and for a bar chart.
+2. The chart view always sets the reduction of points for a line.
+3. The ECharts documentation says that the large mode cannot give a different style to each point. This was not measured. If this is true, a bubble chart (size or colour from a column) needs a limit for the number of rows.
+4. The build loads ECharts in a separate part, only when the user opens a chart.
+
+### 14.6 Defects found
+
+- The action `showTip` with a data index fails for a parallel coordinates series, with a `TypeError`. The chart itself draws correctly. The chart view must not use this action for that chart type.
+- A chart that is disposed immediately after a zoom action gives a `TypeError` in a later frame (`layerStack` of `null`). This occurred for the heat map and for the SVG renderer. The chart view must wait for the event `finished` before it disposes a chart.
+
+### 14.7 Limits of the measurement
+
+- One machine, and Linux only. WKWebView on macOS is not measured. Chrome in headless mode is not WebView2, but it has the same engine.
+- The engines ran without a visible window. The speed in the application window can be different.
+- The installer size is an estimate from the compressed size of the library.
+- The measurement did not examine the look of the charts in the four themes, and it did not examine the keys. These are part of stage 2.
+- The code of the measurement is not in the repository.
+
+## 15. Sources
 
 - Security guidelines of Apache ECharts: <https://echarts.apache.org/handbook/en/best-practices/security>
 - Expression interpreter of Vega: <https://vega.github.io/vega/usage/interpreter>
