@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { AiAction } from '../assistant/AiAction'
 import type { ActionRequest } from '../assistant/assistantStore'
 import { GitConsole } from '../git/GitConsole'
@@ -24,6 +25,72 @@ function count(value: number, noun: string): string {
 
 function elapsed(ms: number): string {
   return ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(2)} s`
+}
+
+/** The interval of the timer of an active run. */
+const TIMER_INTERVAL_MS = 100
+
+const TIME_COMPLETE =
+  'The time from the start of the statement to the end of its result. The application measures it, thus it includes the time of the network.'
+const TIME_LOADED =
+  'The time to get the rows that are loaded. The application measures it, thus it includes the time of the network. The time increases when more rows load.'
+
+/**
+ * The run time of a statement. It is the first item of each status line.
+ * `isComplete` is `false` while the result has rows that are not loaded.
+ */
+function RunTime(props: { ms: number; isComplete?: boolean }) {
+  const { ms, isComplete = true } = props
+  return (
+    <strong
+      className="results__time"
+      title={isComplete ? TIME_COMPLETE : TIME_LOADED}
+    >
+      {elapsed(ms)}
+    </strong>
+  )
+}
+
+/** The status of an active run: the time since its start, and the button to stop it. */
+function RunStatus() {
+  const runState = useQuery((state) => state.runState)
+  const startedAt = useQuery((state) => state.runStartedAt)
+  const cancel = useQuery((state) => state.cancel)
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    if (startedAt === null) return
+    const timer = window.setInterval(
+      () => setNow(Date.now()),
+      TIMER_INTERVAL_MS,
+    )
+    return () => window.clearInterval(timer)
+  }, [startedAt])
+  if (runState === 'idle') return null
+  const seconds =
+    startedAt === null ? null : Math.max(0, now - startedAt) / 1000
+  return (
+    <div className="results__bar">
+      {/* Not a live region: a screen reader must not read each change of the time. */}
+      <p className="results__status">
+        {runState === 'running' ? 'Running…' : 'Cancelling…'}
+        {seconds !== null && (
+          <>
+            {' '}
+            <strong className="results__time">{seconds.toFixed(1)} s</strong>
+          </>
+        )}
+      </p>
+      <button
+        type="button"
+        className="button button--small button--danger-outline"
+        disabled={runState !== 'running'}
+        title="Stop the statement (Ctrl+.)"
+        onClick={() => void cancel()}
+      >
+        Cancel
+      </button>
+    </div>
+  )
 }
 
 function summary(statement: StatementReport): string {
@@ -160,7 +227,9 @@ function RowsStatus(props: { statement: StatementReport; index: number }) {
   }
   return (
     <span className="results__status" role="status">
-      {text} ({elapsed(statement.elapsed_ms)})
+      <RunTime ms={statement.elapsed_ms} isComplete={outcome.is_complete} />
+      {isOpen ? ' so far · ' : ' · '}
+      {text}
     </span>
   )
 }
@@ -189,19 +258,25 @@ function StatementView(props: { statement: StatementReport; index: number }) {
 
   if (outcome.type === 'failed') {
     return (
-      <ErrorMessage
-        error={outcome.error}
-        location={outcome.location}
-        range={statement.range}
-      />
+      <>
+        <p className="results__status" role="status">
+          {outcome.error.kind === 'cancelled' ? 'Cancelled' : 'Failed'} after{' '}
+          <RunTime ms={statement.elapsed_ms} />.
+        </p>
+        <ErrorMessage
+          error={outcome.error}
+          location={outcome.location}
+          range={statement.range}
+        />
+      </>
     )
   }
   if (outcome.type === 'command') {
     return (
       <div className="results__bar">
         <p className="results__status" role="status">
-          The statement is complete. {count(outcome.affected_rows, 'row')}{' '}
-          affected ({elapsed(statement.elapsed_ms)}).
+          <RunTime ms={statement.elapsed_ms} /> · The statement is complete.{' '}
+          {count(outcome.affected_rows, 'row')} affected.
         </p>
         {explainLink}
       </div>
@@ -282,11 +357,7 @@ function Results() {
           </button>
         </div>
       )}
-      {runState !== 'idle' && (
-        <p className="results__status" role="status">
-          {runState === 'running' ? 'Running…' : 'Cancelling…'}
-        </p>
-      )}
+      <RunStatus />
       {runState === 'idle' && !statement && (
         <p className="pane__hint">
           {hasConnection

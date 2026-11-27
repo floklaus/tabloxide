@@ -763,6 +763,13 @@ body {
   flex: 1;
 }
 
+/* The run time of a statement. It is the first item of a status line. */
+.results__time {
+  color: var(--color-text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
 .results__statements {
   display: flex;
   flex-direction: column;

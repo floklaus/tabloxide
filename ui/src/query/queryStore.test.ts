@@ -159,6 +159,7 @@ describe('queryStore', () => {
         is_complete: true,
         total_rows: 3,
         error: null,
+        elapsed_ms: 40,
       }),
     )
 
@@ -166,6 +167,8 @@ describe('queryStore', () => {
 
     expect(resultFetch).toHaveBeenCalledWith(7, 4)
     expect(loadedRows()).toBe(3)
+    // The time of the statement is the time of the run and of the fetch.
+    expect(store.getState().statements[0].elapsed_ms).toBe(43)
     expect(store.getState().open).toBeNull()
     expect(store.getState().statements[0].outcome).toMatchObject({
       is_complete: true,
@@ -184,7 +187,13 @@ describe('queryStore', () => {
       position: null,
     }
     resultFetch.mockResolvedValue(
-      ok({ rows: [], is_complete: false, total_rows: null, error }),
+      ok({
+        rows: [],
+        is_complete: false,
+        total_rows: null,
+        error,
+        elapsed_ms: 1,
+      }),
     )
 
     await store.getState().fetchMore()

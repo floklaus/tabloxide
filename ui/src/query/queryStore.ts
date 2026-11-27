@@ -33,7 +33,7 @@ export type StopReason = 'user' | 'row-limit' | 'export' | 'assistant' | 'plan'
 
 type OpenResult = { resultId: number; index: number }
 
-type QueryState = {
+export type QueryState = {
   session: Session | null
   connectState: ConnectState
   /** The script text of the last run. The statement ranges refer to this text. */
@@ -52,6 +52,8 @@ type QueryState = {
   notice: string | null
   /** A request to move the cursor of the SQL input to this offset. */
   jumpTo: number | null
+  /** The time when the run started, in milliseconds since 1970. `null` if no run is active. */
+  runStartedAt: number | null
 
   connect: (connectionId: string) => Promise<void>
   disconnect: () => Promise<void>
@@ -91,6 +93,7 @@ const INITIAL = {
   isExporting: false,
   notice: null,
   jumpTo: null,
+  runStartedAt: null,
 }
 
 function connectFailure(detail: string): ConnectState {
@@ -104,6 +107,7 @@ function withMoreRows(
   rows: (string | null)[][],
   isComplete: boolean,
   totalRows: number | null,
+  elapsedMs: number,
 ): StatementReport[] {
   return statements.map((statement, i) => {
     if (i !== index || statement.outcome.type !== 'rows') return statement
@@ -113,7 +117,9 @@ function withMoreRows(
       is_complete: isComplete,
       total_rows: totalRows,
     }
-    return { ...statement, outcome }
+    // The time of the statement is the time of all its fetches.
+    const elapsed_ms = statement.elapsed_ms + elapsedMs
+    return { ...statement, elapsed_ms, outcome }
   })
 }
 
@@ -193,11 +199,17 @@ export const createQueryStore = (): QueryStore =>
         if (!get().session && connectionId) await get().connect(connectionId)
         const { session } = get()
         if (!session) return
-        set({ ...NO_RESULTS, ranSql: sql, runState: 'running', notice: null })
+        set({
+          ...NO_RESULTS,
+          ranSql: sql,
+          runState: 'running',
+          runStartedAt: Date.now(),
+          notice: null,
+        })
         try {
           const result = await commands.queryRun(session.id, sql, target)
           if (result.status === 'error') {
-            set({ runState: 'idle' })
+            set({ runState: 'idle', runStartedAt: null })
             showCommandError(result.error)
             return
           }
@@ -205,6 +217,7 @@ export const createQueryStore = (): QueryStore =>
           const last = Math.max(statements.length - 1, 0)
           set({
             runState: 'idle',
+            runStartedAt: null,
             statements,
             selected: last,
             open:
@@ -224,7 +237,11 @@ export const createQueryStore = (): QueryStore =>
             lastOutcome?.type === 'failed' ? lastOutcome.error : null,
           )
         } catch (error) {
-          set({ runState: 'idle', notice: toMessage(error) })
+          set({
+            runState: 'idle',
+            runStartedAt: null,
+            notice: toMessage(error),
+          })
         }
       },
 
@@ -268,6 +285,7 @@ export const createQueryStore = (): QueryStore =>
                 page.rows,
                 page.is_complete,
                 page.total_rows,
+                page.elapsed_ms,
               ),
               open: page.is_complete || page.error ? null : open,
               fetchError: page.error,

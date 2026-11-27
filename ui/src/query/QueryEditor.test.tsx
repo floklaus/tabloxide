@@ -225,7 +225,8 @@ describe('QueryEditor', () => {
 
     await user.click(screen.getByRole('button', { name: 'Run all' }))
     expect(await screen.findByText('Running…')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    // The editor bar and the results have a Cancel button. The first is in the bar.
+    await user.click(screen.getAllByRole('button', { name: 'Cancel' })[0])
 
     expect(queryCancel).toHaveBeenCalledWith(7)
     expect(await screen.findByText('Cancelling…')).toBeInTheDocument()

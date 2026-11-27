@@ -223,6 +223,14 @@ export function buildCommands(): Command[] {
       run: () => runTarget(true),
     },
     {
+      id: 'query.cancel',
+      label: 'Cancel the statement',
+      group: 'Query',
+      shortcut: 'Ctrl+.',
+      isEnabled: () => activeQueryStore().getState().runState === 'running',
+      run: () => activeQueryStore().getState().cancel(),
+    },
+    {
       id: 'query.explain',
       label: 'Explain the statement at the cursor',
       group: 'Query',

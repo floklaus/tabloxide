@@ -1007,6 +1007,8 @@ export type FetchedPage_Deserialize = {
 	total_rows?: number | null,
 	/**  The failure that stopped the fetch. The result is then closed. */
 	error?: QueryError_Deserialize | null,
+	/**  The time of this fetch. The UI adds it to the time of the statement. */
+	elapsed_ms: number,
 };
 
 /**  More rows of an open result. */
@@ -1018,6 +1020,8 @@ export type FetchedPage_Serialize = {
 	total_rows: number | null,
 	/**  The failure that stopped the fetch. The result is then closed. */
 	error: QueryError_Serialize | null,
+	/**  The time of this fetch. The UI adds it to the time of the statement. */
+	elapsed_ms: number,
 };
 
 /**  The section of a field in the view of a step. */

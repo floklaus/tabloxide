@@ -8,6 +8,7 @@ use crate::{
 };
 use serde::Serialize;
 use std::sync::Arc;
+use std::time::Instant;
 use tokio::io::AsyncWrite;
 use tokio::sync::Mutex;
 
@@ -35,6 +36,9 @@ pub struct FetchedPage {
     pub total_rows: Option<u64>,
     /// The failure that stopped the fetch. The result is then closed.
     pub error: Option<QueryError>,
+    /// The time of this fetch. The UI adds it to the time of the statement.
+    #[cfg_attr(feature = "specta", specta(type = u32))]
+    pub elapsed_ms: u64,
 }
 
 struct OpenResult {
@@ -113,18 +117,23 @@ impl QuerySession {
     pub async fn fetch(&self, result_id: ResultId, max_rows: usize) -> Option<FetchedPage> {
         let mut inner = self.inner.lock().await;
         let open = inner.open.as_mut().filter(|open| open.id == result_id)?;
-        let page = match open.stream.next_page(max_rows).await {
+        let start = Instant::now();
+        let result = open.stream.next_page(max_rows).await;
+        let elapsed_ms = u64::try_from(start.elapsed().as_millis()).unwrap_or(u64::MAX);
+        let page = match result {
             Ok(page) => FetchedPage {
                 rows: page.rows,
                 is_complete: page.end.is_some(),
                 total_rows: page.end.map(|end| end.affected_rows),
                 error: None,
+                elapsed_ms,
             },
             Err(error) => FetchedPage {
                 rows: Vec::new(),
                 is_complete: false,
                 total_rows: None,
                 error: Some(error),
+                elapsed_ms,
             },
         };
         if page.is_complete || page.error.is_some() {

@@ -6,6 +6,13 @@ The section `Unreleased` collects the changes after the last release. Before you
 
 ## Unreleased
 
+### Run time and cancel
+
+- The status line of each result starts with the run time of the statement. A statement that failed or that you cancelled also shows its time.
+- During a run, the results show the time since the start, and a **Cancel** button. **Ctrl+.** also cancels the statement. On macOS, press **Cmd+.**.
+- The time of a result with more rows than the first page now includes each later fetch. While rows are not loaded, the status says `so far`.
+- On Linux, a click on the close button of the last editor tab now closes the tab.
+
 ## 0.1.0 (2026-11-26)
 
 This is the first release.

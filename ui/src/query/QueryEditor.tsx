@@ -147,6 +147,7 @@ export function QueryEditor() {
             type="button"
             className="button button--danger-outline"
             disabled={runState !== 'running'}
+            title="Stop the statement (Ctrl+.)"
             onClick={() => void activeQueryStore().getState().cancel()}
           >
             Cancel
