@@ -15,13 +15,10 @@ import { sqlTabForTools } from '../tabs/tabsStore'
 import { ViewHost } from '../views/ViewHost'
 import { AskAboutRows } from './AskAboutRows'
 import { useResultsViewStore, type ResultsView } from './resultsViewStore'
+import { countText } from '../lib/countText'
 
 const PREVIEW_LENGTH = 48
 const numberFormat = new Intl.NumberFormat('en-US')
-
-function count(value: number, noun: string): string {
-  return `${numberFormat.format(value)} ${noun}${value === 1 ? '' : 's'}`
-}
 
 function elapsed(ms: number): string {
   return ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(2)} s`
@@ -98,8 +95,8 @@ function summary(statement: StatementReport): string {
   if (outcome.type === 'failed') {
     return outcome.error.kind === 'cancelled' ? 'Cancelled' : 'Failed'
   }
-  if (outcome.type === 'command') return count(outcome.affected_rows, 'row')
-  return count(outcome.total_rows ?? outcome.rows.length, 'row')
+  if (outcome.type === 'command') return countText(outcome.affected_rows, 'row')
+  return countText(outcome.total_rows ?? outcome.rows.length, 'row')
 }
 
 function preview(sql: string, statement: StatementReport): string {
@@ -209,7 +206,7 @@ function RowsStatus(props: { statement: StatementReport; index: number }) {
   const loaded = outcome.rows.length
   const total = outcome.total_rows
   const isOpen = open?.index === index
-  let text = count(loaded, 'row')
+  let text = countText(loaded, 'row')
   if (isOpen) {
     text += isFetching ? ' loaded. Loading more…' : ' loaded. Scroll for more.'
   } else if (!outcome.is_complete && stopReason === 'row-limit') {
@@ -223,7 +220,7 @@ function RowsStatus(props: { statement: StatementReport; index: number }) {
   } else if (!outcome.is_complete) {
     text += ' loaded. The fetch stopped before the end.'
   } else if (total !== null && total > loaded) {
-    text = `The first ${numberFormat.format(loaded)} of ${count(total, 'row')}. To see all rows, run a statement that only reads data as the last statement.`
+    text = `The first ${numberFormat.format(loaded)} of ${countText(total, 'row')}. To see all rows, run a statement that only reads data as the last statement.`
   }
   return (
     <span className="results__status" role="status">
@@ -293,7 +290,7 @@ function StatementView(props: { statement: StatementReport; index: number }) {
       <div className="results__bar">
         <p className="results__status" role="status">
           <RunTime ms={statement.elapsed_ms} /> · The statement is complete.{' '}
-          {count(outcome.affected_rows, 'row')} affected.
+          {countText(outcome.affected_rows, 'row')} affected.
         </p>
         {explainLink}
         <Messages messages={statement.messages} />

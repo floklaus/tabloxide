@@ -13,6 +13,7 @@ import {
   timeText,
   useHistoryStore,
 } from './historyStore'
+import { countText } from '../lib/countText'
 
 const TITLES = {
   ok: 'Query',
@@ -76,7 +77,7 @@ export function HistoryDetail({ id }: { id: number }) {
           entry.connection_name,
           `${dayName(entry.executed_at_secs).toLowerCase()} ${timeText(entry.executed_at_secs)}`,
           durationText(entry),
-          entry.rows === null ? null : `${entry.rows} rows`,
+          entry.rows === null ? null : countText(entry.rows, 'row'),
         ]
           .filter(Boolean)
           .join(' · ')}

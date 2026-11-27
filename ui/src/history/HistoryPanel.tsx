@@ -22,6 +22,7 @@ import {
   type HistoryEntry,
   type ResultFilter,
 } from './historyStore'
+import { countText } from '../lib/countText'
 
 /** Time without a key press before the search starts. */
 const SEARCH_DELAY_MS = 250
@@ -254,7 +255,9 @@ export function HistoryPanel({ onRun }: Props) {
                           entry.connection_name,
                           timeText(entry.executed_at_secs),
                           durationText(entry),
-                          entry.rows === null ? null : `${entry.rows} rows`,
+                          entry.rows === null
+                            ? null
+                            : countText(entry.rows, 'row'),
                         ]
                           .filter(Boolean)
                           .join(' · ')}

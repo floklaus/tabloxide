@@ -16,6 +16,7 @@ import {
   relationKey,
   type RelationDetail,
 } from './treeModel'
+import { countText } from '../lib/countText'
 
 const NO_FETCH = () => {}
 
@@ -52,7 +53,8 @@ function Sample() {
   return (
     <>
       <p className="results__status">
-        The first {outcome.rows.length} rows. To see more rows, run a query.
+        The first {countText(outcome.rows.length, 'row')}. To see more rows, run
+        a query.
       </p>
       <div className="table-detail__grid">
         <ResultGrid

@@ -13,6 +13,7 @@ import { invalidateCatalog } from '../completion/catalogCache'
 import { useEngineStore } from '../engines/engineStore'
 import { toMessage } from '../lib/errors'
 import { sqlTabIdOf, useTabsStore } from '../tabs/tabsStore'
+import { countText } from '../lib/countText'
 
 export type StatementReport = StatementReport_Serialize
 export type QueryError = QueryError_Serialize
@@ -348,7 +349,9 @@ export const createQueryStore = (): QueryStore =>
           } else if (result.data.status === 'failed') {
             set({ notice: `The export failed: ${result.data.error.message}` })
           } else {
-            set({ notice: `Exported ${result.data.rows} rows to ${path}.` })
+            set({
+              notice: `Exported ${countText(result.data.rows, 'row')} to ${path}.`,
+            })
           }
         } catch (error) {
           set({ notice: toMessage(error) })

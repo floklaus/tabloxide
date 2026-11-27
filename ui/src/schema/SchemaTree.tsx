@@ -195,12 +195,14 @@ function RowContent({
             ) : null}
           </span>
           <span
-            className="view-row__label"
+            className="view-row__label view-row__label--keep"
             title={`${row.name} ${row.typeText}`}
           >
             {row.name}
           </span>
-          <span className="view-row__code">{row.typeText}</span>
+          <span className="view-row__code view-row__code--fill">
+            {row.typeText}
+          </span>
         </>
       )
     case 'note':

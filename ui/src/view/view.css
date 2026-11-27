@@ -292,6 +292,23 @@
   font-size: 12px;
 }
 
+/* A name and a long code text, for example a column and its type. The name
+   keeps its width (up to two thirds of the row), and the code text gets the
+   rest of the row and is cut if it is too long. */
+.view-row__label--keep {
+  flex: 0 0 auto;
+  max-width: 66%;
+}
+
+.view-row__code--fill {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .view-row__muted {
   flex: none;
   color: var(--color-text-muted);
