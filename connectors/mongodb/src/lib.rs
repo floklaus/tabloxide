@@ -7,6 +7,7 @@
 
 mod catalog;
 mod connect;
+mod explain;
 mod plan;
 mod rows;
 mod session;

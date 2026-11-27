@@ -10,8 +10,7 @@ import { useTabsStore } from '../tabs/tabsStore'
 import { makeProfile, makeWorkspace } from '../test/fixtures'
 import type { Environment } from '../bindings'
 import { useWorkspaceStore } from '../workspace/workspaceStore'
-import duckdbAnalyze from './fixtures/duckdb-analyze.json?raw'
-import postgresExplain from './fixtures/postgres-explain.json?raw'
+import { ESTIMATE_PLAN, MEASURED_PLAN } from '../test/plans'
 import { PlanConfirmDialog } from './PlanConfirmDialog'
 import { usePlanStore } from './planStore'
 import { usePlanTarget } from './planTarget'
@@ -102,8 +101,8 @@ describe('PlanView', () => {
       data: {
         status: 'plan',
         statement: `EXPLAIN (FORMAT JSON) ${STATEMENT}`,
-        text: postgresExplain,
-        plan: null,
+        text: '[]',
+        plan: ESTIMATE_PLAN,
         is_analyzed: false,
       },
     })
@@ -125,8 +124,8 @@ describe('PlanView', () => {
       data: {
         status: 'plan',
         statement: `EXPLAIN (VERBOSE, FORMAT JSON) ${STATEMENT}`,
-        text: postgresExplain,
-        plan: null,
+        text: '[]',
+        plan: ESTIMATE_PLAN,
         is_analyzed: false,
       },
     })
@@ -161,8 +160,8 @@ describe('PlanView', () => {
       data: {
         status: 'plan',
         statement: `EXPLAIN (ANALYZE, FORMAT JSON) ${STATEMENT}`,
-        text: duckdbAnalyze,
-        plan: null,
+        text: '[]',
+        plan: MEASURED_PLAN,
         is_analyzed: true,
       },
     })
@@ -201,8 +200,8 @@ describe('PlanView', () => {
       data: {
         status: 'plan',
         statement: 'x',
-        text: postgresExplain,
-        plan: null,
+        text: '[]',
+        plan: ESTIMATE_PLAN,
         is_analyzed: false,
       },
     })
@@ -278,8 +277,8 @@ describe('PlanView', () => {
       data: {
         status: 'plan',
         statement: 'x',
-        text: duckdbAnalyze,
-        plan: null,
+        text: '[]',
+        plan: MEASURED_PLAN,
         is_analyzed: true,
       },
     })
@@ -330,8 +329,8 @@ describe('PlanView', () => {
       data: {
         status: 'plan',
         statement: 'x',
-        text: postgresExplain,
-        plan: null,
+        text: '[{"Plan":{"Node Type":"Sort"}}]',
+        plan: ESTIMATE_PLAN,
         is_analyzed: false,
       },
     })
@@ -344,7 +343,7 @@ describe('PlanView', () => {
 
     expect(screen.queryByRole('list', { name: 'Plan steps' })).toBeNull()
     expect(screen.getByLabelText('Original plan')).toHaveTextContent(
-      '"Node Type"',
+      '"Node Type": "Sort"',
     )
   })
 

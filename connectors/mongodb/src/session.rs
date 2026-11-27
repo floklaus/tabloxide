@@ -288,13 +288,11 @@ impl Session for MongoSession {
         let answer = self
             .guard(self.client.database(&database).run_command(command))
             .await?;
-        let text = serde_json::to_string_pretty(&Bson::Document(answer).into_relaxed_extjson())
-            .unwrap_or_default();
+        let json = Bson::Document(answer).into_relaxed_extjson();
         Ok(PlanText {
-            text,
+            text: serde_json::to_string_pretty(&json).unwrap_or_default(),
             statement: format!("explain(\"{verbosity}\") of {}", statement.trim()),
-            // The common form of the plan comes in stage 3 of docs/Plan Design.md.
-            plan: None,
+            plan: crate::explain::plan_of(&json),
         })
     }
 }

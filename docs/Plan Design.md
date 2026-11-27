@@ -2,7 +2,7 @@
 
 This document gives a new design for the execution plan ("Explain"). It accompanies `Connector Design.md` and `Implementation Plan.md`.
 
-Status on 2026-11-26: the product owner approved the design and the answers of section 6. Stages 4 and 1 are built. Stages 2, 3, and 5 are open.
+Status on 2026-11-26: the product owner approved the design and the answers of section 6. Stages 4, 1, 2, and 3 are built. Stage 5 is open.
 
 The design has two parts:
 
@@ -158,3 +158,11 @@ e. Stage 4 comes first.
 - The UI shows the steps of `plan` when an engine sends it (`fromCommon` in `ui/src/plan/planModel.ts`), with the explanations and hints of the engine. Without `plan`, the Plan tab shows only "Original".
 - MongoDB shows the Explain button. Until stage 3, its plan is "Original" only.
 - The connector guide has the section "The execution plan".
+
+## 9. Stages 2 and 3 as built
+
+- `PlanField` has a `group` (step, estimate, measured, memory, io). The Plan tab uses it for the sections of a step. Thus the UI has no list of the field names of an engine.
+- The PostgreSQL adapter (`crates/adapter-postgres/src/plan/`) and the DuckDB adapter (`crates/adapter-duckdb/src/plan/`) convert their `EXPLAIN` JSON into the common form. They have the explanations of the steps and the fields, and the hints of their engine. The tests of the old UI code are now Rust tests with the same fixtures.
+- The MongoDB connector (`connectors/mongodb/src/explain/`) converts the answer of `explain`. It reads the classic engine, the slot-based engine (SBE), and the stages of `aggregate`. The cost is the number of documents and keys that a step examined. Its hints are: no index for the filter, sort in memory or on disk, index does not cover the filter, index reads many keys, lookup without an index, and data on disk. The answer of a sharded cluster has no common form, thus the Plan tab shows "Original".
+- The UI keeps only what does not depend on the engine: the shares, the three costliest steps, the misestimate mark and hint, the sections, and the reading guide. It shows the hints of the engine after its own hints, as "title. text".
+- The UI no longer has `parsePlan`, the glossary of operations and fields, and the hints of PostgreSQL and DuckDB.

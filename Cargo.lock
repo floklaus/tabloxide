@@ -5977,6 +5977,7 @@ dependencies = [
  "futures-util",
  "rustls",
  "rustls-platform-verifier",
+ "serde_json",
  "tabloxide-core",
  "testcontainers-modules",
  "tokio",

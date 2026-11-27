@@ -104,6 +104,16 @@ pub enum FieldGroup {
     Io,
 }
 
+/// Writes a number as JavaScript does: a float without a fraction has no `.0`.
+fn number_text(number: &serde_json::Number) -> String {
+    match number.as_f64() {
+        Some(value) if number.is_f64() && value.fract() == 0.0 && value.abs() < 1e15 => {
+            format!("{value:.0}")
+        }
+        _ => number.to_string(),
+    }
+}
+
 /// Returns a JSON value of a plan as text for a field, or `None` for no value.
 /// An empty text, an empty list, and `null` are no value. A list becomes the items
 /// with commas. An object becomes its JSON text.
@@ -113,7 +123,7 @@ pub fn json_field_text(value: &serde_json::Value) -> Option<String> {
     match value {
         Value::Null => None,
         Value::Bool(flag) => Some(if *flag { "yes" } else { "no" }.to_owned()),
-        Value::Number(number) => Some(number.to_string()),
+        Value::Number(number) => Some(number_text(number)),
         Value::String(text) if text.is_empty() => None,
         Value::String(text) => Some(text.clone()),
         Value::Array(items) if items.is_empty() => None,
@@ -193,6 +203,7 @@ mod tests {
         assert_eq!(json_field_text(&json!([])), None);
         assert_eq!(json_field_text(&json!(true)).as_deref(), Some("yes"));
         assert_eq!(json_field_text(&json!(2.5)).as_deref(), Some("2.5"));
+        assert_eq!(json_field_text(&json!(189.0)).as_deref(), Some("189"));
         assert_eq!(
             json_field_text(&json!(["a", 1, {"b": 2}])).as_deref(),
             Some("a, 1, {\"b\":2}")

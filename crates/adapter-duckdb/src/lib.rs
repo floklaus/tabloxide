@@ -6,6 +6,7 @@
 mod catalog;
 mod error;
 mod instance;
+mod plan;
 mod session;
 mod text;
 mod worker;

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { activeSession } from '../assistant/assistantStore'
 import { useShellStore } from '../shell/shellStore'
-import { READING_GUIDE, totalText } from './planGlossary'
+import { READING_GUIDE } from './planGlossary'
 import { milliseconds } from './planFormat'
 import { costliest, type Plan } from './planModel'
 import { PlanStep } from './PlanStep'
@@ -165,6 +165,7 @@ function Summary({ plan }: { plan: Plan }) {
     plan.planningTime === null
       ? null
       : `Planning: ${milliseconds(plan.planningTime)}.`,
+    plan.costUnit ? `Cost unit: ${plan.costUnit}.` : null,
   ].filter(Boolean)
   return <p className="results__status">{parts.join(' ')}</p>
 }
@@ -177,7 +178,7 @@ function Totals({ plan }: { plan: Plan }) {
       <summary>Totals of the statement</summary>
       <dl className="plan__details">
         {plan.totals.map(([key, value]) => {
-          const text = plan.totalTexts?.[key] ?? totalText(key)
+          const text = plan.totalTexts[key] ?? null
           return (
             <div key={key}>
               <dt>{key}</dt>

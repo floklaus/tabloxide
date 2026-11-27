@@ -1,0 +1,139 @@
+{
+  "explainVersion": "1",
+  "queryPlanner": {
+    "namespace": "shop.orders",
+    "parsedQuery": {
+      "status": {
+        "$eq": "shipped"
+      }
+    },
+    "indexFilterSet": false,
+    "queryHash": "F1B18375",
+    "planCacheShapeHash": "F1B18375",
+    "planCacheKey": "BECE55E7",
+    "optimizationTimeMillis": 0,
+    "maxIndexedOrSolutionsReached": false,
+    "maxIndexedAndSolutionsReached": false,
+    "maxScansToExplodeReached": false,
+    "prunedSimilarIndexes": false,
+    "winningPlan": {
+      "isCached": false,
+      "stage": "SORT",
+      "sortPattern": {
+        "orderedAt": -1
+      },
+      "memLimit": 104857600,
+      "type": "simple",
+      "inputStage": {
+        "stage": "FETCH",
+        "inputStage": {
+          "stage": "IXSCAN",
+          "keyPattern": {
+            "status": 1
+          },
+          "indexName": "status_1",
+          "isMultiKey": false,
+          "multiKeyPaths": {
+            "status": []
+          },
+          "isUnique": false,
+          "isSparse": false,
+          "isPartial": false,
+          "indexVersion": 2,
+          "direction": "forward",
+          "indexBounds": {
+            "status": ["[\"shipped\", \"shipped\"]"]
+          }
+        }
+      }
+    },
+    "rejectedPlans": []
+  },
+  "executionStats": {
+    "executionSuccess": true,
+    "nReturned": 285,
+    "executionTimeMillis": 5,
+    "totalKeysExamined": 285,
+    "totalDocsExamined": 285,
+    "executionStages": {
+      "isCached": false,
+      "stage": "SORT",
+      "nReturned": 285,
+      "executionTimeMillisEstimate": 0,
+      "works": 572,
+      "advanced": 285,
+      "needTime": 286,
+      "needYield": 0,
+      "saveState": 0,
+      "restoreState": 0,
+      "isEOF": 1,
+      "sortPattern": {
+        "orderedAt": -1
+      },
+      "memLimit": 104857600,
+      "type": "simple",
+      "totalDataSizeSorted": 106280,
+      "usedDisk": false,
+      "spills": 0,
+      "spilledDataStorageSize": 0,
+      "inputStage": {
+        "stage": "FETCH",
+        "nReturned": 285,
+        "executionTimeMillisEstimate": 0,
+        "works": 286,
+        "advanced": 285,
+        "needTime": 0,
+        "needYield": 0,
+        "saveState": 0,
+        "restoreState": 0,
+        "isEOF": 1,
+        "docsExamined": 285,
+        "alreadyHasObj": 0,
+        "inputStage": {
+          "stage": "IXSCAN",
+          "nReturned": 285,
+          "executionTimeMillisEstimate": 0,
+          "works": 286,
+          "advanced": 285,
+          "needTime": 0,
+          "needYield": 0,
+          "saveState": 0,
+          "restoreState": 0,
+          "isEOF": 1,
+          "keyPattern": {
+            "status": 1
+          },
+          "indexName": "status_1",
+          "isMultiKey": false,
+          "multiKeyPaths": {
+            "status": []
+          },
+          "isUnique": false,
+          "isSparse": false,
+          "isPartial": false,
+          "indexVersion": 2,
+          "direction": "forward",
+          "indexBounds": {
+            "status": ["[\"shipped\", \"shipped\"]"]
+          },
+          "keysExamined": 285,
+          "seeks": 1,
+          "dupsTested": 0,
+          "dupsDropped": 0
+        }
+      }
+    }
+  },
+  "queryShapeHash": "18F3DE4E6E204C036814EA88B997C6DD77217227B2B61A88E643E879FC2470A4",
+  "command": {
+    "find": "orders",
+    "filter": {
+      "status": "shipped"
+    },
+    "sort": {
+      "orderedAt": -1
+    },
+    "$db": "shop"
+  },
+  "ok": 1
+}

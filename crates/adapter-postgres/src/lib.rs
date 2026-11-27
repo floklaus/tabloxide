@@ -5,6 +5,7 @@ mod config;
 mod connect;
 mod error;
 mod introspect;
+mod plan;
 mod session;
 mod stream;
 mod tls;

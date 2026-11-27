@@ -93,7 +93,7 @@ Do not use **Measure the times** in these conditions. For a full protection, use
 
 A plan read closes an open result of the tab. The results pane then tells you that the assistant closed the result.
 
-For a MongoDB connection, Tabloxide reads the plan with the MongoDB command `explain`. The plan is available for `find`, `aggregate`, `count`, `distinct`, `update`, `delete`, and `findAndModify`. Without **Measure the times**, the verbosity is `queryPlanner`, and MongoDB does not run the statement. With **Measure the times**, the verbosity is `executionStats`, and MongoDB runs the statement. Thus Tabloxide permits it only for `find`, and for `aggregate` without `$out` and `$merge`. The Plan tab of the results pane also shows the plan of MongoDB, as the original text of MongoDB.
+For a MongoDB connection, Tabloxide reads the plan with the MongoDB command `explain`. The plan is available for `find`, `aggregate`, `count`, `distinct`, `update`, `delete`, and `findAndModify`. Without **Measure the times**, the verbosity is `queryPlanner`, and MongoDB does not run the statement. With **Measure the times**, the verbosity is `executionStats`, and MongoDB runs the statement. Thus Tabloxide permits it only for `find`, and for `aggregate` without `$out` and `$merge`. The Plan tab of the results pane also shows the plan of MongoDB as steps, with explanations and hints. **Original** shows the answer of MongoDB.
 
 ### The AI and the engine of the connection
 

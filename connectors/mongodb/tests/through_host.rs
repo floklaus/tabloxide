@@ -194,6 +194,16 @@ async fn statements_results_and_the_catalog_through_the_connector() {
     );
     let sample = session.sample("app", "users", 1).await.unwrap();
     assert_eq!(rows(&sample.outcome).1.len(), 1);
+
+    // The plan comes in the common form through the protocol.
+    let plan = session
+        .read_plan("db.users.find({ name: 'Ann' }).sort({ age: -1 })", true)
+        .await
+        .unwrap();
+    let common = plan.plan.expect("a plan in the common form");
+    assert!(common.is_measured);
+    assert!(plan.text.contains("executionStats"));
+    assert!(!common.root.operation.is_empty());
 }
 
 #[tokio::test(flavor = "multi_thread")]

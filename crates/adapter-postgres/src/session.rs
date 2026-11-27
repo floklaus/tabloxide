@@ -104,11 +104,17 @@ impl Session for PgSession {
     async fn read_plan(&mut self, statement: &str, run: bool) -> Result<PlanText, QueryError> {
         let explain = explain_statement(statement, run);
         let text = read_explain_json(self, &explain).await?;
-        Ok(PlanText {
-            text,
-            statement: explain,
-            plan: None,
-        })
+        Ok(plan_text(text, explain))
+    }
+}
+
+/// Makes the plan of the JSON text of `EXPLAIN`. If the text is not a plan, the
+/// common form is `None` and the UI shows only the text.
+fn plan_text(text: String, statement: String) -> PlanText {
+    PlanText {
+        plan: crate::plan::read_plan_json(&text),
+        text,
+        statement,
     }
 }
 
@@ -121,4 +127,30 @@ fn explain_statement(statement: &str, run: bool) -> String {
         "EXPLAIN (VERBOSE, FORMAT JSON) "
     };
     format!("{options}{statement}")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_plan_text_has_the_plan_in_the_common_form() {
+        let text = include_str!("plan/fixtures/postgres-analyze.json").to_owned();
+
+        let plan_text = plan_text(text.clone(), "EXPLAIN".to_owned());
+
+        assert_eq!(plan_text.text, text);
+        let plan = plan_text.plan.expect("the plan must be in the common form");
+        assert!(plan.is_measured);
+        assert_eq!(plan.root.operation, "Sort");
+    }
+
+    #[test]
+    fn a_text_that_is_not_a_plan_has_no_common_form() {
+        assert!(
+            plan_text("{}".to_owned(), "EXPLAIN".to_owned())
+                .plan
+                .is_none()
+        );
+    }
 }

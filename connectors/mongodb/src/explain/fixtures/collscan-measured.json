@@ -1,0 +1,67 @@
+{
+  "explainVersion": "1",
+  "queryPlanner": {
+    "namespace": "shop.orders",
+    "parsedQuery": {
+      "note": {
+        "$eq": "Leave at the door"
+      }
+    },
+    "indexFilterSet": false,
+    "queryHash": "64D68EDB",
+    "planCacheShapeHash": "64D68EDB",
+    "planCacheKey": "B311D887",
+    "optimizationTimeMillis": 0,
+    "maxIndexedOrSolutionsReached": false,
+    "maxIndexedAndSolutionsReached": false,
+    "maxScansToExplodeReached": false,
+    "prunedSimilarIndexes": false,
+    "winningPlan": {
+      "isCached": false,
+      "stage": "COLLSCAN",
+      "filter": {
+        "note": {
+          "$eq": "Leave at the door"
+        }
+      },
+      "direction": "forward"
+    },
+    "rejectedPlans": []
+  },
+  "executionStats": {
+    "executionSuccess": true,
+    "nReturned": 137,
+    "executionTimeMillis": 1,
+    "totalKeysExamined": 0,
+    "totalDocsExamined": 1500,
+    "executionStages": {
+      "isCached": false,
+      "stage": "COLLSCAN",
+      "filter": {
+        "note": {
+          "$eq": "Leave at the door"
+        }
+      },
+      "nReturned": 137,
+      "executionTimeMillisEstimate": 0,
+      "works": 1501,
+      "advanced": 137,
+      "needTime": 1363,
+      "needYield": 0,
+      "saveState": 0,
+      "restoreState": 0,
+      "isEOF": 1,
+      "direction": "forward",
+      "docsExamined": 1500
+    }
+  },
+  "queryShapeHash": "F646A8EB488AD2AC9F253629A68F4D3A78DAE9A3A1959255BBB802863F248D4A",
+  "command": {
+    "find": "orders",
+    "filter": {
+      "note": "Leave at the door"
+    },
+    "$db": "shop"
+  },
+  "ok": 1
+}

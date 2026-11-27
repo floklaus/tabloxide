@@ -1,0 +1,64 @@
+{
+  "explainVersion": "1",
+  "queryPlanner": {
+    "namespace": "shop.orders",
+    "parsedQuery": {
+      "status": {
+        "$eq": "shipped"
+      }
+    },
+    "indexFilterSet": false,
+    "queryHash": "F1B18375",
+    "planCacheShapeHash": "F1B18375",
+    "planCacheKey": "BECE55E7",
+    "optimizationTimeMillis": 0,
+    "maxIndexedOrSolutionsReached": false,
+    "maxIndexedAndSolutionsReached": false,
+    "maxScansToExplodeReached": false,
+    "prunedSimilarIndexes": false,
+    "winningPlan": {
+      "isCached": false,
+      "stage": "SORT",
+      "sortPattern": {
+        "orderedAt": -1
+      },
+      "memLimit": 104857600,
+      "type": "simple",
+      "inputStage": {
+        "stage": "FETCH",
+        "inputStage": {
+          "stage": "IXSCAN",
+          "keyPattern": {
+            "status": 1
+          },
+          "indexName": "status_1",
+          "isMultiKey": false,
+          "multiKeyPaths": {
+            "status": []
+          },
+          "isUnique": false,
+          "isSparse": false,
+          "isPartial": false,
+          "indexVersion": 2,
+          "direction": "forward",
+          "indexBounds": {
+            "status": ["[\"shipped\", \"shipped\"]"]
+          }
+        }
+      }
+    },
+    "rejectedPlans": []
+  },
+  "queryShapeHash": "18F3DE4E6E204C036814EA88B997C6DD77217227B2B61A88E643E879FC2470A4",
+  "command": {
+    "find": "orders",
+    "filter": {
+      "status": "shipped"
+    },
+    "sort": {
+      "orderedAt": -1
+    },
+    "$db": "shop"
+  },
+  "ok": 1
+}

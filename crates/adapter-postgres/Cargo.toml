@@ -9,6 +9,7 @@ async-trait = "0.1"
 futures-util = "0.3"
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 rustls-platform-verifier = "0.7.1"
+serde_json = { version = "1.0.154", features = ["preserve_order"] }
 tabloxide-core = { version = "0.1.0", path = "../core" }
 tokio = { version = "1.54.1", features = ["rt", "time", "net"] }
 tokio-postgres = "0.7.18"

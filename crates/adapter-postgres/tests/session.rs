@@ -464,5 +464,8 @@ async fn reads_the_plan_as_json_with_and_without_a_measure() {
         "{}",
         measured.text
     );
-    assert!(measured.plan.is_none());
+    let plan = measured.plan.expect("the plan must be in the common form");
+    assert!(plan.is_measured);
+    assert_eq!(plan.root.operation, "Aggregate");
+    assert!(estimate.plan.is_some_and(|plan| !plan.is_measured));
 }

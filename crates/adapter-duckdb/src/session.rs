@@ -122,9 +122,9 @@ impl Session for DuckSession {
         let explain = explain_statement(statement, run);
         let text = read_explain_json(self, &explain).await?;
         Ok(PlanText {
+            plan: crate::plan::read_plan(&text),
             text,
             statement: explain,
-            plan: None,
         })
     }
 }

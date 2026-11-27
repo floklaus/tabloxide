@@ -1,16 +1,11 @@
 import { create } from 'zustand'
-import {
-  commands,
-  type Engine,
-  type Environment,
-  type Plan_Serialize,
-} from '../bindings'
+import { commands, type Environment } from '../bindings'
 import { toMessage } from '../lib/errors'
 import { getQueryStore } from '../query/queryStore'
 import { useResultsViewStore } from '../results/resultsViewStore'
 import { sqlTabForTools } from '../tabs/tabsStore'
 import { useWorkspaceStore } from '../workspace/workspaceStore'
-import { fromCommon, parsePlan, type Plan } from './planModel'
+import { fromCommon, type Plan } from './planModel'
 import { targetStatement } from './planTarget'
 
 /** A plan read with a measure, before the confirmation of the user. */
@@ -70,28 +65,6 @@ function activeConnection() {
   return { tab, connection }
 }
 
-/** The engines whose JSON plan the view reads, until their adapters give the steps. */
-const JSON_ENGINES: Engine[] = ['postgres', 'duckdb']
-
-/**
- * The steps of a plan. The common form of the engine comes first. Without it, the
- * view reads the JSON of PostgreSQL and DuckDB. For other engines, or for JSON that
- * the view cannot read, the result is `null`, and the view shows the original text.
- */
-function stepsOf(
-  engine: Engine,
-  plan: Plan_Serialize | null,
-  text: string,
-): Plan | null {
-  if (plan) return fromCommon(engine, plan)
-  if (!JSON_ENGINES.includes(engine)) return null
-  try {
-    return parsePlan(engine, text)
-  } catch {
-    return null
-  }
-}
-
 export const usePlanStore = create<PlanState>((set, get) => {
   /** Reads the plan of `statement`. The caller did the confirmation. */
   const read = async (statement: string, measure: boolean) => {
@@ -102,7 +75,6 @@ export const usePlanStore = create<PlanState>((set, get) => {
       set({ ...INITIAL, status: 'failed', error: 'Select a connection first.' })
       return
     }
-    const engine: Engine = connection.engine ?? 'postgres'
     set({ ...INITIAL, status: 'reading', statement })
     try {
       const query = getQueryStore(tab.id)
@@ -127,7 +99,7 @@ export const usePlanStore = create<PlanState>((set, get) => {
         const { plan, text, is_analyzed } = result.data
         set({
           status: 'done',
-          plan: stepsOf(engine, plan, text),
+          plan: plan ? fromCommon(plan) : null,
           text,
           isMeasured: is_analyzed,
           statement,

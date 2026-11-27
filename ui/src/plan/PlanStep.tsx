@@ -1,10 +1,5 @@
-import {
-  fieldInfo,
-  GROUP_LABELS,
-  GROUP_ORDER,
-  operationText,
-  type FieldGroup,
-} from './planGlossary'
+import type { FieldGroup } from '../bindings'
+import { GROUP_LABELS, GROUP_ORDER } from './planGlossary'
 import {
   measureText,
   misestimateText,
@@ -26,11 +21,10 @@ type StepProps = {
 function Fields({ node }: { node: PlanNode }) {
   const groups = new Map<FieldGroup, [string, string, string | null][]>()
   for (const [key, value] of node.details) {
-    const info = fieldInfo(key)
-    const group = node.fieldGroups?.[key] ?? info.group
+    const group = node.fieldGroups[key] ?? 'step'
     groups.set(group, [
       ...(groups.get(group) ?? []),
-      [key, value, node.fieldTexts?.[key] ?? info.text],
+      [key, value, node.fieldTexts[key] ?? null],
     ])
   }
   return (
@@ -60,18 +54,8 @@ export function PlanStep({ node, plan, hot, showsFields }: StepProps) {
   const isHot = hot.has(node.id)
   const measure = measureText(node, plan.isAnalyzed)
   const rows = rowsText(node)
-  const about =
-    node.about !== undefined
-      ? node.about
-      : operationText(plan.engine, node.operation)
-  const hints = plan.hints
-    ? plan.hints
-        .filter((hint) => hint.step === node.id)
-        .map((hint) => ({
-          level: hint.level,
-          text: `${hint.title}. ${hint.text}`,
-        }))
-    : hintsOf(node, plan, hot)
+  const about = node.about
+  const hints = hintsOf(node, plan, hot)
   return (
     <li className={`plan__step${isHot ? ' plan__step--hot' : ''}`}>
       <details open>
@@ -101,7 +85,7 @@ export function PlanStep({ node, plan, hot, showsFields }: StepProps) {
         </summary>
         <div className="plan__body">
           <p className="plan__about">
-            {about ?? 'Tabloxide has no explanation for this step.'}{' '}
+            {about ?? 'The engine gives no explanation for this step.'}{' '}
             {numbersSentence(node, plan.isAnalyzed)}
           </p>
           {hints.length > 0 && (

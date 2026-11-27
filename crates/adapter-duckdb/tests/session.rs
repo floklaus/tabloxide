@@ -499,6 +499,18 @@ async fn reads_the_plan_as_json_with_and_without_a_measure() {
             "{}",
             plan.text
         );
-        assert!(plan.plan.is_none());
     }
+    let estimate = estimate.plan.expect("the estimate has a plan");
+    let measured = measured.plan.expect("the measured plan has a plan");
+    assert!(!estimate.is_measured);
+    assert!(measured.is_measured);
+    assert!(measured.total_ms.is_some());
+    // The measured plan has the rows that the aggregate gave: one row.
+    let aggregate = &measured.root;
+    assert!(
+        aggregate.operation.contains("AGGREGATE"),
+        "{}",
+        aggregate.operation
+    );
+    assert_eq!(aggregate.actual_rows, Some(1.0));
 }
