@@ -77,3 +77,50 @@ export function makeTimeScale(): (moment: Moment) => number {
     return moment.wall - (moment.offset - axisOffset) * MS_PER_MINUTE
   }
 }
+
+export type TimeBucket = 'hour' | 'day' | 'week' | 'month' | 'year'
+
+const MS_PER_DAY = 86_400_000
+/** `Date.getUTCDay` gives 0 for Sunday. A week starts on Monday (ISO 8601). */
+const DAYS_SINCE_MONDAY = [6, 0, 1, 2, 3, 4, 5]
+
+/**
+ * Returns the start of the hour, the day, the week, the month, or the year of a
+ * position on the time axis. A week starts on Monday.
+ */
+export function floorToUnit(position: number, unit: TimeBucket): number {
+  const date = new Date(position)
+  const year = date.getUTCFullYear()
+  const month = date.getUTCMonth()
+  const day = date.getUTCDate()
+  switch (unit) {
+    case 'hour':
+      return Date.UTC(year, month, day, date.getUTCHours())
+    case 'day':
+      return Date.UTC(year, month, day)
+    case 'week':
+      return (
+        Date.UTC(year, month, day) -
+        DAYS_SINCE_MONDAY[date.getUTCDay()] * MS_PER_DAY
+      )
+    case 'month':
+      return Date.UTC(year, month, 1)
+    case 'year':
+      return Date.UTC(year, 0, 1)
+  }
+}
+
+function pad(value: number): string {
+  return String(value).padStart(2, '0')
+}
+
+/** The name of a bucket as a category, for example `2026-11` for a month. A week has the date of its Monday. */
+export function bucketLabel(start: number, unit: TimeBucket): string {
+  const date = new Date(start)
+  const year = String(date.getUTCFullYear())
+  if (unit === 'year') return year
+  const month = `${year}-${pad(date.getUTCMonth() + 1)}`
+  if (unit === 'month') return month
+  const day = `${month}-${pad(date.getUTCDate())}`
+  return unit === 'hour' ? `${day} ${pad(date.getUTCHours())}:00` : day
+}

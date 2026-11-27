@@ -45,24 +45,23 @@ export function proposeChart(
   if (numbers.length === 1 && columns.length === 1) {
     return { type: 'histogram', x: numbers[0], y: [] }
   }
+  // Without a number column, a chart can count the rows of each category.
+  if (numbers.length === 0 && texts.length > 0) {
+    return { type: 'bar', x: texts[0], y: [], countRows: true }
+  }
   return null
 }
 
-/** The score of a result that the chart can only count, because it has no number column. */
-const SCORE_COUNT_ONLY = 0.2
-/** The score of a result with numbers for which no rule gives a proposal. */
+/** The score of a result for which no rule gives a proposal. */
 const SCORE_NO_PROPOSAL = 0.5
 
 /**
  * The score of the chart view for a result, from 0 to 1. The score 0 hides the
- * view. A result without a number column has a low score: a chart can only count
- * its rows.
+ * view. A result without a proposal has a lower score: the user must select the
+ * columns.
  */
 export function chartScore(columns: Column[]): number {
   if (columns.length === 0) return 0
-  if (!columns.some((column) => column.kind === 'number')) {
-    return SCORE_COUNT_ONLY
-  }
   // The number of rows decides only between the single value and the histogram.
   return proposeChart(columns, 2) === null ? SCORE_NO_PROPOSAL : 1
 }

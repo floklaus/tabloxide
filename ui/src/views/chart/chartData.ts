@@ -1,6 +1,8 @@
 import type { Column, Row } from '../../results/gridModel'
-import type { Aggregate, ChartSettings } from './chartSettings'
+import type { Aggregate, ChartSettings, Sort, TimeUnit } from './chartSettings'
 import {
+  bucketLabel,
+  floorToUnit,
   formatNumber,
   makeTimeScale,
   parseMoment,
@@ -13,6 +15,8 @@ export const MAX_SERIES = 8
 const MAX_BINS = 60
 /** The name of the series of the rows that have no value in the series column. */
 const EMPTY_SERIES = '(empty)'
+/** The name of the series and of the axis when the chart counts rows. */
+export const ROW_COUNT_NAME = 'Number of rows'
 
 export type AxisKind = 'category' | 'value' | 'time'
 
@@ -38,9 +42,22 @@ export type CartesianChart = {
   kind: 'cartesian'
   type: 'line' | 'area' | 'bar' | 'scatter' | 'histogram'
   xAxis: AxisKind
+  /** The column of the horizontal axis. */
   xName: string
   /** `null` if the series have different columns. The legend then gives the names. */
   yName: string | null
+  /** The columns of the vertical axis. Empty if the chart counts rows. */
+  yColumns: string[]
+  /** `true` if the vertical axis shows the number of rows. */
+  countsRows: boolean
+  /** The aggregate that the chart uses. `null`: each row is one mark. */
+  aggregate: Aggregate | null
+  /** `true` if the chart set the aggregate, because the settings have none. */
+  isAutoAggregate: boolean
+  /** The time unit that combines the dates of the horizontal axis. */
+  timeUnit: TimeUnit | null
+  /** The column that divides the rows into series. */
+  seriesColumn: string | null
   categories: string[]
   series: ChartSeries[]
   /** The number of marks of all series. */
@@ -100,26 +117,37 @@ function indexOf(columns: Column[], name: string | undefined): number {
     : columns.findIndex((column) => column.name === name)
 }
 
+/** A column of the vertical axis. The index -1 is the number of rows, which has no column. */
+type YColumn = { index: number; name: string }
+
+const ROW_COUNT: YColumn = { index: -1, name: ROW_COUNT_NAME }
+
 /**
- * Reads the value of a cell for the vertical axis. With the aggregate `count`,
+ * Reads the value of a row for the vertical axis. With the aggregate `count`,
  * each cell that is not empty counts, also a cell that is not a number.
  */
 function yValue(
-  cell: string | null,
-  column: string,
-  aggregate: Aggregate | undefined,
+  row: Row,
+  y: YColumn,
+  aggregate: Aggregate | null,
   notes: Notes,
 ): number | null {
+  if (y.index < 0) return 1
+  const cell = row[y.index]
   if (cell === null) return null
   if (aggregate === 'count') return 1
   const value = toNumber(cell)
-  if (value === null) notes.count({ id: 'not-numbers', column, count: 1 })
+  if (value === null) {
+    notes.count({ id: 'not-numbers', column: y.name, count: 1 })
+  }
   return value
 }
 
 type SeriesPlan = {
   /** Returns the index of the series of a row and a `y` column. -1: the chart does not show it. */
   seriesOf: (row: Row, yPosition: number) => number
+  /** Returns the key of the series group of a row, to find rows that repeat. */
+  groupOf: (row: Row) => string
   names: string[]
 }
 
@@ -142,6 +170,7 @@ function planSeries(
     return {
       seriesOf: (_row, yPosition) =>
         yPosition < shownY.length ? yPosition : -1,
+      groupOf: () => '',
       names: shownY,
     }
   }
@@ -167,23 +196,61 @@ function planSeries(
       }
       return group * shownY.length + yPosition
     },
+    groupOf: (row) => row[seriesIndex] ?? EMPTY_SERIES,
     names,
   }
 }
 
-/** Selects the axis for the `x` column: a bar always has categories. */
-function axisKind(
-  type: CartesianChart['type'],
-  column: Column,
-  rows: Row[],
-  xIndex: number,
-): AxisKind {
-  if (type === 'bar') return 'category'
-  if (column.kind === 'number') return 'value'
-  if (column.kind !== 'temporal') return 'category'
+/** `true` if the cells of the column are dates that a time axis can show. */
+function hasDates(column: Column, rows: Row[], xIndex: number): boolean {
+  if (column.kind !== 'temporal') return false
   // A time without a date has no position on a time axis. It is a category.
   const first = rows.find((row) => row[xIndex] !== null)?.[xIndex]
-  return first != null && parseMoment(first) === null ? 'category' : 'time'
+  return first == null || parseMoment(first) !== null
+}
+
+/** The position of a row on the horizontal axis. */
+type XValue = {
+  /** The category, or the position on a value axis or a time axis. */
+  key: string | number
+  /** The sequence of a category that is a time bucket. */
+  order: number
+}
+
+/**
+ * Returns the function that reads the horizontal position of a cell. It returns
+ * `null` for a cell that the axis cannot show, and counts such cells in `notes`.
+ */
+function xReader(
+  axis: AxisKind,
+  column: string,
+  unit: TimeUnit | null,
+  notes: Notes,
+): (cell: string) => XValue | null {
+  if (axis === 'value') {
+    return (cell) => {
+      const x = toNumber(cell)
+      if (x === null) notes.count({ id: 'not-numbers', column, count: 1 })
+      return x === null ? null : { key: x, order: x }
+    }
+  }
+  if (axis === 'category' && unit === null) {
+    return (cell) => ({ key: cell, order: 0 })
+  }
+  const timeScale = makeTimeScale()
+  return (cell) => {
+    const moment = parseMoment(cell)
+    if (moment === null) {
+      notes.count({ id: 'not-times', column, count: 1 })
+      return null
+    }
+    const position = timeScale(moment)
+    const start = unit === null ? position : floorToUnit(position, unit)
+    // A bar chart shows a time bucket as a category with the name of the bucket.
+    return axis === 'category' && unit !== null
+      ? { key: bucketLabel(start, unit), order: start }
+      : { key: start, order: start }
+  }
 }
 
 type Input = {
@@ -193,38 +260,71 @@ type Input = {
   notes: Notes
 }
 
+/** What the chart does with the rows. The functions below share this plan. */
+type Layout = {
+  type: 'line' | 'area' | 'bar' | 'scatter'
+  axis: AxisKind
+  xIndex: number
+  xName: string
+  unit: TimeUnit | null
+  y: YColumn[]
+  series: SeriesPlan
+  /** `null`: each row is one mark. */
+  aggregate: Aggregate | null
+}
+
+/** `true` if two rows of one series have the same horizontal position. */
+function hasRepeats(input: Input, layout: Layout): boolean {
+  const read = xReader(layout.axis, layout.xName, layout.unit, new Notes())
+  const seen = new Set<string>()
+  for (const row of input.rows) {
+    const cell = row[layout.xIndex]
+    const x = cell === null ? null : read(cell)
+    if (x === null) continue
+    const key = `${layout.series.groupOf(row)}\u0000${x.key}`
+    if (seen.has(key)) return true
+    seen.add(key)
+  }
+  return false
+}
+
 function prepareCategories(
   input: Input,
-  xIndex: number,
-  yIndexes: number[],
-  plan: SeriesPlan,
+  layout: Layout,
 ): Pick<CartesianChart, 'categories' | 'series'> {
-  const { settings, columns, rows, notes } = input
-  const { aggregate } = settings
-  const hasGroups = aggregate !== undefined || settings.series !== undefined
+  const { settings, rows, notes } = input
+  const { aggregate, series: plan } = layout
+  const read = xReader('category', layout.xName, layout.unit, notes)
+  // Without groups, each row is its own category, also when a name repeats.
+  const hasGroups = aggregate !== null || settings.series !== undefined
   const categories: string[] = []
+  const orders: number[] = []
   const positions = new Map<string, number>()
   const cells: (Accumulator | undefined)[][] = plan.names.map(() => [])
 
   for (const row of rows) {
-    const label = row[xIndex]
-    if (label === null) {
+    const cell = row[layout.xIndex]
+    if (cell === null) {
       notes.count({ id: 'empty-x', count: 1 })
       continue
     }
+    const x = read(cell)
+    if (x === null) continue
+    const label = String(x.key)
     let position = hasGroups ? positions.get(label) : undefined
     if (position === undefined) {
       position = categories.length
       categories.push(label)
+      orders.push(x.order)
       positions.set(label, position)
     }
-    yIndexes.forEach((yIndex, yPosition) => {
+    layout.y.forEach((y, yPosition) => {
       const series = plan.seriesOf(row, yPosition)
       if (series < 0) return
-      const value = yValue(row[yIndex], columns[yIndex].name, aggregate, notes)
+      const value = yValue(row, y, aggregate, notes)
       if (value === null) return
       const found = cells[series][position]
-      if (found && aggregate === undefined) {
+      if (found && aggregate === null) {
         notes.count({ id: 'duplicates', count: 1 })
         return
       }
@@ -233,7 +333,7 @@ function prepareCategories(
       cells[series][position] = target
     })
   }
-  return {
+  const data = {
     categories,
     series: plan.names.map((name, index) => ({
       name,
@@ -244,58 +344,85 @@ function prepareCategories(
       points: [],
     })),
   }
+  // Time buckets are in the sequence of the time. Other categories use the sort setting.
+  if (layout.unit !== null) return reorder(data, byNumber(orders))
+  return settings.sort === undefined
+    ? data
+    : reorder(data, sortOrder(data, settings.sort))
 }
 
-/** Returns the function that converts a cell of the `x` column to a position on the axis. */
-function positionReader(
-  axis: 'value' | 'time',
-  column: string,
-  notes: Notes,
-): (cell: string) => number | null {
-  if (axis === 'value') {
-    return (cell) => {
-      const x = toNumber(cell)
-      if (x === null) notes.count({ id: 'not-numbers', column, count: 1 })
-      return x
-    }
+type Categories = Pick<CartesianChart, 'categories' | 'series'>
+
+function byNumber(values: number[]): number[] {
+  return values.map((_, index) => index).sort((a, b) => values[a] - values[b])
+}
+
+const collator = new Intl.Collator('en', { numeric: true })
+
+/** Returns the positions of the categories in the sequence of the sort. */
+function sortOrder(data: Categories, sort: Sort): number[] {
+  const indexes = data.categories.map((_, index) => index)
+  if (sort === 'name') {
+    return indexes.sort(
+      (a, b) =>
+        collator.compare(data.categories[a], data.categories[b]) || a - b,
+    )
   }
-  const timeScale = makeTimeScale()
-  return (cell) => {
-    const moment = parseMoment(cell)
-    if (moment === null) notes.count({ id: 'not-times', column, count: 1 })
-    return moment === null ? null : timeScale(moment)
+  // The value of a category is the total of its series. A category without a value is last.
+  const totals = indexes.map((index) => {
+    const values = data.series
+      .map((series) => series.values[index])
+      .filter((value) => value !== null)
+    return values.length === 0
+      ? null
+      : values.reduce((total, value) => total + value, 0)
+  })
+  const sign = sort === 'value-asc' ? 1 : -1
+  return indexes.sort((a, b) => {
+    const left = totals[a]
+    const right = totals[b]
+    if (left === null || right === null) {
+      return left === right ? a - b : left === null ? 1 : -1
+    }
+    return sign * (left - right) || a - b
+  })
+}
+
+function reorder(data: Categories, order: number[]): Categories {
+  return {
+    categories: order.map((index) => data.categories[index]),
+    series: data.series.map((series) => ({
+      ...series,
+      values: order.map((index) => series.values[index]),
+    })),
   }
 }
 
 function preparePoints(
   input: Input,
-  type: CartesianChart['type'],
-  axis: 'value' | 'time',
-  xIndex: number,
-  yIndexes: number[],
-  plan: SeriesPlan,
+  layout: Layout,
 ): Pick<CartesianChart, 'categories' | 'series'> {
-  const { settings, columns, rows, notes } = input
-  const { aggregate } = settings
-  const toPosition = positionReader(axis, columns[xIndex].name, notes)
+  const { rows, notes } = input
+  const { aggregate, series: plan } = layout
+  const read = xReader(layout.axis, layout.xName, layout.unit, notes)
   const points: [number, number][][] = plan.names.map(() => [])
   const groups: Map<number, Accumulator>[] = plan.names.map(() => new Map())
 
   for (const row of rows) {
-    const cell = row[xIndex]
+    const cell = row[layout.xIndex]
     if (cell === null) {
       notes.count({ id: 'empty-x', count: 1 })
       continue
     }
-    const x = toPosition(cell)
+    const x = read(cell)
     if (x === null) continue
-    const position = x
-    yIndexes.forEach((yIndex, yPosition) => {
+    const position = x.order
+    layout.y.forEach((y, yPosition) => {
       const series = plan.seriesOf(row, yPosition)
       if (series < 0) return
-      const value = yValue(row[yIndex], columns[yIndex].name, aggregate, notes)
+      const value = yValue(row, y, aggregate, notes)
       if (value === null) return
-      if (aggregate === undefined) {
+      if (aggregate === null) {
         points[series].push([position, value])
         return
       }
@@ -312,14 +439,14 @@ function preparePoints(
     categories: [],
     series: plan.names.map((name, index) => {
       const marks: [number, number][] =
-        aggregate === undefined
+        aggregate === null
           ? points[index]
           : [...groups[index]].flatMap(([x, group]) => {
               const value = result(group, aggregate)
               return value === null ? [] : [[x, value] as [number, number]]
             })
       // A line goes from the left to the right. A scatter plot keeps the row sequence.
-      if (type !== 'scatter') marks.sort((a, b) => a[0] - b[0])
+      if (layout.type !== 'scatter') marks.sort((a, b) => a[0] - b[0])
       return { name, values: [], points: marks }
     }),
   }
@@ -352,43 +479,114 @@ function countMarks(series: ChartSeries[]): number {
   )
 }
 
+/** Reads the settings and the columns, and decides the axis and the columns of the chart. */
+function planLayout(
+  input: Input,
+  type: Layout['type'],
+): Omit<Layout, 'aggregate'> | null {
+  const { settings, columns, rows, notes } = input
+  const xIndex = indexOf(columns, settings.x)
+  const y: YColumn[] = settings.countRows
+    ? [ROW_COUNT]
+    : settings.y
+        .map((name) => indexOf(columns, name))
+        .filter((index) => index >= 0)
+        .map((index) => ({ index, name: columns[index].name }))
+  if (xIndex < 0 || y.length === 0) return null
+
+  const isDate = hasDates(columns[xIndex], rows, xIndex)
+  const isNumber = columns[xIndex].kind === 'number'
+  // A bar always has categories. A line or a point has a position, if the column gives one.
+  const axis: AxisKind =
+    type === 'bar'
+      ? 'category'
+      : isDate
+        ? 'time'
+        : isNumber
+          ? 'value'
+          : 'category'
+  const canGroup = isDate && type !== 'scatter'
+  return {
+    type,
+    axis,
+    xIndex,
+    xName: columns[xIndex].name,
+    unit: canGroup ? (settings.timeUnit ?? null) : null,
+    y,
+    series: planSeries(
+      rows,
+      y.map((item) => item.name),
+      indexOf(columns, settings.series),
+      notes,
+    ),
+  }
+}
+
+/**
+ * Decides the aggregate. A count of rows is always a count. Settings without an
+ * aggregate let the chart decide: it shows the sum if positions repeat or if
+ * the horizontal axis has a time unit.
+ */
+function planAggregate(
+  input: Input,
+  layout: Omit<Layout, 'aggregate'>,
+): { aggregate: Aggregate | null; isAuto: boolean } {
+  const { settings } = input
+  if (settings.countRows) return { aggregate: 'count', isAuto: false }
+  if (layout.type === 'scatter' || settings.aggregate === 'none') {
+    return { aggregate: null, isAuto: false }
+  }
+  if (settings.aggregate !== undefined) {
+    return { aggregate: settings.aggregate, isAuto: false }
+  }
+  // A time unit combines rows, also when each bucket has only one row now.
+  const combines =
+    layout.unit !== null || hasRepeats(input, { ...layout, aggregate: null })
+  return combines
+    ? { aggregate: 'sum', isAuto: true }
+    : { aggregate: null, isAuto: false }
+}
+
 function prepareCartesian(
   input: Input,
   type: 'line' | 'area' | 'bar' | 'scatter',
 ): PreparedChart {
-  const { settings, columns, rows, notes } = input
-  const xIndex = indexOf(columns, settings.x)
-  const yColumns = settings.y
-    .map((name) => indexOf(columns, name))
-    .filter((index) => index >= 0)
-  if (xIndex < 0 || yColumns.length === 0) return { kind: 'empty', notes: [] }
+  const { settings, notes } = input
+  const plan = planLayout(input, type)
+  if (plan === null) return { kind: 'empty', notes: [] }
+  const { aggregate, isAuto } = planAggregate(input, plan)
+  const layout: Layout = { ...plan, aggregate }
 
-  const yNames = yColumns.map((index) => columns[index].name)
-  const plan = planSeries(
-    rows,
-    yNames,
-    indexOf(columns, settings.series),
-    notes,
-  )
-  const xAxis = axisKind(type, columns[xIndex], rows, xIndex)
   const data =
-    xAxis === 'category'
-      ? prepareCategories(input, xIndex, yColumns, plan)
-      : preparePoints(input, type, xAxis, xIndex, yColumns, plan)
+    layout.axis === 'category'
+      ? prepareCategories(input, layout)
+      : preparePoints(input, layout)
   const series =
     settings.scale === 'log'
       ? removeNotPositive(data.series, notes)
       : data.series
   const pointCount = countMarks(series)
   if (pointCount === 0) return { kind: 'empty', notes: notes.list() }
-  const aggregateName =
-    settings.aggregate === undefined ? '' : `${settings.aggregate} of `
+
+  const yColumns = settings.countRows ? [] : layout.y.map((y) => y.name)
+  const prefix = aggregate === null ? '' : `${aggregate} of `
+  const yName = settings.countRows
+    ? ROW_COUNT_NAME
+    : yColumns.length === 1
+      ? `${prefix}${yColumns[0]}`
+      : null
   return {
     kind: 'cartesian',
     type,
-    xAxis,
-    xName: columns[xIndex].name,
-    yName: yNames.length === 1 ? `${aggregateName}${yNames[0]}` : null,
+    xAxis: layout.axis,
+    xName: layout.xName,
+    yName,
+    yColumns,
+    countsRows: settings.countRows === true,
+    aggregate,
+    isAutoAggregate: isAuto,
+    timeUnit: layout.unit,
+    seriesColumn: settings.series ?? null,
     categories: data.categories,
     series,
     pointCount,
@@ -441,12 +639,18 @@ function prepareHistogram(input: Input): PreparedChart {
     type: 'histogram',
     xAxis: 'category',
     xName: column,
-    yName: 'Number of rows',
+    yName: ROW_COUNT_NAME,
+    yColumns: [],
+    countsRows: true,
+    aggregate: 'count',
+    isAutoAggregate: false,
+    timeUnit: null,
+    seriesColumn: null,
     categories: counts.map((_, bin) => {
       const from = start + bin * step
       return `${formatNumber(from)} to ${formatNumber(from + step)}`
     }),
-    series: [{ name: 'Number of rows', values: counts, points: [] }],
+    series: [{ name: ROW_COUNT_NAME, values: counts, points: [] }],
     pointCount: binCount,
     notes: notes.list(),
   }
@@ -454,26 +658,34 @@ function prepareHistogram(input: Input): PreparedChart {
 
 function prepareValue(input: Input): PreparedChart {
   const { settings, columns, rows, notes } = input
+  if (settings.countRows) {
+    return {
+      kind: 'value',
+      label: ROW_COUNT_NAME,
+      text: formatNumber(rows.length),
+      notes: [],
+    }
+  }
   const yIndex = indexOf(columns, settings.y[0])
   if (yIndex < 0 || rows.length === 0) return { kind: 'empty', notes: [] }
-  const column = columns[yIndex].name
+  const y: YColumn = { index: yIndex, name: columns[yIndex].name }
   const { aggregate } = settings
-  if (aggregate === undefined) {
+  if (aggregate === undefined || aggregate === 'none') {
     if (rows.length > 1) notes.add({ id: 'first-row', rows: rows.length })
     const cell = rows[0][yIndex]
     const value = cell === null ? null : toNumber(cell)
     const text = value === null ? (cell ?? 'NULL') : formatNumber(value)
-    return { kind: 'value', label: column, text, notes: notes.list() }
+    return { kind: 'value', label: y.name, text, notes: notes.list() }
   }
   const target = newAccumulator()
   for (const row of rows) {
-    const value = yValue(row[yIndex], column, aggregate, notes)
+    const value = yValue(row, y, aggregate, notes)
     if (value !== null) accumulate(target, value)
   }
   const value = result(target, aggregate)
   return {
     kind: 'value',
-    label: `${aggregate} of ${column}`,
+    label: `${aggregate} of ${y.name}`,
     text: value === null ? 'NULL' : formatNumber(value),
     notes: notes.list(),
   }

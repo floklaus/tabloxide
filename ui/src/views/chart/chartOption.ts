@@ -248,7 +248,10 @@ export function chartOption(
     },
     xAxis: {
       type: chart.xAxis,
-      name: chart.xName,
+      name:
+        chart.timeUnit === null
+          ? chart.xName
+          : `${chart.xName} (${chart.timeUnit})`,
       nameLocation: 'middle',
       nameGap: X_NAME_GAP,
       ...(chart.xAxis === 'category' ? { data: chart.categories } : {}),

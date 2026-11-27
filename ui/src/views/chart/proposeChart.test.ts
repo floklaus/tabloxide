@@ -78,8 +78,19 @@ describe('proposeChart', () => {
     })
   })
 
+  test('a result without a number column gives a bar chart of the number of rows', () => {
+    const columns = [column('country', 'text'), column('city', 'text')]
+
+    expect(proposeChart(columns, MANY_ROWS)).toEqual({
+      type: 'bar',
+      x: 'country',
+      y: [],
+      countRows: true,
+    })
+  })
+
   test('columns that fit no rule give no proposal', () => {
-    const columns = [column('a', 'text'), column('b', 'text')]
+    const columns = [column('a', 'json'), column('b', 'json')]
 
     expect(proposeChart(columns, MANY_ROWS)).toBeNull()
   })
@@ -92,11 +103,11 @@ describe('chartScore', () => {
     ).toBe(1)
   })
 
-  test('a result without a number column has a low score, because the chart can count rows', () => {
-    const score = chartScore([column('status', 'text')])
+  test('a result without a proposal has a lower score, because the user must select the columns', () => {
+    const score = chartScore([column('document', 'json')])
 
     expect(score).toBeGreaterThan(0)
-    expect(score).toBeLessThan(0.5)
+    expect(score).toBeLessThan(1)
   })
 
   test('a result without columns hides the chart view', () => {

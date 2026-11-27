@@ -1,5 +1,11 @@
 import { describe, expect, test } from 'vitest'
-import { makeTimeScale, parseMoment, toNumber } from './chartValues'
+import {
+  bucketLabel,
+  floorToUnit,
+  makeTimeScale,
+  parseMoment,
+  toNumber,
+} from './chartValues'
 
 const HOUR_MS = 3_600_000
 
@@ -79,5 +85,33 @@ describe('makeTimeScale', () => {
     const moment = parseMoment('2026-11-26 10:00:00')!
 
     expect(scale(moment)).toBe(moment.wall)
+  })
+})
+
+describe('floorToUnit and bucketLabel', () => {
+  // 2026-11-26 is a Thursday.
+  const moment = Date.UTC(2026, 10, 26, 14, 35, 10)
+
+  test.each([
+    ['hour', Date.UTC(2026, 10, 26, 14), '2026-11-26 14:00'],
+    ['day', Date.UTC(2026, 10, 26), '2026-11-26'],
+    ['week', Date.UTC(2026, 10, 23), '2026-11-23'],
+    ['month', Date.UTC(2026, 10, 1), '2026-11'],
+    ['year', Date.UTC(2026, 0, 1), '2026'],
+  ] as const)('the %s of a moment', (unit, start, label) => {
+    expect(floorToUnit(moment, unit)).toBe(start)
+    expect(bucketLabel(start, unit)).toBe(label)
+  })
+
+  test('the week of a Sunday starts on the Monday before it', () => {
+    const sunday = Date.UTC(2026, 10, 29, 8)
+
+    expect(floorToUnit(sunday, 'week')).toBe(Date.UTC(2026, 10, 23))
+  })
+
+  test('a week can start in the month before', () => {
+    const tuesday = Date.UTC(2026, 11, 1)
+
+    expect(bucketLabel(floorToUnit(tuesday, 'week'), 'week')).toBe('2026-11-30')
   })
 })

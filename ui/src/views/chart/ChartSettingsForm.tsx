@@ -1,53 +1,84 @@
-import { useId, useRef, type KeyboardEvent } from 'react'
 import type { Column } from '../../results/gridModel'
 import {
   AGGREGATE_LABELS,
   AGGREGATES,
+  axisControls,
   CHART_ROLES,
   CHART_TYPE_LABELS,
   CHART_TYPES,
   normalize,
+  SORT_LABELS,
+  SORTS,
+  TIME_UNIT_LABELS,
+  TIME_UNITS,
   withType,
+  withX,
   type Aggregate,
+  type AggregateSetting,
   type ChartSettings,
   type ChartType,
+  type Sort,
+  type TimeUnit,
 } from './chartSettings'
+import { ColumnPicker, NO_COLUMN } from './ColumnPicker'
 
 type Props = {
   settings: ChartSettings
   columns: Column[]
   onChange: (settings: ChartSettings) => void
+  /**
+   * The aggregate that the chart uses while the settings have none. `null`:
+   * each row is one mark. `undefined`: not known, because there is no chart.
+   */
+  autoAggregate?: Aggregate | null
+  /** The warnings about the cells of a column, by the name of the column. */
+  warnings?: Record<string, string[]>
+  /** Removes the settings, thus the proposed chart shows again. */
+  onReset?: () => void
 }
 
 const NONE = ''
+const ROWS = { label: 'Number of rows', detail: 'no column', isRows: true }
+const NO_SERIES = { label: 'None', detail: 'one series' }
 
-/** The names of the columns. A result can have the same name two times. */
-function columnNames(columns: Column[]): string[] {
-  return [...new Set(columns.map((column) => column.name))]
+function selectedColumn(names: string[]): string | undefined {
+  return names[0] === NO_COLUMN ? undefined : names[0]
 }
 
-function ColumnSelect(props: {
-  label: string
-  value: string | undefined
-  names: string[]
-  /** The text of the choice without a column. */
-  none: string
-  onChange: (name: string | undefined) => void
-}) {
-  const { label, value, names, none, onChange } = props
+/** The label of the choice that lets the chart decide the aggregate. */
+function automaticLabel(auto: Aggregate | null | undefined): string {
+  if (auto === undefined) return 'Automatic'
+  return `Automatic (${auto === null ? 'None' : AGGREGATE_LABELS[auto]})`
+}
+
+function AggregateSelect(
+  props: Pick<Props, 'settings' | 'autoAggregate'> & {
+    onChange: (aggregate: AggregateSetting | undefined) => void
+  },
+) {
+  const { settings, autoAggregate, onChange } = props
+  // A single value has no automatic aggregate: without one, it shows the first row.
+  const isAutomatic = settings.type !== 'value'
   return (
     <label className="chart__field">
-      <span>{label}</span>
+      <span>Aggregate</span>
       <select
-        value={value ?? NONE}
+        value={settings.aggregate ?? NONE}
         onChange={(event) =>
-          onChange(event.target.value === NONE ? undefined : event.target.value)
+          onChange(
+            event.target.value === NONE
+              ? undefined
+              : (event.target.value as AggregateSetting),
+          )
         }
       >
-        <option value={NONE}>{none}</option>
-        {names.map((name) => (
-          <option key={name} value={name}>
-            {name}
+        <option value={NONE}>
+          {isAutomatic ? automaticLabel(autoAggregate) : 'None'}
+        </option>
+        {isAutomatic && <option value="none">None</option>}
+        {AGGREGATES.map((aggregate) => (
+          <option key={aggregate} value={aggregate}>
+            {AGGREGATE_LABELS[aggregate]}
           </option>
         ))}
       </select>
@@ -55,72 +86,20 @@ function ColumnSelect(props: {
   )
 }
 
-/** A list with a check box for each column. It opens below its button. */
-function ColumnsPicker(props: {
-  label: string
-  selected: string[]
-  names: string[]
-  onChange: (names: string[]) => void
-}) {
-  const { label, selected, names, onChange } = props
-  const detailsRef = useRef<HTMLDetailsElement>(null)
-  const id = useId()
-  const close = () => {
-    if (detailsRef.current) detailsRef.current.open = false
-  }
-  const onKeyDown = (event: KeyboardEvent<HTMLDetailsElement>) => {
-    if (event.key !== 'Escape' || !detailsRef.current?.open) return
-    event.stopPropagation()
-    close()
-    detailsRef.current.querySelector('summary')?.focus()
-  }
-  const toggle = (name: string) =>
-    onChange(
-      selected.includes(name)
-        ? selected.filter((item) => item !== name)
-        : // The sequence of the columns of the result is the sequence of the series.
-          names.filter((item) => item === name || selected.includes(item)),
-    )
-  return (
-    <div className="chart__field">
-      <span id={id}>{label}</span>
-      <details
-        ref={detailsRef}
-        className="chart__picker"
-        onKeyDown={onKeyDown}
-        onBlur={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget)) close()
-        }}
-      >
-        <summary aria-labelledby={id} aria-describedby={`${id}-value`}>
-          <span id={`${id}-value`}>
-            {selected.length === 0 ? 'Select columns' : selected.join(', ')}
-          </span>
-        </summary>
-        <div className="chart__picker-list" role="group" aria-labelledby={id}>
-          {names.map((name) => (
-            <label key={name}>
-              <input
-                type="checkbox"
-                checked={selected.includes(name)}
-                onChange={() => toggle(name)}
-              />
-              {name}
-            </label>
-          ))}
-        </div>
-      </details>
-    </div>
-  )
-}
-
 /** The controls for the chart type and the role of each column. */
-export function ChartSettingsForm({ settings, columns, onChange }: Props) {
+export function ChartSettingsForm(props: Props) {
+  const { settings, columns, onChange, warnings = {}, onReset } = props
   const roles = CHART_ROLES[settings.type]
-  const names = columnNames(columns)
+  const controls = axisControls(settings, columns)
   const change = (part: Partial<ChartSettings>) =>
     onChange(normalize({ ...settings, ...part }))
   const isHistogram = settings.type === 'histogram'
+  const rows = roles.countRows ? ROWS : undefined
+  const ySelected = settings.countRows ? [NO_COLUMN] : settings.y
+  const changeY = (names: string[]) =>
+    names.includes(NO_COLUMN)
+      ? change({ countRows: true, y: [] })
+      : change({ countRows: false, y: names })
 
   return (
     <div className="chart__tools" role="group" aria-label="Chart settings">
@@ -142,62 +121,91 @@ export function ChartSettingsForm({ settings, columns, onChange }: Props) {
         </select>
       </label>
       {roles.x && (
-        <ColumnSelect
+        <ColumnPicker
           label={isHistogram ? 'Column' : 'Horizontal axis'}
-          value={settings.x}
-          names={names}
-          none="Select a column"
-          onChange={(x) => change({ x })}
+          columns={columns}
+          selected={settings.x === undefined ? [] : [settings.x]}
+          placeholder="Select a column"
+          warnings={settings.x === undefined ? [] : warnings[settings.x]}
+          onChange={(names) => onChange(withX(settings, names[0], columns))}
         />
       )}
-      {roles.y === 'many' && (
-        <ColumnsPicker
-          label="Vertical axis"
-          selected={settings.y}
-          names={names}
-          onChange={(y) => change({ y })}
-        />
-      )}
-      {roles.y === 'one' && (
-        <ColumnSelect
-          label="Value"
-          value={settings.y[0]}
-          names={names}
-          none="Select a column"
-          onChange={(name) => change({ y: name === undefined ? [] : [name] })}
-        />
-      )}
-      {roles.series && (
-        <ColumnSelect
-          label="Series"
-          value={settings.series}
-          names={names}
-          none="None"
-          onChange={(series) => change({ series })}
-        />
-      )}
-      {roles.aggregate && (
+      {controls.timeUnit && (
         <label className="chart__field">
-          <span>Aggregate</span>
+          <span>Group by</span>
           <select
-            value={settings.aggregate ?? NONE}
+            value={settings.timeUnit ?? NONE}
             onChange={(event) =>
               change({
-                aggregate:
+                timeUnit:
                   event.target.value === NONE
                     ? undefined
-                    : (event.target.value as Aggregate),
+                    : (event.target.value as TimeUnit),
               })
             }
           >
             <option value={NONE}>None</option>
-            {AGGREGATES.map((aggregate) => (
-              <option key={aggregate} value={aggregate}>
-                {AGGREGATE_LABELS[aggregate]}
+            {TIME_UNITS.map((unit) => (
+              <option key={unit} value={unit}>
+                {TIME_UNIT_LABELS[unit]}
               </option>
             ))}
           </select>
         </label>
+      )}
+      {controls.sort && (
+        <label className="chart__field">
+          <span>Sort</span>
+          <select
+            value={settings.sort ?? NONE}
+            onChange={(event) =>
+              change({
+                sort:
+                  event.target.value === NONE
+                    ? undefined
+                    : (event.target.value as Sort),
+              })
+            }
+          >
+            <option value={NONE}>As in the result</option>
+            {SORTS.map((sort) => (
+              <option key={sort} value={sort}>
+                {SORT_LABELS[sort]}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {roles.y !== 'none' && (
+        <ColumnPicker
+          label={roles.y === 'many' ? 'Vertical axis' : 'Value'}
+          columns={columns}
+          selected={ySelected}
+          isMultiple={roles.y === 'many'}
+          special={rows}
+          placeholder={
+            roles.y === 'many' ? 'Select columns' : 'Select a column'
+          }
+          warnings={settings.y.flatMap((name) => warnings[name] ?? [])}
+          onChange={changeY}
+        />
+      )}
+      {roles.aggregate && !settings.countRows && (
+        <AggregateSelect
+          settings={settings}
+          autoAggregate={props.autoAggregate}
+          onChange={(aggregate) => change({ aggregate })}
+        />
+      )}
+      {roles.series && (
+        <ColumnPicker
+          label="Series"
+          columns={columns}
+          selected={[settings.series ?? NO_COLUMN]}
+          special={NO_SERIES}
+          placeholder="None"
+          onChange={(names) => change({ series: selectedColumn(names) })}
+        />
       )}
       {roles.stacked && (
         <label className="chart__check">
@@ -220,6 +228,16 @@ export function ChartSettingsForm({ settings, columns, onChange }: Props) {
           />
           Logarithmic scale
         </label>
+      )}
+      {onReset && (
+        <button
+          type="button"
+          className="link-button chart__reset"
+          title="Removes your settings and shows the chart that Tabloxide proposes."
+          onClick={onReset}
+        >
+          Reset to the proposed chart
+        </button>
       )}
     </div>
   )

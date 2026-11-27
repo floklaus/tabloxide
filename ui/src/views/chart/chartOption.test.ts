@@ -35,6 +35,12 @@ function chart(part: Partial<CartesianChart>): CartesianChart {
     xAxis: 'category',
     xName: 'country',
     yName: 'amount',
+    yColumns: ['amount'],
+    countsRows: false,
+    aggregate: null,
+    isAutoAggregate: false,
+    timeUnit: null,
+    seriesColumn: null,
     categories: ['DE', 'FR'],
     series: [{ name: 'amount', values: [10, 20], points: [] }],
     pointCount: 2,
@@ -115,6 +121,20 @@ describe('the description of a chart for ECharts', () => {
     expect(result.useUTC).toBe(true)
     expect(result.xAxis.type).toBe('time')
     expect(result.series[0]).toMatchObject({ type: 'line', sampling: 'lttb' })
+  })
+
+  test('the name of the horizontal axis has the time unit', () => {
+    const line = chart({
+      type: 'line',
+      xAxis: 'time',
+      xName: 'day',
+      timeUnit: 'month',
+      series: [points('v', [[0, 1]])],
+    })
+
+    const result = option(line, { type: 'line', x: 'day', y: ['v'] })
+
+    expect(result.xAxis.name).toBe('day (month)')
   })
 
   test('an area chart is a line with a filled area', () => {

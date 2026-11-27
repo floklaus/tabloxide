@@ -8,10 +8,12 @@ import { reducesPoints } from './chartOption'
 import {
   incompleteReason,
   missingColumns,
+  normalize,
   parseChartSettings,
   type ChartSettings,
 } from './chartSettings'
 import { ChartSettingsForm } from './ChartSettingsForm'
+import { chartSentence } from './chartSentence'
 import { chartSummary } from './chartSummary'
 import { proposeChart } from './proposeChart'
 import { SaveImageButton } from './SaveImageButton'
@@ -67,22 +69,49 @@ function useLoadAll(props: ViewProps) {
   }
 }
 
+/** The warnings about the cells of one column. They show at the control of that column. */
+function columnWarnings(chart: PreparedChart): Record<string, string[]> {
+  const warnings: Record<string, string[]> = {}
+  for (const note of chart.notes) {
+    if (!('column' in note)) continue
+    warnings[note.column] = [...(warnings[note.column] ?? []), noteText(note)]
+  }
+  return warnings
+}
+
 function Notes(props: {
   part: ReactNode
   chart: PreparedChart
   width: number
+  /** Sets the aggregate to None, after the chart set it to Sum. */
+  onShowEachRow: () => void
 }) {
   const { part, chart, width } = props
-  const lines = chart.notes.map(noteText)
+  // A note about one column is at the control of that column.
+  const lines = chart.notes.filter((note) => !('column' in note)).map(noteText)
   if (chart.kind === 'cartesian' && reducesPoints(chart, width)) {
     lines.push(
       'A line has more points than the chart has pixels. The chart shows a reduced number of points for each line.',
     )
   }
-  if (part === null && lines.length === 0) return null
+  const isAuto = chart.kind === 'cartesian' && chart.isAutoAggregate
+  if (part === null && lines.length === 0 && !isAuto) return null
   return (
     <ul className="chart__notes" aria-label="Notes about the chart">
       {part !== null && <li>{part}</li>}
+      {isAuto && (
+        <li>
+          The values of the horizontal axis repeat. The chart shows the sum for
+          each value.{' '}
+          <button
+            type="button"
+            className="link-button"
+            onClick={props.onShowEachRow}
+          >
+            Show each row
+          </button>
+        </li>
+      )}
       {lines.map((line) => (
         <li key={line}>{line}</li>
       ))}
@@ -191,6 +220,13 @@ export function ChartView(props: ViewProps) {
       </>
     )
   const summary = chartSummary(chart)
+  const sentence = chartSentence(chart, shownRows.length)
+  const warnings = columnWarnings(chart)
+  // The form shows what "Automatic" is now. A view without a chart does not know it.
+  const autoAggregate =
+    chart.kind === 'cartesian' && settings.aggregate === undefined
+      ? chart.aggregate
+      : undefined
 
   return (
     <div className="chart">
@@ -199,13 +235,32 @@ export function ChartView(props: ViewProps) {
           settings={settings}
           columns={columns}
           onChange={onSettings}
+          autoAggregate={autoAggregate}
+          warnings={warnings}
+          onReset={
+            props.settings === undefined
+              ? undefined
+              : () => onSettings(undefined)
+          }
         />
         <SaveImageButton
           canvas={canvasRef}
           isAvailable={reason === null && chart.kind === 'cartesian'}
         />
       </div>
-      <Notes part={partLine} chart={chart} width={width} />
+      {sentence !== null && reason === null && (
+        <p className="chart__sentence">
+          <strong>{sentence.what}</strong> <span>{sentence.size}</span>
+        </p>
+      )}
+      <Notes
+        part={partLine}
+        chart={chart}
+        width={width}
+        onShowEachRow={() =>
+          onSettings(normalize({ ...settings, aggregate: 'none' }))
+        }
+      />
       {reason !== null && <EmptyState text={reason} />}
       {reason === null && chart.kind === 'empty' && (
         <EmptyState text="The chart has no data to show." />

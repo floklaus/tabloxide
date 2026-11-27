@@ -1,10 +1,12 @@
 import { describe, expect, test } from 'vitest'
 import {
+  axisControls,
   incompleteReason,
   missingColumns,
   normalize,
   parseChartSettings,
   withType,
+  withX,
 } from './chartSettings'
 import { column } from './testColumns'
 
@@ -172,5 +174,127 @@ describe('withType', () => {
     ])
 
     expect(settings).toEqual({ type: 'histogram', y: [] })
+  })
+})
+
+describe('the settings of step 1 of the input design', () => {
+  test('parseChartSettings reads the number of rows, the time unit, the sort, and the aggregate None', () => {
+    const value = {
+      type: 'bar',
+      x: 'paid',
+      y: ['amount'],
+      aggregate: 'none',
+      timeUnit: 'month',
+      sort: 'value-desc',
+    }
+
+    expect(parseChartSettings(value)).toEqual({ settings: value })
+    expect(
+      parseChartSettings({ type: 'bar', x: 'country', countRows: true }),
+    ).toEqual({
+      settings: { type: 'bar', x: 'country', y: [], countRows: true },
+    })
+  })
+
+  test.each([
+    [{ type: 'bar', y: [], countRows: 'yes' }, '"countRows"'],
+    [{ type: 'bar', y: [], timeUnit: 'decade' }, 'time unit'],
+    [{ type: 'bar', y: [], sort: 'random' }, 'sort'],
+  ])('parseChartSettings refuses %j', (value, part) => {
+    const parsed = parseChartSettings(value)
+
+    expect('error' in parsed && parsed.error).toContain(part)
+  })
+
+  test('the number of rows has no column and no aggregate', () => {
+    const settings = normalize({
+      type: 'bar',
+      x: 'country',
+      y: ['amount'],
+      countRows: true,
+      aggregate: 'mean',
+    })
+
+    expect(settings).toEqual({
+      type: 'bar',
+      x: 'country',
+      y: [],
+      countRows: true,
+    })
+  })
+
+  test('a chart of the number of rows is complete without a column of the vertical axis', () => {
+    expect(
+      incompleteReason({ type: 'bar', x: 'country', y: [], countRows: true }),
+    ).toBeNull()
+  })
+
+  test('a scatter plot cannot count rows, group dates, or sort', () => {
+    const settings = normalize({
+      type: 'scatter',
+      x: 'a',
+      y: ['b'],
+      countRows: true,
+      timeUnit: 'day',
+      sort: 'name',
+    })
+
+    expect(settings).toEqual({ type: 'scatter', x: 'a', y: ['b'] })
+  })
+})
+
+describe('the controls of the horizontal axis', () => {
+  const columns = [
+    column('paid', 'temporal'),
+    column('country', 'text'),
+    column('year', 'number'),
+    column('amount', 'number'),
+  ]
+  const line = (x: string) => ({ type: 'line' as const, x, y: ['amount'] })
+
+  test('a date column has a time unit', () => {
+    expect(axisControls(line('paid'), columns)).toEqual({
+      timeUnit: true,
+      sort: false,
+    })
+  })
+
+  test('a text column has a sort', () => {
+    expect(axisControls(line('country'), columns)).toEqual({
+      timeUnit: false,
+      sort: true,
+    })
+  })
+
+  test('a number column has a sort only in a bar chart, where it gives categories', () => {
+    expect(axisControls(line('year'), columns).sort).toBe(false)
+    expect(
+      axisControls({ type: 'bar', x: 'year', y: ['amount'] }, columns).sort,
+    ).toBe(true)
+  })
+
+  test('withX removes the time unit when the new column is not a date', () => {
+    const settings = withX(
+      { ...line('paid'), timeUnit: 'month' },
+      'country',
+      columns,
+    )
+
+    expect(settings).toEqual({ type: 'line', x: 'country', y: ['amount'] })
+  })
+
+  test('withType keeps the number of rows and removes a sort that the type cannot use', () => {
+    const settings = withType(
+      { type: 'bar', x: 'year', y: [], countRows: true, sort: 'name' },
+      'line',
+      columns,
+    )
+
+    expect(settings).toEqual({
+      type: 'line',
+      x: 'year',
+      y: [],
+      countRows: true,
+    })
   })
 })

@@ -21,7 +21,7 @@ const SALES = [
 ]
 
 describe('a chart with categories', () => {
-  test('each row is one bar when there is no aggregate and no series column', () => {
+  test('each row is one bar with the aggregate None and no series column', () => {
     const rows: Row[] = [
       ['DE', 'a', '10', '1'],
       ['FR', 'a', '20', '2'],
@@ -30,7 +30,12 @@ describe('a chart with categories', () => {
 
     const chart = cartesian(
       prepareChart(
-        { type: 'bar', x: 'country', y: ['amount', 'tax'] },
+        {
+          type: 'bar',
+          x: 'country',
+          y: ['amount', 'tax'],
+          aggregate: 'none',
+        },
         SALES,
         rows,
       ),
@@ -131,7 +136,7 @@ describe('a chart with categories', () => {
     ])
   })
 
-  test('without an aggregate, a second row of the same category and series is not shown, and a note says so', () => {
+  test('with the aggregate None, a second row of the same category and series is not shown, and a note says so', () => {
     const rows: Row[] = [
       ['DE', 'a', '10', null],
       ['DE', 'a', '99', null],
@@ -139,7 +144,13 @@ describe('a chart with categories', () => {
 
     const chart = cartesian(
       prepareChart(
-        { type: 'bar', x: 'country', y: ['amount'], series: 'kind' },
+        {
+          type: 'bar',
+          x: 'country',
+          y: ['amount'],
+          series: 'kind',
+          aggregate: 'none',
+        },
         SALES,
         rows,
       ),
@@ -541,5 +552,317 @@ describe('noteText', () => {
     expect(noteText({ id: 'series-limit', shown: 8, total: 23 })).toBe(
       'The chart shows the first 8 of 23 series.',
     )
+  })
+})
+
+describe('settings without an aggregate', () => {
+  test('the chart shows the sum if the values of the horizontal axis repeat, and says that it decided', () => {
+    const rows: Row[] = [
+      ['DE', 'a', '10', null],
+      ['FR', 'a', '20', null],
+      ['DE', 'b', '5', null],
+    ]
+
+    const chart = cartesian(
+      prepareChart({ type: 'bar', x: 'country', y: ['amount'] }, SALES, rows),
+    )
+
+    expect(chart.categories).toEqual(['DE', 'FR'])
+    expect(chart.series[0].values).toEqual([15, 20])
+    expect(chart).toMatchObject({
+      aggregate: 'sum',
+      isAutoAggregate: true,
+      yName: 'sum of amount',
+    })
+  })
+
+  test('each row is one mark if no value repeats', () => {
+    const rows: Row[] = [
+      ['DE', 'a', '10', null],
+      ['FR', 'a', '20', null],
+    ]
+
+    const chart = cartesian(
+      prepareChart({ type: 'bar', x: 'country', y: ['amount'] }, SALES, rows),
+    )
+
+    expect(chart).toMatchObject({
+      aggregate: null,
+      isAutoAggregate: false,
+      yName: 'amount',
+    })
+  })
+
+  test('the same value in two series is not a repeat', () => {
+    const rows: Row[] = [
+      ['DE', 'a', '10', null],
+      ['DE', 'b', '5', null],
+    ]
+
+    const chart = cartesian(
+      prepareChart(
+        { type: 'bar', x: 'country', y: ['amount'], series: 'kind' },
+        SALES,
+        rows,
+      ),
+    )
+
+    expect(chart.aggregate).toBeNull()
+  })
+
+  test('an aggregate of the settings is not automatic', () => {
+    const rows: Row[] = [
+      ['DE', 'a', '10', null],
+      ['DE', 'b', '5', null],
+    ]
+
+    const chart = cartesian(
+      prepareChart(
+        { type: 'bar', x: 'country', y: ['amount'], aggregate: 'max' },
+        SALES,
+        rows,
+      ),
+    )
+
+    expect(chart).toMatchObject({ aggregate: 'max', isAutoAggregate: false })
+    expect(chart.series[0].values).toEqual([10])
+  })
+
+  test('a scatter plot never combines rows', () => {
+    const columns = [column('x', 'number'), column('y', 'number')]
+
+    const chart = cartesian(
+      prepareChart({ type: 'scatter', x: 'x', y: ['y'] }, columns, [
+        ['1', '10'],
+        ['1', '20'],
+      ]),
+    )
+
+    expect(chart.aggregate).toBeNull()
+    expect(chart.series[0].points).toHaveLength(2)
+  })
+})
+
+describe('the number of rows', () => {
+  test('counts the rows of each category, also rows with empty cells', () => {
+    const rows: Row[] = [
+      ['DE', null, null, null],
+      ['FR', null, null, null],
+      ['DE', null, null, null],
+    ]
+
+    const chart = cartesian(
+      prepareChart(
+        { type: 'bar', x: 'country', y: [], countRows: true },
+        SALES,
+        rows,
+      ),
+    )
+
+    expect(chart.categories).toEqual(['DE', 'FR'])
+    expect(chart.series).toMatchObject([
+      { name: 'Number of rows', values: [2, 1] },
+    ])
+    expect(chart).toMatchObject({
+      countsRows: true,
+      yName: 'Number of rows',
+      yColumns: [],
+      isAutoAggregate: false,
+    })
+  })
+
+  test('a series column gives one count for each of its values', () => {
+    const rows: Row[] = [
+      ['DE', 'a', null, null],
+      ['DE', 'b', null, null],
+      ['DE', 'b', null, null],
+    ]
+
+    const chart = cartesian(
+      prepareChart(
+        { type: 'bar', x: 'country', y: [], countRows: true, series: 'kind' },
+        SALES,
+        rows,
+      ),
+    )
+
+    expect(chart.series).toMatchObject([
+      { name: 'a', values: [1] },
+      { name: 'b', values: [2] },
+    ])
+  })
+
+  test('a single value shows the number of the loaded rows', () => {
+    const chart = prepareChart(
+      { type: 'value', y: [], countRows: true },
+      SALES,
+      [
+        ['DE', null, null, null],
+        ['FR', null, null, null],
+      ],
+    )
+
+    expect(chart).toEqual({
+      kind: 'value',
+      label: 'Number of rows',
+      text: '2',
+      notes: [],
+    })
+  })
+})
+
+describe('a time unit', () => {
+  const PAYMENTS = [
+    column('paid', 'temporal'),
+    column('staff', 'text'),
+    column('amount', 'number'),
+  ]
+  const rows: Row[] = [
+    ['2026-02-03 10:00:00+00', 'Mike', '5'],
+    ['2026-01-15 09:30:00+00', 'Mike', '1'],
+    ['2026-01-20 18:00:00+00', 'Jon', '2'],
+    ['2026-02-28 23:59:59+00', 'Jon', '10'],
+  ]
+
+  test('a line has one point for each month, with the sum of its rows', () => {
+    const chart = cartesian(
+      prepareChart(
+        { type: 'line', x: 'paid', y: ['amount'], timeUnit: 'month' },
+        PAYMENTS,
+        rows,
+      ),
+    )
+
+    expect(chart).toMatchObject({
+      xAxis: 'time',
+      timeUnit: 'month',
+      aggregate: 'sum',
+      isAutoAggregate: true,
+    })
+    expect(chart.series[0].points).toEqual([
+      [Date.UTC(2026, 0, 1), 3],
+      [Date.UTC(2026, 1, 1), 15],
+    ])
+  })
+
+  test('a bar chart has one category for each month, in the sequence of the time', () => {
+    const chart = cartesian(
+      prepareChart(
+        {
+          type: 'bar',
+          x: 'paid',
+          y: ['amount'],
+          timeUnit: 'month',
+          aggregate: 'max',
+        },
+        PAYMENTS,
+        rows,
+      ),
+    )
+
+    expect(chart.xAxis).toBe('category')
+    expect(chart.categories).toEqual(['2026-01', '2026-02'])
+    expect(chart.series[0].values).toEqual([2, 10])
+  })
+
+  test('a week starts on Monday', () => {
+    const chart = cartesian(
+      prepareChart(
+        { type: 'bar', x: 'paid', y: [], countRows: true, timeUnit: 'week' },
+        PAYMENTS,
+        // 2026-01-18 is a Sunday, and 2026-01-19 is a Monday.
+        [
+          ['2026-01-18', 'Mike', '1'],
+          ['2026-01-19', 'Mike', '1'],
+          ['2026-01-25', 'Mike', '1'],
+        ],
+      ),
+    )
+
+    expect(chart.categories).toEqual(['2026-01-12', '2026-01-19'])
+    expect(chart.series[0].values).toEqual([1, 2])
+  })
+
+  test('a column that is not a date has no time unit', () => {
+    const chart = cartesian(
+      prepareChart(
+        { type: 'bar', x: 'staff', y: ['amount'], timeUnit: 'month' },
+        PAYMENTS,
+        rows,
+      ),
+    )
+
+    expect(chart.timeUnit).toBeNull()
+    expect(chart.categories).toEqual(['Mike', 'Jon'])
+  })
+})
+
+describe('the sort of the categories', () => {
+  const rows: Row[] = [
+    ['item 10', 'a', '5', null],
+    ['item 2', 'a', '20', null],
+    ['item 1', 'a', null, null],
+    ['item 3', 'a', '10', null],
+  ]
+  const sorted = (sort: 'name' | 'value-asc' | 'value-desc') =>
+    cartesian(
+      prepareChart(
+        { type: 'bar', x: 'country', y: ['amount'], sort },
+        SALES,
+        rows,
+      ),
+    )
+
+  test('without a sort, the categories are as in the result', () => {
+    const chart = cartesian(
+      prepareChart({ type: 'bar', x: 'country', y: ['amount'] }, SALES, rows),
+    )
+
+    expect(chart.categories).toEqual(['item 10', 'item 2', 'item 1', 'item 3'])
+  })
+
+  test('by name, with the numbers in a name in their numeric sequence', () => {
+    expect(sorted('name').categories).toEqual([
+      'item 1',
+      'item 2',
+      'item 3',
+      'item 10',
+    ])
+  })
+
+  test('by value with the largest first, and a category without a value last', () => {
+    const chart = sorted('value-desc')
+
+    expect(chart.categories).toEqual(['item 2', 'item 3', 'item 10', 'item 1'])
+    expect(chart.series[0].values).toEqual([20, 10, 5, null])
+  })
+
+  test('by value with the smallest first, and a category without a value last', () => {
+    expect(sorted('value-asc').categories).toEqual([
+      'item 10',
+      'item 3',
+      'item 2',
+      'item 1',
+    ])
+  })
+
+  test('the value of a category is the total of its series', () => {
+    const chart = cartesian(
+      prepareChart(
+        {
+          type: 'bar',
+          x: 'country',
+          y: ['amount', 'tax'],
+          sort: 'value-desc',
+        },
+        SALES,
+        [
+          ['DE', 'a', '10', '1'],
+          ['FR', 'a', '5', '20'],
+        ],
+      ),
+    )
+
+    expect(chart.categories).toEqual(['FR', 'DE'])
   })
 })
