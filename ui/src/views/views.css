@@ -138,3 +138,25 @@
 .chart__action {
   align-self: flex-start;
 }
+
+/* The saved views of a result, below the view. */
+
+.saved-views {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem 0.75rem;
+  margin: 0;
+  font-size: 12px;
+}
+
+.saved-views__hint {
+  color: var(--color-text-muted);
+}
+
+.saved-views__error {
+  width: 100%;
+  margin: 0;
+  color: var(--color-danger);
+}

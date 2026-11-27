@@ -125,6 +125,12 @@ export function ChartView(props: ViewProps) {
     [isUsable, settings, columns, shownRows],
   )
 
+  const { onShownSettings } = props
+  const shownSettings = isUsable ? settings : undefined
+  useEffect(() => {
+    onShownSettings?.(shownSettings)
+  }, [onShownSettings, shownSettings])
+
   if (parsed && 'error' in parsed) {
     return (
       <div className="chart">

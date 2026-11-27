@@ -1,7 +1,10 @@
-import { useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { sqlTabIdOf, useTabsStore } from '../tabs/tabsStore'
 import { viewsFor } from './registry'
+import { SavedViews } from './SavedViews'
 import { useStatementNumber } from './statementNumber'
+import { savedViewsOf, viewFilePath, type SavedView } from './viewFile'
+import { useViewFileStore } from './viewFileStore'
 import { statementViews, useViewStore } from './viewStore'
 import { GRID_VIEW_ID, type ResultData } from './viewTypes'
 
@@ -12,9 +15,19 @@ type Props = ResultData & {
   runIndex: number
 }
 
+/** The path of the view settings file of the active tab. `null` for a tab without a file. */
+function useViewFilePath(): string | null {
+  const queryPath = useTabsStore(
+    (state) =>
+      state.tabs.find((tab) => tab.id === sqlTabIdOf(state))?.path ?? null,
+  )
+  return queryPath === null ? null : viewFilePath(queryPath)
+}
+
 /**
  * Shows one result in the view that the user selected. The host is the only part
  * that knows the views. A view gets the data and its settings, and nothing else.
+ * The host also reads and writes the view settings file.
  */
 export function ViewHost(props: Props) {
   const { statementFrom, runIndex, ...data } = props
@@ -28,6 +41,42 @@ export function ViewHost(props: Props) {
   const view = views.find((item) => item.id === state.view) ?? views[0]
   // The number of the statement comes from the backend a moment after the result.
   const canChange = statement !== null
+
+  const filePath = useViewFilePath()
+  const loaded = useViewFileStore((store) =>
+    filePath === null ? undefined : store.files[filePath],
+  )
+  const load = useViewFileStore((store) => store.load)
+  // Each run reads the file again. A different program can change it, for example Git.
+  useEffect(() => {
+    if (filePath !== null) void load(filePath)
+  }, [filePath, load, data.columns])
+
+  /** The settings that the view shows, with the view that told them. */
+  const [shown, setShown] = useState<{ view: string; settings: unknown }>()
+  const viewId = view.id
+  // The view tells its settings in an effect. The function must stay the same.
+  const onShownSettings = useCallback(
+    (settings: unknown) => setShown({ view: viewId, settings }),
+    [viewId],
+  )
+  const apply = (saved: SavedView) =>
+    canChange &&
+    change(tabId, statement, {
+      view: saved.view,
+      settings: { ...state.settings, [saved.view]: saved.settings },
+      savedName: saved.name,
+    })
+  const select = (id: string) => {
+    if (!canChange) return
+    // The first saved view of the statement is the start of a view without settings.
+    const saved =
+      loaded?.status === 'ok' && state.settings[id] === undefined
+        ? savedViewsOf(loaded.file, statement, id)[0]
+        : undefined
+    if (saved) apply(saved)
+    else change(tabId, statement, { view: id })
+  }
 
   return (
     <>
@@ -44,9 +93,7 @@ export function ViewHost(props: Props) {
               className="button button--small"
               aria-pressed={item.id === view.id}
               disabled={!canChange}
-              onClick={() =>
-                canChange && change(tabId, statement, { view: item.id })
-              }
+              onClick={() => select(item.id)}
             >
               {item.name}
             </button>
@@ -66,7 +113,20 @@ export function ViewHost(props: Props) {
             settings: { ...state.settings, [view.id]: settings },
           })
         }
+        onShownSettings={onShownSettings}
       />
+      {view.id !== GRID_VIEW_ID && canChange && (
+        <SavedViews
+          path={filePath}
+          loaded={loaded}
+          statement={statement}
+          view={view.id}
+          settings={shown?.view === view.id ? shown.settings : undefined}
+          savedName={state.savedName}
+          onApply={apply}
+          onSavedName={(savedName) => change(tabId, statement, { savedName })}
+        />
+      )}
     </>
   )
 }

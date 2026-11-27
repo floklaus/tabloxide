@@ -23,6 +23,12 @@ export type ViewProps = ResultData & {
    */
   settings: unknown
   onSettings: (settings: unknown) => void
+  /**
+   * The view tells the host the settings that it shows now, also when they are
+   * its defaults. The host needs them to save the view. `undefined`: the view
+   * shows nothing that the host can save.
+   */
+  onShownSettings?: (settings: unknown) => void
 }
 
 /** One view of a result. The built-in views and, later, the view packs have this form. */
