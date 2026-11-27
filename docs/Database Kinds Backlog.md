@@ -71,6 +71,8 @@ Status on 2026-11-25: item F13 has a plan. It is milestone M21 in `Implementatio
 
 Status on 2026-11-26: the product owner answered decision 7 (section 9). The assistant can send the names and the types of fields from a sample of documents, and never a value.
 
+Status on 2026-11-26, later: `Visualization Design.md` gives a proposal for the result views (F8, T2, G5, and D3). The product owner made no decision yet.
+
 ## 5. Relational (R)
 
 Relational engines use the structure that exists. They need F1, F2, F3, F5, F10, and F15.
