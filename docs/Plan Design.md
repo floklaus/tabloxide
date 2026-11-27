@@ -2,7 +2,7 @@
 
 This document gives a new design for the execution plan ("Explain"). It accompanies `Connector Design.md` and `Implementation Plan.md`.
 
-Status on 2026-11-26: the product owner approved the design and the answers of section 6. Stages 4, 1, 2, and 3 are built. Stage 5 is open.
+Status on 2026-11-26: the product owner approved the design and the answers of section 6. All five stages are built.
 
 The design has two parts:
 
@@ -166,3 +166,10 @@ e. Stage 4 comes first.
 - The MongoDB connector (`connectors/mongodb/src/explain/`) converts the answer of `explain`. It reads the classic engine, the slot-based engine (SBE), and the stages of `aggregate`. The cost is the number of documents and keys that a step examined. Its hints are: no index for the filter, sort in memory or on disk, index does not cover the filter, index reads many keys, lookup without an index, and data on disk. The answer of a sharded cluster has no common form, thus the Plan tab shows "Original".
 - The UI keeps only what does not depend on the engine: the shares, the three costliest steps, the misestimate mark and hint, the sections, and the reading guide. It shows the hints of the engine after its own hints, as "title. text".
 - The UI no longer has `parsePlan`, the glossary of operations and fields, and the hints of PostgreSQL and DuckDB.
+
+## 10. Stage 5 as built
+
+- The status line of a result has the link "Explain" (`ui/src/plan/ExplainLink.tsx`). It reads the plan of the statement of that result, not of the statement at the cursor.
+- After a statement that took the preference "Offer the plan after a query of (ms)" or more, the link says "Took 3.2 s. Explain the statement?". The preference is `slow_query_ms`, with the default 1000 and the range 100 to 600000.
+- The detail of a history entry has the action "Explain" (`explainEntry` in `ui/src/history/historyStore.ts`). The plan always comes from the connection of the entry. If the SQL tab has a different connection, the statement opens in a new tab with the connection of the entry.
+- The link and the action read an estimate only. For a measured plan, the user uses Explain and measure in the editor.

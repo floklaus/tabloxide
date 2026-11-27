@@ -8,6 +8,7 @@ export type Preferences = Preferences_Serialize
 export const DEFAULT_PREFERENCES: Preferences = {
   editor: { font_size: 14, tab_width: 2, line_numbers: true, word_wrap: false },
   history_retention_days: 90,
+  slow_query_ms: 1000,
   guardrails: { development: 'risky', staging: 'risky', production: 'always' },
   assistant: { model: 'claude-opus-5-5', rows_for_ai: 100 },
   check_for_updates: true,
@@ -17,6 +18,7 @@ export const LIMITS = {
   fontSize: { min: 10, max: 32 },
   tabWidth: { min: 1, max: 8 },
   historyRetentionDays: { min: 1, max: 3650 },
+  slowQueryMs: { min: 100, max: 600_000 },
   rowsForAi: { min: 1, max: 1000 },
 }
 

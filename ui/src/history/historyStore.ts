@@ -5,6 +5,7 @@ import {
   type HistoryStatus,
 } from '../bindings'
 import { toMessage } from '../lib/errors'
+import { usePlanStore } from '../plan/planStore'
 import { requestRun } from '../query/runConfirm'
 import { sqlTabForTools, useTabsStore } from '../tabs/tabsStore'
 import type { Status } from '../view/StatusMark'
@@ -99,6 +100,21 @@ export function openInTab(entry: HistoryEntry): void {
   const tabs = useTabsStore.getState()
   const id = tabs.newTab(entry.sql)
   tabs.setConnection(id, entry.connection_id)
+}
+
+/**
+ * Reads the plan of the statement of an entry. If the SQL tab has a different
+ * connection, the statement opens in a new tab with the connection of the entry.
+ * Thus the plan always comes from the connection of the entry.
+ */
+export function explainEntry(entry: HistoryEntry): void {
+  const tab = sqlTabForTools()
+  if (!tab || (tab.connectionId && tab.connectionId !== entry.connection_id)) {
+    openInTab(entry)
+  } else if (!tab.connectionId) {
+    useTabsStore.getState().setConnection(tab.id, entry.connection_id)
+  }
+  void usePlanStore.getState().explain(entry.sql, false)
 }
 
 /** Runs the statement of an entry again in the SQL tab. */

@@ -52,6 +52,7 @@ describe('PreferencesDialog', () => {
       },
       assistant: { model: 'claude-opus-5-5' as const, rows_for_ai: 100 },
       check_for_updates: true,
+      slow_query_ms: 1000,
     }
     preferencesSave.mockResolvedValue({ status: 'ok', data: changed })
     render(<PreferencesDialog onClose={onClose} />)

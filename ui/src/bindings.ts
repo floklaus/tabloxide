@@ -1552,6 +1552,11 @@ export type Preferences_Deserialize = {
 	assistant?: AssistantPreferences_Deserialize,
 	/**  `true` if the application asks the update server for a newer version at the start. */
 	check_for_updates?: boolean,
+	/**
+	 *  After a statement that takes this number of milliseconds or more, the result
+	 *  offers to explain the statement.
+	 */
+	slow_query_ms?: number,
 };
 
 export type Preferences_Serialize = {
@@ -1567,6 +1572,11 @@ export type Preferences_Serialize = {
 	assistant: AssistantPreferences_Serialize,
 	/**  `true` if the application asks the update server for a newer version at the start. */
 	check_for_updates: boolean,
+	/**
+	 *  After a statement that takes this number of milliseconds or more, the result
+	 *  offers to explain the statement.
+	 */
+	slow_query_ms: number,
 };
 
 /**  A query failure. */

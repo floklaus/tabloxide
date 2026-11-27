@@ -1,6 +1,7 @@
 import { AiAction } from '../assistant/AiAction'
 import type { ActionRequest } from '../assistant/assistantStore'
 import { GitConsole } from '../git/GitConsole'
+import { ExplainLink } from '../plan/ExplainLink'
 import { PlanView } from '../plan/PlanView'
 import {
   activeQueryStore,
@@ -164,8 +165,20 @@ function RowsStatus(props: { statement: StatementReport; index: number }) {
   )
 }
 
+/** The text of the statement of a result, without the other statements of the run. */
+function statementText(sql: string, statement: StatementReport): string {
+  return sql.slice(statement.range.from, statement.range.to)
+}
+
 function StatementView(props: { statement: StatementReport; index: number }) {
   const { statement, index } = props
+  const ranSql = useQuery((state) => state.ranSql)
+  const explainLink = (
+    <ExplainLink
+      statement={statementText(ranSql, statement)}
+      elapsedMs={statement.elapsed_ms}
+    />
+  )
   const open = useQuery((state) => state.open)
   const fetchError = useQuery((state) => state.fetchError)
   const isExporting = useQuery((state) => state.isExporting)
@@ -185,10 +198,13 @@ function StatementView(props: { statement: StatementReport; index: number }) {
   }
   if (outcome.type === 'command') {
     return (
-      <p className="results__status" role="status">
-        The statement is complete. {count(outcome.affected_rows, 'row')}{' '}
-        affected ({elapsed(statement.elapsed_ms)}).
-      </p>
+      <div className="results__bar">
+        <p className="results__status" role="status">
+          The statement is complete. {count(outcome.affected_rows, 'row')}{' '}
+          affected ({elapsed(statement.elapsed_ms)}).
+        </p>
+        {explainLink}
+      </div>
     )
   }
   const isOpen = open?.index === index
@@ -206,6 +222,7 @@ function StatementView(props: { statement: StatementReport; index: number }) {
       />
       <div className="results__bar results__bar--footer">
         <RowsStatus statement={statement} index={index} />
+        {explainLink}
         <span className="title-bar__spacer" />
         {isOpen && (
           <button

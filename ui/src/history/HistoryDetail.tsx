@@ -6,6 +6,7 @@ import {
   HISTORY_STATUS,
   dayName,
   durationText,
+  explainEntry,
   hasText,
   openInTab,
   runAgain,
@@ -59,6 +60,15 @@ export function HistoryDetail({ id }: { id: number }) {
         >
           <Icon name="play" size={14} />
           Run again
+        </button>
+        <button
+          type="button"
+          className="button button--small"
+          disabled={!canUse}
+          title="Reads the plan of the statement on the connection of the entry. The statement does not run."
+          onClick={() => explainEntry(entry)}
+        >
+          Explain
         </button>
       </div>
       <p className="results__status">

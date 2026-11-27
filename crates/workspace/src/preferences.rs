@@ -9,6 +9,9 @@ pub const DEFAULT_TAB_WIDTH: u8 = 2;
 pub const TAB_WIDTH_RANGE: (u8, u8) = (1, 8);
 pub const DEFAULT_HISTORY_RETENTION_DAYS: u32 = 90;
 pub const HISTORY_RETENTION_RANGE: (u32, u32) = (1, 3650);
+/// After a statement that takes this time or more, the result offers its plan.
+pub const DEFAULT_SLOW_QUERY_MS: u32 = 1000;
+pub const SLOW_QUERY_RANGE: (u32, u32) = (100, 600_000);
 /// The number of rows that "Ask about these rows" sends to the AI service.
 pub const DEFAULT_ROWS_FOR_AI: u32 = 100;
 pub const ROWS_FOR_AI_RANGE: (u32, u32) = (1, 1000);
@@ -144,6 +147,9 @@ pub struct Preferences {
     pub assistant: AssistantPreferences,
     /// `true` if the application asks the update server for a newer version at the start.
     pub check_for_updates: bool,
+    /// After a statement that takes this number of milliseconds or more, the result
+    /// offers to explain the statement.
+    pub slow_query_ms: u32,
 }
 
 impl Default for Preferences {
@@ -154,6 +160,7 @@ impl Default for Preferences {
             guardrails: Guardrails::default(),
             assistant: AssistantPreferences::default(),
             check_for_updates: true,
+            slow_query_ms: DEFAULT_SLOW_QUERY_MS,
         }
     }
 }
@@ -178,6 +185,9 @@ impl Preferences {
             history_retention_days: self
                 .history_retention_days
                 .clamp(HISTORY_RETENTION_RANGE.0, HISTORY_RETENTION_RANGE.1),
+            slow_query_ms: self
+                .slow_query_ms
+                .clamp(SLOW_QUERY_RANGE.0, SLOW_QUERY_RANGE.1),
             assistant: AssistantPreferences {
                 rows_for_ai: self
                     .assistant
@@ -214,10 +224,12 @@ mod tests {
                 rows_for_ai: 5000,
             },
             check_for_updates: false,
+            slow_query_ms: 5,
         };
 
         let normalized = preferences.normalized();
 
+        assert_eq!(normalized.slow_query_ms, 100);
         assert_eq!(normalized.assistant.rows_for_ai, 1000);
         assert_eq!(normalized.assistant.model, AssistantModel::Haiku);
 
@@ -245,6 +257,7 @@ mod tests {
         assert_eq!(preferences.assistant.rows_for_ai, DEFAULT_ROWS_FOR_AI);
         // Preferences of an earlier version check for updates.
         assert!(preferences.check_for_updates);
+        assert_eq!(preferences.slow_query_ms, DEFAULT_SLOW_QUERY_MS);
     }
 
     #[test]

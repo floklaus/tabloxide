@@ -178,3 +178,17 @@
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
 }
+
+/* ---------- Result status line: Explain link ---------- */
+
+.explain-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 13px;
+}
+
+.explain-link--slow {
+  color: var(--color-text);
+  font-weight: 600;
+}

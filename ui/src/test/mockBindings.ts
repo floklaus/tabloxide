@@ -92,6 +92,7 @@ export function createBindingsMock() {
             word_wrap: false,
           },
           history_retention_days: 90,
+          slow_query_ms: 1000,
           guardrails: {
             development: 'risky',
             staging: 'risky',

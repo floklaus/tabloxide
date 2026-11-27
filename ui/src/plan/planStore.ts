@@ -41,6 +41,11 @@ export type PlanState = {
    * `measure`, the user must confirm first, because the database runs the statement.
    */
   request: (measure: boolean) => Promise<void>
+  /**
+   * Reads the plan of `statement`, for example the statement of a result or of a
+   * history entry. It uses the connection of the SQL tab.
+   */
+  explain: (statement: string, measure: boolean) => Promise<void>
   /** Reads the plan of `statement` again, with the same mode. */
   again: () => Promise<void>
   confirm: (skipsNextTime: boolean) => void
@@ -146,6 +151,11 @@ export const usePlanStore = create<PlanState>((set, get) => {
         set({ ...INITIAL, status: 'failed', error: toMessage(error) })
         return
       }
+      await start(statement, measure)
+    },
+
+    explain: async (statement, measure) => {
+      if (get().status === 'reading') return
       await start(statement, measure)
     },
 

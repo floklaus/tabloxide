@@ -200,6 +200,14 @@ export function PreferencesDialog({ onClose }: Props) {
                   setDraft({ ...draft, history_retention_days })
                 }
               />
+              <NumberField
+                label="Offer the plan after a query of (ms)"
+                value={draft.slow_query_ms}
+                limits={LIMITS.slowQueryMs}
+                onChange={(slow_query_ms) =>
+                  setDraft({ ...draft, slow_query_ms })
+                }
+              />
             </div>
             <div className="form__checks">
               <label className="field field--check">
