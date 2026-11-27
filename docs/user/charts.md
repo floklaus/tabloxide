@@ -11,39 +11,43 @@ A chart shows the rows that the grid loaded. It does not run a statement, and it
 
 **Grid** shows the grid again. When you run the statement again, the result keeps its view and the settings of its chart.
 
-Without settings, Tabloxide proposes a chart from the types of the columns:
+### Suggested charts
 
-| Columns of the result | Proposed chart |
+The strip **Suggested charts** above the chart shows a maximum of four charts that fit the types of the columns. The first one is the chart of a result without settings. Select a different one to replace the chart settings.
+
+| Columns of the result | Suggested charts, in this sequence |
 | --- | --- |
-| One date or time column and number columns | Line chart |
-| One date or time column, one text column, and one number column | Line chart with one line for each value of the text column |
-| One text column and one number column | Bar chart |
-| Two number columns | Scatter plot |
-| One number column | Histogram |
 | One row with one number | Single value |
-| No number column, and one or more text columns | Bar chart of the number of rows for each value of the first text column |
+| A date column and number columns | Line chart. With one text column and one number column, a line for each value of the text column is first. |
+| A text column and a number column | Bar chart |
+| Two or more number columns | Scatter plot |
+| A number column | Histogram |
+| A text column | Bar chart of the number of rows for each value |
+| A date column and no number column | Line chart of the number of rows for each day |
 
-For other columns, Tabloxide makes no proposal. Select the columns in the chart settings.
+For other columns, for example only JSON columns, Tabloxide has no suggestion. Select the chart type and the columns in the chart settings.
 
 One sentence above the chart says what the chart shows, for example "Sum of amount for each month of payment_date". It also gives the number of rows and the number of points or bars.
 
 ## 2. Chart settings
 
-The settings are above the chart. A chart type shows only the settings that it uses.
+The settings are in a panel at the right of the chart. **Settings** above the chart shows or hides the panel. In a narrow results pane, the panel is above the chart.
+
+A chart type shows only the settings that it uses.
 
 | Setting | Function |
 | --- | --- |
-| Chart type | Line chart, area chart, bar chart, scatter plot, histogram, or single value. |
+| Chart type | One button for each type: line chart, area chart, bar chart, scatter plot, histogram, and single value. A type that cannot show the columns of the result has no action. Its button gives the cause, for example "A histogram needs a number column." |
 | Horizontal axis | The column of the horizontal axis. For a histogram, this is the column that the chart counts. |
 | Group by | For a date column: combines the dates of the same hour, day, week, month, or year. A week starts on Monday. |
 | Sort | For categories: as in the result, by name, or by value. |
-| Vertical axis | One or more number columns. Each column is one series. **Number of rows** counts the rows and needs no column. |
-| Aggregate | Combines the rows that have the same horizontal value: sum, mean, count, minimum, or maximum. **Count** counts the cells that are not empty, also cells that are not numbers. |
+| Vertical axis | One row for each column. Each column is one series. **Add a column** adds a column. The button at the end of a row removes the column. **Number of rows** in the list counts the rows and needs no column. |
+| Aggregate | Each column of the vertical axis has its own aggregate. It combines the rows that have the same horizontal value: sum, mean, count, minimum, or maximum. **Count** counts the cells that are not empty, also cells that are not numbers. |
 | Series | A column that divides the rows into series. Each value of the column is one series. |
 | Stacked | Puts the series on top of each other. For a bar chart and an area chart. |
 | Logarithmic scale | A logarithmic vertical axis. It cannot show zero or negative values. |
 
-**Reset to the proposed chart** removes your settings.
+**Reset to the first suggested chart** removes your settings.
 
 Each list of columns shows the type of a column as an icon: number, date, or text. The type name of the database is at the right.
 
@@ -123,6 +127,9 @@ Example of a view file:
           "amount"
         ],
         "series": "kind",
+        "aggregates": {
+          "amount": "sum"
+        },
         "timeUnit": "month"
       }
     }
@@ -130,7 +137,7 @@ Example of a view file:
 }
 ```
 
-The settings of a chart can have these parts: `type`, `x`, `y`, `countRows`, `series`, `aggregate`, `timeUnit`, `sort`, `stacked`, and `scale`. A file without `aggregate` uses the automatic aggregate.
+The settings of a chart can have these parts: `type`, `x`, `y`, `countRows`, `series`, `aggregates`, `timeUnit`, `sort`, `stacked`, and `scale`. A column without an entry in `aggregates` uses the automatic aggregate. Tabloxide also reads the older part `aggregate`, which is one aggregate for all columns.
 
 If Tabloxide cannot read a view file, it shows the cause and does not change the file. Correct the file or remove it from the folder. Then run the statement again.
 

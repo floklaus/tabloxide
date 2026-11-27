@@ -15,6 +15,9 @@ The section `Unreleased` collects the changes after the last release. Before you
 - **Sort** puts the categories in the sequence of their names or their values.
 - One sentence above the chart says what the chart shows. Each list of columns shows the type of a column. A warning about the cells of a column is below the setting of that column.
 - A result with only text columns gets a bar chart of the number of rows.
+- The strip **Suggested charts** shows a maximum of four charts that fit the columns. A selection replaces the chart settings.
+- The chart settings are in a panel at the right of the chart. **Settings** shows or hides it. The chart type has one button for each type, and a type that cannot show the columns gives the cause.
+- Each column of the vertical axis has its own aggregate, for example the sum of one column and the mean of a second one.
 - **Save as new view** writes the chart settings to a file next to the query file, for example `revenue.view.json` for `revenue.sql`. You can commit the file to Git. Tabloxide writes the file only when you save or remove a view.
 - **Save image…** saves the chart as a PNG image or an SVG image.
 - A chart follows the four themes. In the High contrast theme, each series also has a pattern and its own line style. A screen reader gets a text about the chart, and the grid always has the values.

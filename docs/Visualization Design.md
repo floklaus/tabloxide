@@ -146,7 +146,8 @@ The chart view does not save the description of the library. It saves its own sh
 | `x`, `y`            | The column of the horizontal axis and the columns of the vertical axis. |
 | `series`            | A column that divides the rows into series.                             |
 | `size`, `colour`    | A column for the size or the colour of a mark.                          |
-| `aggregate`         | Sum, mean, count, minimum, or maximum of the rows with the same `x`. `none`: each row is one mark. Without a value, the chart decides (section 15.8). |
+| `aggregates`        | The aggregate of each `y` column, by the name of the column: sum, mean, count, minimum, or maximum of the rows with the same `x`. `none`: each row is one mark. A column without an entry lets the chart decide (section 15.8). |
+| `aggregate`         | One aggregate for all `y` columns. Files of the first form have it. The application reads it and writes `aggregates`. |
 | `countRows`         | The vertical axis shows the number of rows. The chart then uses no `y` column. |
 | `timeUnit`          | Combines the dates of `x` of the same hour, day, week, month, or year.  |
 | `sort`              | The sequence of the categories of `x`: by name or by value.             |
@@ -464,7 +465,7 @@ Not checked:
 
 ### 15.7 Open points of stage 2
 
-- **The design.** Stage 2 was built without a board on the design canvas. The view uses the view standards and the tabs "Chart" and "Grid" of the board for time-series databases. On 2026-11-27, the canvas got the row "Chart view: input of the chart (proposal)" with four boards. They show a new input with a list of suggested charts and a settings panel. The input also has the type of each column, an automatic aggregate, a time unit, a sort, and a limit. The product owner accepted step 1 of the proposal. Section 15.8 gives what is built.
+- **The design.** Stage 2 was built without a board on the design canvas. The view uses the view standards and the tabs "Chart" and "Grid" of the board for time-series databases. On 2026-11-27, the canvas got the row "Chart view: input of the chart (proposal)" with four boards. They show a new input with a list of suggested charts and a settings panel. The input also has the type of each column, an automatic aggregate, a time unit, a sort, and a limit. The product owner accepted step 1 and step 2 of the proposal. Sections 15.8 and 15.9 give what is built.
 - **The keys of the zoom.** The zoom control has no keys. The settings and the buttons have keys, and the grid has the values.
 - **The grid after a view change.** The grid loses its sort and its scroll position when the user shows the chart and then the grid again.
 - **The zoom control in an image.** A saved image also shows the zoom control.
@@ -495,6 +496,42 @@ Differences from the boards:
 Effect on files of version 1: a saved chart without `aggregate` showed each row. It now shows the sum if values repeat. A chart without repeats does not change. The version of the file stays 1, because each new part is optional.
 
 Checks: the UI has 995 automatic tests, and all pass. 232 of them are for the views. A preview page showed the new controls in Chrome 158 in the light theme. The page had no error. After the build, the product owner tried the charts in the application window on Linux and reported no problem.
+
+### 15.9 Step 2 of the input design
+
+Date: 2026-11-27. The product owner accepted step 2 of the proposal.
+
+| Part                     | Built                                                                                                                                                                                                                             |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Settings panel           | The settings are a panel at the right of the chart. "Settings" above the chart and the close button of the panel show or hide it. The state is the same for all results, and it is in memory.                                     |
+| Narrow results pane      | Below a width of the chart view of 640 px, the panel is above the chart. The style sheet does this with a container query.                                                                                                        |
+| Chart type buttons       | One button with a picture for each chart type. A type that cannot show the columns keeps the focus and has no action. Its name and the line below the buttons give the cause.                                                    |
+| Suggested charts         | The fixed rules give a list of a maximum of four charts, with the best fit first. A strip above the chart shows them with a picture and a short name. The first one removes the settings. Each other one replaces the settings.   |
+| Aggregate for each column | The vertical axis has one row for each column, with the kind of the column, its aggregate, and a remove button. "Add a column" lists the columns that are not on the axis, and "Number of rows". The setting is `aggregates`.     |
+| Empty state              | A result without a suggestion shows one sentence. If the panel is closed, the button "Open the chart settings" opens it.                                                                                                          |
+
+The rules of the suggestions, in their sequence:
+
+1. One row with one number: a single value.
+2. A date column and number columns: a line chart. With one text column and one number column, the line for each series is first.
+3. A text column and a number column: a bar chart.
+4. Two or more number columns: a scatter plot.
+5. A number column: a histogram.
+6. A text column: a bar chart of the number of rows. Without a number column, each text column gives one.
+7. A date column and no number column: a line chart of the number of rows for each day.
+
+These rules replace the table of section 4.2. A result with a text column and two number columns had no proposal before. It now gets a bar chart first.
+
+Differences from the boards:
+
+- **A row of the vertical axis shows the name of its column.** The boards show a list in each row that changes the column. The user removes a column and adds a different one.
+- **The narrow layout has the same controls as the wide layout.** The boards show the suggestions and the chart type as lists in a narrow pane.
+- **The first suggestion removes the settings.** Thus a new run with different columns gets a new proposal, and not a message about a missing column.
+- **Not built:** the limit with "Other" and the entry from the grid (step 3 of the proposal).
+
+The file `ui/src/views/chart/ChartSettingsPanel.tsx` replaces `ChartSettingsForm.tsx`. New files are `SuggestedCharts.tsx`, `ChartTypeIcon.tsx`, and `chartUiStore.ts`.
+
+Checks: the UI has 1029 automatic tests, and all pass. 266 of them are for the views. A preview page showed the panel in Chrome 158. It showed the wide layout in the light theme and the narrow layout in the dark theme. It showed a column list in the high contrast theme. The page had no error. No person and no test opened the panel in the application window.
 
 ## 16. Sources
 
