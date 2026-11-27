@@ -1,12 +1,22 @@
-import { render, screen, within } from '@testing-library/react'
+import { save } from '@tauri-apps/plugin-dialog'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { commands } from '../../bindings'
+import { activeQueryStore, resetQueryStores } from '../../query/queryStore'
 import type { Row } from '../../results/gridModel'
 import type { ViewProps } from '../viewTypes'
 import { ChartView } from './ChartView'
 import { column } from './testColumns'
 
 vi.mock('./ChartCanvas', () => import('./FakeChartCanvas'))
+vi.mock('../../bindings', async () =>
+  (await import('../../test/mockBindings')).createBindingsMock(),
+)
+vi.mock('@tauri-apps/plugin-dialog', () => ({ save: vi.fn() }))
+
+const saveDialog = vi.mocked(save)
+const viewImageSave = vi.mocked(commands.viewImageSave)
 
 const SALES = [
   column('country', 'text'),
@@ -288,5 +298,89 @@ describe('an open result', () => {
 
     expect(onNeedMore).toHaveBeenCalledTimes(1)
     expect(screen.getByRole('img')).toHaveAttribute('data-points', '3')
+  })
+})
+
+describe('the image export', () => {
+  const button = () => screen.getByRole('button', { name: 'Save image…' })
+  const notice = () => activeQueryStore().getState().notice
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    resetQueryStores()
+    viewImageSave.mockResolvedValue({ status: 'ok', data: null })
+  })
+
+  test('saves a PNG image to the file that the user selected', async () => {
+    saveDialog.mockResolvedValue('/home/user/revenue.png')
+    render(<ChartView {...props()} />)
+
+    await userEvent.click(button())
+
+    await waitFor(() =>
+      expect(viewImageSave).toHaveBeenCalledWith('/home/user/revenue.png', {
+        format: 'png',
+        base64: 'UE5H',
+      }),
+    )
+    await waitFor(() =>
+      expect(notice()).toBe(
+        'Saved the image of the chart to /home/user/revenue.png.',
+      ),
+    )
+  })
+
+  test('a file name that ends with .svg gives an SVG image', async () => {
+    saveDialog.mockResolvedValue('/home/user/Revenue.SVG')
+    render(<ChartView {...props()} />)
+
+    await userEvent.click(button())
+
+    await waitFor(() =>
+      expect(viewImageSave).toHaveBeenCalledWith('/home/user/Revenue.SVG', {
+        format: 'svg',
+        text: '<svg></svg>',
+      }),
+    )
+  })
+
+  test('a cancel of the dialog saves nothing', async () => {
+    saveDialog.mockResolvedValue(null)
+    render(<ChartView {...props()} />)
+
+    await userEvent.click(button())
+
+    expect(viewImageSave).not.toHaveBeenCalled()
+    expect(notice()).toBeNull()
+  })
+
+  test('a failure of the write shows as a notice', async () => {
+    saveDialog.mockResolvedValue('/home/user/revenue.png')
+    viewImageSave.mockResolvedValue({
+      status: 'error',
+      error: { kind: 'workspace', message: 'The disk is full.', issues: [] },
+    })
+    render(<ChartView {...props()} />)
+
+    await userEvent.click(button())
+
+    await waitFor(() =>
+      expect(notice()).toBe('The image export failed: The disk is full.'),
+    )
+  })
+
+  test('a single value has no image', () => {
+    render(
+      <ChartView
+        {...props({
+          columns: [column('orders', 'number')],
+          rows: [['7']],
+          totalRows: 1,
+          settings: undefined,
+        })}
+      />,
+    )
+
+    expect(button()).toBeDisabled()
   })
 })

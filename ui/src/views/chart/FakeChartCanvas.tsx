@@ -1,4 +1,4 @@
-import type { ComponentProps } from 'react'
+import { useImperativeHandle, type ComponentProps } from 'react'
 import type { ChartCanvas as RealChartCanvas } from './ChartCanvas'
 
 /**
@@ -6,7 +6,15 @@ import type { ChartCanvas as RealChartCanvas } from './ChartCanvas'
  * cannot draw. The replacement shows what the chart view gave to the canvas.
  */
 export function ChartCanvas(props: ComponentProps<typeof RealChartCanvas>) {
-  const { chart, settings, summary } = props
+  const { ref, chart, settings, summary } = props
+  useImperativeHandle(ref, () => ({
+    exportImage: (format) =>
+      Promise.resolve(
+        format === 'png'
+          ? { format, base64: 'UE5H' }
+          : { format, text: '<svg></svg>' },
+      ),
+  }))
   return (
     <div
       role="img"

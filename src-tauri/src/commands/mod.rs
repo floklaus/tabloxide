@@ -9,6 +9,7 @@ pub mod console;
 pub mod engines;
 pub mod files;
 pub mod git;
+pub mod images;
 pub mod local;
 pub mod plan;
 pub mod queries;

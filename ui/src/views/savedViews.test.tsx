@@ -237,7 +237,9 @@ describe('the saved views of a result', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'The application cannot use the view file revenue.view.json. The file is not valid JSON.',
     )
-    expect(screen.queryByRole('button', { name: /Save/ })).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: /Save (as new )?view/ }),
+    ).toBeNull()
   })
 
   test('a write failure shows below the form', async () => {

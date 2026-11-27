@@ -6,6 +6,7 @@ import {
   useState,
   type Ref,
 } from 'react'
+import type { ViewImage } from '../../bindings'
 import { toMessage } from '../../lib/errors'
 import { useThemeStore } from '../../theme/themeStore'
 import { Loading, ViewError } from '../../view/ViewState'
@@ -15,12 +16,9 @@ import type { ChartSettings } from './chartSettings'
 import { readChartTheme } from './chartTheme'
 import type { EChartsType } from './echartsSetup'
 
-/** An image of the chart. A PNG image is base64 text. An SVG image is its XML text. */
-export type ChartImage =
-  { format: 'png'; base64: string } | { format: 'svg'; text: string }
-
 export type ChartCanvasHandle = {
-  exportImage: (format: ChartImage['format']) => Promise<ChartImage>
+  /** Makes an image of the chart as it shows now, with its zoom. */
+  exportImage: (format: ViewImage['format']) => Promise<ViewImage>
 }
 
 type Props = {

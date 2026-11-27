@@ -14,6 +14,7 @@ import {
 import { ChartSettingsForm } from './ChartSettingsForm'
 import { chartSummary } from './chartSummary'
 import { proposeChart } from './proposeChart'
+import { SaveImageButton } from './SaveImageButton'
 
 const numberFormat = new Intl.NumberFormat('en-US')
 
@@ -198,6 +199,10 @@ export function ChartView(props: ViewProps) {
           settings={settings}
           columns={columns}
           onChange={onSettings}
+        />
+        <SaveImageButton
+          canvas={canvasRef}
+          isAvailable={reason === null && chart.kind === 'cartesian'}
         />
       </div>
       <Notes part={partLine} chart={chart} width={width} />

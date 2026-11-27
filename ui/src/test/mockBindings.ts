@@ -35,6 +35,7 @@ export function createBindingsMock() {
       resultFetch: vi.fn(),
       resultClose: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
       resultExportCsv: vi.fn(),
+      viewImageSave: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
       schemaList: vi.fn(),
       schemaRelations: vi.fn(),
       schemaRelationDetail: vi.fn(),

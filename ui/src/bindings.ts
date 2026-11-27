@@ -139,6 +139,11 @@ export const commands = {
 	 */
 	fileRelativePath: (absolute: string, options?: InvokeOptions) => typedError<string, CommandError>(__TAURI_INVOKE("file_relative_path", { absolute }, options)),
 	/**
+	 *  Writes an image of a view to the file `path`. The path comes from the save
+	 *  dialog, thus it is absolute and can be outside the workspace.
+	 */
+	viewImageSave: (path: string, image: ViewImage, options?: InvokeOptions) => typedError<null, CommandError>(__TAURI_INVOKE("view_image_save", { path, image }, options)),
+	/**
 	 *  Returns the Git state of the workspace: the branch, the upstream counts,
 	 *  the changed files, and the branches.
 	 */
@@ -2028,6 +2033,13 @@ export type ValidationIssue = {
 	field: string,
 	message: string,
 };
+
+/**  An image of a view, as the UI made it. */
+export type ViewImage = 
+/**  A PNG image as base64 text. */
+{ format: "png"; base64: string } | 
+/**  An SVG image as its XML text. */
+{ format: "svg"; text: string };
 
 /**  The open workspace as the UI sees it. */
 export type WorkspaceSnapshot = WorkspaceSnapshot_Serialize | WorkspaceSnapshot_Deserialize;
