@@ -457,7 +457,7 @@ The build of the UI puts ECharts into a separate file of 600 kB (203 kB with gzi
 
 Not checked:
 
-- **The chart in the application window.** No person and no test opened a chart in the Tauri window. WebKitGTK showed ECharts correctly in the measurement of stage 1, but not this view.
+- **The chart in the application window.** At the end of stage 2, no person and no test had opened a chart in the Tauri window. On 2026-11-27, the product owner tried the charts in the application window on Linux, with the input of section 15.8, and reported no problem. The report does not say which themes and which chart types the product owner tried.
 - **The neon theme.** It has the colours of the dark theme, but nobody looked at a chart in it.
 - **Windows and macOS.**
 - **A screen reader.**
@@ -494,7 +494,7 @@ Differences from the boards:
 
 Effect on files of version 1: a saved chart without `aggregate` showed each row. It now shows the sum if values repeat. A chart without repeats does not change. The version of the file stays 1, because each new part is optional.
 
-Checks: the UI has 995 automatic tests, and all pass. 232 of them are for the views. A preview page showed the new controls in Chrome 158 in the light theme. The page had no error. No person and no test opened the new controls in the application window.
+Checks: the UI has 995 automatic tests, and all pass. 232 of them are for the views. A preview page showed the new controls in Chrome 158 in the light theme. The page had no error. After the build, the product owner tried the charts in the application window on Linux and reported no problem.
 
 ## 16. Sources
 
