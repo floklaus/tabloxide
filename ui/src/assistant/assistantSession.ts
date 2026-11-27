@@ -224,6 +224,8 @@ export const PHASES: Record<RequestTask, AssistantStatus[]> = {
   'explain-diff': WITHOUT_SCHEMA,
   conflict: WITHOUT_SCHEMA,
   'git-output': WITHOUT_SCHEMA,
+  // A chart request has the columns of its result. It needs no schema.
+  chart: WITHOUT_SCHEMA,
 }
 
 /** `true` if a request of the task sends the structure of the database. */

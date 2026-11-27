@@ -25,8 +25,8 @@ mod test_server;
 
 pub use action::{
     ActionContext, ConflictVersions, MAX_CELL_CHARS, MAX_CONFLICT_CHARS, MAX_DIFF_CHARS,
-    MAX_GIT_OUTPUT_CHARS, RowColumn, SchemaCount, check_rows, limit_diff, read_relations,
-    sent_summary, unified_diff,
+    MAX_GIT_OUTPUT_CHARS, MAX_RESULT_COLUMNS, ResultColumn, RowColumn, SchemaCount, check_rows,
+    limit_diff, read_relations, sent_summary, unified_diff,
 };
 pub use anthropic::AnthropicProvider;
 pub use context::{

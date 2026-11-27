@@ -1,9 +1,10 @@
 //! Types for query results and query errors. They do not depend on a database engine.
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// General category of a column type. The grid uses it for the alignment and the sort.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+/// The UI sends it back with the columns of a result for the action "Propose a chart".
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "kebab-case")]
 pub enum ColumnKind {

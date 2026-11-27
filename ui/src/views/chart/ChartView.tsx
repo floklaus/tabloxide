@@ -17,6 +17,7 @@ import { chartSentence } from './chartSentence'
 import { chartSummary } from './chartSummary'
 import { useChartUiStore } from './chartUiStore'
 import { proposeCharts } from './proposeChart'
+import { ProposeChartButton } from './ProposeChartButton'
 import { SaveImageButton } from './SaveImageButton'
 import { SuggestedCharts } from './SuggestedCharts'
 
@@ -241,6 +242,7 @@ export function ChartView(props: ViewProps) {
           isProposed={!hasSettings}
           onSelect={onSettings}
         />
+        <ProposeChartButton columns={columns} onSettings={onSettings} />
         <span className="chart__spacer" />
         <SaveImageButton canvas={canvasRef} isAvailable={isChart} />
         <button

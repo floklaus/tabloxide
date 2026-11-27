@@ -316,7 +316,12 @@ staged: boolean } |
  */
 { type: "rows"; columns: RowColumn_Deserialize[]; rows: ((string | null)[])[]; 
 /**  The number of rows of the result, if the application knows it. */
-total_rows?: number | null };
+total_rows?: number | null } | 
+/**
+ *  The columns of a result, for "Propose a chart": the names, the kinds, and the
+ *  type names. This data has no rows.
+ */
+{ type: "result-columns"; columns: ResultColumn_Deserialize[] };
 
 /**  The data of an AI action. The UI sends it with the message of the user. */
 export type ActionContext_Serialize = 
@@ -362,7 +367,12 @@ staged: boolean; diff: string | null } |
  */
 { type: "rows"; columns: RowColumn_Serialize[]; rows: ((string | null)[])[]; 
 /**  The number of rows of the result, if the application knows it. */
-total_rows: number | null };
+total_rows: number | null } | 
+/**
+ *  The columns of a result, for "Propose a chart": the names, the kinds, and the
+ *  type names. This data has no rows.
+ */
+{ type: "result-columns"; columns: ResultColumn_Serialize[] };
 
 /**  Name and version of the application. */
 export type AppInfo = {
@@ -570,7 +580,10 @@ export type ColumnInfo_Serialize = {
 	is_primary_key: boolean,
 };
 
-/**  General category of a column type. The grid uses it for the alignment and the sort. */
+/**
+ *  General category of a column type. The grid uses it for the alignment and the sort.
+ *  The UI sends it back with the columns of a result for the action "Propose a chart".
+ */
 export type ColumnKind = "number" | "boolean" | "temporal" | "json" | "text" | 
 /**  The type is not known, or it is not in a different category. */
 "other";
@@ -1738,6 +1751,25 @@ export type RemoteBranchInfo_Serialize = {
 	last_commit: number | null,
 };
 
+/**  A column of a result, for "Propose a chart". The request has no values of the column. */
+export type ResultColumn = ResultColumn_Serialize | ResultColumn_Deserialize;
+
+/**  A column of a result, for "Propose a chart". The request has no values of the column. */
+export type ResultColumn_Deserialize = {
+	name: string,
+	/**  The type name of the database engine, if the engine gave one. */
+	type_name?: string | null,
+	kind: ColumnKind,
+};
+
+/**  A column of a result, for "Propose a chart". The request has no values of the column. */
+export type ResultColumn_Serialize = {
+	name: string,
+	/**  The type name of the database engine, if the engine gave one. */
+	type_name: string | null,
+	kind: ColumnKind,
+};
+
 /**  Why a statement needs a confirmation before it runs. */
 export type Risk = "drop" | "truncate" | "alter" | 
 /**  `DELETE` without `WHERE` removes all rows. */
@@ -1969,7 +2001,9 @@ export type Task =
 /**  Explain the output of a command of the Git console. */
 "git-output" | 
 /**  Answer a question about rows of a result. */
-"rows";
+"rows" | 
+/**  Propose the settings of a chart for the columns of a result. */
+"chart";
 
 /**  A range in the script, in UTF-16 code units. */
 export type TextRange = {

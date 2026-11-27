@@ -4,7 +4,7 @@
 
 use crate::{AssistantError, AssistantErrorKind, ChatMessage, relation_text};
 use serde::{Deserialize, Serialize};
-use tabloxide_core::{Environment, QuerySession};
+use tabloxide_core::{ColumnKind, Environment, QuerySession};
 
 /// Largest number of characters of the output of a Git command in a request.
 pub const MAX_GIT_OUTPUT_CHARS: usize = 20_000;
@@ -25,6 +25,31 @@ pub struct RowColumn {
     pub name: String,
     /// The type name of the database engine, if the engine gave one.
     pub type_name: Option<String>,
+}
+
+/// Largest number of columns of a result in a request of "Propose a chart".
+pub const MAX_RESULT_COLUMNS: usize = 200;
+
+/// A column of a result, for "Propose a chart". The request has no values of the column.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+pub struct ResultColumn {
+    pub name: String,
+    /// The type name of the database engine, if the engine gave one.
+    pub type_name: Option<String>,
+    pub kind: ColumnKind,
+}
+
+/// The word for the kind of a column in a request.
+fn kind_name(kind: ColumnKind) -> &'static str {
+    match kind {
+        ColumnKind::Number => "number",
+        ColumnKind::Boolean => "boolean",
+        ColumnKind::Temporal => "temporal",
+        ColumnKind::Json => "json",
+        ColumnKind::Text => "text",
+        ColumnKind::Other => "other",
+    }
 }
 
 /// The text at the place where the application cut a long text.
@@ -96,6 +121,9 @@ pub enum ActionContext {
         #[cfg_attr(feature = "specta", specta(type = Option<f64>))]
         total_rows: Option<u64>,
     },
+    /// The columns of a result, for "Propose a chart": the names, the kinds, and the
+    /// type names. This data has no rows.
+    ResultColumns { columns: Vec<ResultColumn> },
 }
 
 /// One value of a row as text: `NULL` for no value, line breaks as `\n`, and a cut
@@ -348,6 +376,33 @@ impl ActionContext {
                     .collect();
                 format!("<rows>\n{count}\n{header}\n{}\n</rows>", lines.join("\n"))
             }
+            Self::ResultColumns { columns } => {
+                let lines: Vec<String> = columns
+                    .iter()
+                    .take(MAX_RESULT_COLUMNS)
+                    .map(|column| {
+                        // A line break in a name would look like one more column.
+                        let name = column.name.replace(['\n', '\r'], " ");
+                        format!(
+                            "{name} | {} | {}",
+                            kind_name(column.kind),
+                            column.type_name.as_deref().unwrap_or("no type name")
+                        )
+                    })
+                    .collect();
+                let cut = if columns.len() > MAX_RESULT_COLUMNS {
+                    format!(
+                        "\nThe result has {} columns. This list has the first {MAX_RESULT_COLUMNS}.",
+                        columns.len()
+                    )
+                } else {
+                    String::new()
+                };
+                format!(
+                    "<result_columns>\nname | kind | type name\n{}{cut}\n</result_columns>",
+                    lines.join("\n")
+                )
+            }
         }
     }
 
@@ -403,6 +458,13 @@ impl ActionContext {
                 rows.len(),
                 columns.len()
             )],
+            Self::ResultColumns { columns } => {
+                let count = columns.len().min(MAX_RESULT_COLUMNS);
+                vec![format!(
+                    "the names and the types of {count} {} of the result, without rows",
+                    if count == 1 { "column" } else { "columns" }
+                )]
+            }
         }
     }
 }
@@ -918,6 +980,75 @@ mod tests {
 
         assert!(check_rows(&messages, Some(Environment::Production), 1).is_ok());
         assert!(check_rows(&messages, None, 1).is_ok());
+    }
+
+    fn result_column(name: &str, kind: ColumnKind, type_name: Option<&str>) -> ResultColumn {
+        ResultColumn {
+            name: name.to_owned(),
+            type_name: type_name.map(str::to_owned),
+            kind,
+        }
+    }
+
+    #[test]
+    fn the_columns_of_a_result_go_with_their_kind_and_their_type_name_and_without_rows() {
+        let context = ActionContext::ResultColumns {
+            columns: vec![
+                result_column("day", ColumnKind::Temporal, Some("timestamptz")),
+                result_column("amount", ColumnKind::Number, None),
+            ],
+        };
+
+        assert_eq!(
+            context.render(),
+            "<result_columns>\nname | kind | type name\n\
+             day | temporal | timestamptz\n\
+             amount | number | no type name\n\
+             </result_columns>"
+        );
+        assert_eq!(
+            context.summary_parts(),
+            ["the names and the types of 2 columns of the result, without rows"]
+        );
+    }
+
+    #[test]
+    fn a_line_break_in_a_column_name_does_not_make_a_second_column() {
+        let context = ActionContext::ResultColumns {
+            columns: vec![result_column("a\nb | text | x", ColumnKind::Text, None)],
+        };
+
+        assert_eq!(context.render().lines().count(), 4);
+    }
+
+    #[test]
+    fn a_result_with_very_many_columns_sends_the_first_ones_and_says_so() {
+        let columns = (0..MAX_RESULT_COLUMNS + 5)
+            .map(|index| result_column(&format!("c{index}"), ColumnKind::Number, None))
+            .collect();
+        let context = ActionContext::ResultColumns { columns };
+
+        let text = context.render();
+
+        assert!(text.contains("\nc199 | number"));
+        assert!(!text.contains("\nc200 | number"));
+        assert!(text.contains("The result has 205 columns. This list has the first 200."));
+        assert_eq!(
+            context.summary_parts(),
+            ["the names and the types of 200 columns of the result, without rows"]
+        );
+    }
+
+    #[test]
+    fn the_columns_of_a_result_need_no_connection_and_pass_the_rows_check() {
+        let messages = vec![ChatMessage {
+            context: Some(ActionContext::ResultColumns {
+                columns: vec![result_column("amount", ColumnKind::Number, None)],
+            }),
+            ..ChatMessage::new(crate::Role::User, "Show the amount.")
+        }];
+
+        assert!(check_rows(&messages, Some(Environment::Production), 0).is_ok());
     }
 
     #[test]

@@ -66,6 +66,8 @@ pub enum Task {
     GitOutput,
     /// Answer a question about rows of a result.
     Rows,
+    /// Propose the settings of a chart for the columns of a result.
+    Chart,
 }
 
 impl Task {
@@ -79,12 +81,17 @@ impl Task {
     }
 
     /// `true` if a request of this task sends the structure of the database.
-    /// A Git task does not need the structure. Thus it does not send it.
+    /// A Git task does not need the structure. Thus it does not send it. A chart
+    /// needs only the columns of its result, which come with the request.
     #[must_use]
     pub fn uses_schema(self) -> bool {
         !matches!(
             self,
-            Self::CommitMessage | Self::ExplainDiff | Self::Conflict | Self::GitOutput
+            Self::CommitMessage
+                | Self::ExplainDiff
+                | Self::Conflict
+                | Self::GitOutput
+                | Self::Chart
         )
     }
 }

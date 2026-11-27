@@ -169,6 +169,7 @@ block with the language `sh`. The application does not run it."
 Task: answer the question of the user about the rows between the tags <rows>. Use \
 only these rows. Say when the answer needs more rows than the message has."
         }
+        Task::Chart => CHART_TASK,
     })
 }
 
@@ -179,6 +180,46 @@ code block with the tag `sql`.";
 
 const NO_DATABASE_FOR_GIT: &str = "\
 This request is about Git. It has no structure of a database.";
+
+const NO_DATABASE_FOR_CHART: &str = "\
+This request is about a chart of a result. It has the columns of the result, and no \
+structure of a database.";
+
+/// The instructions of "Propose a chart". The keys and the values are those of the
+/// chart settings in `ui/src/views/chart/chartSettings.ts`. The UI checks the answer
+/// against that module and against the columns of the result.
+const CHART_TASK: &str = "\
+Task: propose the settings of one chart for the result whose columns are between the \
+tags <result_columns>. Each line there has the name of a column, its kind (number, \
+temporal, text, boolean, json, or other), and its type name. You have no rows.
+
+First write one sentence that tells what the chart shows. Then give the settings as \
+one JSON object in exactly one code block with the tag `json`. Use only these keys:
+- \"type\": one of \"line\", \"area\", \"bar\", \"scatter\", \"histogram\", \"value\", \
+\"bubble\", \"boxplot\", \"heatmap\", \"calendar\", \"pie\", \"funnel\", \"treemap\", \
+\"sunburst\", \"radar\", \"parallel\", \"sankey\", \"candlestick\".
+- \"x\": the name of one column: the horizontal axis, or the categories. For \
+\"histogram\", the number column that the chart counts. For \"sankey\", the source. \
+\"value\" and \"parallel\" have no \"x\".
+- \"y\": a list of column names. They are number columns. \"candlestick\" needs four \
+columns in the sequence open, high, low, close. \"parallel\" needs two or more. \
+\"histogram\" has an empty list.
+- \"countRows\": true, if the chart shows the number of rows. Then \"y\" is an empty list.
+- \"series\": the name of a column that divides the rows into series. For \"heatmap\", \
+the rows of the map. For \"treemap\" and \"sunburst\", the subgroup. For \"sankey\", \
+the target. \"heatmap\" and \"sankey\" need it.
+- \"size\": for \"bubble\", the number column of the size.
+- \"aggregates\": an object with an entry for a column of \"y\": \"sum\", \"mean\", \
+\"count\", \"min\", \"max\", or \"none\".
+- \"timeUnit\": for a temporal column in \"x\": \"hour\", \"day\", \"week\", \"month\", \
+or \"year\".
+- \"sort\": for categories: \"name\", \"value-asc\", or \"value-desc\".
+- \"limit\": a number of categories, and \"other\": true to show the rest as one category.
+- \"stacked\": true, for \"bar\" and \"area\".
+- \"scale\": \"log\", for a logarithmic vertical axis.
+Use only column names from the list, with exactly the same letters. Leave out each \
+key that the chart does not need. If the columns cannot give the chart that the user \
+asks for, say so, and give the nearest chart that they can give.";
 
 /// Returns the guide of the query language for the engine `engine`.
 #[must_use]
@@ -262,7 +303,7 @@ fn with_contexts(messages: &[ChatMessage]) -> Vec<ChatMessage> {
 ///
 /// The request has the instructions, the structure of the database, the instructions
 /// of the task, and the messages with the data of their actions. It has nothing else.
-/// A Git task gets no structure of the database.
+/// A Git task and a chart task get no structure of the database.
 ///
 /// # Errors
 ///
@@ -278,6 +319,7 @@ pub fn chat_request(
     let messages = with_contexts(messages);
     check_length(&messages)?;
     let context = match database {
+        _ if task == Task::Chart => NO_DATABASE_FOR_CHART.to_owned(),
         _ if !task.uses_schema() => NO_DATABASE_FOR_GIT.to_owned(),
         Some(database) => database_part(database),
         None => NO_DATABASE.to_owned(),
@@ -569,6 +611,49 @@ mod tests {
 
             assert_eq!(error.kind, AssistantErrorKind::InvalidRequest);
         }
+    }
+
+    #[test]
+    fn a_chart_task_sends_no_structure_of_the_database_and_has_the_settings_format() {
+        let schema = schema(true);
+        let database = Database {
+            engine: "PostgreSQL",
+            version: "17.2",
+            language: QueryLanguage::Sql,
+            schema: &schema,
+        };
+
+        let request = chat_request("m", Task::Chart, Some(&database), &[user("x")]).unwrap();
+
+        assert!(!request.system[1].text.contains("<schema>"));
+        assert!(request.system[1].text.contains("chart of a result"));
+        let task = &request.system[2].text;
+        assert!(task.contains("<result_columns>"));
+        assert!(task.contains("You have no rows."));
+        // Each chart type of the UI is in the instructions.
+        for name in [
+            "line",
+            "area",
+            "bar",
+            "scatter",
+            "histogram",
+            "value",
+            "bubble",
+            "boxplot",
+            "heatmap",
+            "calendar",
+            "pie",
+            "funnel",
+            "treemap",
+            "sunburst",
+            "radar",
+            "parallel",
+            "sankey",
+            "candlestick",
+        ] {
+            assert!(task.contains(&format!("\"{name}\"")), "{name}");
+        }
+        assert_eq!(Task::Chart.effort(), Effort::Medium);
     }
 
     #[test]
