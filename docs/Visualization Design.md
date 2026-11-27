@@ -151,6 +151,8 @@ The chart view does not save the description of the library. It saves its own sh
 | `countRows`         | The vertical axis shows the number of rows. The chart then uses no `y` column. |
 | `timeUnit`          | Combines the dates of `x` of the same hour, day, week, month, or year.  |
 | `sort`              | The sequence of the categories of `x`: by name or by value.             |
+| `limit`, `other`    | The chart shows only the first `limit` categories of `x`. With `other`, one more category has the rest. |
+| `kinds`             | How the chart uses a column, by the name of the column: `number`, `temporal`, or `text`. Only the column of `x` can have an entry. |
 | `stacked`, `scale`  | Stacked series. A linear or a logarithmic axis.                         |
 
 ### 5.3 Chart types
@@ -429,7 +431,7 @@ Date: 2026-11-27. The user guide is `docs/user/charts.md`.
 | Default view         | The grid is the view of a new result.                            | A new run of a statement keeps its view and its settings. The first run shows the grid.                                                                                                           |
 | Default rules        | Six rules.                                                       | Five rules, and one new rule. A temporal column, a text column, and a number column give one line for each value of the text column. The heat map rule comes with the heat map in stage 3.       |
 | Chart settings       | `size` and `colour`.                                             | Not built. They are for the bubble chart of stage 3.                                                                                                                                              |
-| Number of series     | No limit.                                                        | A chart shows a maximum of 8 series, because the colour set has 8 colours. A note gives the number of series that the chart does not show.                                                        |
+| Number of series     | No limit.                                                        | A chart shows a maximum of 8 series, because the colour set has 8 colours. Since step 3 of the input design, the eighth series is "Other" with the rest (section 15.10).                          |
 | Aggregate            | An aggregate combines the rows with the same `x`.                | Without an aggregate, each row is one mark. With a series column, the chart shows the first of the rows with the same `x` and the same series, and a note says so.                                |
 | Statement number     | The number of the statement in the file.                         | The backend gives the number through the command `query_preview`. A run of one statement of a script has the position 0 in its run, thus the position is not the number.                         |
 | View settings file   | One file next to the query file.                                 | As designed. The application writes the file only when the user saves or removes a view. One statement can have more than one named view. A chart without settings starts with the first of them. |
@@ -465,7 +467,7 @@ Not checked:
 
 ### 15.7 Open points of stage 2
 
-- **The design.** Stage 2 was built without a board on the design canvas. The view uses the view standards and the tabs "Chart" and "Grid" of the board for time-series databases. On 2026-11-27, the canvas got the row "Chart view: input of the chart (proposal)" with four boards. They show a new input with a list of suggested charts and a settings panel. The input also has the type of each column, an automatic aggregate, a time unit, a sort, and a limit. The product owner accepted step 1 and step 2 of the proposal. Sections 15.8 and 15.9 give what is built.
+- **The design.** Stage 2 was built without a board on the design canvas. The view uses the view standards and the tabs "Chart" and "Grid" of the board for time-series databases. On 2026-11-27, the canvas got the row "Chart view: input of the chart (proposal)" with four boards. They show a new input with a list of suggested charts and a settings panel. The input also has the type of each column, an automatic aggregate, a time unit, a sort, and a limit. The product owner accepted the three steps of the proposal. Sections 15.8, 15.9, and 15.10 give what is built.
 - **The keys of the zoom.** The zoom control has no keys. The settings and the buttons have keys, and the grid has the values.
 - **The grid after a view change.** The grid loses its sort and its scroll position when the user shows the chart and then the grid again.
 - **The zoom control in an image.** A saved image also shows the zoom control.
@@ -532,6 +534,33 @@ Differences from the boards:
 The file `ui/src/views/chart/ChartSettingsPanel.tsx` replaces `ChartSettingsForm.tsx`. New files are `SuggestedCharts.tsx`, `ChartTypeIcon.tsx`, and `chartUiStore.ts`.
 
 Checks: the UI has 1029 automatic tests, and all pass. 266 of them are for the views. A preview page showed the panel in Chrome 158. It showed the wide layout in the light theme and the narrow layout in the dark theme. It showed a column list in the high contrast theme. The page had no error. No person and no test opened the panel in the application window.
+
+### 15.10 Step 3 of the input design
+
+Date: 2026-11-27. The product owner accepted step 3 of the proposal.
+
+| Part                    | Built                                                                                                                                                                                                                              |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Limit of the categories | "Show" limits a chart to the first 5, 10, 20, or 50 categories, in the sequence of the sort. A new limit also sets the sort by value and "Other". The settings are `limit` and `other`.                                            |
+| Category "Other"        | "Other" has the rows of the categories after the limit, combined with the aggregate of each column. Thus the mean of "Other" is the mean of its rows. In a chart with one series, the bar has a neutral colour.                    |
+| Series "Other"          | A chart with more series than colours shows the first 7 and one series "Other" in a neutral colour. Before, it showed the first 8 and no rest. A chart with 5 to 8 columns on the vertical axis has no place for "Other".          |
+| Kind of a column        | "Use as" lets the chart use the column of the horizontal axis as a number, a date, or a category. The setting is `kinds`. A date from the settings always gives a time axis, and a note counts the cells that are not dates.       |
+| Column selection        | Ctrl and a click on a column header of the grid select the column. Ctrl+Space selects the column of a header or of the selected cell. The selected columns have a mark, and the grid tells a screen reader that they are selected. |
+| Header menu             | The menu of a column header has "Chart the column" and "Add to the chart". For a selected column, the actions apply to all selected columns. Shift+F10 opens the menu. The same actions are buttons above the grid.                |
+| Chart from columns      | "Chart these columns" uses the rules of the suggestions on only the selected columns. "Add to the chart" puts a number on the vertical axis, a date on the horizontal axis, and each other column as the series.                   |
+
+The view contract has a new part for this: a view can offer actions for columns (`columnActions`). The host gives the actions of the other views to the grid. Thus the grid does not know the chart view, and a view pack can offer such actions later.
+
+Differences from the boards:
+
+- **The limit has a separate check box for "Other".** The boards show one list with "The first 10" and "The first 10 and Other".
+- **The series limit is automatic.** The boards say that the same limit applies to the series column. The chart always keeps the first 7 series, in the sequence of the result, and has no setting for it.
+- **"Use as" is a list below the column of the horizontal axis.** The boards show the kind in the column menu. Only the horizontal axis has it, because the vertical axis reads each cell as a number in each case.
+- **The header menu has only the actions of the views.** The boards also show sort and copy in the menu.
+
+`ui/src/results/ResultGrid.tsx` has the column selection and the menu. `ui/src/views/chart/chartFromColumns.ts` has the two chart actions.
+
+Checks: the UI has 1080 automatic tests, and all pass. 310 of them are for the views, and 7 new ones are for the grid. A preview page in Chrome 158 showed the limit with "Other" and the series "Other" in the light theme. It also showed the grid with selected columns and an open header menu. The page had no error. No person and no test opened these parts in the application window.
 
 ## 16. Sources
 

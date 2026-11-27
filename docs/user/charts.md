@@ -40,7 +40,9 @@ A chart type shows only the settings that it uses.
 | Chart type | One button for each type: line chart, area chart, bar chart, scatter plot, histogram, and single value. A type that cannot show the columns of the result has no action. Its button gives the cause, for example "A histogram needs a number column." |
 | Horizontal axis | The column of the horizontal axis. For a histogram, this is the column that the chart counts. |
 | Group by | For a date column: combines the dates of the same hour, day, week, month, or year. A week starts on Monday. |
+| Use as | How the chart uses the column of the horizontal axis: as a number, as a date, or as a category. **Automatic** uses the type of the result. For example, use a year as a category, or a text column with dates as a date. |
 | Sort | For categories: as in the result, by name, or by value. |
+| Show | For categories: all categories, or only the first 5, 10, 20, or 50 in the sequence of the sort. A new limit also sets the sort by value. **Show the rest as "Other"** adds one category with the rest. |
 | Vertical axis | One row for each column. Each column is one series. **Add a column** adds a column. The button at the end of a row removes the column. **Number of rows** in the list counts the rows and needs no column. |
 | Aggregate | Each column of the vertical axis has its own aggregate. It combines the rows that have the same horizontal value: sum, mean, count, minimum, or maximum. **Count** counts the cells that are not empty, also cells that are not numbers. |
 | Series | A column that divides the rows into series. Each value of the column is one series. |
@@ -78,12 +80,29 @@ A chart must not look complete when it is not. The notes above the chart tell yo
 | Chart of the first 100,000 of 5,000,000 rows. | The result has more rows than Tabloxide loaded. The limit is 100,000 rows. |
 | Chart of the first 500 rows. The result has more rows. | The grid loads rows when you scroll. **Load all rows** loads the result to the limit. **Stop** ends the load. |
 | Cells are not a number, or not a date. | The chart cannot convert the text of these cells, for example `$10`. It shows them as empty values. This note is below the setting of its column, with a warning mark. |
-| The chart shows the first 8 of 23 series. | A chart shows a maximum of 8 series. Use a filter in the statement, or a different series column. |
+| The chart shows the first 7 of 23 series. The series "Other" has the rest. | A chart has 8 colours. With more series, the last one is "Other" in a neutral colour, with the rows of all other series. |
+| The chart shows the first 10 of 109 categories. | The setting **Show** has a limit. With **Show the rest as "Other"**, the last category has the rest. |
 | A line has more points than the chart has pixels. | The chart shows a reduced number of points for each line. The form of the line stays. |
 
 If the result does not have a column of the chart settings, the chart shows a message and the settings do not change. **Make a new chart** replaces the settings.
 
-## 4. Zoom
+## 4. Start a chart from the grid
+
+The header of a column in the grid has a menu. Open it with the right mouse button, or with **Shift+F10** when the header has the focus.
+
+| Action | Function |
+| --- | --- |
+| Chart the column | Shows a chart of only this column, for example a histogram of a number column. |
+| Add to the chart | Adds the column to the chart of the result. A number column goes to the vertical axis. A date column becomes the horizontal axis. A text column becomes the series. |
+
+To make a chart of some columns, select the columns first:
+
+1. Hold **Ctrl** and click each column header. On macOS, hold **Cmd**. With the keyboard, press **Ctrl+Space** on a header or on a cell of the column.
+2. Select **Chart these columns** above the grid, or in the menu of a selected header.
+
+Tabloxide selects the chart type from the types of the selected columns. **Clear the column selection** removes the selection.
+
+## 5. Zoom
 
 A chart with more than 50 marks on the horizontal axis has a zoom control below it.
 
@@ -92,7 +111,7 @@ A chart with more than 50 marks on the horizontal axis has a zoom control below 
 
 The zoom has no keys. Use the Grid view to read the values with the keyboard.
 
-## 5. Save a view
+## 6. Save a view
 
 A view that you save is in a file next to the query file. For `revenue.sql`, the file is `revenue.view.json`. If the workspace is a Git repository, you can commit the file, and your team gets the same charts.
 
@@ -137,11 +156,11 @@ Example of a view file:
 }
 ```
 
-The settings of a chart can have these parts: `type`, `x`, `y`, `countRows`, `series`, `aggregates`, `timeUnit`, `sort`, `stacked`, and `scale`. A column without an entry in `aggregates` uses the automatic aggregate. Tabloxide also reads the older part `aggregate`, which is one aggregate for all columns.
+The settings of a chart can have these parts: `type`, `x`, `y`, `countRows`, `series`, `aggregates`, `timeUnit`, `sort`, `limit`, `other`, `kinds`, `stacked`, and `scale`. A column without an entry in `aggregates` uses the automatic aggregate. Tabloxide also reads the older part `aggregate`, which is one aggregate for all columns.
 
 If Tabloxide cannot read a view file, it shows the cause and does not change the file. Correct the file or remove it from the folder. Then run the statement again.
 
-## 6. Save an image
+## 7. Save an image
 
 1. Select **Save image…** above the chart.
 2. Type a file name that ends with `.png` or `.svg`.
@@ -151,7 +170,7 @@ If Tabloxide cannot read a view file, it shows the cause and does not change the
 
 The image shows the chart with its zoom and the colours of the theme. A single value has no image.
 
-## 7. Colours and accessibility
+## 8. Colours and accessibility
 
 - Each series has its own colour and its own mark. A chart with two or more series has a legend.
 - In the High contrast theme, each series also has a pattern, and each line has its own line style.

@@ -18,6 +18,9 @@ The section `Unreleased` collects the changes after the last release. Before you
 - The strip **Suggested charts** shows a maximum of four charts that fit the columns. A selection replaces the chart settings.
 - The chart settings are in a panel at the right of the chart. **Settings** shows or hides it. The chart type has one button for each type, and a type that cannot show the columns gives the cause.
 - Each column of the vertical axis has its own aggregate, for example the sum of one column and the mean of a second one.
+- The header of a column in the grid has a menu with **Chart the column** and **Add to the chart**. Hold Ctrl and click headers to select columns, then select **Chart these columns**.
+- **Show** limits a chart to the first categories, and **Show the rest as "Other"** adds one category with the rest. A chart with more than 8 series shows the rest as the series "Other".
+- **Use as** lets a chart use the column of the horizontal axis as a number, a date, or a category. For example, a year can be a category.
 - **Save as new view** writes the chart settings to a file next to the query file, for example `revenue.view.json` for `revenue.sql`. You can commit the file to Git. Tabloxide writes the file only when you save or remove a view.
 - **Save image…** saves the chart as a PNG image or an SVG image.
 - A chart follows the four themes. In the High contrast theme, each series also has a pattern and its own line style. A screen reader gets a text about the chart, and the grid always has the values.
