@@ -186,6 +186,18 @@ describe.each(themes)('chart colours of the %s theme', (name, tokens) => {
     ).toBeGreaterThanOrEqual(minimum)
   })
 
+  test('the two ends of the colour scale are different, and the high end is visible on the background', () => {
+    const low = toRgb(tokens['chart-ramp-low'])
+    const high = toRgb(tokens['chart-ramp-high'])
+    const background = toRgb(tokens['color-bg'])
+
+    expect(contrast(high, background)).toBeGreaterThanOrEqual(MARK_RATIO)
+    // A low value is near to the background, and a high value is far from it.
+    expect(contrast(high, background)).toBeGreaterThan(
+      contrast(low, background),
+    )
+  })
+
   test('each series has a different colour', () => {
     const colours = CHART_TOKENS.map((token) => tokens[token])
 

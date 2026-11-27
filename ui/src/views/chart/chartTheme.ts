@@ -7,6 +7,8 @@ export type ChartTheme = {
   border: string
   /** The colours of the series, in a fixed sequence. */
   series: string[]
+  /** The two ends of the colour scale of a heat map: a low value and a high value. */
+  ramp: [string, string]
   font: string
   /** In the high contrast theme, the series also have different patterns and line styles. */
   isHighContrast: boolean
@@ -29,6 +31,7 @@ export function readChartTheme(): ChartTheme {
     series: Array.from({ length: SERIES_COLOURS }, (_, index) =>
       token(`--chart-${index + 1}`),
     ),
+    ramp: [token('--chart-ramp-low'), token('--chart-ramp-high')],
     font: token('--font-ui'),
     isHighContrast: root.dataset.theme === 'high-contrast',
   }

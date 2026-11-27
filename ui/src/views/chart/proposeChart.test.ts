@@ -156,7 +156,11 @@ describe('proposeCharts', () => {
 
   test('only text columns give one count for each column', () => {
     expect(labels([column('country', 'text'), column('city', 'text')])).toEqual(
-      ['Bar: number of rows by country', 'Bar: number of rows by city'],
+      [
+        'Bar: number of rows by country',
+        'Bar: number of rows by city',
+        'Heat map: number of rows by country and city',
+      ],
     )
   })
 

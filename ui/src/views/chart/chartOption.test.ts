@@ -11,6 +11,7 @@ const THEME: ChartTheme = {
   textMuted: '#5b6472',
   border: '#d5d9e0',
   series: ['#111111', '#222222', '#333333'],
+  ramp: ['#cce3fd', '#0e3d7e'],
   font: 'system-ui',
   isHighContrast: false,
 }
@@ -42,6 +43,7 @@ function chart(part: Partial<CartesianChart>): CartesianChart {
     isAutoAggregate: false,
     timeUnit: null,
     seriesColumn: null,
+    sizeColumn: null,
     limit: null,
     otherSeries: [],
     categories: ['DE', 'FR'],

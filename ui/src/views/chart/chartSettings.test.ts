@@ -26,9 +26,9 @@ describe('parseChartSettings', () => {
   })
 
   test('refuses a chart type that it does not know', () => {
-    const parsed = parseChartSettings({ type: 'sankey', y: [] })
+    const parsed = parseChartSettings({ type: 'gantt', y: [] })
 
-    expect(parsed).toEqual({ error: 'The chart type "sankey" is not known.' })
+    expect(parsed).toEqual({ error: 'The chart type "gantt" is not known.' })
   })
 
   test.each([
@@ -377,7 +377,7 @@ describe('typeProblem', () => {
 
   test('a scatter plot needs two columns', () => {
     expect(typeProblem('scatter', [column('n', 'number')])).toBe(
-      'A scatter plot needs two columns. This result has one.',
+      'A scatter plot needs 2 columns. This result has 1.',
     )
   })
 

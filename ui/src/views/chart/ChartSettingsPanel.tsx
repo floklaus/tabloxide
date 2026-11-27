@@ -13,6 +13,7 @@ import {
   KIND_OVERRIDES,
   LIMITS,
   normalize,
+  roleLabels,
   SORT_LABELS,
   SORTS,
   TIME_UNIT_LABELS,
@@ -176,8 +177,12 @@ function VerticalAxis(props: Props) {
       ? change({ countRows: true, y: [] })
       : change({ countRows: false, y: [...settings.y, name] })
 
+  const roles = CHART_ROLES[settings.type]
+  const title = roleLabels(settings.type).y
+  // The name of the list in a sentence, for example "the vertical axis".
+  const place = title === 'Vertical axis' ? 'the vertical axis' : `"${title}"`
   return (
-    <Section title="Vertical axis">
+    <Section title={title}>
       {settings.countRows && (
         <div className="chart__row">
           <RowsIcon />
@@ -185,7 +190,7 @@ function VerticalAxis(props: Props) {
           <button
             type="button"
             className="chart__remove"
-            aria-label="Remove the number of rows from the vertical axis"
+            aria-label={`Remove the number of rows from ${place}`}
             title="Remove"
             onClick={() => change({ countRows: false })}
           >
@@ -200,19 +205,21 @@ function VerticalAxis(props: Props) {
               kind={columns.find((c) => c.name === name)?.kind ?? 'other'}
             />
             <span className="chart__row-name">{name}</span>
-            <AggregateSelect
-              column={name}
-              value={aggregateOf(settings, name)}
-              defaultLabel={automaticLabel(props.automatic)}
-              hasNone
-              onChange={(aggregate) =>
-                onChange(withAggregate(settings, name, aggregate))
-              }
-            />
+            {roles.aggregate && (
+              <AggregateSelect
+                column={name}
+                value={aggregateOf(settings, name)}
+                defaultLabel={automaticLabel(props.automatic)}
+                hasNone
+                onChange={(aggregate) =>
+                  onChange(withAggregate(settings, name, aggregate))
+                }
+              />
+            )}
             <button
               type="button"
               className="chart__remove"
-              aria-label={`Remove ${name} from the vertical axis`}
+              aria-label={`Remove ${name} from ${place}`}
               title="Remove"
               onClick={() =>
                 change({ y: settings.y.filter((item) => item !== name) })
@@ -225,11 +232,11 @@ function VerticalAxis(props: Props) {
         </div>
       ))}
       <ColumnPicker
-        label="Add a column to the vertical axis"
+        label={`Add a column to ${place}`}
         isLabelHidden
         columns={free}
         selected={[]}
-        special={settings.countRows ? undefined : ROWS}
+        special={roles.countRows && !settings.countRows ? ROWS : undefined}
         placeholder="Add a column"
         onChange={add}
       />
@@ -241,15 +248,18 @@ function VerticalAxis(props: Props) {
 function SingleValue(props: Props) {
   const { settings, columns, onChange, warnings = {} } = props
   const [name] = settings.y
+  const roles = CHART_ROLES[settings.type]
   const change = (part: Partial<ChartSettings>) =>
     onChange(normalize({ ...settings, ...part }))
+  // A single value has no automatic aggregate: without one, it shows the first row.
+  const isAutomatic = settings.type !== 'value'
   return (
     <>
       <ColumnPicker
-        label="Value"
+        label={roleLabels(settings.type).y}
         columns={columns}
         selected={settings.countRows ? [NO_COLUMN] : settings.y}
-        special={ROWS}
+        special={roles.countRows ? ROWS : undefined}
         placeholder="Select a column"
         warnings={name === undefined ? [] : warnings[name]}
         onChange={([column]) =>
@@ -258,15 +268,16 @@ function SingleValue(props: Props) {
             : change({ countRows: false, y: [column] })
         }
       />
-      {name !== undefined && (
+      {name !== undefined && roles.aggregate && (
         <label className="chart__inline">
           <span>Aggregate</span>
-          {/* A single value has no automatic aggregate: without one, it shows the first row. */}
           <AggregateSelect
             column={name}
             value={aggregateOf(settings, name)}
-            defaultLabel="None"
-            hasNone={false}
+            defaultLabel={
+              isAutomatic ? automaticLabel(props.automatic) : 'None'
+            }
+            hasNone={isAutomatic}
             onChange={(aggregate) =>
               onChange(withAggregate(settings, name, aggregate))
             }
@@ -294,7 +305,7 @@ function HorizontalAxis(props: Props) {
   return (
     <>
       <ColumnPicker
-        label={settings.type === 'histogram' ? 'Column' : 'Horizontal axis'}
+        label={roleLabels(settings.type).x}
         columns={columns}
         selected={settings.x === undefined ? [] : [settings.x]}
         placeholder="Select a column"
@@ -478,13 +489,34 @@ export function ChartSettingsPanel(given: Props) {
       {roles.x && <HorizontalAxis {...props} />}
       {roles.y === 'many' && <VerticalAxis {...props} />}
       {roles.y === 'one' && <SingleValue {...props} />}
+      {roles.size && (
+        <ColumnPicker
+          label="Size"
+          columns={columns}
+          selected={settings.size === undefined ? [] : [settings.size]}
+          placeholder="Select a column"
+          warnings={
+            settings.size === undefined ? [] : props.warnings?.[settings.size]
+          }
+          onChange={([name]) =>
+            onChange(normalize({ ...settings, size: name }))
+          }
+        />
+      )}
       {roles.series && (
         <ColumnPicker
-          label="Series"
+          label={roleLabels(settings.type).series}
           columns={columns}
-          selected={[settings.series ?? NO_COLUMN]}
-          special={NO_SERIES}
-          placeholder="None"
+          selected={
+            settings.series === undefined
+              ? roles.seriesRequired
+                ? []
+                : [NO_COLUMN]
+              : [settings.series]
+          }
+          // A chart that needs this column has no choice "None".
+          special={roles.seriesRequired ? undefined : NO_SERIES}
+          placeholder={roles.seriesRequired ? 'Select a column' : 'None'}
           onChange={([name]) =>
             onChange(
               normalize({

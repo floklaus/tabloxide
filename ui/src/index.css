@@ -3720,6 +3720,9 @@ body {
   --chart-6: #008a17;
   --chart-7: #6a4ce2;
   --chart-8: #ec4647;
+  /* The colour scale of a heat map: a low value is near to the background. */
+  --chart-ramp-low: #cce3fd;
+  --chart-ramp-high: #0e3d7e;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -3732,6 +3735,8 @@ body {
     --chart-6: #0aac23;
     --chart-7: #9887ef;
     --chart-8: #eb6263;
+    --chart-ramp-low: #0f4a96;
+    --chart-ramp-high: #b6d5f8;
   }
 }
 
@@ -3744,6 +3749,8 @@ body {
   --chart-6: #0aac23;
   --chart-7: #9887ef;
   --chart-8: #eb6263;
+  --chart-ramp-low: #0f4a96;
+  --chart-ramp-high: #b6d5f8;
 }
 
 :root[data-theme='neon'] {
@@ -3755,6 +3762,8 @@ body {
   --chart-6: #0aac23;
   --chart-7: #9887ef;
   --chart-8: #eb6263;
+  --chart-ramp-low: #0f4a96;
+  --chart-ramp-high: #b6d5f8;
 }
 
 :root[data-theme='high-contrast'] {
@@ -3766,4 +3775,6 @@ body {
   --chart-6: #0aac23;
   --chart-7: #9887ef;
   --chart-8: #eb6263;
+  --chart-ramp-low: #0f4a96;
+  --chart-ramp-high: #b6d5f8;
 }

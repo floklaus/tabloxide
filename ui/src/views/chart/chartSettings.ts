@@ -1,23 +1,15 @@
 import type { Column } from '../../results/gridModel'
+import {
+  CANDLESTICK_COLUMNS,
+  CHART_ROLES,
+  CHART_TYPES,
+  MIN_PARALLEL_AXES,
+  needsX,
+  roleLabels,
+  type ChartType,
+} from './chartTypes'
 
-export const CHART_TYPES = [
-  'line',
-  'area',
-  'bar',
-  'scatter',
-  'histogram',
-  'value',
-] as const
-export type ChartType = (typeof CHART_TYPES)[number]
-
-export const CHART_TYPE_LABELS: Record<ChartType, string> = {
-  line: 'Line chart',
-  area: 'Area chart',
-  bar: 'Bar chart',
-  scatter: 'Scatter plot',
-  histogram: 'Histogram',
-  value: 'Single value',
-}
+export * from './chartTypes'
 
 export const AGGREGATES = ['sum', 'mean', 'count', 'min', 'max'] as const
 export type Aggregate = (typeof AGGREGATES)[number]
@@ -85,6 +77,8 @@ export type ChartSettings = {
   countRows?: boolean
   /** A column that divides the rows into series. */
   series?: string
+  /** A column that gives the size of each mark of a bubble chart. */
+  size?: string
   /**
    * The aggregate of each `y` column, by the name of the column. It combines
    * the rows that have the same `x`. A column without a value lets the chart
@@ -113,83 +107,6 @@ export type ChartSettings = {
   stacked?: boolean
   /** The scale of the vertical axis. Without it, the scale is linear. */
   scale?: Scale
-}
-
-/** What each chart type uses from the settings. The settings form shows only these parts. */
-export type ChartRoles = {
-  x: boolean
-  y: 'none' | 'one' | 'many'
-  /** The vertical axis can show the number of rows. */
-  countRows: boolean
-  series: boolean
-  aggregate: boolean
-  /** The horizontal axis can have a time unit and a sort. */
-  grouping: boolean
-  stacked: boolean
-  scale: boolean
-}
-
-export const CHART_ROLES: Record<ChartType, ChartRoles> = {
-  line: {
-    x: true,
-    y: 'many',
-    countRows: true,
-    series: true,
-    aggregate: true,
-    grouping: true,
-    stacked: false,
-    scale: true,
-  },
-  area: {
-    x: true,
-    y: 'many',
-    countRows: true,
-    series: true,
-    aggregate: true,
-    grouping: true,
-    stacked: true,
-    scale: false,
-  },
-  bar: {
-    x: true,
-    y: 'many',
-    countRows: true,
-    series: true,
-    aggregate: true,
-    grouping: true,
-    stacked: true,
-    scale: true,
-  },
-  scatter: {
-    x: true,
-    y: 'many',
-    countRows: false,
-    series: true,
-    aggregate: false,
-    grouping: false,
-    stacked: false,
-    scale: true,
-  },
-  histogram: {
-    x: true,
-    y: 'none',
-    countRows: false,
-    series: false,
-    aggregate: false,
-    grouping: false,
-    stacked: false,
-    scale: false,
-  },
-  value: {
-    x: false,
-    y: 'one',
-    countRows: true,
-    series: false,
-    aggregate: true,
-    grouping: false,
-    stacked: false,
-    scale: false,
-  },
 }
 
 function isOneOf<T extends string>(
@@ -258,6 +175,7 @@ export function parseChartSettings(
   if (!isRecord(value)) return { error: 'The settings are not an object.' }
   const { type, x, y, series, aggregate, stacked, scale } = value
   const { countRows, timeUnit, sort, aggregates, limit, other, kinds } = value
+  const { size } = value
   if (!isOneOf(CHART_TYPES, type)) {
     return { error: `The chart type ${JSON.stringify(type)} is not known.` }
   }
@@ -273,6 +191,9 @@ export function parseChartSettings(
   }
   if (series !== undefined && typeof series !== 'string') {
     return { error: 'The setting "series" must be a column name.' }
+  }
+  if (size !== undefined && typeof size !== 'string') {
+    return { error: 'The setting "size" must be a column name.' }
   }
   if (
     aggregate !== undefined &&
@@ -325,6 +246,7 @@ export function parseChartSettings(
       y: columns as string[],
       countRows,
       series,
+      size,
       aggregates,
       aggregate,
       timeUnit,
@@ -372,6 +294,9 @@ export function normalize(settings: ChartSettings): ChartSettings {
     ...(roles.series && settings.series !== undefined
       ? { series: settings.series }
       : {}),
+    ...(roles.size && settings.size !== undefined
+      ? { size: settings.size }
+      : {}),
     // The number of rows is a count. It has no other aggregate.
     ...(roles.aggregate && aggregates.length > 0
       ? { aggregates: Object.fromEntries(aggregates) }
@@ -397,9 +322,12 @@ export function missingColumns(
   columns: Column[],
 ): string[] {
   const names = new Set(columns.map((column) => column.name))
-  const used = [settings.x, ...settings.y, settings.series].filter(
-    (name): name is string => name !== undefined,
-  )
+  const used = [
+    settings.x,
+    ...settings.y,
+    settings.series,
+    settings.size,
+  ].filter((name): name is string => name !== undefined)
   return [...new Set(used)].filter((name) => !names.has(name))
 }
 
@@ -408,16 +336,33 @@ export function missingColumns(
  * user. Returns `null` if the settings are complete.
  */
 export function incompleteReason(settings: ChartSettings): string | null {
-  const roles = CHART_ROLES[settings.type]
-  if (roles.x && settings.x === undefined) {
-    return settings.type === 'histogram'
-      ? 'Select the column of the histogram.'
-      : 'Select the column of the horizontal axis.'
+  const { type } = settings
+  const roles = CHART_ROLES[type]
+  const labels = roleLabels(type)
+  const lower = (text: string) => text.charAt(0).toLowerCase() + text.slice(1)
+  if (needsX(type) && settings.x === undefined) {
+    if (type === 'histogram') return 'Select the column of the histogram.'
+    return labels.x === 'Horizontal axis'
+      ? 'Select the column of the horizontal axis.'
+      : `Select the column for "${labels.x}".`
+  }
+  if (roles.seriesRequired && settings.series === undefined) {
+    return `Select the column for "${labels.series}".`
+  }
+  if (type === 'candlestick' && settings.y.length !== CANDLESTICK_COLUMNS) {
+    return 'Select four columns in this sequence: open, high, low, close.'
+  }
+  if (type === 'parallel' && settings.y.length < MIN_PARALLEL_AXES) {
+    return 'Select two or more columns for the axes.'
   }
   if (roles.y !== 'none' && settings.y.length === 0 && !settings.countRows) {
-    return settings.type === 'value'
-      ? 'Select the column of the value.'
-      : 'Select a column of the vertical axis.'
+    if (type === 'value') return 'Select the column of the value.'
+    return labels.y === 'Vertical axis'
+      ? 'Select a column of the vertical axis.'
+      : `Select the column for "${lower(labels.y) === 'values' ? 'Values' : labels.y}".`
+  }
+  if (roles.size && settings.size === undefined) {
+    return 'Select the column for the size of the bubbles.'
   }
   return null
 }
@@ -459,10 +404,97 @@ export function withType(
   const x = keepsX
     ? settings.x
     : columns.find((column) => !y.includes(column.name))?.name
-  return fitAxisControls(
-    normalize({ ...settings, type, x, y, countRows: keepsCount }),
+  return withTypeDefaults(
+    fitAxisControls(
+      normalize({ ...settings, type, x, y, countRows: keepsCount }),
+      columns,
+    ),
     columns,
   )
+}
+
+const CANDLE_NAMES = ['open', 'high', 'low', 'close']
+/** Parallel coordinates start with a maximum of this number of axes. */
+const MAX_DEFAULT_AXES = 8
+/** A new pie chart shows this number of slices and "Other". */
+const DEFAULT_SLICES = 10
+
+/** The columns of a candlestick chart: the columns with the usual names, or the first four number columns. */
+function candleColumns(columns: Column[]): string[] {
+  const named = CANDLE_NAMES.map(
+    (wanted) =>
+      columns.find((column) => column.name.toLowerCase() === wanted)?.name,
+  )
+  return named.every((name) => name !== undefined)
+    ? (named as string[])
+    : numberColumns(columns).slice(0, CANDLESTICK_COLUMNS)
+}
+
+/**
+ * Gives a new chart type the columns that it needs and that the settings do not
+ * have, for example the size of a bubble chart. The user can change each of them.
+ */
+function withTypeDefaults(
+  settings: ChartSettings,
+  columns: Column[],
+): ChartSettings {
+  const numbers = numberColumns(columns)
+  const dates = columns.filter((column) => column.kind === 'temporal')
+  const kindOf = (name: string | undefined) =>
+    columns.find((column) => column.name === name)?.kind
+  const isFree = (name: string) =>
+    name !== settings.x && !settings.y.includes(name)
+  switch (settings.type) {
+    case 'candlestick': {
+      const y =
+        settings.y.length === CANDLESTICK_COLUMNS
+          ? settings.y
+          : candleColumns(columns)
+      const keepsX = settings.x !== undefined && !y.includes(settings.x)
+      const x = keepsX
+        ? settings.x
+        : (dates[0]?.name ??
+          columns.find((column) => !y.includes(column.name))?.name)
+      return normalize({ ...settings, x, y })
+    }
+    case 'parallel':
+      return settings.y.length >= MIN_PARALLEL_AXES
+        ? settings
+        : normalize({ ...settings, y: numbers.slice(0, MAX_DEFAULT_AXES) })
+    case 'bubble':
+      return normalize({
+        ...settings,
+        size: settings.size ?? numbers.find(isFree),
+      })
+    case 'heatmap':
+    case 'sankey': {
+      const free = columns.filter((column) => isFree(column.name))
+      // A column that is not a number gives the second group of a chart.
+      const second = free.find((column) => column.kind !== 'number') ?? free[0]
+      return normalize({
+        ...settings,
+        series: settings.series ?? second?.name,
+      })
+    }
+    case 'calendar':
+      return kindOf(settings.x) === 'temporal' || dates.length === 0
+        ? settings
+        : normalize({ ...settings, x: dates[0].name })
+    case 'boxplot':
+      // A box plot has categories. A number column gives one box for each value.
+      return kindOf(settings.x) === 'number'
+        ? normalize({
+            ...settings,
+            x: columns.find((column) => column.kind === 'text')?.name,
+          })
+        : settings
+    case 'pie':
+      return settings.limit === undefined
+        ? withLimit(settings, DEFAULT_SLICES)
+        : settings
+    default:
+      return settings
+  }
 }
 
 /** Changes the column of the horizontal axis. */
@@ -507,24 +539,6 @@ export function axisControls(
   if (column.kind === 'temporal') return { timeUnit: true, sort: false }
   const isCategory = settings.type === 'bar' || column.kind !== 'number'
   return { timeUnit: false, sort: isCategory }
-}
-
-/**
- * Tells why a chart type cannot show the columns of a result, as a sentence for
- * the user. Returns `null` if the type can show them.
- */
-export function typeProblem(type: ChartType, columns: Column[]): string | null {
-  const numbers = numberColumns(columns).length
-  if (type === 'histogram' && numbers === 0) {
-    return 'A histogram needs a number column. This result has none.'
-  }
-  if (type === 'scatter' && numbers === 0) {
-    return 'A scatter plot needs a number column. This result has none.'
-  }
-  if (type === 'scatter' && columns.length < 2) {
-    return 'A scatter plot needs two columns. This result has one.'
-  }
-  return null
 }
 
 /** Sets the aggregate of one `y` column. `undefined` lets the chart decide. */

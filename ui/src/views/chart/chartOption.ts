@@ -5,7 +5,7 @@ import type { ChartTheme } from './chartTheme'
 import { formatNumber } from './chartValues'
 
 /** The marks of the series. Colour is never the only sign of a series. */
-const SYMBOLS = [
+export const SYMBOLS = [
   'circle',
   'rect',
   'triangle',
@@ -16,7 +16,7 @@ const SYMBOLS = [
   'emptyCircle',
 ]
 /** The line styles of the series in the high contrast theme. */
-const DASHES: (string | number[])[] = [
+export const DASHES: (string | number[])[] = [
   'solid',
   'dashed',
   'dotted',
@@ -38,14 +38,17 @@ const MAX_LINE_SYMBOLS = 30
 const LARGE_SCATTER = 2000
 const LARGE_BAR = 1000
 /** A chart with more marks than this has a zoom control. */
-const ZOOM_FROM = 50
+export const ZOOM_FROM = 50
 /** A chart with more marks than this draws without an animation. */
-const MAX_ANIMATED_MARKS = 2000
+export const MAX_ANIMATED_MARKS = 2000
+/** The smallest and the largest diameter of a bubble in pixels. */
+const BUBBLE_SIZES = [6, 32]
 const AREA_OPACITY = 0.12
 const STACKED_AREA_OPACITY = 0.35
 const SCATTER_OPACITY = 0.8
+const BUBBLE_OPACITY = 0.5
 const LEGEND_HEIGHT = 32
-const ZOOM_HEIGHT = 44
+export const ZOOM_HEIGHT = 44
 const X_NAME_GAP = 28
 
 export type OptionContext = {
@@ -84,6 +87,21 @@ function alignForStack(series: ChartSeries[]): ChartSeries[] {
   })
 }
 
+/**
+ * Returns the function that gives the diameter of a bubble for its size value.
+ * The area of a bubble follows the value, thus the diameter follows its root.
+ */
+function bubbleScale(chart: CartesianChart): (size: number) => number {
+  const sizes = chart.series.flatMap((series) => series.sizes ?? [])
+  let max = 0
+  for (const size of sizes) max = Math.max(max, Math.abs(size))
+  const [smallest, largest] = BUBBLE_SIZES
+  return (size) =>
+    max === 0
+      ? smallest
+      : smallest + (largest - smallest) * Math.sqrt(Math.abs(size) / max)
+}
+
 function seriesOption(
   chart: CartesianChart,
   settings: ChartSettings,
@@ -113,6 +131,22 @@ function seriesOption(
   const tint = isOther ? neutral : {}
   const symbol = SYMBOLS[index % SYMBOLS.length]
 
+  if (chart.type === 'bubble') {
+    const scale = bubbleScale(chart)
+    return {
+      ...base,
+      type: 'scatter',
+      // A mark has the position and the size value: [x, y, size].
+      data: series.points.map(([x, y], position) => [
+        x,
+        y,
+        series.sizes?.[position] ?? 0,
+      ]),
+      symbol: 'circle',
+      symbolSize: (value: number[]) => scale(value[2]),
+      itemStyle: { opacity: BUBBLE_OPACITY, ...tint },
+    }
+  }
   if (chart.type === 'scatter') {
     return {
       ...base,
@@ -175,7 +209,7 @@ function seriesOption(
   }
 }
 
-function axisStyle(theme: ChartTheme) {
+export function axisStyle(theme: ChartTheme) {
   return {
     nameTextStyle: { color: theme.textMuted },
     axisLine: { lineStyle: { color: theme.border } },
@@ -184,8 +218,9 @@ function axisStyle(theme: ChartTheme) {
   }
 }
 
-function zoomOption(chart: CartesianChart, theme: ChartTheme) {
-  if (longestSeries(chart) <= ZOOM_FROM) return []
+/** The zoom control of a horizontal axis with `length` marks. A short axis has none. */
+export function zoomControl(length: number, theme: ChartTheme) {
+  if (length <= ZOOM_FROM) return []
   return [
     { type: 'inside', xAxisIndex: 0 },
     {
@@ -216,8 +251,9 @@ export function chartOption(
       ? { ...prepared, series: alignForStack(prepared.series) }
       : prepared
   const hasLegend = chart.series.length > 1
-  const zoom = zoomOption(chart, theme)
+  const zoom = zoomControl(longestSeries(chart), theme)
   const isBar = chart.type === 'bar' || chart.type === 'histogram'
+  const isPoints = chart.type === 'scatter' || chart.type === 'bubble'
 
   return {
     backgroundColor: 'transparent',
@@ -254,7 +290,7 @@ export function chartOption(
         }
       : undefined,
     tooltip: {
-      trigger: chart.type === 'scatter' ? 'item' : 'axis',
+      trigger: isPoints ? 'item' : 'axis',
       confine: true,
       backgroundColor: theme.surface,
       borderColor: theme.border,
@@ -278,7 +314,7 @@ export function chartOption(
       // A value axis that starts at zero wastes the space of a scatter plot.
       ...(chart.xAxis === 'value' ? { scale: true } : {}),
       splitLine: {
-        show: chart.type === 'scatter',
+        show: isPoints,
         lineStyle: { color: theme.border },
       },
       ...axisStyle(theme),

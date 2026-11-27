@@ -20,7 +20,11 @@ export function ChartCanvas(props: ComponentProps<typeof RealChartCanvas>) {
       role="img"
       aria-label={summary}
       data-type={settings.type}
-      data-series={chart.series.map((series) => series.name).join('|')}
+      data-series={
+        chart.kind === 'cartesian'
+          ? chart.series.map((series) => series.name).join('|')
+          : undefined
+      }
       data-points={chart.pointCount}
     />
   )

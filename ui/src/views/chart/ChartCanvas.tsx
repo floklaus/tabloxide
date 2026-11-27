@@ -10,8 +10,8 @@ import type { ViewImage } from '../../bindings'
 import { toMessage } from '../../lib/errors'
 import { useThemeStore } from '../../theme/themeStore'
 import { Loading, ViewError } from '../../view/ViewState'
-import type { CartesianChart } from './chartData'
-import { chartOption } from './chartOption'
+import type { DrawnChart } from './chartData'
+import { drawOption } from './chartOptionMore'
 import type { ChartSettings } from './chartSettings'
 import { readChartTheme } from './chartTheme'
 import type { EChartsType } from './echartsSetup'
@@ -23,7 +23,7 @@ export type ChartCanvasHandle = {
 
 type Props = {
   ref?: Ref<ChartCanvasHandle>
-  chart: CartesianChart
+  chart: DrawnChart
   settings: ChartSettings
   /** The text of the chart for a screen reader. */
   summary: string
@@ -106,7 +106,7 @@ export function ChartCanvas(props: Props) {
         theme: readChartTheme(),
         canAnimate: !matches(LESS_MOTION_QUERY),
       }
-      return { option: chartOption(chart, settings, context), error: null }
+      return { option: drawOption(chart, settings, context), error: null }
     } catch (cause) {
       return { option: null, error: toMessage(cause) }
     }

@@ -96,15 +96,16 @@ function Notes(props: {
       'A line has more points than the chart has pixels. The chart shows a reduced number of points for each line.',
     )
   }
-  const isAuto = chart.kind === 'cartesian' && chart.isAutoAggregate
-  if (part === null && lines.length === 0 && !isAuto) return null
+  const repeated =
+    chart.kind === 'cartesian' && chart.isAutoAggregate ? chart.xName : null
+  if (part === null && lines.length === 0 && repeated === null) return null
   return (
     <ul className="chart__notes" aria-label="Notes about the chart">
       {part !== null && <li>{part}</li>}
-      {isAuto && (
+      {repeated !== null && (
         <li>
-          The values of the horizontal axis repeat. The chart shows the sum for
-          each value.{' '}
+          The values of the column {repeated} repeat. The chart shows the sum
+          for each value.{' '}
           <button
             type="button"
             className="link-button"
@@ -224,11 +225,12 @@ export function ChartView(props: ViewProps) {
         )}
       </>
     )
-  const summary = chartSummary(chart)
+  const summary = chartSummary(chart, shownRows.length)
   const sentence = chartSentence(chart, shownRows.length)
   const warnings = columnWarnings(chart)
   const hasSettings = props.settings !== undefined
-  const isChart = reason === null && chart.kind === 'cartesian'
+  const isChart =
+    reason === null && chart.kind !== 'empty' && chart.kind !== 'value'
 
   return (
     <div className="chart">
@@ -302,15 +304,17 @@ export function ChartView(props: ViewProps) {
               <figcaption>{chart.label}</figcaption>
             </figure>
           )}
-          {isChart && (
-            <ChartCanvas
-              ref={canvasRef}
-              chart={chart}
-              settings={settings}
-              summary={summary}
-              onWidth={setWidth}
-            />
-          )}
+          {reason === null &&
+            chart.kind !== 'empty' &&
+            chart.kind !== 'value' && (
+              <ChartCanvas
+                ref={canvasRef}
+                chart={chart}
+                settings={settings}
+                summary={summary}
+                onWidth={setWidth}
+              />
+            )}
         </div>
       </div>
     </div>

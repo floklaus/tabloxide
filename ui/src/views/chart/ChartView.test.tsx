@@ -222,10 +222,10 @@ describe('settings that do not fit the result', () => {
   })
 
   test('settings that are not valid give the reason', () => {
-    render(<ChartView {...props({ settings: { type: 'sankey' } })} />)
+    render(<ChartView {...props({ settings: { type: 'gantt' } })} />)
 
     expect(screen.getByRole('alert')).toHaveTextContent(
-      'The chart type "sankey" is not known.',
+      'The chart type "gantt" is not known.',
     )
   })
 })
@@ -955,5 +955,137 @@ describe('the kind of the column of the horizontal axis', () => {
     render(<ChartView {...years({ type: 'histogram', x: 'total', y: [] })} />)
 
     expect(screen.queryByLabelText('Use as')).not.toBeInTheDocument()
+  })
+})
+
+describe('the chart types of stage 3', () => {
+  const SALES3 = [
+    column('country', 'text'),
+    column('kind', 'text'),
+    column('amount', 'number'),
+    column('tax', 'number'),
+  ]
+  const rows3: Row[] = [
+    ['DE', 'card', '10', '1'],
+    ['DE', 'cash', '20', '2'],
+    ['FR', 'card', '5', '3'],
+  ]
+  const view3 = (settings: object) =>
+    props({ columns: SALES3, rows: rows3, totalRows: 3, settings })
+
+  test('the panel has one button for each of the 18 chart types', () => {
+    render(
+      <ChartView {...view3({ type: 'bar', x: 'country', y: ['amount'] })} />,
+    )
+    const types = screen.getByRole('group', { name: 'Chart type' })
+
+    expect(within(types).getAllByRole('button')).toHaveLength(18)
+    expect(
+      within(types).getByRole('button', { name: 'Sankey diagram' }),
+    ).toBeInTheDocument()
+  })
+
+  test('a heat map names its parts "Columns", "Rows", and "Value", and needs the rows', () => {
+    render(
+      <ChartView
+        {...view3({ type: 'heatmap', x: 'country', y: ['amount'] })}
+      />,
+    )
+
+    expect(picked('Columns', 'country')).toBeChecked()
+    expect(
+      screen.getByRole('radiogroup', { name: 'Value' }),
+    ).toBeInTheDocument()
+    // A chart that needs this column has no choice "None".
+    const rowsList = screen.getByRole('radiogroup', { name: 'Rows' })
+    expect(within(rowsList).queryByRole('radio', { name: /^None/ })).toBeNull()
+    expect(
+      screen.getByText('Select the column for "Rows".'),
+    ).toBeInTheDocument()
+  })
+
+  test('a change to a pie chart draws the pie with the text for a screen reader', async () => {
+    const view = view3({ type: 'bar', x: 'country', y: ['amount'] })
+    const { rerender } = render(<ChartView {...view} />)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Pie chart' }))
+    const settings = vi.mocked(view.onSettings).mock.calls[0][0]
+    rerender(<ChartView {...view} settings={settings} />)
+
+    expect(settings).toMatchObject({ type: 'pie', limit: 10, other: true })
+    expect(screen.getByRole('img')).toHaveAccessibleName(
+      'Pie chart. Sum of amount for each country. 3 rows in 2 slices. The Grid view has the values.',
+    )
+  })
+
+  test('a box plot and parallel coordinates draw a chart', () => {
+    const { rerender } = render(
+      <ChartView
+        {...view3({ type: 'boxplot', x: 'country', y: ['amount'] })}
+      />,
+    )
+    expect(screen.getByRole('img')).toHaveAttribute('data-points', '2')
+
+    rerender(
+      <ChartView {...view3({ type: 'parallel', y: ['amount', 'tax'] })} />,
+    )
+
+    expect(screen.getByRole('img')).toHaveAttribute('data-points', '3')
+    expect(screen.getByText('amount and tax of each row.')).toBeInTheDocument()
+  })
+
+  test('a bubble chart has a list for the size column', async () => {
+    const view = view3({ type: 'bubble', x: 'amount', y: ['tax'] })
+    render(<ChartView {...view} />)
+    expect(
+      screen.getByText('Select the column for the size of the bubbles.'),
+    ).toBeInTheDocument()
+
+    await userEvent.click(picked('Size', 'amount'))
+
+    expect(view.onSettings).toHaveBeenCalledWith({
+      type: 'bubble',
+      x: 'amount',
+      y: ['tax'],
+      size: 'amount',
+    })
+  })
+
+  test('the axes of parallel coordinates have no aggregate', () => {
+    render(<ChartView {...view3({ type: 'parallel', y: ['amount', 'tax'] })} />)
+
+    expect(screen.queryByLabelText(/^Aggregate of/)).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Remove amount from "Axes"' }),
+    ).toBeInTheDocument()
+  })
+
+  test('links in a circle give a note in place of a Sankey diagram', () => {
+    render(
+      <ChartView
+        {...props({
+          columns: [column('a', 'text'), column('b', 'text')],
+          rows: [
+            ['x', 'y'],
+            ['y', 'x'],
+          ],
+          totalRows: 2,
+          settings: {
+            type: 'sankey',
+            x: 'a',
+            y: [],
+            countRows: true,
+            series: 'b',
+          },
+        })}
+      />,
+    )
+
+    expect(
+      screen.getByText(
+        'The links go in a circle. A Sankey diagram can show only links that go in one direction.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
 })

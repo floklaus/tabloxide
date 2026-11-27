@@ -104,13 +104,13 @@
 }
 
 .chart__types {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 0.25rem;
 }
 
 .chart__type {
   display: flex;
-  flex: 1;
   align-items: center;
   justify-content: center;
   height: 2rem;

@@ -30,6 +30,13 @@ export function proposeCharts(
   if (rowCount === 1 && columns.length === 1 && numbers.length === 1) {
     charts.push({ type: 'value', y: numbers })
   }
+  // Prices of each day have columns with these names.
+  const candle = ['open', 'high', 'low', 'close'].map(
+    (wanted) => numbers.find((name) => name.toLowerCase() === wanted) ?? '',
+  )
+  if (temporal.length > 0 && candle.every((name) => name !== '')) {
+    charts.push({ type: 'candlestick', x: temporal[0], y: candle })
+  }
   if (temporal.length > 0 && numbers.length > 0) {
     // One text column divides the rows into series, for example one line for each sensor.
     const hasSeries = texts.length === 1 && numbers.length === 1
@@ -47,12 +54,37 @@ export function proposeCharts(
   if (numbers.length > 1) {
     charts.push({ type: 'scatter', x: numbers[0], y: [numbers[1]] })
   }
+  if (texts.length > 1 && numbers.length > 0) {
+    charts.push({
+      type: 'heatmap',
+      x: texts[0],
+      y: [numbers[0]],
+      series: texts[1],
+    })
+  }
+  if (numbers.length > 2) {
+    charts.push({
+      type: 'bubble',
+      x: numbers[0],
+      y: [numbers[1]],
+      size: numbers[2],
+    })
+  }
   if (numbers.length > 0) {
     charts.push({ type: 'histogram', x: numbers[0], y: [] })
   }
   // A chart can count the rows of each category, also without a number column.
   for (const text of numbers.length === 0 ? texts : texts.slice(0, 1)) {
     charts.push({ type: 'bar', x: text, y: [], countRows: true })
+  }
+  if (texts.length > 1 && numbers.length === 0) {
+    charts.push({
+      type: 'heatmap',
+      x: texts[0],
+      y: [],
+      countRows: true,
+      series: texts[1],
+    })
   }
   if (temporal.length > 0 && numbers.length === 0) {
     charts.push({
@@ -81,6 +113,18 @@ const SHORT_NAMES: Record<ChartSettings['type'], string> = {
   scatter: 'Scatter',
   histogram: 'Histogram',
   value: 'Single value',
+  bubble: 'Bubble',
+  boxplot: 'Box plot',
+  heatmap: 'Heat map',
+  calendar: 'Calendar',
+  pie: 'Pie',
+  funnel: 'Funnel',
+  treemap: 'Tree map',
+  sunburst: 'Sunburst',
+  radar: 'Radar',
+  parallel: 'Parallel coordinates',
+  sankey: 'Sankey',
+  candlestick: 'Candlestick',
 }
 
 /** The short name of a proposed chart, for example "Line: amount by day, for each kind". */
@@ -89,6 +133,13 @@ export function suggestionLabel(chart: ChartSettings): string {
   const y = chart.countRows ? 'number of rows' : chart.y.join(', ')
   if (chart.type === 'histogram') return `${name} of ${chart.x}`
   if (chart.type === 'value') return `${name}: ${y}`
+  if (chart.type === 'candlestick') return `${name} by ${chart.x}`
+  if (chart.type === 'heatmap') {
+    return `${name}: ${y} by ${chart.x} and ${chart.series}`
+  }
+  if (chart.type === 'bubble') {
+    return `${name}: ${y} by ${chart.x}, size from ${chart.size}`
+  }
   const x =
     chart.timeUnit === undefined ? chart.x : `${chart.timeUnit} of ${chart.x}`
   const series = chart.series === undefined ? '' : `, for each ${chart.series}`
