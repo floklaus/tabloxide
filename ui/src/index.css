@@ -3702,3 +3702,68 @@ body {
   background: var(--view-selected);
   color: var(--view-selected-text);
 }
+
+/* ---------- Chart colours ---------- */
+
+/*
+ * The colours of the series of a chart, in a fixed sequence. The sequence keeps
+ * adjacent colours different for people with a colour vision deficiency. Do not
+ * change one colour or the sequence without a new check of all pairs.
+ * `theme/contrast.test.ts` checks the contrast to the background.
+ */
+:root {
+  --chart-1: #257de0;
+  --chart-2: #f47230;
+  --chart-3: #00b894;
+  --chart-4: #f2a600;
+  --chart-5: #ee7fac;
+  --chart-6: #008a17;
+  --chart-7: #6a4ce2;
+  --chart-8: #ec4647;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --chart-1: #338ced;
+    --chart-2: #e76624;
+    --chart-3: #00a888;
+    --chart-4: #d28e05;
+    --chart-5: #e24d8b;
+    --chart-6: #0aac23;
+    --chart-7: #9887ef;
+    --chart-8: #eb6263;
+  }
+}
+
+:root[data-theme='dark'] {
+  --chart-1: #338ced;
+  --chart-2: #e76624;
+  --chart-3: #00a888;
+  --chart-4: #d28e05;
+  --chart-5: #e24d8b;
+  --chart-6: #0aac23;
+  --chart-7: #9887ef;
+  --chart-8: #eb6263;
+}
+
+:root[data-theme='neon'] {
+  --chart-1: #338ced;
+  --chart-2: #e76624;
+  --chart-3: #00a888;
+  --chart-4: #d28e05;
+  --chart-5: #e24d8b;
+  --chart-6: #0aac23;
+  --chart-7: #9887ef;
+  --chart-8: #eb6263;
+}
+
+:root[data-theme='high-contrast'] {
+  --chart-1: #338ced;
+  --chart-2: #e76624;
+  --chart-3: #00a888;
+  --chart-4: #d28e05;
+  --chart-5: #e24d8b;
+  --chart-6: #0aac23;
+  --chart-7: #9887ef;
+  --chart-8: #eb6263;
+}

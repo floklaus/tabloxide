@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { AiAction } from '../assistant/AiAction'
 import type { ActionRequest } from '../assistant/assistantStore'
 import { GitConsole } from '../git/GitConsole'
@@ -12,8 +12,8 @@ import {
 import type { QueryError, StatementReport } from '../query/queryStore'
 import type { Location } from '../bindings'
 import { sqlTabForTools } from '../tabs/tabsStore'
+import { ViewHost } from '../views/ViewHost'
 import { AskAboutRows } from './AskAboutRows'
-import { ResultGrid } from './ResultGrid'
 import { useResultsViewStore, type ResultsView } from './resultsViewStore'
 
 const PREVIEW_LENGTH = 48
@@ -269,6 +269,8 @@ function StatementView(props: { statement: StatementReport; index: number }) {
   const fetchMore = useQuery((state) => state.fetchMore)
   const stopFetch = useQuery((state) => state.stopFetch)
   const exportCsv = useQuery((state) => state.exportCsv)
+  // A view asks for rows in an effect. The function must stay the same.
+  const needMore = useCallback(() => void fetchMore(), [fetchMore])
   const { outcome } = statement
 
   if (outcome.type === 'failed') {
@@ -304,12 +306,15 @@ function StatementView(props: { statement: StatementReport; index: number }) {
       {fetchError && isLast(index) && (
         <ErrorMessage error={fetchError} location={null} />
       )}
-      <ResultGrid
-        key={`${index}-${statement.range.from}`}
+      <ViewHost
+        statementFrom={statement.range.from}
+        runIndex={index}
         columns={outcome.columns}
         rows={outcome.rows}
         hasMore={isOpen}
-        onNeedMore={() => void fetchMore()}
+        onNeedMore={needMore}
+        isComplete={outcome.is_complete}
+        totalRows={outcome.total_rows}
       />
       <Messages messages={statement.messages} />
       <div className="results__bar results__bar--footer">

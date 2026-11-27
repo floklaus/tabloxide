@@ -6,6 +6,7 @@ import './assistant/assistantSession.css'
 import './plan/plan.css'
 import './shell/menu/menu.css'
 import './view/view.css'
+import './views/views.css'
 import { applyTheme } from './theme/theme'
 import { useThemeStore } from './theme/themeStore'
 

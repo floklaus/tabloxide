@@ -20,7 +20,7 @@ function tokensOf(selector: string): Tokens {
   for (const [, found, body] of css.matchAll(/(:root[^{]*)\{([^}]*)\}/g)) {
     if (found.trim() !== selector) continue
     for (const [, name, value] of body.matchAll(
-      /--([a-z-]+):\s*(#[0-9a-f]{6});/gi,
+      /--([a-z0-9-]+):\s*(#[0-9a-f]{6});/gi,
     )) {
       tokens[name] = value
     }
@@ -161,6 +161,36 @@ describe.each(themes)('colour contrast of the %s theme', (_name, tokens) => {
       )
     },
   )
+})
+
+/** Minimum contrast of a mark of a chart to the background (success criterion 1.4.11). */
+const MARK_RATIO = 3
+/**
+ * The light theme has four series colours below the minimum, because no colour
+ * set has eight different light colours with more contrast. The Grid view gives
+ * the values of each chart as text, and a series also has its own mark.
+ */
+const LIGHT_MARK_RATIO = 2
+const CHART_TOKENS = Array.from(
+  { length: 8 },
+  (_, index) => `chart-${index + 1}`,
+)
+
+describe.each(themes)('chart colours of the %s theme', (name, tokens) => {
+  test.each(CHART_TOKENS)('--%s is visible on the background', (token) => {
+    expect(tokens[token], `the token --${token}`).toBeDefined()
+    const minimum = name === 'light' ? LIGHT_MARK_RATIO : MARK_RATIO
+
+    expect(
+      contrast(toRgb(tokens[token]), toRgb(tokens['color-bg'])),
+    ).toBeGreaterThanOrEqual(minimum)
+  })
+
+  test('each series has a different colour', () => {
+    const colours = CHART_TOKENS.map((token) => tokens[token])
+
+    expect(new Set(colours).size).toBe(CHART_TOKENS.length)
+  })
 })
 
 test('the dark theme of the system setting has the colours of the dark theme', () => {
