@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Chart view: states and entry from the grid</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit}
+a{color:#2563eb}a:hover{color:#1d4ed8}
+</style>
+</helmet>
+<div style="width: 1200px; height: 900px; padding: 16px; background: #eceef2; color: #1b1f27; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.4; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-content: start">
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<p style="margin: 0; color: #5b6472; font-size: 12px; font-weight: 600">1. No number column: the suggestions count rows</p>
+<section aria-label="Results without a number column" style="height: 330px; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 8px">
+<div role="group" aria-label="View of the result" style="display: flex; gap: 4px">
+<button type="button" aria-pressed="false" style="height: 28px; padding: 0 12px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px">Grid</button>
+<button type="button" aria-pressed="true" style="height: 28px; padding: 0 12px; border: 1px solid #b45309; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px; font-weight: 600">Chart</button>
+</div>
+<span style="flex-grow: 1"></span>
+<button type="button" aria-pressed="false" style="height: 28px; padding: 0 10px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6" stroke="#1b1f27" stroke-width="2" fill="none" stroke-linecap="round"></path></svg>Settings</button>
+</div>
+<div role="group" aria-label="Suggested charts" style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px">
+<span style="color: #5b6472; font-size: 12px; font-weight: 600">Suggested charts</span>
+<button type="button" aria-pressed="true" style="height: 30px; padding: 0 10px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid #b45309; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px; font-weight: 600"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M5 20V10M12 20V5M19 20v-7" stroke="#1b1f27" stroke-width="3" fill="none"></path></svg>Bar: number of rows by country</button>
+<button type="button" aria-pressed="false" style="height: 30px; padding: 0 10px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path d="M5 20V10M12 20V5M19 20v-7" stroke="#1b1f27" stroke-width="3" fill="none"></path></svg>Bar: number of rows by city</button>
+</div>
+<p style="margin: 0; font-size: 13px"><strong style="font-weight: 600">Number of rows for each country, the first 10 and "Other".</strong> <span style="color: #5b6472">599 rows in 11 bars.</span></p>
+<div style="flex-grow: 1; min-height: 0; display: flex; flex-direction: column; gap: 4px">
+<svg role="img" aria-label="Bar chart. Horizontal axis: country. Vertical axis: number of rows. 1 series, 11 bars. The Grid view has the values." width="100%" height="100%" viewBox="0 0 560 150" preserveAspectRatio="none" style="flex-grow: 1; min-height: 0"><path d="M0 0.5H560M0 50H560M0 100H560" stroke="#e1e4ea" stroke-width="1" fill="none"></path><path d="M0 149.5H560" stroke="#d5d9e0" stroke-width="1" fill="none"></path><path d="M14 150V30h24v120zM64 150V38h24v112zM114 150V72h24v78zM164 150V78h24v72zM214 150V84h24v66zM264 150V90h24v60zM314 150V96h24v54zM364 150V100h24v50zM414 150V104h24v46zM464 150V108h24v42z" fill="#257de0"></path><path d="M514 150V10h24v140z" fill="#7f8898"></path></svg>
+<div aria-hidden="true" style="display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); color: #5b6472; font-size: 10px; text-align: center"><span>India</span><span>China</span><span>USA</span><span>Japan</span><span>Mexico</span><span>Brazil</span><span>Russia</span><span>Turkey</span><span>Taiwan</span><span>Nigeria</span><span>Other</span></div>
+</div>
+</section>
+<p style="margin: 0; color: #5b6472; font-size: 12px">Now, a result with only text columns gives an empty chart. With "Number of rows", each text column gives a suggestion. The bar "Other" has a neutral colour.</p>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<p style="margin: 0; color: #5b6472; font-size: 12px; font-weight: 600">2. No suggestion: one text and one button</p>
+<section aria-label="Results without a suggestion" style="height: 330px; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 8px">
+<div role="group" aria-label="View of the result" style="display: flex; gap: 4px">
+<button type="button" aria-pressed="false" style="height: 28px; padding: 0 12px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px">Grid</button>
+<button type="button" aria-pressed="true" style="height: 28px; padding: 0 12px; border: 1px solid #b45309; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px; font-weight: 600">Chart</button>
+</div>
+</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center">
+<p style="margin: 0; max-width: 380px; font-size: 13px">Tabloxide has no suggestion for these columns. Select the chart type and the columns.</p>
+<button type="button" style="height: 28px; padding: 0 12px; border: 1px solid #2563eb; border-radius: 6px; background: #2563eb; color: #ffffff; font-size: 12px; font-weight: 600">Open the chart settings</button>
+</div>
+</section>
+<p style="margin: 0; color: #5b6472; font-size: 12px">This follows the empty state of the view standards: one sentence, and one button that corrects the state. The example is a result with only JSON columns.</p>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<p style="margin: 0; color: #5b6472; font-size: 12px; font-weight: 600">3. Narrow results pane: the settings are a section above the chart</p>
+<section aria-label="Narrow results pane" style="width: 400px; height: 400px; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 8px">
+<div role="group" aria-label="View of the result" style="display: flex; gap: 4px">
+<button type="button" aria-pressed="false" style="height: 28px; padding: 0 12px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px">Grid</button>
+<button type="button" aria-pressed="true" style="height: 28px; padding: 0 12px; border: 1px solid #b45309; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px; font-weight: 600">Chart</button>
+</div>
+<span style="flex-grow: 1"></span>
+<button type="button" aria-pressed="true" aria-label="Settings" title="Show or hide the chart settings" style="width: 32px; height: 28px; display: flex; align-items: center; justify-content: center; border: 1px solid #b45309; border-radius: 6px; background: #ffffff"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6" stroke="#1b1f27" stroke-width="2" fill="none" stroke-linecap="round"></path></svg></button>
+</div>
+<label style="display: flex; align-items: center; gap: 8px; color: #5b6472; font-size: 12px; font-weight: 600">Suggested chart
+<select style="flex-grow: 1; min-width: 0; height: 28px; padding: 0 8px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px; font-weight: 400"><option>Line: amount by month, for each staff</option><option>Line: amount by month</option><option>Bar: amount by staff</option><option>Histogram of amount</option></select></label>
+<div role="group" aria-label="Chart settings" style="padding: 10px; border: 1px solid #e1e4ea; border-radius: 8px; background: #fafbfc; display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 6px 8px; align-items: center; font-size: 12px">
+<span style="color: #5b6472">Chart type</span>
+<select aria-label="Chart type" style="height: 28px; padding: 0 8px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px"><option>Line chart</option></select>
+<span style="color: #5b6472">Horizontal</span>
+<span style="display: flex; gap: 4px"><select aria-label="Horizontal axis" style="flex-grow: 1; min-width: 0; height: 28px; padding: 0 8px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px"><option>payment_date</option></select><select aria-label="Group by" style="width: 84px; height: 28px; padding: 0 6px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px"><option>Month</option></select></span>
+<span style="color: #5b6472">Vertical</span>
+<span style="display: flex; gap: 4px"><select aria-label="Vertical axis" style="flex-grow: 1; min-width: 0; height: 28px; padding: 0 8px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px"><option>amount</option></select><select aria-label="Aggregate of amount" style="width: 84px; height: 28px; padding: 0 6px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px"><option>Sum</option></select></span>
+<span style="color: #5b6472">Series</span>
+<select aria-label="Series" style="height: 28px; padding: 0 8px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px"><option>staff</option></select>
+</div>
+<svg role="img" aria-label="Line chart. Horizontal axis: payment_date by month. Vertical axis: sum of amount. 2 series, 24 points." width="100%" height="100%" viewBox="0 0 400 110" preserveAspectRatio="none" style="flex-grow: 1; min-height: 0"><path d="M0 0.5H400M0 55H400" stroke="#e1e4ea" stroke-width="1" fill="none"></path><path d="M0 109.5H400" stroke="#d5d9e0" stroke-width="1" fill="none"></path><path d="M0 74L36 66L73 55L109 59L145 44L182 40L218 48L255 33L291 37L327 26L364 31L400 22" stroke="#257de0" stroke-width="2" fill="none" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path><path d="M0 85L36 79L73 74L109 70L145 68L182 59L218 63L255 55L291 52L327 53L364 44L400 40" stroke="#f47230" stroke-width="2" fill="none" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path></svg>
+</section>
+<p style="margin: 0; color: #5b6472; font-size: 12px">Below a pane width of 640 px, the panel at the right has no space. The suggestions become a list, and the settings become a section with two columns. The chart type is a list with names.</p>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<p style="margin: 0; color: #5b6472; font-size: 12px; font-weight: 600">4. From the grid: chart the selected columns</p>
+<section aria-label="Grid with a column menu" style="height: 400px; background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 10px; position: relative">
+<div style="display: flex; align-items: center; gap: 8px">
+<div role="group" aria-label="View of the result" style="display: flex; gap: 4px">
+<button type="button" aria-pressed="true" style="height: 28px; padding: 0 12px; border: 1px solid #b45309; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px; font-weight: 600">Grid</button>
+<button type="button" aria-pressed="false" style="height: 28px; padding: 0 12px; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px">Chart</button>
+</div>
+<span style="color: #5b6472; font-size: 12px">2 columns selected</span>
+</div>
+<table style="width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums">
+<thead><tr>
+<th style="padding: 6px 12px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px; font-weight: 600; text-align: right">payment_id</th>
+<th style="padding: 6px 12px; border-bottom: 1px solid #d5d9e0; background: #dbeafe; color: #1b1f27; font-size: 12px; font-weight: 600; text-align: left">payment_date</th>
+<th style="padding: 6px 12px; border-bottom: 1px solid #d5d9e0; color: #5b6472; font-size: 12px; font-weight: 600; text-align: left">staff</th>
+<th style="padding: 6px 12px; border-bottom: 1px solid #d5d9e0; background: #dbeafe; color: #1b1f27; font-size: 12px; font-weight: 600; text-align: right">amount</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding: 6px 12px; border-bottom: 1px solid #e1e4ea; text-align: right">16050</td><td style="padding: 6px 12px; border-bottom: 1px solid #e1e4ea; background: #eff6ff">2026-01-24 21:40:19+00</td><td style="padding: 6px 12px; border-bottom: 1px solid #e1e4ea">Mike</td><td style="padding: 6px 12px; border-bottom: 1px solid #e1e4ea; background: #eff6ff; text-align: right">1.99</td></tr>
+<tr><td style="padding: 6px 12px; border-bottom: 1px solid #e1e4ea; text-align: right">16051</td><td style="padding: 6px 12px; border-bottom: 1px solid #e1e4ea; background: #eff6ff">2026-01-25 15:16:50+00</td><td style="padding: 6px 12px; border-bottom: 1px solid #e1e4ea">Jon</td><td style="padding: 6px 12px; border-bottom: 1px solid #e1e4ea; background: #eff6ff; text-align: right">0.99</td></tr>
+<tr><td style="padding: 6px 12px; border-bottom: 1px solid #e1e4ea; text-align: right">16052</td><td style="padding: 6px 12px; border-bottom: 1px solid #e1e4ea; background: #eff6ff">2026-01-28 21:44:14+00</td><td style="padding: 6px 12px; border-bottom: 1px solid #e1e4ea">Jon</td><td style="padding: 6px 12px; border-bottom: 1px solid #e1e4ea; background: #eff6ff; text-align: right">6.99</td></tr>
+<tr><td style="padding: 6px 12px; border-bottom: 1px solid #e1e4ea; text-align: right">16053</td><td style="padding: 6px 12px; border-bottom: 1px solid #e1e4ea; background: #eff6ff">2026-01-29 00:58:02+00</td><td style="padding: 6px 12px; border-bottom: 1px solid #e1e4ea">Mike</td><td style="padding: 6px 12px; border-bottom: 1px solid #e1e4ea; background: #eff6ff; text-align: right">0.99</td></tr>
+</tbody>
+</table>
+<ul role="menu" aria-label="Column actions" style="position: absolute; left: 330px; top: 84px; width: 230px; margin: 0; padding: 4px; list-style: none; border: 1px solid #e1e4ea; border-radius: 8px; background: #ffffff; box-shadow: 0 12px 32px rgba(27, 31, 39, 0.18); font-size: 13px; display: flex; flex-direction: column">
+<li role="none"><button type="button" role="menuitem" style="width: 100%; height: 28px; padding: 0 8px; display: flex; align-items: center; gap: 8px; border: 0; border-radius: 4px; background: #f1f3f6; color: #1b1f27; font-size: 13px; font-weight: 600; text-align: left"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 8-9" stroke="#1b1f27" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>Chart these 2 columns</button></li>
+<li role="none"><button type="button" role="menuitem" style="width: 100%; height: 28px; padding: 0 8px 0 30px; display: flex; align-items: center; border: 0; border-radius: 4px; background: none; color: #1b1f27; font-size: 13px; text-align: left">Add amount to the chart</button></li>
+<li role="separator" style="height: 1px; margin: 4px 0; background: #e1e4ea"></li>
+<li role="none"><button type="button" role="menuitem" style="width: 100%; height: 28px; padding: 0 8px 0 30px; display: flex; align-items: center; border: 0; border-radius: 4px; background: none; color: #1b1f27; font-size: 13px; text-align: left">Sort ascending</button></li>
+<li role="none"><button type="button" role="menuitem" style="width: 100%; height: 28px; padding: 0 8px 0 30px; display: flex; align-items: center; border: 0; border-radius: 4px; background: none; color: #1b1f27; font-size: 13px; text-align: left">Sort descending</button></li>
+<li role="none"><button type="button" role="menuitem" style="width: 100%; height: 28px; padding: 0 8px 0 30px; display: flex; align-items: center; border: 0; border-radius: 4px; background: none; color: #1b1f27; font-size: 13px; text-align: left">Copy the column</button></li>
+</ul>
+</section>
+<p style="margin: 0; color: #5b6472; font-size: 12px">The menu of a column header starts a chart with the selected columns. The fixed rules select the chart type. The grid has no column selection and no header menu now: the two are new.</p>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Chart settings: the parts of the input</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit}
+a{color:#2563eb}a:hover{color:#1d4ed8}
+</style>
+</helmet>
+<div style="width: 1200px; height: 920px; padding: 16px; background: #eceef2; color: #1b1f27; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.4; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-content: start">
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<p style="margin: 0; color: #5b6472; font-size: 12px; font-weight: 600">1. Column menu: the type of each column, and the number of rows</p>
+<section aria-label="Column menu" style="background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 6px">
+<span id="ci-y" style="color: #5b6472; font-size: 12px; font-weight: 600">Vertical axis</span>
+<button type="button" aria-haspopup="listbox" aria-expanded="true" aria-labelledby="ci-y ci-y-value" style="width: 300px; height: 32px; padding: 0 8px; display: flex; align-items: center; gap: 8px; border: 2px solid #2563eb; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 13px; text-align: left"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M9 4L7 20M17 4l-2 16M4 9h17M3 15h17" stroke="#5b6472" stroke-width="2" fill="none" stroke-linecap="round"></path></svg><span id="ci-y-value" style="flex-grow: 1">amount</span><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6" stroke="#5b6472" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<ul role="listbox" aria-labelledby="ci-y" style="width: 300px; margin: 0; padding: 4px; list-style: none; border: 1px solid #e1e4ea; border-radius: 8px; background: #ffffff; box-shadow: 0 12px 32px rgba(27, 31, 39, 0.18); font-size: 13px; display: flex; flex-direction: column">
+<li role="option" aria-selected="false" style="height: 28px; padding: 0 8px; display: flex; align-items: center; gap: 8px; border-radius: 4px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke="#5b6472" stroke-width="2" fill="none" stroke-linecap="round"></path></svg><span style="flex-grow: 1">Number of rows</span><span style="color: #5b6472; font-size: 12px">no column</span></li>
+<li role="separator" style="height: 1px; margin: 4px 0; background: #e1e4ea"></li>
+<li role="option" aria-selected="true" style="height: 28px; padding: 0 8px; display: flex; align-items: center; gap: 8px; border-radius: 4px; background: #f1f3f6; font-weight: 600"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M9 4L7 20M17 4l-2 16M4 9h17M3 15h17" stroke="#5b6472" stroke-width="2" fill="none" stroke-linecap="round"></path></svg><span style="flex-grow: 1">amount</span><span style="color: #5b6472; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 12px; font-weight: 400">numeric</span></li>
+<li role="option" aria-selected="false" style="height: 28px; padding: 0 8px; display: flex; align-items: center; gap: 8px; border-radius: 4px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M9 4L7 20M17 4l-2 16M4 9h17M3 15h17" stroke="#5b6472" stroke-width="2" fill="none" stroke-linecap="round"></path></svg><span style="flex-grow: 1">customer_id</span><span style="color: #5b6472; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 12px">int4</span></li>
+<li role="option" aria-selected="false" style="height: 28px; padding: 0 8px; display: flex; align-items: center; gap: 8px; border-radius: 4px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" stroke="#5b6472" stroke-width="2" fill="none"></circle><path d="M12 7.5V12l3 2" stroke="#5b6472" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg><span style="flex-grow: 1">payment_date</span><span style="color: #5b6472; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 12px">timestamptz</span></li>
+<li role="option" aria-selected="false" style="height: 28px; padding: 0 8px; display: flex; align-items: center; gap: 8px; border-radius: 4px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M5 6h14M12 6v13" stroke="#5b6472" stroke-width="2" fill="none" stroke-linecap="round"></path></svg><span style="flex-grow: 1">staff</span><span style="color: #5b6472; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace; font-size: 12px">text</span></li>
+</ul>
+</section>
+<p style="margin: 0; color: #5b6472; font-size: 12px">The icon shows how the chart uses the column: number, date, or text. The type name of the database is at the right. "Number of rows" needs no column.</p>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<p style="margin: 0; color: #5b6472; font-size: 12px; font-weight: 600">2. Aggregate: the chart sets it when values repeat</p>
+<section aria-label="Aggregate" style="background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px">
+<span style="color: #5b6472; font-size: 12px; font-weight: 600">Vertical axis</span>
+<div style="display: flex; align-items: flex-start; gap: 4px">
+<button type="button" aria-haspopup="listbox" aria-label="Vertical axis: amount" style="width: 190px; height: 32px; padding: 0 8px; display: flex; align-items: center; gap: 8px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 13px; text-align: left"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M9 4L7 20M17 4l-2 16M4 9h17M3 15h17" stroke="#5b6472" stroke-width="2" fill="none" stroke-linecap="round"></path></svg><span style="flex-grow: 1">amount</span><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="#5b6472" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<button type="button" aria-haspopup="listbox" aria-expanded="true" aria-label="Aggregate of amount: Sum" style="width: 120px; height: 32px; padding: 0 8px; display: flex; align-items: center; gap: 8px; border: 2px solid #2563eb; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px; text-align: left"><span style="flex-grow: 1">Sum</span><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6" stroke="#5b6472" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<ul role="listbox" aria-label="Aggregate" style="width: 120px; margin: 0; padding: 4px; list-style: none; border: 1px solid #e1e4ea; border-radius: 8px; background: #ffffff; box-shadow: 0 12px 32px rgba(27, 31, 39, 0.18); font-size: 12px; display: flex; flex-direction: column">
+<li role="option" aria-selected="false" style="height: 26px; padding: 0 8px; display: flex; align-items: center; border-radius: 4px">None</li>
+<li role="option" aria-selected="true" style="height: 26px; padding: 0 8px; display: flex; align-items: center; border-radius: 4px; background: #f1f3f6; font-weight: 600">Sum</li>
+<li role="option" aria-selected="false" style="height: 26px; padding: 0 8px; display: flex; align-items: center; border-radius: 4px">Mean</li>
+<li role="option" aria-selected="false" style="height: 26px; padding: 0 8px; display: flex; align-items: center; border-radius: 4px">Count</li>
+<li role="option" aria-selected="false" style="height: 26px; padding: 0 8px; display: flex; align-items: center; border-radius: 4px">Minimum</li>
+<li role="option" aria-selected="false" style="height: 26px; padding: 0 8px; display: flex; align-items: center; border-radius: 4px">Maximum</li>
+</ul>
+</div>
+</div>
+<p role="status" style="margin: 0; padding: 8px 10px; border: 1px solid #e1e4ea; border-radius: 6px; background: #f4f5f7; font-size: 12px">The horizontal axis has values that repeat. The chart shows the sum for each value. <button type="button" style="padding: 0; border: 0; background: none; color: #2563eb; font-size: 12px; text-decoration: underline">Show each row</button></p>
+</section>
+<p style="margin: 0; color: #5b6472; font-size: 12px">Each column of the vertical axis has its own aggregate. The message shows one time, when the chart sets the aggregate.</p>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<p style="margin: 0; color: #5b6472; font-size: 12px; font-weight: 600">3. Horizontal axis: time unit for a date, sort and limit for categories</p>
+<section aria-label="Horizontal axis" style="background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; padding: 12px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="color: #5b6472; font-size: 12px; font-weight: 600">Date column</span>
+<button type="button" aria-haspopup="listbox" aria-label="Horizontal axis: payment_date" style="height: 32px; padding: 0 8px; display: flex; align-items: center; gap: 8px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 13px; text-align: left"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" stroke="#5b6472" stroke-width="2" fill="none"></circle><path d="M12 7.5V12l3 2" stroke="#5b6472" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg><span style="flex-grow: 1">payment_date</span><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="#5b6472" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<label style="display: flex; align-items: center; gap: 8px; font-size: 12px"><span style="width: 56px; color: #5b6472">Group by</span>
+<select style="flex-grow: 1; height: 28px; padding: 0 8px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px"><option>Month</option><option>None</option><option>Hour</option><option>Day</option><option>Week</option><option>Year</option></select></label>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="color: #5b6472; font-size: 12px; font-weight: 600">Text column</span>
+<button type="button" aria-haspopup="listbox" aria-label="Horizontal axis: country" style="height: 32px; padding: 0 8px; display: flex; align-items: center; gap: 8px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 13px; text-align: left"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M5 6h14M12 6v13" stroke="#5b6472" stroke-width="2" fill="none" stroke-linecap="round"></path></svg><span style="flex-grow: 1">country</span><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="#5b6472" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<label style="display: flex; align-items: center; gap: 8px; font-size: 12px"><span style="width: 56px; color: #5b6472">Sort</span>
+<select style="flex-grow: 1; min-width: 0; height: 28px; padding: 0 8px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px"><option>By value, largest first</option><option>As in the result</option><option>By name</option><option>By value, smallest first</option></select></label>
+<label style="display: flex; align-items: center; gap: 8px; font-size: 12px"><span style="width: 56px; color: #5b6472">Show</span>
+<select style="flex-grow: 1; min-width: 0; height: 28px; padding: 0 8px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px"><option>The first 10 and "Other"</option><option>All</option><option>The first 10</option></select></label>
+</div>
+</section>
+<p style="margin: 0; color: #5b6472; font-size: 12px">The controls below the column depend on its type. A number column has no control. The same limit applies to a series column, in place of the fixed limit of 8 series.</p>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<p style="margin: 0; color: #5b6472; font-size: 12px; font-weight: 600">4. Chart type: a type that cannot work gives the cause</p>
+<section aria-label="Chart type" style="background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 6px">
+<span id="ci-type" style="color: #5b6472; font-size: 12px; font-weight: 600">Chart type</span>
+<div role="group" aria-labelledby="ci-type" style="display: flex; gap: 4px">
+<button type="button" aria-pressed="false" aria-label="Line chart" style="width: 44px; height: 32px; display: flex; align-items: center; justify-content: center; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 8-9" stroke="#1b1f27" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-pressed="false" aria-label="Area chart" style="width: 44px; height: 32px; display: flex; align-items: center; justify-content: center; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"><path d="M3 20V15l5-5 4 3 8-8v15z" stroke="#1b1f27" stroke-width="1.75" fill="#d5d9e0" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-pressed="true" aria-label="Bar chart" style="width: 44px; height: 32px; display: flex; align-items: center; justify-content: center; border: 1px solid #b45309; border-radius: 6px; background: #ffffff"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"><path d="M5 20V10M12 20V5M19 20v-7" stroke="#1b1f27" stroke-width="3" fill="none"></path></svg></button>
+<button type="button" aria-disabled="true" aria-label="Scatter plot" aria-describedby="ci-why" style="width: 44px; height: 32px; display: flex; align-items: center; justify-content: center; border: 2px solid #2563eb; border-radius: 6px; background: #f4f5f7"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"><circle cx="6" cy="17" r="2" fill="#7f8898"></circle><circle cx="11" cy="11" r="2" fill="#7f8898"></circle><circle cx="16" cy="14" r="2" fill="#7f8898"></circle><circle cx="19" cy="6" r="2" fill="#7f8898"></circle></svg></button>
+<button type="button" aria-pressed="false" aria-label="Histogram" style="width: 44px; height: 32px; display: flex; align-items: center; justify-content: center; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"><path d="M4 20V14h4v6M8 20V6h4v14M12 20V10h4v10M16 20v-4h4v4M3 20h18" stroke="#1b1f27" stroke-width="1.75" fill="none" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-pressed="false" aria-label="Single value" style="width: 44px; height: 32px; display: flex; align-items: center; justify-content: center; border: 1px solid #d5d9e0; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px; font-weight: 700">12</button>
+</div>
+<p id="ci-why" role="tooltip" style="align-self: flex-start; margin: 2px 0 0 120px; padding: 6px 10px; border-radius: 6px; background: #1b1f27; color: #ffffff; font-size: 12px">Scatter plot. It needs two number columns. This result has one.</p>
+</section>
+<p style="margin: 0; color: #5b6472; font-size: 12px">A type that cannot work keeps the focus and has no action. The focus or the pointer shows the cause. A change of the type keeps the columns that the new type can use.</p>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<p style="margin: 0; color: #5b6472; font-size: 12px; font-weight: 600">5. A warning at its cause</p>
+<section aria-label="Warning at a column" style="background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px">
+<span style="color: #5b6472; font-size: 12px; font-weight: 600">Vertical axis</span>
+<div style="display: flex; align-items: center; gap: 4px">
+<button type="button" aria-haspopup="listbox" aria-label="Vertical axis: price, with a warning" aria-describedby="ci-warn" style="width: 190px; height: 32px; padding: 0 8px; display: flex; align-items: center; gap: 8px; border: 1px solid #b45309; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 13px; text-align: left"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M9 4L7 20M17 4l-2 16M4 9h17M3 15h17" stroke="#5b6472" stroke-width="2" fill="none" stroke-linecap="round"></path></svg><span style="flex-grow: 1">price</span><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M12 4L2.5 20h19zM12 10v5M12 17.5v.5" stroke="#b45309" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<select aria-label="Aggregate of price" style="width: 120px; height: 32px; padding: 0 6px; border: 1px solid #7f8898; border-radius: 6px; background: #ffffff; color: #1b1f27; font-size: 12px"><option>None</option><option>Sum</option></select>
+</div>
+<p id="ci-warn" style="margin: 0; display: flex; align-items: flex-start; gap: 8px; font-size: 12px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" style="flex-shrink: 0; margin-top: 1px"><path d="M12 4L2.5 20h19zM12 10v5M12 17.5v.5" stroke="#b45309" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg><span>20 cells of price are not numbers, for example <span style="font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace">$10</span>. The chart does not show them.</span></p>
+</section>
+<p style="margin: 0; color: #5b6472; font-size: 12px">A warning about one column is below that column, with a mark in the control. A note about the complete result stays above the chart, for example "Chart of the first 500 rows".</p>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<p style="margin: 0; color: #5b6472; font-size: 12px; font-weight: 600">6. The sentence above the chart</p>
+<section aria-label="Chart sentence" style="background: #ffffff; border: 1px solid #e1e4ea; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 10px">
+<p style="margin: 0; font-size: 13px"><strong style="font-weight: 600">Sum of amount for each month of payment_date, one line for each staff.</strong> <span style="color: #5b6472">51,061 rows in 24 points.</span></p>
+<p style="margin: 0; font-size: 13px"><strong style="font-weight: 600">Number of rows for each country, the first 10 and "Other".</strong> <span style="color: #5b6472">599 rows in 11 bars.</span></p>
+<p style="margin: 0; font-size: 13px"><strong style="font-weight: 600">weight against height, one mark for each row.</strong> <span style="color: #5b6472">1,000 rows in 1,000 points.</span></p>
+</section>
+<p style="margin: 0; color: #5b6472; font-size: 12px">One sentence says what the chart shows, with each automatic step: the aggregate, the time unit, and the limit. It is also the text for a screen reader.</p>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":920}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

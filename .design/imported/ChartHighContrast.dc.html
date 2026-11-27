@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Chart view in the High contrast theme</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit}
+a{color:#ffd400}a:hover{color:#ffffff}
+</style>
+</helmet>
+<div style="width: 1000px; height: 600px; padding: 16px; background: #000000; color: #ffffff; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.4; display: flex; flex-direction: column; gap: 8px">
+
+<section aria-label="Results" style="flex-grow: 1; min-height: 0; background: #000000; border: 1px solid #d4d4d4; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 10px">
+
+<div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px">
+<div role="group" aria-label="View of the result" style="display: flex; gap: 4px">
+<button type="button" aria-pressed="false" style="height: 28px; padding: 0 12px; border: 1px solid #d4d4d4; border-radius: 6px; background: #000000; color: #ffffff; font-size: 12px">Grid</button>
+<button type="button" aria-pressed="true" style="height: 28px; padding: 0 12px; border: 2px solid #ffd400; border-radius: 6px; background: #000000; color: #ffffff; font-size: 12px; font-weight: 600">Chart</button>
+</div>
+<span style="flex-grow: 1"></span>
+<button type="button" style="height: 28px; padding: 0 10px; border: 1px solid #d4d4d4; border-radius: 6px; background: #000000; color: #ffffff; font-size: 12px">Save image…</button>
+<button type="button" aria-pressed="true" style="height: 28px; padding: 0 10px; display: inline-flex; align-items: center; gap: 6px; border: 2px solid #ffd400; border-radius: 6px; background: #000000; color: #ffffff; font-size: 12px; font-weight: 600"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round"></path></svg>Settings</button>
+</div>
+
+<div style="flex-grow: 1; min-height: 0; display: flex; gap: 12px">
+
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+<p style="margin: 0; font-size: 13px"><strong style="font-weight: 600">Sum of amount for each month of payment_date, one line for each staff.</strong> <span style="color: #d4d4d4">51,061 rows in 24 points.</span></p>
+<div style="display: flex; align-items: center; gap: 16px; font-size: 12px">
+<span style="display: inline-flex; align-items: center; gap: 6px"><svg aria-hidden="true" width="34" height="10" viewBox="0 0 34 10"><path d="M0 5H34" stroke="#338ced" stroke-width="2" fill="none"></path><circle cx="17" cy="5" r="4" fill="#338ced"></circle></svg>Mike</span>
+<span style="display: inline-flex; align-items: center; gap: 6px"><svg aria-hidden="true" width="34" height="10" viewBox="0 0 34 10"><path d="M0 5H34" stroke="#e76624" stroke-width="2" stroke-dasharray="6 3" fill="none"></path><path d="M13 1h8v8h-8z" fill="#e76624"></path></svg>Jon</span>
+</div>
+<div style="flex-grow: 1; min-height: 0; display: flex; gap: 8px">
+<div aria-hidden="true" style="display: flex; flex-direction: column; justify-content: space-between; padding-bottom: 22px; color: #d4d4d4; font-size: 11px; text-align: right; font-variant-numeric: tabular-nums"><span>8,000</span><span>6,000</span><span>4,000</span><span>2,000</span><span>0</span></div>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+<svg role="img" aria-label="Line chart. Horizontal axis: payment_date by month. Vertical axis: sum of amount. 2 series, 24 points. The Grid view has the values." width="100%" height="100%" viewBox="0 0 800 300" preserveAspectRatio="none" style="flex-grow: 1; min-height: 0"><path d="M0 0.5H800M0 75H800M0 150H800M0 225H800" stroke="#5c5c5c" stroke-width="1" fill="none"></path><path d="M0 299.5H800" stroke="#d4d4d4" stroke-width="1" fill="none"></path><path d="M0 200L73 180L145 150L218 160L291 120L364 110L436 130L509 90L582 100L655 70L727 85L800 60" stroke="#338ced" stroke-width="2" fill="none" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path><path d="M0 230L73 215L145 200L218 190L291 185L364 160L436 170L509 150L582 140L655 145L727 120L800 110" stroke="#e76624" stroke-width="2" stroke-dasharray="8 4" fill="none" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path></svg>
+<div aria-hidden="true" style="display: flex; justify-content: space-between; color: #d4d4d4; font-size: 11px"><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span></div>
+</div>
+</div>
+</div>
+
+<aside aria-label="Chart settings" style="width: 290px; flex-shrink: 0; padding-left: 12px; border-left: 1px solid #d4d4d4; display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-size: 13px; font-weight: 600">Chart settings</h2>
+
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span id="hc-type" style="color: #d4d4d4; font-size: 12px; font-weight: 600">Chart type</span>
+<div role="group" aria-labelledby="hc-type" style="display: flex; gap: 4px">
+<button type="button" aria-pressed="true" aria-label="Line chart" style="width: 42px; height: 32px; display: flex; align-items: center; justify-content: center; border: 2px solid #ffd400; border-radius: 6px; background: #000000"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 8-9" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-pressed="false" aria-label="Area chart" style="width: 42px; height: 32px; display: flex; align-items: center; justify-content: center; border: 1px solid #d4d4d4; border-radius: 6px; background: #000000"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"><path d="M3 20V15l5-5 4 3 8-8v15z" stroke="#ffffff" stroke-width="1.75" fill="#5c5c5c" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-pressed="false" aria-label="Bar chart" style="width: 42px; height: 32px; display: flex; align-items: center; justify-content: center; border: 1px solid #d4d4d4; border-radius: 6px; background: #000000"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"><path d="M5 20V10M12 20V5M19 20v-7" stroke="#ffffff" stroke-width="3" fill="none"></path></svg></button>
+<button type="button" aria-pressed="false" aria-label="Scatter plot" style="width: 42px; height: 32px; display: flex; align-items: center; justify-content: center; border: 1px solid #d4d4d4; border-radius: 6px; background: #000000"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"><circle cx="6" cy="17" r="2" fill="#ffffff"></circle><circle cx="11" cy="11" r="2" fill="#ffffff"></circle><circle cx="16" cy="14" r="2" fill="#ffffff"></circle><circle cx="19" cy="6" r="2" fill="#ffffff"></circle></svg></button>
+<button type="button" aria-pressed="false" aria-label="Histogram" style="width: 42px; height: 32px; display: flex; align-items: center; justify-content: center; border: 1px solid #d4d4d4; border-radius: 6px; background: #000000"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"><path d="M4 20V14h4v6M8 20V6h4v14M12 20V10h4v10M16 20v-4h4v4M3 20h18" stroke="#ffffff" stroke-width="1.75" fill="none" stroke-linejoin="round"></path></svg></button>
+<button type="button" aria-pressed="false" aria-label="Single value" style="width: 42px; height: 32px; display: flex; align-items: center; justify-content: center; border: 1px solid #d4d4d4; border-radius: 6px; background: #000000; color: #ffffff; font-size: 12px; font-weight: 700">12</button>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="color: #d4d4d4; font-size: 12px; font-weight: 600">Horizontal axis</span>
+<button type="button" aria-haspopup="listbox" aria-label="Horizontal axis: payment_date" style="height: 32px; padding: 0 8px; display: flex; align-items: center; gap: 8px; border: 1px solid #d4d4d4; border-radius: 6px; background: #000000; color: #ffffff; font-size: 13px; text-align: left"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" stroke="#d4d4d4" stroke-width="2" fill="none"></circle><path d="M12 7.5V12l3 2" stroke="#d4d4d4" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg><span style="flex-grow: 1">payment_date</span><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="#d4d4d4" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<label style="display: flex; align-items: center; gap: 8px; font-size: 12px"><span style="width: 64px; color: #d4d4d4">Group by</span>
+<select style="flex-grow: 1; height: 28px; padding: 0 8px; border: 1px solid #d4d4d4; border-radius: 6px; background: #000000; color: #ffffff; font-size: 12px"><option>Month</option></select></label>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="color: #d4d4d4; font-size: 12px; font-weight: 600">Vertical axis</span>
+<div style="display: flex; align-items: center; gap: 4px">
+<button type="button" aria-haspopup="listbox" aria-label="Vertical axis: amount" style="flex-grow: 1; min-width: 0; height: 32px; padding: 0 8px; display: flex; align-items: center; gap: 8px; border: 1px solid #d4d4d4; border-radius: 6px; background: #000000; color: #ffffff; font-size: 13px; text-align: left"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M9 4L7 20M17 4l-2 16M4 9h17M3 15h17" stroke="#d4d4d4" stroke-width="2" fill="none" stroke-linecap="round"></path></svg><span style="flex-grow: 1">amount</span><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="#d4d4d4" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<select aria-label="Aggregate of amount" style="width: 84px; height: 32px; padding: 0 6px; border: 1px solid #d4d4d4; border-radius: 6px; background: #000000; color: #ffffff; font-size: 12px"><option>Sum</option></select>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="color: #d4d4d4; font-size: 12px; font-weight: 600">Series</span>
+<button type="button" aria-haspopup="listbox" aria-label="Series: staff" style="height: 32px; padding: 0 8px; display: flex; align-items: center; gap: 8px; border: 1px solid #d4d4d4; border-radius: 6px; background: #000000; color: #ffffff; font-size: 13px; text-align: left"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M5 6h14M12 6v13" stroke="#d4d4d4" stroke-width="2" fill="none" stroke-linecap="round"></path></svg><span style="flex-grow: 1">staff</span><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="#d4d4d4" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+</div>
+</aside>
+
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1000,"height":600}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

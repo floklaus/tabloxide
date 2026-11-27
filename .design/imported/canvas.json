@@ -394,6 +394,34 @@
       "w": 460,
       "h": 640,
       "title": "Execution plan: open questions"
+    },
+    "ChartView.dc.html": {
+      "x": 0,
+      "y": 18940,
+      "w": 1200,
+      "h": 800,
+      "title": "Chart view: suggestions, chart, settings panel"
+    },
+    "ChartInputs.dc.html": {
+      "x": 1280,
+      "y": 18940,
+      "w": 1200,
+      "h": 920,
+      "title": "Chart settings: the parts of the input"
+    },
+    "ChartStates.dc.html": {
+      "x": 2560,
+      "y": 18940,
+      "w": 1200,
+      "h": 900,
+      "title": "Chart view: no number column, no suggestion, narrow pane, from the grid"
+    },
+    "ChartHighContrast.dc.html": {
+      "x": 3840,
+      "y": 18940,
+      "w": 1000,
+      "h": 600,
+      "title": "Chart view: High contrast theme"
     }
   },
   "order": [
@@ -450,7 +478,11 @@
     "PlanMongo.dc.html",
     "PlanConfirm.dc.html",
     "PlanResultLink.dc.html",
-    "PlanNote.dc.html"
+    "PlanNote.dc.html",
+    "ChartView.dc.html",
+    "ChartInputs.dc.html",
+    "ChartStates.dc.html",
+    "ChartHighContrast.dc.html"
   ],
   "notes": {
     "aieach": {
@@ -550,6 +582,20 @@
       "text": "Execution plan: access and view (proposal)",
       "kind": "title1",
       "maxW": 6220
+    },
+    "chartinput": {
+      "x": 0,
+      "y": 18660,
+      "text": "Chart view: input of the chart (proposal)",
+      "kind": "title1",
+      "maxW": 5340
+    },
+    "chartinputrules": {
+      "x": 4920,
+      "y": 18940,
+      "w": 420,
+      "color": "orange",
+      "text": "Rules for the input of a chart (proposal):\n\n1. The chart view opens with a chart, not with empty controls. The fixed rules give a list of suggested charts, with the best fit first.\n2. The chart groups for the user. If the values of the horizontal axis repeat, it sets an aggregate and says so. A date axis has a time unit.\n3. 'Number of rows' is a choice of the vertical axis. It needs no column.\n4. Each column shows its type: number, date, or text.\n5. One sentence above the chart says what the chart shows, with each automatic step.\n6. A warning about one column is at that column.\n7. The settings are a panel at the right of the chart. Below a pane width of 640 px, they are a section above the chart.\n8. Each function has a control with a label and keys. No function needs a drag.\n\nBuilt now (stage 2): the view switch, the six chart types, one proposed chart, the saved views, the image export. The settings are a toolbar above the chart.\n\nNew in this proposal: the suggestion list, the panel, the type icons, the automatic aggregate, the time unit, the sort and the limit, the sentence, and the entry from the grid.\n\nThe months, the names, and the values in the charts are examples."
     }
   },
   "designSystems": []

@@ -461,7 +461,7 @@ Not checked:
 
 ### 15.7 Open points of stage 2
 
-- **The design.** The design canvas has no board for the chart view. The view uses the view standards and the tabs "Chart" and "Grid" of the board for time-series databases.
+- **The design.** Stage 2 was built without a board on the design canvas. The view uses the view standards and the tabs "Chart" and "Grid" of the board for time-series databases. On 2026-11-27, the canvas got the row "Chart view: input of the chart (proposal)" with four boards. They show a new input: a list of suggested charts, a settings panel, the type of each column, an automatic aggregate, a time unit, a sort, and a limit. The proposal has no decision yet, and no part of it is built.
 - **The keys of the zoom.** The zoom control has no keys. The settings and the buttons have keys, and the grid has the values.
 - **The grid after a view change.** The grid loses its sort and its scroll position when the user shows the chart and then the grid again.
 - **The zoom control in an image.** A saved image also shows the zoom control.
