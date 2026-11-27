@@ -24,6 +24,11 @@ The section `Unreleased` collects the changes after the last release. Before you
 - **Save as new view** writes the chart settings to a file next to the query file, for example `revenue.view.json` for `revenue.sql`. You can commit the file to Git. Tabloxide writes the file only when you save or remove a view.
 - **Save image…** saves the chart as a PNG image or an SVG image.
 - A chart follows the four themes. In the High contrast theme, each series also has a pattern and its own line style. A screen reader gets a text about the chart, and the grid always has the values.
+- The chart view has 12 more chart types. They are the bubble chart, the box plot, the heat map, the calendar heat map, the pie chart, and the funnel chart. They are also the tree map, the sunburst chart, the radar chart, the parallel coordinates, the Sankey diagram, and the candlestick chart. A chart type gives the settings its own names, for example **Source** and **Target** for a Sankey diagram.
+- Each of these chart types has a largest chart, for example 5,000 circles for a bubble chart and 3 years for a calendar heat map. A note above the chart tells you when the chart shows only a part of the data.
+- The suggested charts can also be a candlestick chart, a heat map, and a bubble chart.
+- The view switch has the third view **Profile**. It has one row for each column of the result. The row shows the number of empty cells, the number of different values, the smallest and the largest value, and a small distribution.
+- **Propose a chart** asks the AI assistant for the settings of a chart. The request sends your question, and the names and the types of the columns. It sends no rows. Tabloxide checks the answer against the columns before the chart changes.
 - `docs/user/charts.md` describes the charts.
 
 ### Run time and cancel

@@ -8,6 +8,8 @@ Status on 2026-11-26, later: the measurement of stage 1 is complete for Linux. S
 
 Status on 2026-11-27: the product owner selected Apache ECharts (question 1). Stage 2 is built. Section 15 gives its state and the differences between this design and the code. Question 2 has no decision yet. The code uses the proposal.
 
+Status on 2026-11-27, later: stage 3 is built: the other chart types, the column profile, and the action "Propose a chart". Section 15.11 gives its state.
+
 The design covers these backlog items: F8 (result views), T2 (chart view), G5 (graph view), and D3 (document view). It uses F7 (typed result values) when F7 exists, but the first stages do not need it.
 
 ## 1. Why this design
@@ -274,7 +276,7 @@ The cells of a result are text now. The chart view converts the cells of number 
 | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- | ----------- |
 | 1     | A measurement of the chart library. Does it work with the content security policy of the application? How much larger is the installer? How long does a chart of 100 000 points take? | Nothing                                       | Complete for Linux (section 14). Windows and macOS are open. |
 | 2     | The view interface, the view switch, the chart view with the basic types, the default rules, the view settings file, and the image export.                                                | The decision of questions 1 and 2, and a design | Complete, with the limits of section 15. Question 2 and the design are open. |
-| 3     | The other chart types, the column profile, and the action "Propose a chart".                                                                                                              | Nothing                                       | Not started |
+| 3     | The other chart types, the column profile, and the action "Propose a chart".                                                                                                              | Nothing                                       | Complete, with the limits of section 15.11. |
 | 4     | The security test of the sandbox on Windows, macOS, and Linux. Then the view pack host, the SDK, the index, and the first view packs.                                                      | The decision of questions 3 and 4             | Not started |
 | 5     | Charts of a complete result through DuckDB.                                                                                                                                               | Nothing                                       | Not started |
 
@@ -561,6 +563,60 @@ Differences from the boards:
 `ui/src/results/ResultGrid.tsx` has the column selection and the menu. `ui/src/views/chart/chartFromColumns.ts` has the two chart actions.
 
 Checks: the UI has 1080 automatic tests, and all pass. 310 of them are for the views, and 7 new ones are for the grid. A preview page in Chrome 158 showed the limit with "Other" and the series "Other" in the light theme. It also showed the grid with selected columns and an open header menu. The page had no error. No person and no test opened these parts in the application window.
+
+### 15.11 Stage 3 as built
+
+Date: 2026-11-27. The product owner started stage 3 after step 3 of the input design.
+
+Content:
+
+- The chart view has the 12 other chart types of section 5.3. It now has 18 types.
+- The view switch has the third view "Profile" (section 5.4).
+- The chart view has the assistant action "Propose a chart" (section 8).
+
+| Part            | Built                                                                                                                                                                                                                      |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Chart types     | Bubble, box plot, heat map, calendar heat map, pie, funnel, tree map, sunburst, radar, parallel coordinates, Sankey, and candlestick. The chart settings show only the parts that a type uses, with the names of the type. |
+| Roles of a type | `ui/src/views/chart/chartTypes.ts` has one table with the parts of the settings that each type uses. The settings panel, the parser, and the sentence above the chart read this table.                                   |
+| New setting     | `size` is the number column of the size of a bubble. All other types use the settings of stage 2. For example, `series` is the rows of a heat map and the target of a Sankey diagram.                                      |
+| Limits          | Each new type has a largest chart, because more marks are not readable or too slow. A note tells the user when the chart shows only a part of the data. The user guide lists the limits.                                  |
+| Suggestions     | The fixed rules also propose a candlestick chart, a heat map, and a bubble chart.                                                                                                                                          |
+| Column profile  | For each column: the empty cells, the different values, the smallest and the largest value, and a distribution. The view needs no chart library and no settings.                                                           |
+| Assistant       | The task `chart` and the context `result-columns` in `crates/assistant`. The UI checks the answer before it changes the chart.                                                                                             |
+
+Differences from the design:
+
+- **The tree map and the sunburst chart have a maximum of two levels.** The group is the first level, and the subgroup is the second level. The settings have no list of levels.
+- **The bubble chart has no separate colour column.** The series column gives the colours, as in a scatter plot.
+- **The box plot uses the whiskers of Tukey.** A whisker ends at the last value within 1.5 times the distance of the quartiles. The settings cannot change this.
+- **The calendar heat map shows the last three years.** A note tells the user when the result has more years.
+- **The heat map has no zoom.** Section 14.6 gives a defect of ECharts for a heat map with zoom. Stage 3 did not find the cause. A heat map without zoom gave no error after its dispose in the checks.
+- **The parallel coordinates have no tooltip action.** This prevents the second defect of section 14.6.
+- **The distribution of the column profile is not always a histogram.** A number column and a date column have a histogram. Each other column has its five most frequent values.
+- **The column profile is never the default view.** Its score is always less than the score of the grid. The view contract has the new part `hasSettings`, and the host offers no saved views for a view without settings.
+- **The answer of "Propose a chart" is one sentence and one JSON code block.** The UI reads the block with the parser of the view settings file. Then it makes sure that the result has each column and that the settings are complete. If a check fails, the chart does not change and a notice gives the cause.
+- **A chart request sends a maximum of 200 columns.** It sends the name, the kind, and the type name of each column. It sends no rows and no structure of the database.
+- **The action is a button with a dialog.** The dialog takes an optional question and tells what the request sends. The answer stays in the assistant panel.
+
+Size: the separate file of ECharts is now 793 kB (266 kB with gzip). It was 600 kB (203 kB with gzip) after stage 2.
+
+Checks:
+
+- The UI has 1209 automatic tests, and all pass. 431 of them are for the views. The assistant crate has 92 tests, and all pass.
+- A preview page in Chrome 158 showed each of the 12 new chart types in the four themes. The page had no error, also after it removed the charts.
+- The same method showed the column profile in the light theme. It also showed the button "Propose a chart" with its dialog in the light theme and the dark theme.
+
+Not checked:
+
+- **A request to the AI service.** No test and no person sent "Propose a chart" to the service. The tests use prepared answers. Thus it is not known how frequently the model gives settings that pass the checks.
+- **The application window.** No person and no test opened a part of stage 3 in the Tauri window.
+- **Windows, macOS, and a screen reader.**
+
+Open points of stage 3:
+
+- **The cause of the heat map defect** is not known (section 14.6).
+- **Two test files are too long.** `ChartView.test.tsx` and `chartData.test.ts` have more than 1,000 lines each. The rule of the project is a maximum of 800 lines.
+- **The design canvas has no board for stage 3.** The new chart types, the column profile, and the dialog of "Propose a chart" use the patterns of the boards of stage 2.
 
 ## 16. Sources
 

@@ -26,7 +26,7 @@ Under each request, the panel shows a line that starts with **Sent:**. The line 
 
 A request does not send this data:
 
-- Rows of a table or of a result. The only exception is **Ask about these rows** (section 10), after your confirmation.
+- Rows of a table or of a result. The only exception is **Ask about these rows** (section 10), after your confirmation. **Propose a chart** (section 11) sends the names and the types of the columns of a result, and no rows.
 - Passwords.
 - The host, the port, the database name, or the user of a connection.
 - The files of the workspace, unless you copy their text into a request.
@@ -178,7 +178,19 @@ Tabloxide sends the first rows of the result that the grid has loaded. **Prefere
 
 **A production connection never sends rows.** For a connection with the environment production, the button is not available, and no setting changes this. Tabloxide also checks this when it sends the request. If you change a connection to production, its earlier rows do not go again either.
 
-## 11. Use sessions
+## 11. Propose a chart
+
+The chart view of a result has the button **Propose a chart**. The AI proposes the settings of a chart for the columns of the result.
+
+1. Run a statement that returns rows, and select **Chart** in the view switch.
+2. Select **Propose a chart**. Type what you want to see. The question is optional.
+3. Select **Send**. The answer goes to the assistant panel.
+
+The request sends your question, and the name, the type, and the type name of each column of the result. For a result with more than 200 columns, it sends the first 200 columns. It sends no rows and no structure of the database.
+
+Tabloxide checks the chart settings of the answer against the columns of the result. The chart changes only if the settings pass each check. If a check fails, a notice gives the cause. Refer to [Charts](charts.md).
+
+## 12. Use sessions
 
 Each conversation is a session. Two or more sessions can run at the same time. The sessions stay until you close the workspace. Tabloxide does not store them on disk.
 
@@ -199,7 +211,7 @@ The tab of a session shows these parts:
 
 A request of a session uses the last SQL tab, also when the tab of the session is active. The status bar shows the number of sessions that run.
 
-## 12. Limits
+## 13. Limits
 
 - The model can make mistakes. Examine each statement before you run it, most of all a statement that changes or removes data.
 - The model does not see rows, the number of rows, or the distribution of values, unless a plan shows them.

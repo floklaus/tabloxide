@@ -75,6 +75,8 @@ Status on 2026-11-26, later: `Visualization Design.md` gives a proposal for the 
 
 Status on 2026-11-27: the product owner selected Apache ECharts as the chart library. Stage 2 of `Visualization Design.md` is built: the view switch of a result (the first part of F8) and the chart view (T2). Section 15 of that document gives the state.
 
+Status on 2026-11-27, later: stage 3 of `Visualization Design.md` is built. The chart view has 18 chart types, a result has the view "Profile", and the assistant has the action "Propose a chart". Section 15.11 of that document gives the state.
+
 ## 5. Relational (R)
 
 Relational engines use the structure that exists. They need F1, F2, F3, F5, F10, and F15.
