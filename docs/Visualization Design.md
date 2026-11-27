@@ -293,20 +293,22 @@ Stage 2 gives the chart view of backlog item T2 and the first part of F8. Each s
 
 Date: 2026-11-26. Library: Apache ECharts 6.1.0, licence Apache 2.0. Build tool: Vite 8.3.8, the version of the UI.
 
+The code of the measurement is in `scripts/echarts-measurement/`. Its `README.md` gives the procedure for each platform.
+
 ### 14.1 Method
 
 - A test page draws charts with ECharts. A local server gives the page with the content security policy of `src-tauri/tauri.conf.json`, without a change.
 - Two engines loaded the page. WebKitGTK 2.52.6 is the engine of Tauri on Linux. It ran in an off-screen window. Chrome 158 in headless mode is of the same family as WebView2, the engine of Tauri on Windows.
 - The machine has an AMD Ryzen 7 PRO 4750U processor, 30 GB of memory, and Ubuntu 24.04.
-- A time is from the start of the chart to the event `finished` of ECharts. Each number is the median of 5 runs. The chart is 1200 by 500 pixels. Animation is off.
+- A time is from the start of the chart to the event `finished` of ECharts. Each number is the median of 5 runs. A draw of more than 5 seconds ran one time only. The chart is 1200 by 500 pixels. Animation is off.
 
 ### 14.2 Content security policy
 
-| Check                                                                                         | WebKitGTK    | Chrome       |
-| --------------------------------------------------------------------------------------------- | ------------ | ------------ |
-| The policy refuses `new Function` in the test page (control)                                  | Yes          | Yes          |
-| 23 chart cases, each with the canvas renderer and the SVG renderer: cases that drew a chart   | 46 of 46     | 46 of 46     |
-| Violations of the policy by ECharts                                                           | 0            | 0            |
+| Check                                                                                       | WebKitGTK | Chrome   |
+| ------------------------------------------------------------------------------------------- | --------- | -------- |
+| The policy refuses `new Function` in the test page (control)                                | Yes       | Yes      |
+| 23 chart cases, each with the canvas renderer and the SVG renderer: cases that drew a chart | 46 of 46  | 46 of 46 |
+| Violations of the policy by ECharts                                                         | 0         | 0        |
 
 The 23 cases have all chart types of section 5.3 and a simple graph. They also have these functions:
 
@@ -322,44 +324,44 @@ Result: ECharts needs no change of the content security policy.
 
 ### 14.3 Size
 
-| Build                                                                    | Minified | gzip   | Brotli |
-| ------------------------------------------------------------------------ | -------- | ------ | ------ |
-| Line, bar, and scatter with the canvas renderer (stage 2)                | 569 kB   | 189 kB | 159 kB |
-| The 14 series types for section 5.3 and a simple graph, with the two renderers (stage 3)       | 851 kB   | 281 kB | 232 kB |
-| Complete ECharts                                                         | 1091 kB  | 358 kB | 291 kB |
-| For comparison: the JavaScript of the UI now                             | 1310 kB  | —      | 337 kB |
+| Build                                                                                   | Minified | gzip   | Brotli |
+| --------------------------------------------------------------------------------------- | -------- | ------ | ------ |
+| Line, bar, and scatter with the canvas renderer (stage 2)                               | 568 kB   | 189 kB | 159 kB |
+| The 14 series types for section 5.3 and a simple graph, with the two renderers (stage 3) | 850 kB   | 281 kB | 232 kB |
+| Complete ECharts                                                                        | 1091 kB  | 358 kB | 291 kB |
+| For comparison: the JavaScript of the UI now                                            | 1310 kB  | —      | 337 kB |
 
 - Tauri compresses the UI files in the program with Brotli. Thus the installer becomes approximately 0.2 MB to 0.3 MB larger. This is an estimate. No installer was built for the measurement.
 - The chart library is 65 % of the size of the UI code of today. Thus the build must load it only when the user opens a chart, as section 10 says.
 
 ### 14.4 Speed
 
-| Chart                                                           | WebKitGTK         | Chrome   |
-| --------------------------------------------------------------- | ----------------- | -------- |
-| Line, 100 000 points, no reduction of points                    | 55 ms             | 58 ms    |
-| Line, 100 000 points, reduction of points (`sampling: 'lttb'`)  | 44 ms             | 49 ms    |
-| Line, 10 series of 10 000 points, reduction of points           | 42 ms             | 54 ms    |
-| Line, 1 000 000 points, reduction of points                     | 275 ms            | 431 ms   |
-| Scatter plot, 100 000 points, large mode (`large: true`)        | 361 ms            | 264 ms   |
-| Scatter plot, 100 000 points, default mode                      | More than 30 s    | 20.8 s   |
-| Bar, 100 000 bars, large mode                                   | 610 ms            | 760 ms   |
-| Heat map, 100 000 cells                                         | 432 ms            | 419 ms   |
-| Line, 100 000 points, reduction of points, SVG renderer         | 43 ms             | 46 ms    |
+| Chart                                                          | WebKitGTK      | Chrome |
+| -------------------------------------------------------------- | -------------- | ------ |
+| Line, 100 000 points, no reduction of points                   | 48 ms          | 83 ms  |
+| Line, 100 000 points, reduction of points (`sampling: 'lttb'`) | 48 ms          | 76 ms  |
+| Line, 10 series of 10 000 points, reduction of points          | 70 ms          | 79 ms  |
+| Line, 1 000 000 points, reduction of points                    | 307 ms         | 467 ms |
+| Scatter plot, 100 000 points, large mode (`large: true`)       | 354 ms         | 270 ms |
+| Scatter plot, 100 000 points, default mode                     | More than 30 s | 19.9 s |
+| Bar, 100 000 bars, large mode                                  | 595 ms         | 694 ms |
+| Heat map, 100 000 cells                                        | 469 ms         | 418 ms |
+| Line, 100 000 points, reduction of points, SVG renderer        | 43 ms          | 64 ms  |
 
-- The conversion of 100 000 text cells to dates and numbers takes 28 ms to 35 ms.
-- A zoom through the API draws the next frame in 6 ms to 30 ms. The heat map is slower: 206 ms to 245 ms.
-- The first draw of a page is slower. The first run of the first case took approximately 140 ms, not 55 ms.
-- In WebKitGTK, two of the 5 runs of the scatter plot in large mode were slow (2.5 s and 4.2 s). The probable cause is the test: the chart of the case before it was not stopped.
+- The conversion of 100 000 text cells to dates and numbers takes 27 ms to 34 ms.
+- A zoom through the API draws the next frame in 4 ms to 58 ms. The heat map is slower: 190 ms to 222 ms.
+- The first draw of a page is slower. The first run of the first case took 122 ms to 134 ms.
+- The times change between two runs of the measurement. A line of 100 000 points took 48 ms to 103 ms in different runs. Use the numbers to compare modes, not as exact values.
 
-The default mode of the scatter plot is slow. In Chrome, the median of 3 runs is:
+The default mode of the scatter plot is slow:
 
-| Points  | Default mode | Large mode |
-| ------- | ------------ | ---------- |
-| 2 000   | 148 ms       | 28 ms      |
-| 5 000   | 659 ms       | 32 ms      |
-| 10 000  | 1.3 s        | 37 ms      |
-| 50 000  | 5.9 s        | 83 ms      |
-| 100 000 | 20.8 s       | 264 ms     |
+| Points  | WebKitGTK, default mode | WebKitGTK, large mode | Chrome, default mode | Chrome, large mode |
+| ------- | ----------------------- | --------------------- | -------------------- | ------------------ |
+| 2 000   | 74 ms                   | 14 ms                 | 54 ms                | 12 ms              |
+| 5 000   | 262 ms                  | 18 ms                 | 228 ms               | 16 ms              |
+| 10 000  | 689 ms                  | 32 ms                 | 452 ms               | 35 ms              |
+| 50 000  | 11.3 s                  | 170 ms                | 6.0 s                | 102 ms             |
+| 100 000 | More than 30 s          | 354 ms                | 19.9 s               | 270 ms             |
 
 In the default mode, ECharts draws the points in steps. The complete chart needs too much time.
 
@@ -373,15 +375,15 @@ In the default mode, ECharts draws the points in steps. The complete chart needs
 ### 14.6 Defects found
 
 - The action `showTip` with a data index fails for a parallel coordinates series, with a `TypeError`. The chart itself draws correctly. The chart view must not use this action for that chart type.
-- A chart that is disposed immediately after a zoom action gives a `TypeError` in a later frame (`layerStack` of `null`). This occurred for the heat map and for the SVG renderer. The chart view must wait for the event `finished` before it disposes a chart.
+- A heat map with zoom gives a `TypeError` in a frame after the test disposed the chart (`layerStack` of `null`). This occurred in the two engines, but not in each run. A wait of some frames before the dispose did not prevent it. The cause is not known. Stage 2 must examine it.
 
 ### 14.7 Limits of the measurement
 
 - One machine, and Linux only. WKWebView on macOS is not measured. Chrome in headless mode is not WebView2, but it has the same engine.
 - The engines ran without a visible window. The speed in the application window can be different.
+- Other work ran on the machine during the measurement.
 - The installer size is an estimate from the compressed size of the library.
 - The measurement did not examine the look of the charts in the four themes, and it did not examine the keys. These are part of stage 2.
-- The code of the measurement is not in the repository.
 
 ## 15. Sources
 

@@ -1,0 +1,17 @@
+{
+  "name": "tabloxide-echarts-measurement",
+  "private": true,
+  "type": "module",
+  "description": "The measurement of stage 1 of docs/Visualization Design.md",
+  "scripts": {
+    "build": "node build.mjs",
+    "measure": "node measure.mjs"
+  },
+  "dependencies": {
+    "echarts": "6.1.0"
+  },
+  "devDependencies": {
+    "puppeteer-core": "24.43.1",
+    "vite": "8.3.8"
+  }
+}
