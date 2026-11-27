@@ -146,7 +146,10 @@ The chart view does not save the description of the library. It saves its own sh
 | `x`, `y`            | The column of the horizontal axis and the columns of the vertical axis. |
 | `series`            | A column that divides the rows into series.                             |
 | `size`, `colour`    | A column for the size or the colour of a mark.                          |
-| `aggregate`         | Sum, mean, count, minimum, or maximum of the rows with the same `x`.    |
+| `aggregate`         | Sum, mean, count, minimum, or maximum of the rows with the same `x`. `none`: each row is one mark. Without a value, the chart decides (section 15.8). |
+| `countRows`         | The vertical axis shows the number of rows. The chart then uses no `y` column. |
+| `timeUnit`          | Combines the dates of `x` of the same hour, day, week, month, or year.  |
+| `sort`              | The sequence of the categories of `x`: by name or by value.             |
 | `stacked`, `scale`  | Stacked series. A linear or a logarithmic axis.                         |
 
 ### 5.3 Chart types
@@ -461,11 +464,37 @@ Not checked:
 
 ### 15.7 Open points of stage 2
 
-- **The design.** Stage 2 was built without a board on the design canvas. The view uses the view standards and the tabs "Chart" and "Grid" of the board for time-series databases. On 2026-11-27, the canvas got the row "Chart view: input of the chart (proposal)" with four boards. They show a new input: a list of suggested charts, a settings panel, the type of each column, an automatic aggregate, a time unit, a sort, and a limit. The proposal has no decision yet, and no part of it is built.
+- **The design.** Stage 2 was built without a board on the design canvas. The view uses the view standards and the tabs "Chart" and "Grid" of the board for time-series databases. On 2026-11-27, the canvas got the row "Chart view: input of the chart (proposal)" with four boards. They show a new input with a list of suggested charts and a settings panel. The input also has the type of each column, an automatic aggregate, a time unit, a sort, and a limit. The product owner accepted step 1 of the proposal. Section 15.8 gives what is built.
 - **The keys of the zoom.** The zoom control has no keys. The settings and the buttons have keys, and the grid has the values.
 - **The grid after a view change.** The grid loses its sort and its scroll position when the user shows the chart and then the grid again.
 - **The zoom control in an image.** A saved image also shows the zoom control.
 - **The view state of a closed tab.** It stays in memory until the application closes. It is small.
+
+### 15.8 Step 1 of the input design
+
+Date: 2026-11-27. The product owner accepted step 1 of the proposal for the input of a chart. The settings stay in the toolbar above the chart. The panel, the list of suggested charts, the limit with "Other", and the entry from the grid are not built.
+
+| Part                 | Built                                                                                                                                                                                                 |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Automatic aggregate  | Settings without `aggregate` let the chart decide. It shows the sum if a value of `x` repeats in one series, or if `x` has a time unit. A note says so, and "Show each row" sets `aggregate` to `none`. |
+| Number of rows       | "Number of rows" is the first entry of the vertical axis list. The setting is `countRows`.                                                                                                           |
+| Time unit            | "Group by" for a date column: hour, day, week, month, or year. A week starts on Monday. A bar chart shows the units as categories in the sequence of the time.                                       |
+| Sort                 | "Sort" for categories: by name, or by value in the two directions. The value of a category is the total of its series. A category without a value is last.                                           |
+| Type of each column  | Each column list shows the kind of a column as an icon, and the type name of the database. A screen reader gets the kind as a word.                                                                  |
+| Sentence             | One sentence above the chart says what the chart shows, with the aggregate, the time unit, and the series column.                                                                                    |
+| Warning at its cause | A note about the cells of one column is below the control of that column, with a warning mark in the control.                                                                                        |
+| Reset                | "Reset to the proposed chart" removes the settings.                                                                                                                                                  |
+| Default rules        | A result without a number column and with a text column gets a bar chart of the number of rows.                                                                                                      |
+
+Differences from the boards:
+
+- **One aggregate for all columns.** The boards show an aggregate for each column of the vertical axis. That changes `y` in the settings file from names to objects. It waits for the panel of step 2, which has a row for each column.
+- **The column lists are native controls.** A list is a disclosure with radio buttons or check boxes, not a custom list box. Thus it has the keys of the system.
+- **The message about the automatic aggregate stays** while the aggregate is automatic. The boards show it one time.
+
+Effect on files of version 1: a saved chart without `aggregate` showed each row. It now shows the sum if values repeat. A chart without repeats does not change. The version of the file stays 1, because each new part is optional.
+
+Checks: the UI has 995 automatic tests, and all pass. 232 of them are for the views. A preview page showed the new controls in Chrome 158 in the light theme. The page had no error. No person and no test opened the new controls in the application window.
 
 ## 16. Sources
 

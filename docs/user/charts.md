@@ -21,8 +21,11 @@ Without settings, Tabloxide proposes a chart from the types of the columns:
 | Two number columns | Scatter plot |
 | One number column | Histogram |
 | One row with one number | Single value |
+| No number column, and one or more text columns | Bar chart of the number of rows for each value of the first text column |
 
 For other columns, Tabloxide makes no proposal. Select the columns in the chart settings.
+
+One sentence above the chart says what the chart shows, for example "Sum of amount for each month of payment_date". It also gives the number of rows and the number of points or bars.
 
 ## 2. Chart settings
 
@@ -32,13 +35,31 @@ The settings are above the chart. A chart type shows only the settings that it u
 | --- | --- |
 | Chart type | Line chart, area chart, bar chart, scatter plot, histogram, or single value. |
 | Horizontal axis | The column of the horizontal axis. For a histogram, this is the column that the chart counts. |
-| Vertical axis | One or more number columns. Each column is one series. |
-| Series | A column that divides the rows into series. Each value of the column is one series. |
+| Group by | For a date column: combines the dates of the same hour, day, week, month, or year. A week starts on Monday. |
+| Sort | For categories: as in the result, by name, or by value. |
+| Vertical axis | One or more number columns. Each column is one series. **Number of rows** counts the rows and needs no column. |
 | Aggregate | Combines the rows that have the same horizontal value: sum, mean, count, minimum, or maximum. **Count** counts the cells that are not empty, also cells that are not numbers. |
+| Series | A column that divides the rows into series. Each value of the column is one series. |
 | Stacked | Puts the series on top of each other. For a bar chart and an area chart. |
 | Logarithmic scale | A logarithmic vertical axis. It cannot show zero or negative values. |
 
-Without an aggregate, each row is one mark. Two rows of one series can have the same horizontal value. The chart then shows the first row only. A note above the chart tells you so. Select an aggregate to combine such rows.
+**Reset to the proposed chart** removes your settings.
+
+Each list of columns shows the type of a column as an icon: number, date, or text. The type name of the database is at the right.
+
+### The aggregate
+
+The aggregate **Automatic** lets the chart decide:
+
+- If no value of the horizontal axis repeats, each row is one mark.
+- If a value repeats in one series, the chart shows the sum for each value. The setting then shows **Automatic (Sum)**, and a note above the chart tells you so.
+- With a time unit in **Group by**, the chart always shows the sum.
+
+**Show each row** in the note sets the aggregate to **None**. With **None**, each row is one mark. There is one exception. A chart with a series column and categories can have rows with the same category and the same series. The chart then shows only the first of these rows. A note tells you so.
+
+A scatter plot has no aggregate. A single value has no automatic aggregate: without an aggregate, it shows the first row.
+
+### The horizontal axis
 
 A bar chart shows each value of the horizontal axis as a category. A line chart, an area chart, and a scatter plot use a time axis for a date column. They use a number axis for a number column.
 
@@ -52,7 +73,7 @@ A chart must not look complete when it is not. The notes above the chart tell yo
 | --- | --- |
 | Chart of the first 100,000 of 5,000,000 rows. | The result has more rows than Tabloxide loaded. The limit is 100,000 rows. |
 | Chart of the first 500 rows. The result has more rows. | The grid loads rows when you scroll. **Load all rows** loads the result to the limit. **Stop** ends the load. |
-| Cells are not a number, or not a date. | The chart cannot convert the text of these cells, for example `$10`. It shows them as empty values. |
+| Cells are not a number, or not a date. | The chart cannot convert the text of these cells, for example `$10`. It shows them as empty values. This note is below the setting of its column, with a warning mark. |
 | The chart shows the first 8 of 23 series. | A chart shows a maximum of 8 series. Use a filter in the statement, or a different series column. |
 | A line has more points than the chart has pixels. | The chart shows a reduced number of points for each line. The form of the line stays. |
 
@@ -101,12 +122,15 @@ Example of a view file:
         "y": [
           "amount"
         ],
-        "series": "kind"
+        "series": "kind",
+        "timeUnit": "month"
       }
     }
   ]
 }
 ```
+
+The settings of a chart can have these parts: `type`, `x`, `y`, `countRows`, `series`, `aggregate`, `timeUnit`, `sort`, `stacked`, and `scale`. A file without `aggregate` uses the automatic aggregate.
 
 If Tabloxide cannot read a view file, it shows the cause and does not change the file. Correct the file or remove it from the folder. Then run the statement again.
 

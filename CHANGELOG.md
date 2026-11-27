@@ -11,6 +11,10 @@ The section `Unreleased` collects the changes after the last release. Before you
 - A result with rows has a view switch with **Grid** and **Chart**. The chart shows the loaded rows as a line chart, an area chart, a bar chart, a scatter plot, a histogram, or a single value.
 - Tabloxide proposes a chart from the types of the columns, for example a line chart for a date column with number columns. You can change the chart type, the columns of the axes, a series column, an aggregate, the stack, and the scale.
 - Notes above the chart tell you when the chart does not show the complete result. Examples are the first 100,000 of 5,000,000 rows, and cells that are not numbers. **Load all rows** loads an open result to the row limit.
+- A chart groups for you. If the values of the horizontal axis repeat, it shows the sum for each value and tells you so. **Group by** combines the dates of an hour, a day, a week, a month, or a year. **Number of rows** counts rows without a column.
+- **Sort** puts the categories in the sequence of their names or their values.
+- One sentence above the chart says what the chart shows. Each list of columns shows the type of a column. A warning about the cells of a column is below the setting of that column.
+- A result with only text columns gets a bar chart of the number of rows.
 - **Save as new view** writes the chart settings to a file next to the query file, for example `revenue.view.json` for `revenue.sql`. You can commit the file to Git. Tabloxide writes the file only when you save or remove a view.
 - **Save image…** saves the chart as a PNG image or an SVG image.
 - A chart follows the four themes. In the High contrast theme, each series also has a pattern and its own line style. A screen reader gets a text about the chart, and the grid always has the values.
