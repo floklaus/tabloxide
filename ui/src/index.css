@@ -2252,6 +2252,16 @@ body {
   font-weight: 600;
 }
 
+/* The active tab goes 1px below the other tabs, onto the border of the tab bar.
+   The list has a padding for this 1px, thus the list does not scroll vertically.
+   If it did, the overlay scroll bar of WebKitGTK would be on the close button of
+   the last tab, and a click would not get to the button. */
+.tabs__list {
+  margin-bottom: -1px;
+  padding-bottom: 1px;
+  overflow-y: hidden;
+}
+
 .tabs__title {
   padding: 0.45rem 0.25rem 0.45rem 0.9rem;
   font-size: 13px;
