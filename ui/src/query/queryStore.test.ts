@@ -82,6 +82,8 @@ describe('queryStore', () => {
       connectionId: 'id-1',
       version: '17.0',
     })
+    // A connector tells what it can do only after its start.
+    expect(commands.engineList).toHaveBeenCalled()
   })
 
   test('keeps the failure when the connect fails', async () => {

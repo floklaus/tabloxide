@@ -259,9 +259,20 @@ impl EngineRegistry {
                 source: EngineSource::Available,
             })
             .collect();
-        let connectors = found.into_values().map(|found| EngineEntry {
-            info: found.manifest.engine_info(),
-            source: found.source,
+        // The manifest does not tell what the connector can do, for example if it
+        // gives execution plans. A connector that runs told it with `Describe`.
+        // If a different task holds the lock, the list has the data of the manifest.
+        let running = self.running.try_lock().ok();
+        let connectors = found.into_iter().map(|(engine, found)| {
+            let described = running
+                .as_ref()
+                .and_then(|running| running.get(&engine))
+                .filter(|current| current.folder == found.folder)
+                .map(|current| current.adapter.info());
+            EngineEntry {
+                info: described.unwrap_or_else(|| found.manifest.engine_info()),
+                source: found.source,
+            }
         });
         builtin.chain(connectors).chain(available).collect()
     }

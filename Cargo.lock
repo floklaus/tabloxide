@@ -6038,6 +6038,7 @@ dependencies = [
  "tabloxide-connector-host",
  "tabloxide-connector-sdk",
  "tabloxide-core",
+ "tempfile",
  "testcontainers-modules",
  "tokio",
 ]

@@ -10,6 +10,7 @@ import {
   type StatementReport_Serialize,
 } from '../bindings'
 import { invalidateCatalog } from '../completion/catalogCache'
+import { useEngineStore } from '../engines/engineStore'
 import { toMessage } from '../lib/errors'
 import { sqlTabIdOf, useTabsStore } from '../tabs/tabsStore'
 
@@ -184,6 +185,9 @@ export const createQueryStore = (): QueryStore =>
               session: { id, connectionId, version: server.version },
               connectState: { status: 'idle' },
             })
+            // A connector tells what it can do only when it runs, for example if
+            // it gives execution plans. The engine list has this data now.
+            void useEngineStore.getState().load()
           }
         } catch (error) {
           set({ connectState: connectFailure(toMessage(error)) })

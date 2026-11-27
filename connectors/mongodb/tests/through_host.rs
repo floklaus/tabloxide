@@ -4,7 +4,7 @@
 
 use std::path::Path;
 use std::sync::Arc;
-use tabloxide_connector_host::{ConnectorProcess, RemoteAdapter};
+use tabloxide_connector_host::{ConnectorProcess, EngineRegistry, MANIFEST_FILE, RemoteAdapter};
 use tabloxide_core::{
     ConnectErrorKind, ConnectionProfile, DbAdapter, Engine, Outcome, QueryErrorKind, QueryLanguage,
     QuerySession, RunLimits, RunTarget, Secret, TlsMode,
@@ -44,6 +44,43 @@ async fn start_connector() -> RemoteAdapter {
         .await
         .expect("the connector must start");
     RemoteAdapter::new(Arc::new(process))
+}
+
+/// The manifest does not tell if a connector gives execution plans. Thus the engine
+/// list has this data only after the connector started. This test needs no Docker.
+#[tokio::test(flavor = "multi_thread")]
+async fn the_engine_list_has_the_capabilities_of_a_connector_that_runs() {
+    let root = tempfile::tempdir().unwrap();
+    let folder = root.path().join("dev").join("mongodb");
+    std::fs::create_dir_all(&folder).unwrap();
+    let manifest = Path::new(env!("CARGO_MANIFEST_DIR")).join(MANIFEST_FILE);
+    std::fs::copy(manifest, folder.join(MANIFEST_FILE)).unwrap();
+    let program = Path::new(env!("CARGO_BIN_EXE_tabloxide-connector-mongodb"));
+    std::fs::copy(program, folder.join(program.file_name().unwrap())).unwrap();
+    let registry = EngineRegistry::new(
+        Vec::new(),
+        root.path().join("installed"),
+        Some(root.path().join("dev")),
+    );
+    let capabilities = |registry: &EngineRegistry| {
+        let entry = registry
+            .list()
+            .into_iter()
+            .find(|entry| entry.info.engine.as_str() == "mongodb")
+            .expect("the list must have the connector");
+        entry.info.capabilities
+    };
+
+    // Before the start, the list has only the data of the manifest.
+    assert!(!capabilities(&registry).explain_plan);
+
+    registry
+        .adapter(&Engine::new("mongodb"))
+        .await
+        .expect("the connector must start");
+
+    assert!(capabilities(&registry).explain_plan);
+    assert!(capabilities(&registry).measured_plan);
 }
 
 async fn open(

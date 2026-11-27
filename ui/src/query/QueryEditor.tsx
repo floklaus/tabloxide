@@ -67,7 +67,7 @@ export function QueryEditor() {
   const setCursor = useShellStore((state) => state.setCursor)
   const cursor = useShellStore((state) => state.cursor)
   // The engine list loads after the start. The selector shows the button then.
-  useEngineStore((state) => state.engines)
+  const engines = useEngineStore((state) => state.engines)
 
   useEffect(() => {
     setActiveEditor(editorRef)
@@ -88,7 +88,8 @@ export function QueryEditor() {
       PLAN_CHECK_DELAY_MS,
     )
     return () => window.clearTimeout(timer)
-  }, [content, connectionId, cursor])
+    // The plan actions depend on what the engine can do.
+  }, [content, connectionId, cursor, engines])
 
   if (!tab)
     return (

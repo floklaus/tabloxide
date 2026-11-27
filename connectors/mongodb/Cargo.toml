@@ -21,6 +21,7 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync", "time"
 
 [dev-dependencies]
 tabloxide-connector-host = { version = "0.1.0", path = "../../crates/connector-host" }
+tempfile = "3"
 testcontainers-modules = { version = "0.13.0", features = ["mongo"] }
 
 [lints]

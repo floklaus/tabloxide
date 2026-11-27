@@ -19,6 +19,10 @@ The section `Unreleased` collects the changes after the last release. Before you
 - For a MongoDB update, the result shows how many documents the filter matched, how many the update changed, and how many it inserted. This needs a MongoDB connector that is newer than 0.1.0.
 - The result keeps a maximum of 200 messages for one statement.
 
+### Execution plans of a connector
+
+- Explain is now available for the engine of a connector, for example MongoDB, after the first connect. Before, the application said that the engine gives no execution plan.
+
 ## 0.1.0 (2026-11-26)
 
 This is the first release.
