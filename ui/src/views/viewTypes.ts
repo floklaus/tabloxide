@@ -63,8 +63,11 @@ export type ResultView = {
   Component: ComponentType<ViewProps>
   /** The actions that the grid offers for columns, to show this view. */
   columnActions?: ColumnActionSource[]
+  /** `false` for a view without settings. The host then offers no saved views for it. */
+  hasSettings?: boolean
 }
 
 /** The identifier of the grid. It is the default view of each result. */
 export const GRID_VIEW_ID = 'grid'
 export const CHART_VIEW_ID = 'chart'
+export const PROFILE_VIEW_ID = 'profile'

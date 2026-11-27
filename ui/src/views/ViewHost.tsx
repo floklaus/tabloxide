@@ -141,7 +141,7 @@ export function ViewHost(props: Props) {
         onShownSettings={onShownSettings}
         columnActions={view.id === GRID_VIEW_ID ? columnActions : undefined}
       />
-      {view.id !== GRID_VIEW_ID && canChange && (
+      {view.id !== GRID_VIEW_ID && view.hasSettings !== false && canChange && (
         <SavedViews
           path={filePath}
           loaded={loaded}
